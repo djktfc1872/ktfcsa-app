@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en-GB" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KTFCSA Away Days</title>
+<meta name="description" content="Fixtures, results, away day guides, coach travel, car shares and the fan wall for Kettering Town supporters.">
+<meta name="theme-color" content="#08080a">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="apple-touch-icon" href="assets/img/logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+<div class="shell">
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#/fixtures">
+        <img class="brand__crest" src="assets/img/logo.png" alt="">
+        <span class="brand__text">
+          <span class="brand__name">KTFCSA Away Days</span>
+          <span class="brand__sub">Kettering Town</span>
+        </span>
+      </a>
+      <div class="topbar__spacer"></div>
+      <div class="topbar__actions">
+        <button id="account-btn" class="icon-btn" style="width:auto;padding:0 4px;background:none;border:none"
+                aria-label="Your account"></button>
+      </div>
+    </div>
+  </header>
+
+  <nav id="sidebar" class="sidebar" aria-label="Sections"></nav>
+
+  <main id="main" class="main"></main>
+</div>
+
+<nav id="tabbar" class="tabbar" aria-label="Sections"></nav>
+
+<noscript>
+  <div style="padding:24px;font-family:sans-serif;color:#f4f2ee">
+    This app needs JavaScript switched on to show fixtures and travel details.
+  </div>
+</noscript>
+
+<script type="module" src="assets/js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>

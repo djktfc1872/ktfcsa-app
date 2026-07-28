@@ -1,0 +1,16 @@
+{
+  "name": "KTFCSA Away Days",
+  "short_name": "KTFCSA",
+  "description": "Fixtures, away day guides, coach travel, car shares and the fan wall for Kettering Town supporters.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08080a",
+  "theme_color": "#08080a",
+  "lang": "en-GB",
+  "icons": [
+    { "src": "assets/img/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

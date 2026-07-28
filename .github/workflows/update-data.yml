@@ -1,0 +1,55 @@
+name: Update league and podcast data
+
+# Keeps data/league.json and data/podcast.json in step with the Southern League
+# API and The Poppycast feed. Nobody needs to touch this: if a fixture moves or
+# a result comes in, the next run picks it up and the site updates itself.
+on:
+  schedule:
+    # Every 20 minutes between 14:00 and 22:00 UTC on Saturdays (match day).
+    - cron: "*/20 14-22 * * 6"
+    # Every 20 minutes between 18:00 and 22:00 UTC Tuesday and Wednesday (midweek games).
+    - cron: "*/20 18-22 * * 2,3"
+    # Twice a day the rest of the week, to catch fixture changes early.
+    - cron: "15 7,19 * * *"
+  workflow_dispatch: # lets an admin refresh on demand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # This also pushes fixtures into Supabase, which scores the prediction
+      # league and doubles as the keep-alive that stops a free project pausing.
+      - name: Fetch league table and fixtures
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/fetch-league.mjs
+
+      - name: Fetch podcast episodes
+        continue-on-error: true # a podcast hiccup must not block fixture updates
+        run: node scripts/fetch-podcast.mjs
+
+      - name: Commit any changes
+        run: |
+          git config user.name "KTFCSA data bot"
+          git config user.email "actions@github.com"
+          git add data/league.json data/podcast.json
+          if git diff --staged --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "Update league and podcast data"
+            git push
+          fi
