@@ -178,6 +178,7 @@ const ROUTES = {
   account: { label: "Account", icon: "👤", nav: "more", render: viewAccount },
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
+  thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
 };
 
 function go(view, params = {}) {
@@ -1000,7 +1001,7 @@ function viewTravel() {
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Travel</h1>
-      <p>Official coach details from the committee, plus a car share board run by supporters.</p>
+      <p>Official coach details from the KTFCSA team, plus a car share board run by fellow fans.</p>
     </div>
   </div>`);
 
@@ -1019,7 +1020,7 @@ function viewTravel() {
 
   if (!coaches.length) {
     wrap.append(el(`<div class="empty"><b>No coach announced yet</b>${
-      admin ? "Use the button above to post this week's details." : "The committee will post details here each week."
+      admin ? "Use the button above to post this week's details." : "The KTFCSA team will post details here each week."
     }</div>`));
   } else {
     coaches.forEach((c) => {
@@ -1314,10 +1315,157 @@ function viewPodcast() {
   return wrap;
 }
 
+/* ============================================================ match threads */
+
+/* A discussion topic opens for every fixture without anyone creating one.
+   Threads are worked out from the fixture list, so cup ties and rearranged
+   games get one automatically and nothing has to be tidied up afterwards. */
+
+const THREAD_OPENS_DAYS = 5;  // build-up starts this long before kick-off
+const THREAD_CLOSES_DAYS = 5; // reaction stays open this long after
+
+function threadsFor(fixture) {
+  const ko = kickoffTime(fixture);
+  if (!ko) return [];
+  const now = Date.now();
+  const opponent = clubName(fixture.opponent);
+  const where = fixture.venue === "Home" ? "at home to" : "away at";
+
+  const out = [];
+  const opensAt = ko.getTime() - THREAD_OPENS_DAYS * 86400000;
+  const closesAt = ko.getTime() + THREAD_CLOSES_DAYS * 86400000;
+
+  if (now >= opensAt && now < ko.getTime()) {
+    out.push({
+      id: `pre:${fixture.id}`,
+      kind: "pre",
+      fixture,
+      title: `Build-up: ${opponent}`,
+      blurb: `Team news, travel and how you see it going ${where} ${opponent}.`,
+    });
+  }
+
+  if (now >= ko.getTime() && now < closesAt) {
+    const played = fixture.status === "played" && fixture.homeScore !== null;
+    out.push({
+      id: `post:${fixture.id}`,
+      kind: "post",
+      fixture,
+      title: `Reaction: ${opponent}`,
+      blurb: played
+        ? `${fixture.homeScore} - ${fixture.awayScore}. What did you make of that?`
+        : `How is it going ${where} ${opponent}?`,
+    });
+  }
+
+  return out;
+}
+
+/** Every thread currently open, soonest kick-off first. */
+function openThreads() {
+  return fixtures()
+    .flatMap(threadsFor)
+    .sort((a, b) => (a.fixture.date + a.fixture.kickoff).localeCompare(b.fixture.date + b.fixture.kickoff));
+}
+
+function findThread(id) {
+  const fixtureId = id.replace(/^(pre|post):/, "");
+  const fixture = fixtures().find((f) => String(f.id) === fixtureId);
+  if (!fixture) return null;
+  return threadsFor(fixture).find((t) => t.id === id) || null;
+}
+
+const threadPosts = (id) => db.list("wall").filter((p) => p.thread === id);
+
+function threadCard(t) {
+  const count = threadPosts(t.id).length;
+  const card = el(`
+    <button class="club-row" data-thread="${esc(t.id)}">
+      <span class="thread__tag thread__tag--${t.kind}">${t.kind === "pre" ? "Build-up" : "Reaction"}</span>
+      <span style="flex:1;min-width:0">
+        <span class="club-row__name">${esc(t.title)}</span>
+        <span class="club-row__sub">${esc(fmtDate(t.fixture.date, "short"))} · ${esc(t.fixture.kickoff || "TBC")} · ${
+          count ? `${count} post${count === 1 ? "" : "s"}` : "no posts yet"
+        }</span>
+      </span>
+      <span style="color:var(--text-3)">›</span>
+    </button>`);
+  card.addEventListener("click", () => go("thread", { id: t.id }));
+  return card;
+}
+
+function viewThread({ id }) {
+  const t = findThread(id);
+  const wrap = el(`<div></div>`);
+
+  if (!t) {
+    wrap.append(el(`<button class="back-link" data-nav="wall">← Fan Wall</button>`));
+    wrap.append(el(`<div class="empty"><b>That discussion has closed</b>Threads run from five days before a game to five days after.</div>`));
+    return wrap;
+  }
+
+  wrap.append(el(`<button class="back-link" data-nav="wall">← Fan Wall</button>`));
+  wrap.append(el(`
+    <div class="hub-hero">
+      ${t.fixture.opponentCrest ? `<img class="hub-hero__crest" src="${esc(t.fixture.opponentCrest)}" alt="">` : ""}
+      <div class="hub-hero__text">
+        <h1>${esc(t.title)}</h1>
+        <p>${esc(t.blurb)}</p>
+      </div>
+    </div>`));
+
+  wrap.append(composer(t.id));
+
+  const posts = threadPosts(t.id).filter((p) => !p.hidden || db.isAdmin());
+  if (!posts.length) {
+    wrap.append(el(`<div class="empty"><b>Nothing posted yet</b>Get the conversation going.</div>`));
+  } else {
+    posts.forEach((p) => wrap.append(wallCard(p, db.isAdmin())));
+  }
+
+  wrap.append(footer());
+  return wrap;
+}
+
+/** The post box, shared by the open wall and by each match thread. */
+function composer(thread = null) {
+  const user = db.currentUser();
+  if (!user) {
+    return el(`<div class="notice notice--info">Sign in to post. All it needs is a name.</div>`);
+  }
+
+  const box = el(`
+    <div class="card" style="margin-bottom:16px">
+      <label for="wall-text" class="sr-only">Your message</label>
+      <textarea id="wall-text" maxlength="600" placeholder="${
+        thread ? "Have your say on this one." : "What did you make of that, then?"
+      }"></textarea>
+      <div class="char-count" id="wall-count">0 / 600</div>
+      <div class="btn-row"><button class="btn btn--sm" id="wall-post">Post</button></div>
+    </div>`);
+
+  const ta = $("#wall-text", box);
+  const count = $("#wall-count", box);
+  ta.addEventListener("input", () => {
+    count.textContent = `${ta.value.length} / 600`;
+    count.classList.toggle("is-over", ta.value.length > 600);
+  });
+  $("#wall-post", box).addEventListener("click", () => {
+    const check = db.checkPost(ta.value);
+    if (!check.ok) return toast(check.reason);
+    const limit = db.rateLimit("wall", { max: 5, windowMs: 120000 });
+    if (!limit.ok) return toast(limit.reason);
+    db.add("wall", { text: ta.value.trim(), thread });
+    ta.value = "";
+    toast("Posted.");
+    render();
+  });
+  return box;
+}
+
 /* ================================================================ fan wall */
 
 function viewWall() {
-  const user = db.currentUser();
   const admin = db.isAdmin();
   const wrap = el(`<div>
     <div class="page-head">
@@ -1325,6 +1473,13 @@ function viewWall() {
       <p>Open to every supporter. Keep it civil and it stays open.</p>
     </div>
   </div>`);
+
+  /* ---- match threads, opened automatically around each fixture ---- */
+  const threads = openThreads();
+  if (threads.length) {
+    wrap.append(el(`<h2 class="section-title">Match threads</h2>`));
+    threads.forEach((t) => wrap.append(threadCard(t)));
+  }
 
   /* ---- polls ---- */
   const polls = db.list("poll");
@@ -1341,45 +1496,18 @@ function viewWall() {
     polls.forEach((p) => wrap.append(pollCard(p)));
   }
 
-  /* ---- composer ---- */
-  wrap.append(el(`<h2 class="section-title">The wall</h2>`));
+  /* ---- the open wall, for anything that is not about one game ---- */
+  wrap.append(el(`<h2 class="section-title">Everything else</h2>`));
+  wrap.append(composer(null));
 
-  if (!user) {
-    wrap.append(el(`<div class="notice notice--info">Sign in to post. All it needs is a name, and it stays on this device.</div>`));
-  } else {
-    const box = el(`
-      <div class="card" style="margin-bottom:16px">
-        <label for="wall-text" class="sr-only">Your message</label>
-        <textarea id="wall-text" maxlength="600" placeholder="What did you make of that, then?"></textarea>
-        <div class="char-count" id="wall-count">0 / 600</div>
-        <div class="btn-row"><button class="btn btn--sm" id="wall-post">Post</button></div>
-      </div>`);
-    const ta = $("#wall-text", box);
-    const count = $("#wall-count", box);
-    ta.addEventListener("input", () => {
-      count.textContent = `${ta.value.length} / 600`;
-      count.classList.toggle("is-over", ta.value.length > 600);
-    });
-    $("#wall-post", box).addEventListener("click", () => {
-      const check = db.checkPost(ta.value);
-      if (!check.ok) return toast(check.reason);
-      const limit = db.rateLimit("wall", { max: 5, windowMs: 120000 });
-      if (!limit.ok) return toast(limit.reason);
-      db.add("wall", { text: ta.value.trim() });
-      ta.value = "";
-      toast("Posted.");
-      render();
-    });
-    wrap.append(box);
-  }
-
-  const posts = db.list("wall").filter((p) => !p.hidden || admin);
+  const posts = db.list("wall").filter((p) => !p.thread && (!p.hidden || admin));
   if (!posts.length) {
     wrap.append(el(`<div class="empty"><b>Nothing posted yet</b>Get the conversation going.</div>`));
-    return wrap;
+  } else {
+    posts.forEach((p) => wrap.append(wallCard(p, admin)));
   }
 
-  posts.forEach((p) => wrap.append(wallCard(p, admin)));
+  wrap.append(footer());
   return wrap;
 }
 
@@ -1410,7 +1538,7 @@ function wallCard(p, admin) {
   });
   card.querySelector('[data-act="report"]').addEventListener("click", () => {
     db.update("wall", p.id, { reports: (p.reports || 0) + 1 });
-    toast("Reported. Thank you, the committee will take a look.");
+    toast("Reported. Thank you, one of the volunteers will take a look.");
     render();
   });
   card.querySelector('[data-act="hide"]')?.addEventListener("click", () => {
@@ -1509,7 +1637,7 @@ function viewFeedback() {
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Send Feedback</h1>
-      <p>Tell the committee what the app does well and what it does not. It goes
+      <p>Tell the KTFCSA team what the app does well and what it does not. It goes
          straight to them, and nobody else sees it.</p>
     </div>
   </div>`);
@@ -1534,7 +1662,7 @@ function viewFeedback() {
                value="${user ? "" : ""}" autocomplete="email">
         <div class="hint">Leave this blank if you would rather not hear back.</div>
       </div>
-      <button class="btn btn--full" id="fb-send">Send to the committee</button>
+      <button class="btn btn--full" id="fb-send">Send to the KTFCSA team</button>
     </div>`);
 
   const msg = $("#fb-msg", form);
@@ -1565,7 +1693,7 @@ function viewFeedback() {
       msg.value = "";
       $("#fb-contact", form).value = "";
       count.textContent = "0 / 1000";
-      toast(queued ? "Saved. It will send once the app is online." : "Thanks, that is with the committee.");
+      toast(queued ? "Saved. It will send once the app is online." : "Thanks, that is with the KTFCSA team.");
     } catch (err) {
       toast(err.message);
     } finally {
@@ -1575,7 +1703,7 @@ function viewFeedback() {
 
   wrap.append(form);
 
-  /* The committee reads what has come in without leaving the app. */
+  /* Volunteers read what has come in without leaving the app. */
   if (db.isAdmin()) {
     wrap.append(el(`<h2 class="section-title">What supporters have sent</h2>`));
     const box = el(`<div><div class="skeleton" style="height:90px"></div></div>`);
@@ -1650,14 +1778,14 @@ function viewAccount() {
         <span class="avatar" style="width:44px;height:44px;font-size:15px">${esc(user.initials)}</span>
         <div>
           <div class="post__who" style="font-size:16px">${esc(user.name)}</div>
-          <div class="hint" style="margin:0">${user.isAdmin ? "Committee admin" : "Supporter"}</div>
+          <div class="hint" style="margin:0">${user.isAdmin ? "KTFCSA volunteer" : "Supporter"}</div>
         </div>
       </div>
       <div class="btn-row">
         <button class="btn btn--ghost btn--sm" id="ac-rename">Change name</button>
         <button class="btn btn--ghost btn--sm" id="ac-out">Sign out</button>
         ${!online && user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-lock">Turn off admin tools</button>` : ""}
-        ${!online && !user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-admin">Committee sign in</button>` : ""}
+        ${!online && !user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-admin">Volunteer sign in</button>` : ""}
       </div>
     </div>`));
 
@@ -1698,7 +1826,7 @@ function viewAccount() {
 
   $("#ac-admin", wrap)?.addEventListener("click", () => {
     const { node, close } = modal(`
-      <h2>Committee sign in</h2>
+      <h2>Volunteer sign in</h2>
       <p class="sub">Unlocks coach notices, polls and moderation on this device.</p>
       <div class="field"><label for="ad-pass">Passcode</label>
         <input id="ad-pass" type="password" autocomplete="off"></div>

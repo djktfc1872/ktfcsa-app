@@ -126,7 +126,7 @@ create table if not exists feedback (
 );
 
 comment on table feedback is
-  'Supporter feedback for the committee. Read it in the Table Editor and tick handled.';
+  'Supporter feedback for the KTFCSA team. Read it in the Table Editor and tick handled.';
 
 -- ------------------------------------------------------------ the boards
 
@@ -166,11 +166,20 @@ create table if not exists wall_posts (
   profile_id  uuid not null references profiles on delete cascade,
   author_name text not null,
   text        text not null check (char_length(text) between 1 and 600),
+  thread      text,               -- 'pre:<fixture id>' or 'post:<fixture id>'
   likes       int not null default 0,
   reports     int not null default 0,
   hidden      boolean not null default false,
   created_at  timestamptz not null default now()
 );
+
+-- Existing installs get the column without losing anything.
+alter table wall_posts add column if not exists thread text;
+
+create index if not exists wall_thread_idx on wall_posts (thread, created_at desc);
+
+comment on column wall_posts.thread is
+  'Null for the open wall. Match threads are worked out from the fixture list, so they need no rows of their own.';
 
 create table if not exists polls (
   id          uuid primary key default gen_random_uuid(),
@@ -270,7 +279,7 @@ alter table polls         enable row level security;
 alter table feedback      enable row level security;
 alter table poll_votes    enable row level security;
 
--- Is the person making this request a committee member?
+-- Is the person making this request a volunteers member?
 create or replace function is_admin()
 returns boolean
 language sql
@@ -364,33 +373,33 @@ create policy "own pub vote" on pub_votes
   for all using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
 
 -- ---- feedback -------------------------------------------------------------
--- Anyone, signed in or not, may send feedback. Only the committee reads it,
+-- Anyone, signed in or not, may send feedback. Only the KTFCSA team reads it,
 -- so one supporter can never see another's message.
 drop policy if exists "send feedback" on feedback;
 create policy "send feedback" on feedback for insert with check (true);
 
-drop policy if exists "committee reads feedback" on feedback;
-create policy "committee reads feedback" on feedback for select using (is_admin());
+drop policy if exists "volunteers reads feedback" on feedback;
+create policy "volunteers reads feedback" on feedback for select using (is_admin());
 
-drop policy if exists "committee updates feedback" on feedback;
-create policy "committee updates feedback" on feedback for update using (is_admin());
+drop policy if exists "volunteers updates feedback" on feedback;
+create policy "volunteers updates feedback" on feedback for update using (is_admin());
 
-drop policy if exists "committee removes feedback" on feedback;
-create policy "committee removes feedback" on feedback for delete using (is_admin());
+drop policy if exists "volunteers removes feedback" on feedback;
+create policy "volunteers removes feedback" on feedback for delete using (is_admin());
 
 -- ---- coach notices --------------------------------------------------------
 drop policy if exists "coach readable" on coach_notices;
 create policy "coach readable" on coach_notices for select using (true);
 
-drop policy if exists "committee posts coach" on coach_notices;
-create policy "committee posts coach" on coach_notices
+drop policy if exists "volunteers posts coach" on coach_notices;
+create policy "volunteers posts coach" on coach_notices
   for insert with check (is_admin() and auth.uid() = profile_id);
 
-drop policy if exists "committee edits coach" on coach_notices;
-create policy "committee edits coach" on coach_notices for update using (is_admin());
+drop policy if exists "volunteers edits coach" on coach_notices;
+create policy "volunteers edits coach" on coach_notices for update using (is_admin());
 
-drop policy if exists "committee removes coach" on coach_notices;
-create policy "committee removes coach" on coach_notices for delete using (is_admin());
+drop policy if exists "volunteers removes coach" on coach_notices;
+create policy "volunteers removes coach" on coach_notices for delete using (is_admin());
 
 -- ---- lifts ----------------------------------------------------------------
 drop policy if exists "lifts readable" on lifts;
@@ -419,7 +428,7 @@ create policy "post to wall" on wall_posts
   for insert with check (auth.uid() = profile_id);
 
 -- A supporter may edit their own post. Anyone signed in may nudge the likes
--- and reports counters. Only the committee can hide something.
+-- and reports counters. Only the KTFCSA team can hide something.
 drop policy if exists "update wall post" on wall_posts;
 create policy "update wall post" on wall_posts
   for update using (auth.uid() = profile_id or is_admin() or auth.role() = 'authenticated');
@@ -432,15 +441,15 @@ create policy "remove wall post" on wall_posts
 drop policy if exists "polls readable" on polls;
 create policy "polls readable" on polls for select using (true);
 
-drop policy if exists "committee creates polls" on polls;
-create policy "committee creates polls" on polls
+drop policy if exists "volunteers creates polls" on polls;
+create policy "volunteers creates polls" on polls
   for insert with check (is_admin() and auth.uid() = profile_id);
 
-drop policy if exists "committee edits polls" on polls;
-create policy "committee edits polls" on polls for update using (is_admin());
+drop policy if exists "volunteers edits polls" on polls;
+create policy "volunteers edits polls" on polls for update using (is_admin());
 
-drop policy if exists "committee closes polls" on polls;
-create policy "committee closes polls" on polls for delete using (is_admin());
+drop policy if exists "volunteers closes polls" on polls;
+create policy "volunteers closes polls" on polls for delete using (is_admin());
 
 drop policy if exists "poll votes readable" on poll_votes;
 create policy "poll votes readable" on poll_votes

@@ -28,7 +28,7 @@ export const CONFIG = {
 
   /* Only used when the app is running without Supabase, so a supporter can
      still try the admin tools locally. */
-  localAdminPasscode: "poppies-committee",
+  localAdminPasscode: "poppies-volunteers",
 
   /* How long a local-only sign-in lasts, in days. */
   sessionDays: 180,

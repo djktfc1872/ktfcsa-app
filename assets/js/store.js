@@ -239,7 +239,7 @@ function signInLocal(name) {
 /** Local-only admin unlock. With Supabase, is_admin is set in the dashboard. */
 export function unlockLocalAdmin(passcode) {
   if (backend) {
-    throw new Error("Committee access is granted from the Supabase dashboard, not with a passcode.");
+    throw new Error("Volunteer access is granted from the Supabase dashboard, not with a passcode.");
   }
   const u = localUser();
   if (!u) throw new Error("Sign in first.");
@@ -440,7 +440,7 @@ export const attendanceSummary = () => live.attendanceSummary;
 
 export function setAttendance(fixtureId, attended) {
   if (!backend) {
-    onError("Attendance tracking needs an account. Ask your committee to finish the online setup.");
+    onError("Attendance tracking needs an account. Ask your fellow volunteers to finish the online setup.");
     return;
   }
   if (attended) live.attendance.add(fixtureId);

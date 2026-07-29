@@ -178,7 +178,7 @@ Once set, the scheduled job pushes every fixture into Supabase alongside the
 JSON file. That is what scores the prediction league, and it doubles as the
 keep-alive that stops a free Supabase project pausing.
 
-### Making somebody a committee admin
+### Making somebody a volunteers admin
 
 There is no passcode in the online setup. Open **Table Editor -> profiles**,
 find the person, and tick `is_admin`. That is the whole job. They can then post
@@ -193,7 +193,7 @@ typo in somebody's display name, all without touching code. Useful tables:
 - `profiles` - who has joined, and who is an admin
 - `coach_notices` - the weekly coach details
 - `pubs` - supporter pub suggestions, with a `hidden` flag
-- `feedback` - what supporters have sent the committee, with a `handled` flag
+- `feedback` - what supporters have sent the KTFCSA team, with a `handled` flag
 - `wall_posts` - the fan wall, also with `hidden`
 - `fixtures` - written by the sync job; you should not need to touch it
 
@@ -251,6 +251,7 @@ assets/js/config.js            settings an administrator may change
 data/league.json               fixtures and table, updated automatically
 data/podcast.json              podcast mirror, updated automatically
 scripts/gen-teams.py           spreadsheet to data.js
+scripts/fetch-crests.py        club badges, tidied and made transparent
 scripts/dev-server.py          local preview with caching turned off
 scripts/fetch-league.mjs       Southern League to league.json
 scripts/fetch-podcast.mjs      RSS to podcast.json

@@ -2069,3 +2069,69 @@ table.league tbody tr.is-ktfc td {
 .app-footer__contact {
   margin-top: 3px;
 }
+
+/* ==========================================================================
+   Crests. They are transparent PNGs now, tidied by scripts/fetch-crests.py,
+   so they no longer need a white tile behind them to look deliberate.
+   ========================================================================== */
+
+.hero__crest,
+.hub-hero__crest {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.hero__crest {
+  width: 56px;
+  height: 56px;
+}
+
+.hub-hero__crest {
+  width: 66px;
+  height: 66px;
+}
+
+.fixture__crest,
+.club-cell img {
+  background: none;
+}
+
+/* A light theme puts pale crests on a pale page, so give them a faint tile
+   that lifts them without looking like a box. */
+:root[data-theme="light"] .fixture__crest,
+:root[data-theme="light"] .club-cell img {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.28));
+}
+
+/* --------------------------------------------------------- match threads */
+
+.thread__tag {
+  flex-shrink: 0;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  border-radius: var(--r-sm);
+  width: 62px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.thread__tag--pre {
+  background: rgba(192, 156, 84, 0.16);
+  color: var(--gold-300);
+  border: 1px solid rgba(192, 156, 84, 0.34);
+}
+
+.thread__tag--post {
+  background: rgba(156, 24, 36, 0.2);
+  color: #f0a4ab;
+  border: 1px solid rgba(156, 24, 36, 0.45);
+}
+
+:root[data-theme="light"] .thread__tag--post {
+  color: #922330;
+}

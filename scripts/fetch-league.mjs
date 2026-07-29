@@ -9,6 +9,7 @@
  * Run locally with:  node scripts/fetch-league.mjs
  */
 import { writeFile, mkdir } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TEAMS } from "../assets/js/data.js";
@@ -35,7 +36,21 @@ async function get(path) {
   return res.json();
 }
 
-const crest = (logo) => (logo ? `${LOGO_BASE}/${logo}` : null);
+/* Crests tidied by scripts/fetch-crests.py, so they are transparent, small and
+   served from our own domain. Falls back to the league's copy if one is missing. */
+const CREST_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "assets", "crests");
+const localCrests = existsSync(CREST_DIR) ? readdirSync(CREST_DIR) : [];
+
+const slugify = (s) =>
+  String(s).toLowerCase().replace(/'/g, "").replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function crestFor(slug, name, logo) {
+  const key = slugify(slug || name);
+  const hit = localCrests.find((f) => f.replace(/\.(png|svg)$/, "") === key);
+  if (hit) return `assets/crests/${hit}`;
+  return logo ? `${LOGO_BASE}/${logo}` : null;
+}
 
 /** Turn the API's status codes into something we can show a supporter. */
 function readStatus(raw) {
@@ -57,7 +72,7 @@ async function main() {
     name: row.team?.club?.fullName || row.team?.fullName || "",
     short: row.team?.club?.shortName || row.team?.shortName || "",
     slug: row.team?.club?.slug || "",
-    crest: crest(row.team?.club?.logo || row.team?.logo),
+    crest: crestFor(row.team?.club?.slug, row.team?.club?.fullName || row.team?.fullName, row.team?.club?.logo || row.team?.logo),
     played: row.total?.played ?? 0,
     won: row.total?.wins ?? 0,
     drawn: row.total?.draws ?? 0,
@@ -83,7 +98,7 @@ async function main() {
         kickoff: m.time || "",
         venue: isHome ? "Home" : "Away",
         opponent: isHome ? awayName : homeName,
-        opponentCrest: crest(isHome ? m.awayTeam?.logo : m.homeTeam?.logo),
+        opponentCrest: crestFor(null, isHome ? awayName : homeName, isHome ? m.awayTeam?.logo : m.homeTeam?.logo),
         competition: m.competition?.shortName || m.competition?.name || "",
         competitionType: m.competition?.type || "",
         ground: m.stadium?.name || "",
