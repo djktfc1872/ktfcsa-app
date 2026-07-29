@@ -112,6 +112,22 @@ create table if not exists pub_votes (
   primary key (pub_id, profile_id)
 );
 
+-- --------------------------------------------------------------- feedback
+
+create table if not exists feedback (
+  id          uuid primary key default gen_random_uuid(),
+  profile_id  uuid references profiles on delete set null,
+  author_name text,
+  contact     text check (char_length(contact) <= 80),
+  topic       text not null check (topic in ('works-well', 'needs-work', 'idea', 'problem', 'other')),
+  message     text not null check (char_length(message) between 4 and 1000),
+  handled     boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+comment on table feedback is
+  'Supporter feedback for the committee. Read it in the Table Editor and tick handled.';
+
 -- ------------------------------------------------------------ the boards
 
 create table if not exists coach_notices (
@@ -251,6 +267,7 @@ alter table coach_notices enable row level security;
 alter table lifts         enable row level security;
 alter table wall_posts    enable row level security;
 alter table polls         enable row level security;
+alter table feedback      enable row level security;
 alter table poll_votes    enable row level security;
 
 -- Is the person making this request a committee member?
@@ -345,6 +362,21 @@ create policy "pub votes readable" on pub_votes
 drop policy if exists "own pub vote" on pub_votes;
 create policy "own pub vote" on pub_votes
   for all using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
+
+-- ---- feedback -------------------------------------------------------------
+-- Anyone, signed in or not, may send feedback. Only the committee reads it,
+-- so one supporter can never see another's message.
+drop policy if exists "send feedback" on feedback;
+create policy "send feedback" on feedback for insert with check (true);
+
+drop policy if exists "committee reads feedback" on feedback;
+create policy "committee reads feedback" on feedback for select using (is_admin());
+
+drop policy if exists "committee updates feedback" on feedback;
+create policy "committee updates feedback" on feedback for update using (is_admin());
+
+drop policy if exists "committee removes feedback" on feedback;
+create policy "committee removes feedback" on feedback for delete using (is_admin());
 
 -- ---- coach notices --------------------------------------------------------
 drop policy if exists "coach readable" on coach_notices;

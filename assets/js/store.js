@@ -453,24 +453,61 @@ export const attendanceTable = () => (backend ? backend.attendanceTable() : Prom
 
 /* -------------------------------------------------------------------- pubs */
 
-export const pubsFor = (clubSlug) => live.pubs.filter((p) => p.club_slug === clubSlug);
-export const votedForPub = (id) => live.pubVotes.has(id);
+/* Like predictions, a supporter can add a recommendation before the online
+   setup exists. Those stay on the device until Supabase is connected. */
+
+const localPubs = () => read("local:pubs", []);
+const saveLocalPubs = (rows) => write("local:pubs", rows);
+
+export function pubsFor(clubSlug) {
+  const rows = backend ? live.pubs : localPubs();
+  return rows.filter((p) => p.club_slug === clubSlug);
+}
+
+export const votedForPub = (id) =>
+  backend ? live.pubVotes.has(id) : read("local:pubVotes", []).includes(id);
 
 export function addPub(clubSlug, details) {
   if (!backend) {
-    onError("Pub suggestions need an account. Ask your committee to finish the online setup.");
+    const rows = localPubs();
+    rows.unshift({
+      id: uid(),
+      club_slug: clubSlug,
+      profile_id: currentUser()?.id || "anon",
+      author_name: currentUser()?.name || "Anonymous",
+      votes: 0,
+      created_at: new Date().toISOString(),
+      ...details,
+    });
+    saveLocalPubs(rows);
+    onChange();
     return;
   }
   attempt(backend.addPub(clubSlug, details).then(refresh), "That suggestion did not save.");
 }
 
 export function removePub(id) {
+  if (!backend) {
+    saveLocalPubs(localPubs().filter((p) => p.id !== id));
+    onChange();
+    return;
+  }
   live.pubs = live.pubs.filter((p) => p.id !== id);
   onChange();
   attempt(backend.removePub(id).then(refresh), "That deletion did not save.");
 }
 
 export function votePub(id) {
+  if (!backend) {
+    const voted = read("local:pubVotes", []);
+    const on = !voted.includes(id);
+    write("local:pubVotes", on ? [...voted, id] : voted.filter((v) => v !== id));
+    saveLocalPubs(
+      localPubs().map((p) => (p.id === id ? { ...p, votes: Math.max(0, (p.votes || 0) + (on ? 1 : -1)) } : p))
+    );
+    onChange();
+    return;
+  }
   const on = !live.pubVotes.has(id);
   if (on) live.pubVotes.add(id);
   else live.pubVotes.delete(id);
@@ -478,4 +515,25 @@ export function votePub(id) {
   if (pub) pub.votes = Math.max(0, (pub.votes || 0) + (on ? 1 : -1));
   onChange();
   attempt(backend.votePub(id, on).then(refresh), "Your vote did not save.");
+}
+
+/* ---------------------------------------------------------------- feedback */
+
+/** Anyone may send feedback, signed in or not. */
+export async function sendFeedback(details) {
+  if (!backend) {
+    const queued = read("local:feedback", []);
+    queued.unshift({ ...details, created_at: new Date().toISOString() });
+    write("local:feedback", queued);
+    return { queued: true };
+  }
+  await backend.sendFeedback(details);
+  return { queued: false };
+}
+
+export const feedbackList = () => (backend ? backend.loadFeedback() : Promise.resolve(read("local:feedback", [])));
+
+export function markFeedback(id, handled) {
+  if (!backend) return;
+  attempt(backend.markFeedback(id, handled), "That change did not save.");
 }

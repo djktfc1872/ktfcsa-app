@@ -1,4 +1,4 @@
-/* KTFCSA Away Days - views and routing.
+/* Poppies Fan Companion - views and routing.
    Plain ES modules, no build step and no third party libraries. */
 
 import { TEAMS, KTFC } from "./data.js";
@@ -99,8 +99,10 @@ function footer() {
   const { name, email } = CONFIG.credit;
   return el(`
     <footer class="app-footer">
-      App created by ${esc(name)}. For more information email
-      <a href="mailto:${esc(email)}">${esc(email)}</a>.
+      <div>Website by ${esc(name)}. All rights reserved.</div>
+      <div class="app-footer__contact">
+        <a href="mailto:${esc(email)}">${esc(email)}</a>
+      </div>
     </footer>`);
 }
 
@@ -172,6 +174,7 @@ const ROUTES = {
   season: { label: "My Season", icon: "📈", nav: "more", render: viewSeason },
   clubs: { label: "Away Guide", icon: "📖", nav: "more", render: viewClubs },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", render: viewPodcast },
+  feedback: { label: "Send Feedback", icon: "✉️", nav: "more", render: viewFeedback },
   account: { label: "Account", icon: "👤", nav: "more", render: viewAccount },
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
@@ -912,17 +915,15 @@ function pubBoard(team) {
   const box = el(`<div></div>`);
   const user = db.currentUser();
 
-  if (!db.isOnline()) {
-    box.append(el(`<div class="notice notice--info">Supporter recommendations need the online setup. The club pub above still applies.</div>`));
-    return box;
-  }
+  const btn = el(`<button class="btn btn--sm btn--ghost" style="margin-bottom:10px">${ICON.pint} Suggest a pub</button>`);
+  btn.addEventListener("click", () => pubForm(team));
+  box.append(btn);
 
-  if (user) {
-    const btn = el(`<button class="btn btn--sm btn--ghost" style="margin-bottom:10px">${ICON.pint} Suggest a pub</button>`);
-    btn.addEventListener("click", () => pubForm(team));
-    box.append(btn);
-  } else {
-    box.append(el(`<div class="notice notice--info">Sign in to add your own recommendation or back somebody else's.</div>`));
+  if (!db.isOnline()) {
+    box.append(el(`<div class="notice notice--info">
+      Your suggestions are saved on this device for now. They will be shared with
+      other supporters once the online setup is finished.
+    </div>`));
   }
 
   const pubs = db.pubsFor(team.id);
@@ -943,15 +944,15 @@ function pubBoard(team) {
         ${p.notes ? `<div class="post__body">${esc(p.notes)}</div>` : ""}
         <div class="post__actions">
           <button class="link-btn" data-act="vote">${voted ? "★" : "☆"} ${p.votes || 0}</button>
-          <a class="map-link" style="margin:0" href="${placeUrl(p.name, p.postcode)}" target="_blank" rel="noopener">${ICON.pin} Map</a>
+          <a class="map-link" style="margin:0" href="${placeUrl(p.name, p.postcode)}"
+             target="_blank" rel="noopener">${ICON.pin} Map</a>
+          <a class="map-link" style="margin:0" href="${placeUrl(p.name, p.postcode)}&dirflg=d"
+             target="_blank" rel="noopener">${ICON.route} Directions</a>
           ${p.profile_id === user?.id || db.isAdmin() ? `<button class="link-btn" data-act="del">Remove</button>` : ""}
         </div>
       </div>`);
 
-    card.querySelector('[data-act="vote"]').addEventListener("click", () => {
-      if (!user) return toast("Sign in to back a recommendation.");
-      db.votePub(p.id);
-    });
+    card.querySelector('[data-act="vote"]').addEventListener("click", () => db.votePub(p.id));
     card.querySelector('[data-act="del"]')?.addEventListener("click", () => {
       db.removePub(p.id);
       toast("Recommendation removed.");
@@ -1493,6 +1494,135 @@ function pollForm() {
   });
 }
 
+/* ================================================================ feedback */
+
+const FEEDBACK_TOPICS = [
+  ["works-well", "Something works well"],
+  ["needs-work", "Something needs work"],
+  ["idea", "An idea for the app"],
+  ["problem", "Report a problem"],
+  ["other", "Something else"],
+];
+
+function viewFeedback() {
+  const user = db.currentUser();
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Send Feedback</h1>
+      <p>Tell the committee what the app does well and what it does not. It goes
+         straight to them, and nobody else sees it.</p>
+    </div>
+  </div>`);
+
+  const form = el(`
+    <div class="card">
+      <div class="field">
+        <label for="fb-topic">What is this about</label>
+        <select id="fb-topic">
+          ${FEEDBACK_TOPICS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label for="fb-msg">Your feedback</label>
+        <textarea id="fb-msg" maxlength="1000" rows="6"
+          placeholder="The away guides are spot on. It would be good to see the coach pick-up on a map."></textarea>
+        <div class="char-count" id="fb-count">0 / 1000</div>
+      </div>
+      <div class="field">
+        <label for="fb-contact">How to reply${user ? " (optional)" : ""}</label>
+        <input id="fb-contact" maxlength="80" placeholder="you@example.com"
+               value="${user ? "" : ""}" autocomplete="email">
+        <div class="hint">Leave this blank if you would rather not hear back.</div>
+      </div>
+      <button class="btn btn--full" id="fb-send">Send to the committee</button>
+    </div>`);
+
+  const msg = $("#fb-msg", form);
+  const count = $("#fb-count", form);
+  msg.addEventListener("input", () => {
+    count.textContent = `${msg.value.length} / 1000`;
+    count.classList.toggle("is-over", msg.value.length > 1000);
+  });
+
+  $("#fb-send", form).addEventListener("click", async () => {
+    const message = msg.value.trim();
+    if (message.length < 4) return toast("Please write a little more.");
+
+    const check = db.checkPost(message, { maxLength: 1000, minLength: 4 });
+    if (!check.ok) return toast(check.reason);
+
+    const limit = db.rateLimit("feedback", { max: 3, windowMs: 600000 });
+    if (!limit.ok) return toast(limit.reason);
+
+    const button = $("#fb-send", form);
+    button.disabled = true;
+    try {
+      const { queued } = await db.sendFeedback({
+        topic: $("#fb-topic", form).value,
+        message,
+        contact: $("#fb-contact", form).value.trim(),
+      });
+      msg.value = "";
+      $("#fb-contact", form).value = "";
+      count.textContent = "0 / 1000";
+      toast(queued ? "Saved. It will send once the app is online." : "Thanks, that is with the committee.");
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  wrap.append(form);
+
+  /* The committee reads what has come in without leaving the app. */
+  if (db.isAdmin()) {
+    wrap.append(el(`<h2 class="section-title">What supporters have sent</h2>`));
+    const box = el(`<div><div class="skeleton" style="height:90px"></div></div>`);
+    db.feedbackList()
+      .then((rows) => {
+        box.innerHTML = "";
+        if (!rows.length) {
+          box.append(el(`<div class="empty"><b>Nothing yet</b>Feedback will appear here as it comes in.</div>`));
+          return;
+        }
+        rows.forEach((r) => {
+          const label = FEEDBACK_TOPICS.find(([v]) => v === r.topic)?.[1] || r.topic;
+          const card = el(`
+            <div class="post" ${r.handled ? 'style="opacity:.55"' : ""}>
+              <div class="post__head">
+                <span class="pill pill--${r.handled ? "muted" : "gold"}">${esc(label)}</span>
+                ${r.handled ? `<span class="pill pill--muted">Handled</span>` : ""}
+                <span class="post__when">${esc(relTime(new Date(r.created_at).getTime()))}</span>
+              </div>
+              <div class="post__body">${esc(r.message)}</div>
+              <div class="post__meta">
+                ${r.author_name ? `<span>From <b>${esc(r.author_name)}</b></span>` : `<span>Sent anonymously</span>`}
+                ${r.contact ? `<span>Reply to <b>${esc(r.contact)}</b></span>` : ""}
+              </div>
+              <div class="post__actions">
+                <button class="link-btn">${r.handled ? "Mark as not handled" : "Mark as handled"}</button>
+              </div>
+            </div>`);
+          card.querySelector(".link-btn").addEventListener("click", () => {
+            db.markFeedback(r.id, !r.handled);
+            toast(r.handled ? "Reopened." : "Marked as handled.");
+            render();
+          });
+          box.append(card);
+        });
+      })
+      .catch(() => {
+        box.innerHTML = "";
+        box.append(el(`<div class="empty"><b>Could not load feedback</b>Please try again shortly.</div>`));
+      });
+    wrap.append(box);
+  }
+
+  wrap.append(footer());
+  return wrap;
+}
+
 /* ================================================================= account */
 
 function viewAccount() {
@@ -1911,6 +2041,12 @@ async function boot() {
   setInterval(() => {
     if (state.view === "fixtures") render();
   }, 60000);
+
+  /* Registered from here rather than an inline tag, so the page can run under
+     a strict content security policy. */
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
 }
 
 boot();

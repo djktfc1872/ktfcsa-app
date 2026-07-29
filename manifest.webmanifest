@@ -1,7 +1,7 @@
 {
-  "name": "KTFCSA Away Days",
-  "short_name": "KTFCSA",
-  "description": "Fixtures, away day guides, coach travel, car shares and the fan wall for Kettering Town supporters.",
+  "name": "Poppies Fan Companion",
+  "short_name": "Poppies",
+  "description": "Fixtures, predictions, away day guides, coach travel, car shares and the fan wall for Kettering Town FC supporters.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

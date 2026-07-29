@@ -276,6 +276,34 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
+  /* -------------------------------------------------------------- feedback */
+
+  async sendFeedback({ topic, message, contact }) {
+    const { error } = await this.sb.from("feedback").insert({
+      profile_id: this.profile?.id || null,
+      author_name: this.profile?.name || null,
+      topic,
+      message,
+      contact: contact || null,
+    });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async loadFeedback() {
+    const { data, error } = await this.sb
+      .from("feedback")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  async markFeedback(id, handled) {
+    const { error } = await this.sb.from("feedback").update({ handled }).eq("id", id);
+    if (error) throw new Error(friendly(error));
+  }
+
   async votePub(id, on) {
     if (on) {
       const { error } = await this.sb

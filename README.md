@@ -1,4 +1,6 @@
-# KTFCSA Away Days
+# Poppies Fan Companion
+
+The Kettering Town FC Supporters' Association fan app.
 
 A web app for Kettering Town Supporters' Association. Fixtures, results and the
 league table look after themselves. Ground guides, coach travel, car shares, the
@@ -46,25 +48,50 @@ Or from the repository's **Actions** tab, using **Run workflow**.
 
 ---
 
-## Deploying it, free
+## Deploying to Cloudflare Pages
 
-### GitHub Pages
+The app is served at **app.ktfcsa.com**. Cloudflare Pages watches the GitHub
+repository, so every time the scheduled job commits new fixture data the site
+redeploys itself.
 
-1. Create a repository and push these files to it, with `index.html` at the top level.
-2. In **Settings → Pages**, set the source to **Deploy from a branch**, branch `main`, folder `/ (root)`.
-3. In **Settings → Actions → General**, scroll to **Workflow permissions** and choose
-   **Read and write permissions**. The data job needs this to commit updates.
-4. Wait for the first deploy. The site appears at `https://<your-name>.github.io/<repo>/`.
+### 1. Push to GitHub
 
-The scheduled job starts on its own. To see data straight away, run the workflow
-once by hand from the Actions tab.
+Create an empty repository at <https://github.com/new> called `ktfcsa-app`,
+with no README and no licence, then:
 
-### Anywhere else
+```bash
+git remote add origin https://github.com/YOUR-USERNAME/ktfcsa-app.git
+git push -u origin main
+```
 
-Netlify, Cloudflare Pages and Vercel all serve this as-is on their free tiers.
-Point them at the repository and set the publish directory to the project root
-with no build command. The scheduled GitHub Action still handles the data, so keep
-the repository on GitHub either way.
+### 2. Let the data job write back
+
+GitHub repo -> Settings -> Actions -> General -> **Workflow permissions** ->
+**Read and write permissions** -> Save. Without this the fixture updates cannot
+commit themselves.
+
+### 3. Connect Cloudflare Pages
+
+Cloudflare dashboard -> Workers & Pages -> Create -> Pages -> **Connect to Git**
+-> pick `ktfcsa-app`. Then:
+
+| Setting | Value |
+| --- | --- |
+| Framework preset | None |
+| Build command | *leave empty* |
+| Build output directory | `/` |
+| Production branch | `main` |
+
+There is no build step, so Cloudflare just serves the files.
+
+### 4. Point the subdomain at it
+
+In the Pages project -> **Custom domains** -> Set up a custom domain ->
+`app.ktfcsa.com`. If ktfcsa.com is already on Cloudflare the DNS record is
+created for you and the certificate follows within a minute or two.
+
+`_headers` in the project root sets the caching and security headers, including
+a content security policy. It is applied automatically.
 
 ---
 
@@ -166,6 +193,7 @@ typo in somebody's display name, all without touching code. Useful tables:
 - `profiles` - who has joined, and who is an admin
 - `coach_notices` - the weekly coach details
 - `pubs` - supporter pub suggestions, with a `hidden` flag
+- `feedback` - what supporters have sent the committee, with a `handled` flag
 - `wall_posts` - the fan wall, also with `hidden`
 - `fixtures` - written by the sync job; you should not need to touch it
 
@@ -210,6 +238,7 @@ alters it.
 
 ```
 index.html                     the shell
+_headers                       Cloudflare caching and security headers
 manifest.webmanifest           lets supporters install it to a home screen
 sw.js                          offline support for away trips with no signal
 supabase/schema.sql            tables, security rules and the scoring views

@@ -18,11 +18,28 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8750
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
+# Kept in step with _headers so a policy that breaks the app shows up here
+# rather than after it has gone live.
+CSP = (
+    "default-src 'self'; "
+    "script-src 'self' https://esm.sh; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: https:; "
+    "media-src 'self' https:; "
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co "
+    "https://esm.sh https://anchor.fm https://*.cloudfront.net; "
+    "font-src 'self'; manifest-src 'self'; worker-src 'self'; "
+    "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+)
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
+        self.send_header("Content-Security-Policy", CSP)
+        self.send_header("X-Content-Type-Options", "nosniff")
         super().end_headers()
 
     def log_message(self, fmt, *args):

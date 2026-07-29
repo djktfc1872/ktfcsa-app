@@ -1990,3 +1990,82 @@ table.league tbody tr.is-ktfc td {
 .field:last-of-type {
   margin-bottom: var(--gap);
 }
+
+/* ==========================================================================
+   Alignment pass.
+   ========================================================================== */
+
+/* Kick-off time and score sit centred under the Home/Away pill rather than
+   ragged against the right edge. */
+.fixture__right {
+  align-items: center;
+  text-align: center;
+  min-width: 74px;
+}
+
+.fixture__ko,
+.fixture__right .score {
+  text-align: center;
+  width: 100%;
+}
+
+/* Score inputs centre under the club names, not against the edges. */
+.predict__teams {
+  grid-template-columns: 1fr auto 1fr;
+  justify-items: center;
+  align-items: center;
+}
+
+.predict__team {
+  text-align: right;
+  justify-self: end;
+}
+
+.predict__team--right {
+  text-align: left;
+  justify-self: start;
+}
+
+.predict__inputs,
+.predict__score {
+  justify-self: center;
+}
+
+/* The next-fixture panel was mostly air on a wide screen. Put the countdown
+   alongside the club rather than beneath it once there is room. */
+@media (min-width: 760px) {
+  .hero {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "label label"
+      "match countdown"
+      "row   countdown";
+    column-gap: 24px;
+    row-gap: 10px;
+    align-items: center;
+  }
+
+  .hero__label { grid-area: label; margin-bottom: 0; }
+  .hero__match { grid-area: match; }
+  .hero__countdown {
+    grid-area: countdown;
+    margin-top: 0;
+    align-self: center;
+  }
+  .hero__row { grid-area: row; margin-top: 0; }
+
+  /* When there are two rows of buttons the second one follows the first. */
+  .hero__row ~ .hero__row {
+    grid-area: auto;
+    grid-column: 1 / -1;
+  }
+
+  .hero__opp { font-size: 30px; }
+  .hero::after { top: -90px; right: -70px; }
+}
+
+.app-footer__contact {
+  margin-top: 3px;
+}
