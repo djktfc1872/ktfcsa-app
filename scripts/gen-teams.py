@@ -129,9 +129,20 @@ OUT.write_text(
     "export const KTFC = {\n"
     '  name: "Kettering Town",\n'
     '  ground: "Latimer Park",\n'
-    '  postcode: "NN14 4NR",\n'
-    "  lat: 52.3705,\n"
-    "  lng: -0.7075,\n"
+    '  street: "Polwell Lane, Burton Latimer",\n'
+    '  town: "Kettering",\n'
+    '  postcode: "NN15 5PS",\n'
+    "  lat: 52.366747,\n"
+    "  lng: -0.690147,\n"
+    "  /* Confirmed from the club's own ticketing, 2026/27. */\n"
+    "  adultPrice: 15,\n"
+    '  adultRange: "18\\u201360",\n'
+    "  concessionPrice: 10,\n"
+    '  concessionRange: "60+ or NUS card",\n'
+    "  youthPrice: 5,\n"
+    '  youthRange: "11\\u201318, secondary school age",\n'
+    "  childPrice: 2,\n"
+    '  childRange: "Under 11",\n'
     "};\n\n"
     "export const TEAMS = [\n" + body + "\n];\n",
     encoding="utf-8",

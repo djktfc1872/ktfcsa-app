@@ -106,14 +106,24 @@ const ICON = {
   car: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h.5a1.5 1.5 0 0 1 1.5 1.5V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4.5A1.5 1.5 0 0 1 4.5 11H5Zm2.1 0h9.8l-1-3H8.1l-1 3ZM6.5 15a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm11 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg>`,
 };
 
-/** The credit line, shown at the foot of the longer screens. */
+/** Sits at the foot of every screen. Rendered by the shell, not by the views. */
 function footer() {
   const { name, email } = CONFIG.credit;
+  const year = new Date().getFullYear();
+
   return el(`
-    <footer class="app-footer">
-      <div>Website by ${esc(name)}. All rights reserved.</div>
-      <div class="app-footer__contact">
-        <a href="mailto:${esc(email)}">${esc(email)}</a>
+    <footer class="site-footer">
+      <div class="site-footer__mark">${ICON.poppy}</div>
+      <div class="site-footer__main">
+        Website by ${esc(name)}. All rights reserved.
+      </div>
+      <a class="site-footer__mail" href="mailto:${esc(email)}">${esc(email)}</a>
+      <div class="site-footer__meta">
+        <span>&copy; ${year} Kettering Town Supporters' Association</span>
+        <span class="site-footer__sep" aria-hidden="true">&middot;</span>
+        <span>Fixtures from the Southern League</span>
+        <span class="site-footer__sep" aria-hidden="true">&middot;</span>
+        <span>Club notes from Wikipedia</span>
       </div>
     </footer>`);
 }
@@ -196,6 +206,7 @@ const ROUTES = {
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", render: viewPoppies },
+  map: { label: "Grounds Map", icon: "🗺️", nav: "more", render: viewMap },
 };
 
 function go(view, params = {}) {
@@ -257,7 +268,6 @@ function viewMore() {
         <span style="color:var(--text-3)">›</span>
       </button>`));
   });
-  wrap.append(footer());
   return wrap;
 }
 
@@ -268,6 +278,7 @@ function render({ toTop = false } = {}) {
   const node = ROUTES[state.view].render(state.params);
   node.classList.add("view");
   main.append(node);
+  main.append(footer()); /* every screen, without each one remembering to */
   if (toTop) window.scrollTo(0, 0);
 }
 
@@ -549,7 +560,6 @@ function viewPredict() {
     } else {
       wrap.append(predictionTable());
     }
-    wrap.append(footer());
     return wrap;
   }
 
@@ -568,7 +578,6 @@ function viewPredict() {
     settled.slice(-10).reverse().forEach((f) => wrap.append(predictionCard(f, { settled: true })));
   }
 
-  wrap.append(footer());
   return wrap;
 }
 
@@ -792,7 +801,6 @@ function viewSeason() {
       board.innerHTML = "";
     });
   wrap.append(board);
-  wrap.append(footer());
   return wrap;
 }
 
@@ -926,9 +934,9 @@ function viewClub({ id }) {
         <div class="info"><div class="info__label">Distance</div><div class="info__value">${t.distanceMiles} miles</div></div>
         <div class="info"><div class="info__label">Postcode</div><div class="info__value">${esc(t.postcode)}</div></div>
       </div>
-      <div class="btn-row" style="margin-top:12px">
-        <a class="btn btn--sm" href="${directionsUrl(t)}" target="_blank" rel="noopener">${ICON.route} Directions from ${esc(KTFC.ground)}</a>
-        <a class="btn btn--sm btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open ground in Maps</a>
+      <div class="map-actions">
+        <a class="btn btn--map" href="${directionsUrl(t)}" target="_blank" rel="noopener">${ICON.route} Directions</a>
+        <a class="btn btn--map btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
       </div>
     </div>`));
 
@@ -999,7 +1007,6 @@ function viewClub({ id }) {
     wrap.append(card);
   }
 
-  wrap.append(footer());
   return wrap;
 }
 
@@ -1087,6 +1094,116 @@ function pubForm(team) {
   });
 }
 
+/* ------------------------------------------------------------- grounds map */
+
+/* Leaflet with OpenStreetMap tiles. Google's embed needs an API key with
+   billing attached, which is not something a supporters' club should have to
+   run. Leaflet is served from our own domain so it needs no exception in the
+   content security policy, and it is only fetched when this screen opens. */
+let leafletReady = null;
+
+function loadLeaflet() {
+  if (leafletReady) return leafletReady;
+  leafletReady = new Promise((resolve, reject) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "assets/vendor/leaflet.css";
+    document.head.append(css);
+
+    const js = document.createElement("script");
+    js.src = "assets/vendor/leaflet.js";
+    js.onload = () => resolve(window.L);
+    js.onerror = () => reject(new Error("map library did not load"));
+    document.head.append(js);
+  });
+  return leafletReady;
+}
+
+function viewMap() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Grounds Map</h1>
+      <p>Every ground in the division. Tap a marker for the away day guide.</p>
+    </div>
+    <div id="grounds-map" class="grounds-map" role="application" aria-label="Map of grounds"></div>
+    <div class="map-legend">
+      <span><i class="dot-home"></i> Latimer Park</span>
+      <span><i class="dot-away"></i> Away grounds</span>
+      <span class="map-legend__note">Map data from OpenStreetMap</span>
+    </div>
+  </div>`);
+
+  const withCoords = TEAMS.filter((t) => t.lat && t.lng);
+
+  /* Leaflet measures the container the moment it is created, so it must not be
+     created until the view has finished animating in and the pane has its real
+     size. Building it any earlier left the tiles and the viewport disagreeing,
+     which showed as a grey band and the wrong zoom. */
+  function build(L) {
+    const node = $("#grounds-map", wrap);
+    if (!node || !node.isConnected || !node.clientHeight) return;
+
+    const map = L.map(node, { scrollWheelZoom: false });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    const marks = [[KTFC.lat, KTFC.lng]];
+
+    L.circleMarker([KTFC.lat, KTFC.lng], {
+      radius: 10, color: "#c09c54", weight: 3, fillColor: "#c09c54", fillOpacity: 0.9,
+    })
+      .addTo(map)
+      .bindPopup(`<b>${esc(KTFC.name)}</b><br>${esc(KTFC.ground)}<br>${esc(KTFC.postcode)}`);
+
+    withCoords.forEach((t) => {
+      L.circleMarker([t.lat, t.lng], {
+        radius: 7, color: "#c8323f", weight: 2, fillColor: "#9c1824", fillOpacity: 0.85,
+      })
+        .addTo(map)
+        .bindPopup(
+          `<b>${esc(t.name)}</b><br>${esc(t.stadium)}<br>${t.distanceMiles} miles away<br>` +
+          `<a href="#/club/${esc(t.id)}">Away day guide</a>`
+        );
+      marks.push([t.lat, t.lng]);
+    });
+
+    map.fitBounds(marks, { padding: [26, 26] });
+
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
+      ro.observe(node);
+    }
+  }
+
+  loadLeaflet()
+    .then((L) => {
+      const node = $("#grounds-map", wrap);
+      if (!node) return;
+      const view = node.closest(".view");
+      let done = false;
+      const once = () => {
+        if (done) return;
+        done = true;
+        build(L);
+      };
+      if (view) view.addEventListener("animationend", once, { once: true });
+      setTimeout(once, 350); /* reduced motion never fires animationend */
+    })
+    .catch(() => {
+      const node = $("#grounds-map", wrap);
+      if (node) {
+        node.replaceWith(
+          el(`<div class="empty"><b>Map unavailable</b>The map could not load. The away guide lists every ground with a link to open it in your maps app.</div>`)
+        );
+      }
+    });
+
+  return wrap;
+}
+
 /* ------------------------------------------------------- our own club page */
 
 function viewPoppies() {
@@ -1117,14 +1234,24 @@ function viewPoppies() {
           row ? row.position : "not yet"
         }</div></div>
       </div>
-      <div class="btn-row" style="margin-top:12px">
-        <a class="btn btn--sm" href="${directionsUrl(KTFC)}" target="_blank" rel="noopener">${ICON.route} Directions to Latimer Park</a>
-        <a class="btn btn--sm btn--ghost" href="${mapUrl(KTFC)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
+      <div class="map-actions">
+        <a class="btn btn--map" href="${directionsUrl(KTFC)}" target="_blank" rel="noopener">${ICON.route} Directions</a>
+        <a class="btn btn--map btn--ghost" href="${mapUrl(KTFC)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
       </div>
-      <div class="hint" style="margin-top:10px">
-        Ticket prices and hospitality are on the club's own site, so they stay right
-        even when they change mid season.
+      <div class="hint" style="text-align:center">${esc(KTFC.street)}, ${esc(KTFC.town)}, ${esc(KTFC.postcode)}</div>
+    </div>`));
+
+  /* tickets, confirmed from the club's own ticketing rather than estimated */
+  wrap.append(el(`<h2 class="section-title">On the gate at Latimer Park</h2>`));
+  wrap.append(el(`
+    <div class="card">
+      <div class="info-grid info-grid--4">
+        <div class="info"><div class="info__label">Adult · ${esc(KTFC.adultRange)}</div><div class="info__value" style="color:var(--gold-400)">£${KTFC.adultPrice}</div></div>
+        <div class="info"><div class="info__label">Concession · ${esc(KTFC.concessionRange)}</div><div class="info__value">£${KTFC.concessionPrice}</div></div>
+        <div class="info"><div class="info__label">Youth · ${esc(KTFC.youthRange)}</div><div class="info__value">£${KTFC.youthPrice}</div></div>
+        <div class="info"><div class="info__label">Child · ${esc(KTFC.childRange)}</div><div class="info__value">£${KTFC.childPrice}</div></div>
       </div>
+      <div class="hint">Confirmed 2026/27 general admission. Buy on the gate or through the club's ticketing.</div>
     </div>`));
 
   if (info?.summary) {
@@ -1150,7 +1277,6 @@ function viewPoppies() {
     home.forEach((f) => wrap.append(fixtureCard(f)));
   }
 
-  wrap.append(footer());
   return wrap;
 }
 
@@ -1583,7 +1709,6 @@ function viewThread({ id }) {
     posts.forEach((p) => wrap.append(wallCard(p, db.isAdmin())));
   }
 
-  wrap.append(footer());
   return wrap;
 }
 
@@ -1667,7 +1792,6 @@ function viewWall() {
     posts.forEach((p) => wrap.append(wallCard(p, admin)));
   }
 
-  wrap.append(footer());
   return wrap;
 }
 
@@ -1907,7 +2031,6 @@ function viewFeedback() {
     wrap.append(box);
   }
 
-  wrap.append(footer());
   return wrap;
 }
 
@@ -1928,7 +2051,6 @@ function viewAccount() {
 
   if (!user) {
     wrap.append(online ? authPanel() : localSignInPanel());
-    wrap.append(footer());
     return wrap;
   }
 
@@ -2083,7 +2205,6 @@ function viewAccount() {
       </div>
     </div>`));
 
-  wrap.append(footer());
   return wrap;
 }
 

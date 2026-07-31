@@ -2,9 +2,20 @@
 export const KTFC = {
   name: "Kettering Town",
   ground: "Latimer Park",
-  postcode: "NN14 4NR",
-  lat: 52.3705,
-  lng: -0.7075,
+  street: "Polwell Lane, Burton Latimer",
+  town: "Kettering",
+  postcode: "NN15 5PS",
+  lat: 52.366747,
+  lng: -0.690147,
+  /* Confirmed from the club's own ticketing, 2026/27. */
+  adultPrice: 15,
+  adultRange: "18\u201360",
+  concessionPrice: 10,
+  concessionRange: "60+ or NUS card",
+  youthPrice: 5,
+  youthRange: "11\u201318, secondary school age",
+  childPrice: 2,
+  childRange: "Under 11",
 };
 
 export const TEAMS = [

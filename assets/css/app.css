@@ -1497,6 +1497,13 @@ table.league tbody tr.is-ktfc td {
   }
 }
 
+@media (min-width: 900px) {
+  .grounds-map {
+    height: 58vh;
+    max-height: 620px;
+  }
+}
+
 /* ------------------------------------------------------------------ modal */
 
 .modal-bg {
@@ -1755,17 +1762,7 @@ table.league tbody tr.is-ktfc td {
 
 /* ----------------------------------------------------------------- footer */
 
-.app-footer {
-  margin-top: 30px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  font-size: 11.5px;
-  color: var(--text-3);
-  line-height: 1.6;
-  text-align: center;
-}
 
-.app-footer a { color: var(--gold-500); }
 
 .small-link {
   font-size: 12px;
@@ -2066,10 +2063,6 @@ table.league tbody tr.is-ktfc td {
   .hero::after { top: -90px; right: -70px; }
 }
 
-.app-footer__contact {
-  margin-top: 3px;
-}
-
 /* ==========================================================================
    Crests. They are transparent PNGs now, tidied by scripts/fetch-crests.py,
    so they no longer need a white tile behind them to look deliberate.
@@ -2338,4 +2331,249 @@ table.league tbody tr.is-ktfc td {
 .ic-poppy {
   vertical-align: -3px;
   display: inline-block;
+}
+
+/* ---- directions and maps ----
+   These were small, left aligned and sat tight against the grid above them.
+   Full width on a phone, side by side once there is room, with matching space
+   above and below. */
+.map-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+@media (min-width: 520px) {
+  .map-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.btn--map {
+  padding: 14px 18px;
+  font-size: 14.5px;
+  font-weight: 720;
+  border-radius: var(--r);
+  justify-content: center;
+  gap: 9px;
+}
+
+.btn--map svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* The hint beneath sits closer, since the buttons already own the space. */
+.map-actions + .hint {
+  margin-top: 0;
+}
+
+/* ------------------------------------------------------------ grounds map */
+
+/* The division spreads far wider than it does north to south, so a tall box
+   forces the zoom out to fit the width and wastes the height on sea. A wider
+   shape frames the clubs properly. */
+.grounds-map {
+  height: 46vh;
+  min-height: 290px;
+  max-height: 430px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  overflow: hidden;
+  z-index: 0; /* keep tiles under the sticky header and tab bar */
+}
+
+/* OpenStreetMap tiles are drawn for a light background, so in dark mode they
+   are dimmed to sit with the rest of the app rather than glaring. */
+:root:not([data-theme="light"]) .grounds-map .leaflet-tile-pane {
+  filter: brightness(0.72) saturate(0.72) contrast(1.05);
+}
+
+.leaflet-container {
+  background: var(--surface-2);
+  font-family: var(--sans);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.leaflet-popup-content b {
+  font-size: 14px;
+}
+
+.leaflet-popup-content a {
+  color: var(--gold-400);
+  font-weight: 700;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--text-3);
+}
+
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.55) !important;
+  color: var(--text-3) !important;
+  font-size: 10px;
+}
+
+.leaflet-control-attribution a {
+  color: var(--text-2) !important;
+}
+
+.leaflet-bar a {
+  background: var(--surface);
+  color: var(--text);
+  border-bottom-color: var(--line);
+}
+
+.leaflet-bar a:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.map-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+
+.map-legend .dot-home {
+  background: var(--gold-500);
+}
+
+.map-legend .dot-away {
+  background: var(--red-500);
+  border: 1px solid var(--red-400);
+}
+
+.map-legend__note {
+  color: var(--text-3);
+  margin-left: auto;
+}
+
+/* The map measures itself on open, so it must not be mid transform when it
+   does. Keep the fade but drop the movement on this screen. */
+.view:has(.grounds-map) {
+  animation: fadeonly 0.18s ease both;
+}
+
+@keyframes fadeonly {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Footer. On every screen, quiet enough to ignore and tidy enough to notice.
+   ========================================================================== */
+
+.site-footer {
+  margin-top: 40px;
+  padding: 26px 16px 8px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+/* A hairline that fades out at both ends, rather than a hard rule. */
+.site-footer {
+  border-top: none;
+  position: relative;
+}
+
+.site-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line) 22%, var(--line) 78%, transparent);
+}
+
+.site-footer__mark {
+  opacity: 0.55;
+  line-height: 0;
+  margin-bottom: 1px;
+}
+
+.site-footer__mark svg {
+  width: 15px;
+  height: 15px;
+}
+
+.site-footer__main {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--text-2);
+  letter-spacing: 0.1px;
+}
+
+.site-footer__mail {
+  font-size: 12px;
+  color: var(--gold-500);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.site-footer__mail:hover {
+  color: var(--gold-400);
+  border-bottom-color: currentColor;
+}
+
+.site-footer__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+.site-footer__sep {
+  opacity: 0.5;
+}
+
+/* On a phone the separators just make the credits ragged, so stack instead. */
+@media (max-width: 520px) {
+  .site-footer__sep {
+    display: none;
+  }
+  .site-footer__meta {
+    flex-direction: column;
+    gap: 2px;
+  }
 }
