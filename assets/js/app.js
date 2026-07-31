@@ -128,10 +128,38 @@ function footer() {
     </footer>`);
 }
 
-function toast(message) {
+/**
+ * Runs an async action from a button, showing that it is working and putting
+ * the button back however it ends. Without this a slow connection looks like
+ * a dead tap, and people press again.
+ */
+async function withBusy(button, label, work) {
+  if (button.dataset.busy === "1") return;
+  const original = button.innerHTML;
+  button.dataset.busy = "1";
+  button.disabled = true;
+  button.classList.add("is-busy");
+  button.innerHTML = `<span class="spinner" aria-hidden="true"></span>${esc(label)}`;
+  try {
+    return await work();
+  } finally {
+    delete button.dataset.busy;
+    button.disabled = false;
+    button.classList.remove("is-busy");
+    button.innerHTML = original;
+  }
+}
+
+function toast(message, kind = "info") {
   $(".toast")?.remove();
-  const node = el(`<div class="toast" role="status">${esc(message)}</div>`);
+  const mark = kind === "good" ? "✓" : kind === "bad" ? "!" : "";
+  const node = el(`
+    <div class="toast toast--${kind}" role="status" aria-live="polite">
+      ${mark ? `<span class="toast__mark" aria-hidden="true">${mark}</span>` : ""}
+      <span>${esc(message)}</span>
+    </div>`);
   document.body.append(node);
+  setTimeout(() => node.classList.add("is-leaving"), 2900);
   setTimeout(() => node.remove(), 3200);
 }
 
@@ -648,14 +676,30 @@ function predictionCard(f, { settled = false, compact = false } = {}) {
   const status = el(`<div class="predict__result">${statusText()}</div>`);
 
   save.addEventListener("click", () => {
-    const h = Number(homeIn.value);
-    const a = Number(awayIn.value);
-    if (!Number.isInteger(h) || !Number.isInteger(a) || h < 0 || a < 0 || h > 20 || a > 20) {
-      return toast("Enter a score between 0 and 20 for both sides.");
+    /* Number("") is 0, so an empty box used to save quietly as a 0-0 rather
+       than asking for a score. Check the text before trusting the number. */
+    const rawH = homeIn.value.trim();
+    const rawA = awayIn.value.trim();
+    if (!rawH || !rawA) {
+      [homeIn, awayIn].forEach((i) => {
+        if (!i.value.trim()) {
+          i.classList.add("is-wrong");
+          setTimeout(() => i.classList.remove("is-wrong"), 900);
+        }
+      });
+      (!rawH ? homeIn : awayIn).focus();
+      return toast("Put a score in both boxes.", "bad");
     }
-    if (!predictionsOpen(f)) return toast("That match has kicked off, so predictions are closed.");
+    const h = Number(rawH);
+    const a = Number(rawA);
+    if (!Number.isInteger(h) || !Number.isInteger(a) || h < 0 || a < 0 || h > 20 || a > 20) {
+      return toast("Enter a score between 0 and 20 for both sides.", "bad");
+    }
+    if (!predictionsOpen(f)) return toast("That match has kicked off, so predictions are closed.", "bad");
     db.savePrediction(f.id, h, a);
-    toast(signedIn ? "Prediction saved." : "Saved on this device.");
+    save.classList.add("did-save");
+    setTimeout(() => save.classList.remove("did-save"), 700);
+    toast(signedIn ? "Prediction saved." : "Saved on this device.", "good");
     render();
   });
 
@@ -1108,12 +1152,12 @@ function pubForm(team) {
     const notes = $("#pb-notes", node).value.trim();
     if (name.length < 2) return toast("Give the pub a name.");
     const check = db.checkPost(`${name} ${notes}`, { minLength: 0, maxLength: 480 });
-    if (!check.ok) return toast(check.reason);
+    if (!check.ok) return toast(check.reason, "bad");
     const limit = db.rateLimit("pub", { max: 4, windowMs: 300000 });
-    if (!limit.ok) return toast(limit.reason);
+    if (!limit.ok) return toast(limit.reason, "bad");
     db.addPub(team.id, { name, postcode: $("#pb-pc", node).value.trim().toUpperCase(), notes });
     close();
-    toast("Thanks, that is on the board.");
+    toast("Thanks, that is on the board.", "good");
   });
 }
 
@@ -1491,10 +1535,10 @@ function liftForm(kind, upcoming) {
     const notes = $("#lf-notes", node).value.trim();
     if (notes) {
       const check = db.checkPost(notes, { minLength: 0, maxLength: 400 });
-      if (!check.ok) return toast(check.reason);
+      if (!check.ok) return toast(check.reason, "bad");
     }
     const limit = db.rateLimit("lift", { max: 4, windowMs: 300000 });
-    if (!limit.ok) return toast(limit.reason);
+    if (!limit.ok) return toast(limit.reason, "bad");
 
     const [fixtureDate, fixture] = $("#lf-fix", node).value.split("|");
     db.add("lift", {
@@ -1508,7 +1552,7 @@ function liftForm(kind, upcoming) {
       notes,
     });
     close();
-    toast("Posted to the car share board.");
+    toast("Posted to the car share board.", "good");
     render();
   });
 }
@@ -1772,12 +1816,12 @@ function composer(thread = null) {
   });
   $("#wall-post", box).addEventListener("click", () => {
     const check = db.checkPost(ta.value);
-    if (!check.ok) return toast(check.reason);
+    if (!check.ok) return toast(check.reason, "bad");
     const limit = db.rateLimit("wall", { max: 5, windowMs: 120000 });
-    if (!limit.ok) return toast(limit.reason);
+    if (!limit.ok) return toast(limit.reason, "bad");
     db.add("wall", { text: ta.value.trim(), thread });
     ta.value = "";
-    toast("Posted.");
+    toast("Posted.", "good");
     render();
   });
   return box;
@@ -1936,7 +1980,7 @@ function pollForm() {
     if (options.length < 2) return toast("Add at least two options.");
     db.add("poll", { question, options });
     close();
-    toast("Poll published.");
+    toast("Poll published.", "good");
     render();
   });
 }
@@ -1996,10 +2040,10 @@ function viewFeedback() {
     if (message.length < 4) return toast("Please write a little more.");
 
     const check = db.checkPost(message, { maxLength: 1000, minLength: 4 });
-    if (!check.ok) return toast(check.reason);
+    if (!check.ok) return toast(check.reason, "bad");
 
     const limit = db.rateLimit("feedback", { max: 3, windowMs: 600000 });
-    if (!limit.ok) return toast(limit.reason);
+    if (!limit.ok) return toast(limit.reason, "bad");
 
     const button = $("#fb-send", form);
     button.disabled = true;
@@ -2121,7 +2165,7 @@ function viewAccount() {
       try {
         await db.rename($("#rn-name", node).value);
         close();
-        toast("Name updated.");
+        toast("Name updated.", "good");
         render();
       } catch (err) {
         toast(err.message);
@@ -2131,7 +2175,7 @@ function viewAccount() {
 
   $("#ac-out", wrap).addEventListener("click", async () => {
     await db.signOut();
-    toast("Signed out.");
+    toast("Signed out.", "good");
     render();
   });
 
@@ -2272,17 +2316,17 @@ function authPanel() {
         <div class="field"><label for="au-pass">Password</label>
           <input id="au-pass" type="password" autocomplete="new-password" placeholder="At least six characters"></div>`));
       const go = el(`<button class="btn btn--full">Create account</button>`);
-      go.addEventListener("click", async () => {
-        go.disabled = true;
-        try {
-          await db.signUp($("#au-email", box).value, $("#au-pass", box).value, $("#au-name", box).value);
-          toast("Welcome along.");
-          render();
-        } catch (err) {
-          toast(err.message);
-          go.disabled = false;
-        }
-      });
+      go.addEventListener("click", () =>
+        withBusy(go, "Creating account", async () => {
+          try {
+            await db.signUp($("#au-email", box).value, $("#au-pass", box).value, $("#au-name", box).value);
+            toast("Welcome along.", "good");
+            render();
+          } catch (err) {
+            toast(err.message, "bad");
+          }
+        })
+      );
       body.append(go);
       return;
     }
@@ -2293,17 +2337,16 @@ function authPanel() {
       <div class="field"><label for="ai-pass">Password</label>
         <input id="ai-pass" type="password" autocomplete="current-password"></div>`));
     const go = el(`<button class="btn btn--full">Sign in</button>`);
-    const attempt = async () => {
-      go.disabled = true;
-      try {
-        await db.signIn($("#ai-email", box).value, $("#ai-pass", box).value);
-        toast("Signed in.");
-        render();
-      } catch (err) {
-        toast(err.message);
-        go.disabled = false;
-      }
-    };
+    const attempt = () =>
+      withBusy(go, "Signing in", async () => {
+        try {
+          await db.signIn($("#ai-email", box).value, $("#ai-pass", box).value);
+          toast("Signed in.", "good");
+          render();
+        } catch (err) {
+          toast(err.message, "bad");
+        }
+      });
     go.addEventListener("click", attempt);
     $("#ai-pass", box).addEventListener("keydown", (e) => e.key === "Enter" && attempt());
     body.append(go);
@@ -2473,6 +2516,20 @@ async function boot() {
 
   /* Don't let the browser drop us halfway down a page we just rebuilt. */
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
+  /* Lift the header once the page scrolls, so it reads as sitting above the
+     content rather than painted on it. Passive listener, one class toggle. */
+  const topbar = document.querySelector(".topbar");
+  let lifted = false;
+  const onScroll = () => {
+    const should = window.scrollY > 4;
+    if (should !== lifted) {
+      lifted = should;
+      topbar.classList.toggle("is-lifted", should);
+    }
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
 
   render({ toTop: true }); /* paint immediately with the bundled data */
 
