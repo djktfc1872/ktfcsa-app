@@ -7,8 +7,8 @@ export const CONFIG = {
      the data, not this key. Leave the url blank and the app runs on this
      device only, with no accounts. */
   supabase: {
-    url: "",
-    anonKey: "",
+    url: "https://fgbvbenxiyclkujuabgx.supabase.co",
+    anonKey: "sb_publishable_hGdWCAq4JkzLn---P185Iw_TDSjtzTg",
   },
 
   /* Shown in the footer. */

@@ -185,13 +185,27 @@ class Backend {
       },
       { onConflict: "profile_id,fixture_id" }
     );
-    if (error) {
-      throw new Error(
-        /row-level security/i.test(error.message)
-          ? "That match has kicked off, so predictions are closed."
-          : friendly(error)
-      );
+    if (!error) return;
+
+    /* The rule that guards predictions also refuses a fixture it has never
+       heard of, so work out which of the two actually happened rather than
+       telling somebody a game has kicked off when it has not. */
+    if (/row-level security/i.test(error.message)) {
+      const { data } = await this.sb
+        .from("fixtures")
+        .select("kickoff_at")
+        .eq("id", fixtureId)
+        .maybeSingle();
+
+      if (!data) {
+        throw new Error(
+          "That fixture has not reached the database yet. Please try again shortly."
+        );
+      }
+      throw new Error("That match has kicked off, so predictions are closed.");
     }
+
+    throw new Error(friendly(error));
   }
 
   async loadLeague() {
