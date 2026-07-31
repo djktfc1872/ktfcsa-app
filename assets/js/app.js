@@ -8,10 +8,19 @@ import * as db from "./store.js";
 /* ================================================================= helpers */
 
 const $ = (sel, root = document) => root.querySelector(sel);
+/**
+ * Builds DOM from an HTML string.
+ *
+ * One root element comes back as that element, which is what nearly every
+ * caller wants. Several roots come back as a fragment holding all of them,
+ * rather than silently dropping everything after the first. Getting that
+ * wrong once cost us the whole sign-in form.
+ */
 const el = (html) => {
   const t = document.createElement("template");
   t.innerHTML = html.trim();
-  return t.content.firstElementChild;
+  const { content } = t;
+  return content.children.length === 1 ? content.firstElementChild : content;
 };
 
 /** Escapes anything a supporter typed before it goes near innerHTML. */
