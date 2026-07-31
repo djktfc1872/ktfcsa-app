@@ -1113,7 +1113,7 @@ function viewPoppies() {
         <div class="info"><div class="info__label">Postcode</div><div class="info__value">${esc(KTFC.postcode)}</div></div>
         <div class="info"><div class="info__label">Home games</div><div class="info__value">${home.length}</div></div>
         <div class="info"><div class="info__label">League position</div><div class="info__value" style="color:var(--gold-400)">${
-          row ? row.position : "—"
+          row ? row.position : "not yet"
         }</div></div>
       </div>
       <div class="btn-row" style="margin-top:12px">
