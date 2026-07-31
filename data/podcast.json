@@ -1,11 +1,22 @@
 {
-  "updated": "2026-07-26T09:50:27.217Z",
+  "updated": "2026-07-31T17:01:58.801Z",
   "feed": "https://anchor.fm/s/103d565e8/podcast/rss",
   "title": "The Poppycast",
   "description": "Fans of Kettering Town talking all things Poppies",
   "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
   "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17",
   "episodes": [
+    {
+      "title": "Ep22 - Pre-Season Prophecies",
+      "published": "Tue, 28 Jul 2026 05:49:54 GMT",
+      "publishedISO": "2026-07-28T05:49:54.000Z",
+      "duration": "00:51:55",
+      "description": "This episode, Jamie, Craig, Danny and Lee reconvene to discuss pre-season so far - what do we make of Liam McDonald's squad ahead of the big kick-off next weekend? Danny shares an update on the Football Association web app and strategic survey, which is still open for your suggestions - KTFC Supporters' Association | Fan Survey 2026 We then turn our attention to some season prediction - how do we think the Poppies will fare this time round?",
+      "audio": "https://anchor.fm/s/103d565e8/podcast/play/123415944/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-6-28%2F428744799-44100-2-247e9cd116c2c.m4a",
+      "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17/episodes/Ep22---Pre-Season-Prophecies-e3mkru8",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
+      "episode": ""
+    },
     {
       "title": "Ep21 - The Summer Poppie(!)cast",
       "published": "Tue, 07 Jul 2026 22:44:12 GMT",
