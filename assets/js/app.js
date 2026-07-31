@@ -100,6 +100,8 @@ const ICON = {
   pin: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>`,
   route: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M18 15.5a2.5 2.5 0 0 0-2.45 2H11a2.5 2.5 0 0 1 0-5h2a4.5 4.5 0 0 0 0-9 4.5 4.5 0 0 0-4.45 4h-2A2.5 2.5 0 1 0 6 10.5h2.05a4.5 4.5 0 0 0 .95 2H11a4.5 4.5 0 0 0 0 9h4.55A2.5 2.5 0 1 0 18 15.5Z"/></svg>`,
   pint: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M6 3h12l-1.2 17.1A2 2 0 0 1 14.8 22H9.2a2 2 0 0 1-2-1.9L6 3Zm2.2 2 .2 3h7.2l.2-3H8.2Z"/></svg>`,
+  globe: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 9h-3a15.7 15.7 0 0 0-1.1-5.2A8 8 0 0 1 18.9 11ZM12 4.2c.7 1 1.5 2.9 1.8 6.8h-3.6c.3-3.9 1.1-5.8 1.8-6.8ZM4.3 13h3c.1 2 .5 3.8 1 5.2A8 8 0 0 1 4.3 13Zm3-2h-3a8 8 0 0 1 4-5.2A15.7 15.7 0 0 0 7.3 11ZM12 19.8c-.7-1-1.5-2.9-1.8-6.8h3.6c-.3 3.9-1.1 5.8-1.8 6.8Zm2.8-1.6c.5-1.4.9-3.2 1-5.2h3a8 8 0 0 1-4 5.2Z"/></svg>`,
+  info: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"/></svg>`,
   car: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h.5a1.5 1.5 0 0 1 1.5 1.5V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4.5A1.5 1.5 0 0 1 4.5 11H5Zm2.1 0h9.8l-1-3H8.1l-1 3ZM6.5 15a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm11 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg>`,
 };
 
@@ -148,7 +150,11 @@ const state = {
   podcast: null,
   fixtureFilter: "all",
   predictTab: "open",
+  clubInfo: {},   // background notes and official sites, from data/clubs.json
 };
+
+/** Background on a club: founding year, a fuller description, official site. */
+const infoFor = (slug) => state.clubInfo[slug] || null;
 
 /** Fixtures come from the league feed. The spreadsheet fills in the away day
     detail. If the feed cannot be reached we build the list from the
@@ -188,6 +194,7 @@ const ROUTES = {
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
+  poppies: { label: "Kettering Town", icon: "🍅", nav: "more", render: viewPoppies },
 };
 
 function go(view, params = {}) {
@@ -297,13 +304,16 @@ function fixtureCard(f, { isNext = false } = {}) {
       <div class="fixture__body">
         <div class="fixture__opp">${esc(clubName(f.opponent))}</div>
         <div class="fixture__sub">${d ? DAYS[d.getDay()].slice(0, 3) : ""}${
-          f.competition ? ` · ${esc(f.competition)}` : ""
-        }${f.team && !isHome ? ` · ${f.team.distanceMiles} mi` : ""}</div>
+          /* Naming the league on all 42 rows adds nothing. Cup ties are worth
+             calling out, so only those get a competition label. */
+          f.competition && !/premier central/i.test(f.competition) ? ` · ${esc(f.competition)}` : ""
+        }${f.team && !isHome ? ` · ${f.team.distanceMiles} mi away` : ""}</div>
       </div>
       <div class="fixture__right">
         ${statusPill}
         ${scoreHtml || `<div class="fixture__ko">${esc(f.kickoff || "TBC")}</div>`}
       </div>
+      <span class="fixture__chev" aria-hidden="true">›</span>
     </button>`);
 
   if (!f.team) card.style.cursor = "default";
@@ -344,7 +354,13 @@ function viewFixtures() {
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Fixtures</h1>
-      <p>Kettering Town, ${esc(state.league?.season || "2026/27")}. Everything else in the app works around this list.</p>
+      <p>Kettering Town, ${esc(state.league?.season || "2026/27")}. Updated automatically, cup ties included.</p>
+    </div>
+    <div class="how-to">
+      <span class="how-to__row"><span class="pill pill--away">Away</span>
+        Tap for the away day guide: tickets, parking, a pub and how to get there.</span>
+      <span class="how-to__row"><span class="pill pill--home">Home</span>
+        Tap to read up on the visitors before they come to ${esc(KTFC.ground)}.</span>
     </div>
   </div>`);
 
@@ -829,7 +845,32 @@ function viewClubs() {
   return wrap;
 }
 
+/* Clubs publish concessions inconsistently. Where the spreadsheet's ticket
+   note spells out who qualifies we use that; otherwise we say what is usual at
+   this level and tell people to check, rather than inventing an age. */
+const CONCESSION_HINTS = [
+  [/over\s*65|65\+|senior/i, "Over 65s"],
+  [/student/i, "Students"],
+  [/nhs/i, "NHS"],
+  [/armed forces|forces|veteran/i, "Armed Forces"],
+  [/disab/i, "Disabled supporters"],
+];
+
+/** Who the club actually says qualifies, or null when they have not said. */
+function concessionAges(t) {
+  const found = CONCESSION_HINTS.filter(([re]) => re.test(t.ticketNotes || "")).map(([, l]) => l);
+  return found.length ? found.join(", ") : null;
+}
+
+function concessionNote(t) {
+  const ages = concessionAges(t);
+  return ages
+    ? `Concessions at ${t.name} cover ${ages.toLowerCase()}. Take proof with you.`
+    : `${t.name} has not published who qualifies for a concession. At this level it is usually over 65s and students, and often under 18s in full time education, but check on the gate.`;
+}
+
 function viewClub({ id }) {
+  if (id === "kettering-town") return viewPoppies();
   const t = TEAMS.find((x) => x.id === id);
   if (!t) {
     const miss = el(`<div><div class="empty"><b>Club not found</b>Head back to the away guide.</div></div>`);
@@ -839,16 +880,32 @@ function viewClub({ id }) {
   const ours = fixtures().filter((f) => f.team?.id === t.id);
   const crest = ours.find((f) => f.opponentCrest)?.opponentCrest;
 
+  const info = infoFor(t.id);
+  const awayTrip = ours.find((f) => f.venue === "Away");
+
   const wrap = el(`<div>
     <button class="back-link" data-nav="clubs">← Away guide</button>
     <div class="hub-hero">
       ${crest ? `<img class="hub-hero__crest" src="${esc(crest)}" alt="">` : ""}
       <div class="hub-hero__text">
         <h1>${esc(t.name)}</h1>
-        <p>${esc(t.nickname)} · ${esc(t.stadium)} · ${t.distanceMiles} miles from ${esc(KTFC.ground)}</p>
+        <p>${esc(t.nickname)} · ${esc(t.stadium)}${
+          info?.founded ? ` · Founded ${info.founded}` : ""
+        }</p>
       </div>
     </div>
   </div>`);
+
+  /* Where the away day sections apply, said plainly. Supporters were opening a
+     home fixture and finding another club's parking, which reads as a mistake
+     unless the page explains itself. */
+  wrap.append(el(`
+    <div class="notice notice--info">
+      ${awayTrip
+        ? `The travel, parking and pub details below are for <b>our trip to ${esc(t.stadium)}</b>
+           on ${esc(fmtDate(awayTrip.date, "short"))}. It is ${t.distanceMiles} miles each way from ${esc(KTFC.ground)}.`
+        : `The travel details below are for visiting <b>${esc(t.stadium)}</b>, ${t.distanceMiles} miles from ${esc(KTFC.ground)}.`}
+    </div>`));
 
   /* fixtures against this club */
   if (ours.length) {
@@ -857,7 +914,7 @@ function viewClub({ id }) {
   }
 
   /* ground */
-  wrap.append(el(`<h2 class="section-title">The ground</h2>`));
+  wrap.append(el(`<h2 class="section-title">Their ground</h2>`));
   wrap.append(el(`
     <div class="card">
       <div class="info-grid info-grid--4">
@@ -880,16 +937,22 @@ function viewClub({ id }) {
     <div class="card">
       <div class="info-grid info-grid--4">
         <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--gold-400)">${money(t.adultPrice)}</div></div>
-        <div class="info"><div class="info__label">Concession</div><div class="info__value">${money(t.concessionPrice)}</div></div>
+        <div class="info"><div class="info__label">Concession${concessionAges(t) ? ` · ${esc(concessionAges(t))}` : ""}</div><div class="info__value">${money(t.concessionPrice)}</div></div>
         <div class="info"><div class="info__label">Youth · ${esc(t.youthRange)}</div><div class="info__value">${money(t.youthPrice)}</div></div>
         <div class="info"><div class="info__label">Child · ${esc(t.childRange)}</div><div class="info__value">${money(t.childPrice)}</div></div>
       </div>
       ${t.ticketNotes ? `<div class="hint" style="margin-top:10px">${esc(t.ticketNotes)}</div>` : ""}
-      <div class="hint">Prices are a guide taken from the club's published rates. Always check with the club before you travel.</div>
+      <div class="hint">${esc(concessionNote(t))}</div>
+      <div class="hint">Prices are a guide taken from the club's published rates. Always check before you travel.</div>
+      ${info?.website
+        ? `<div class="btn-row" style="margin-top:10px">
+             <a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Check on the ${esc(t.name)} site</a>
+           </div>`
+        : ""}
     </div>`));
 
   /* parking and pub */
-  wrap.append(el(`<h2 class="section-title">Parking and the pub</h2>`));
+  wrap.append(el(`<h2 class="section-title">Parking and the pub at ${esc(t.stadium)}</h2>`));
   wrap.append(el(`
     <div class="grid grid--2">
       <div class="card">
@@ -910,12 +973,32 @@ function viewClub({ id }) {
   wrap.append(el(`<h2 class="section-title">Supporter recommendations</h2>`));
   wrap.append(pubBoard(t));
 
-  /* fact */
-  if (t.fact) {
-    wrap.append(el(`<h2 class="section-title">Worth knowing</h2>`));
-    wrap.append(el(`<div class="card"><div class="info__value info__value--body">${esc(t.fact)}</div></div>`));
+  /* background: the spreadsheet's nugget, then the fuller history */
+  if (t.fact || info?.summary || info?.website) {
+    wrap.append(el(`<h2 class="section-title">About ${esc(t.name)}</h2>`));
+    const card = el(`<div class="card"></div>`);
+
+    if (t.fact) {
+      card.append(el(`<div class="club-fact">${ICON.info} ${esc(t.fact)}</div>`));
+    }
+    if (info?.summary) {
+      card.append(el(`<div class="info__value info__value--body" style="margin-top:${t.fact ? 12 : 0}px">${esc(info.summary)}</div>`));
+    }
+
+    const links = [];
+    if (info?.website) {
+      links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Official website</a>`);
+    }
+    if (info?.wikipedia) {
+      links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.wikipedia)}" target="_blank" rel="noopener">Wikipedia</a>`);
+    }
+    if (links.length) {
+      card.append(el(`<div class="btn-row" style="margin-top:14px">${links.join("")}</div>`));
+    }
+    wrap.append(card);
   }
 
+  wrap.append(footer());
   return wrap;
 }
 
@@ -1001,6 +1084,73 @@ function pubForm(team) {
     close();
     toast("Thanks, that is on the board.");
   });
+}
+
+/* ------------------------------------------------------- our own club page */
+
+function viewPoppies() {
+  const info = infoFor("kettering-town");
+  const all = fixtures();
+  const home = all.filter((f) => f.venue === "Home");
+  const crest = "assets/crests/kettering-town.png";
+  const row = state.league?.table?.find((r) => /kettering/i.test(r.name));
+
+  const wrap = el(`<div>
+    <div class="hub-hero">
+      <img class="hub-hero__crest" src="${crest}" alt="">
+      <div class="hub-hero__text">
+        <h1>${esc(KTFC.name)}</h1>
+        <p>The Poppies · ${esc(KTFC.ground)}${info?.founded ? ` · Founded ${info.founded}` : ""}</p>
+      </div>
+    </div>
+  </div>`);
+
+  wrap.append(el(`<h2 class="section-title">Latimer Park</h2>`));
+  wrap.append(el(`
+    <div class="card">
+      <div class="info-grid info-grid--4">
+        <div class="info"><div class="info__label">Ground</div><div class="info__value">${esc(KTFC.ground)}</div></div>
+        <div class="info"><div class="info__label">Postcode</div><div class="info__value">${esc(KTFC.postcode)}</div></div>
+        <div class="info"><div class="info__label">Home games</div><div class="info__value">${home.length}</div></div>
+        <div class="info"><div class="info__label">League position</div><div class="info__value" style="color:var(--gold-400)">${
+          row ? row.position : "—"
+        }</div></div>
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <a class="btn btn--sm" href="${directionsUrl(KTFC)}" target="_blank" rel="noopener">${ICON.route} Directions to Latimer Park</a>
+        <a class="btn btn--sm btn--ghost" href="${mapUrl(KTFC)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        Ticket prices and hospitality are on the club's own site, so they stay right
+        even when they change mid season.
+      </div>
+    </div>`));
+
+  if (info?.summary) {
+    wrap.append(el(`<h2 class="section-title">About the club</h2>`));
+    const card = el(`<div class="card"><div class="info__value info__value--body">${esc(info.summary)}</div></div>`);
+    const links = [];
+    if (info.website) links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Official website</a>`);
+    if (info.wikipedia) links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.wikipedia)}" target="_blank" rel="noopener">Wikipedia</a>`);
+    if (links.length) card.append(el(`<div class="btn-row" style="margin-top:14px">${links.join("")}</div>`));
+    wrap.append(card);
+  }
+
+  const next = home.find((f) => f.date >= todayISO());
+  if (next) {
+    wrap.append(el(`<h2 class="section-title">Next at home</h2>`));
+    wrap.append(fixtureCard(next));
+  }
+
+  wrap.append(el(`<h2 class="section-title">Every home game</h2>`));
+  if (!home.length) {
+    wrap.append(el(`<div class="empty"><b>No home fixtures listed</b>They will appear once the league publishes them.</div>`));
+  } else {
+    home.forEach((f) => wrap.append(fixtureCard(f)));
+  }
+
+  wrap.append(footer());
+  return wrap;
 }
 
 /* ================================================================== travel */
@@ -2056,6 +2206,15 @@ function setTheme(theme) {
 
 /* ==================================================================== data */
 
+async function loadClubInfo() {
+  try {
+    const res = await fetch("data/clubs.json");
+    if (res.ok) state.clubInfo = (await res.json()).clubs || {};
+  } catch {
+    state.clubInfo = {}; /* the club pages simply show less */
+  }
+}
+
 async function loadLeague(force = false) {
   try {
     const res = await fetch(`data/league.json${force ? `?t=${Date.now()}` : ""}`, { cache: force ? "reload" : "default" });
@@ -2164,6 +2323,7 @@ async function boot() {
      Whichever lands first redraws. In the online setup the store also streams
      live updates, so a new car share or wall post appears without a refresh. */
   await Promise.all([
+    loadClubInfo(),
     loadLeague().then(() => render()),
     db
       .initStore({ change: () => render(), error: (message) => toast(message) })

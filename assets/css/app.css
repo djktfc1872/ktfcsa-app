@@ -2135,3 +2135,200 @@ table.league tbody tr.is-ktfc td {
 :root[data-theme="light"] .thread__tag--post {
   color: #922330;
 }
+
+/* ==========================================================================
+   Feedback pass
+   ========================================================================== */
+
+/* A one-off explainer at the top of the fixture list, because tapping a home
+   game and getting the opponent's parking was reading as a fault. */
+.how-to {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  margin-bottom: var(--gap);
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.how-to__row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.how-to__row .pill {
+  flex-shrink: 0;
+  position: relative;
+  top: 1px;
+}
+
+/* Home and away need to be tellable apart at a glance, not just by the pill.
+   Away keeps the claret spine and a slightly lifted surface; home is quieter
+   with a gold spine, since most of the app's travel content is about aways. */
+.fixture--away {
+  border-left-width: 4px;
+  border-left-color: var(--red-500);
+  background: linear-gradient(90deg, rgba(156, 24, 36, 0.07), transparent 60%);
+}
+
+.fixture--home {
+  border-left-width: 4px;
+  border-left-color: var(--gold-600);
+  background: var(--surface);
+}
+
+.fixture--home .fixture__day,
+.fixture--home .fixture__opp {
+  color: var(--text);
+}
+
+.fixture--away .fixture__day {
+  color: var(--text);
+}
+
+/* A chevron makes it obvious the row goes somewhere. */
+.fixture__chev {
+  color: var(--text-3);
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.fixture:hover .fixture__chev {
+  color: var(--gold-400);
+}
+
+/* The spreadsheet's colourful one liner, set apart from the fuller history. */
+.club-fact {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  background: rgba(192, 156, 84, 0.09);
+  border: 1px solid rgba(192, 156, 84, 0.28);
+  border-radius: var(--r-sm);
+  padding: 11px 13px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gold-200);
+}
+
+:root[data-theme="light"] .club-fact {
+  color: #6b5316;
+}
+
+.club-fact svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+
+/* ---- header alignment ----
+   The bar was centred on the content column while the sidebar started at the
+   window edge, so the crest sat to the right of the menu below it. Line the
+   brand up with the sidebar instead. */
+@media (min-width: 900px) {
+  .topbar__inner {
+    max-width: none;
+    padding-left: 12px;
+    padding-right: 28px;
+  }
+
+  /* Line the crest up with the menu icons below it. The text is free to run
+     past the sidebar column, it is only the left edge that has to match. */
+  .brand {
+    padding-left: 12px;
+    box-sizing: border-box;
+  }
+}
+
+/* "Poppies Fan Companion" is a longer name than the app launched with, and at
+   nowrap it pushed the whole page 42px wider than a phone screen. Let the
+   brand shrink and ellipsis instead of forcing everything sideways. */
+.brand {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.brand__text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.brand__name,
+.brand__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+@media (max-width: 400px) {
+  .brand__name {
+    font-size: 13.5px;
+  }
+  .brand__crest {
+    width: 30px;
+    height: 30px;
+  }
+  .topbar__inner {
+    gap: 8px;
+    padding: 0 12px;
+  }
+}
+
+/* Grid items refuse to shrink below their content by default, so one wide
+   element inside the hero was stretching the whole page past the screen. This
+   is the fix for that, rather than hiding the overflow and clipping text. */
+.shell > * {
+  min-width: 0;
+}
+
+.main,
+.topbar,
+.topbar__inner,
+.view {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.how-to__row {
+  min-width: 0;
+}
+
+/* Let the next-fixture panel wrap on a narrow screen instead of pushing wide. */
+.hero__match {
+  min-width: 0;
+}
+
+.hero__match > div {
+  min-width: 0;
+}
+
+.hero__opp {
+  overflow-wrap: anywhere;
+}
+
+.hero__countdown {
+  flex-wrap: wrap;
+}
+
+/* Keep a fixture row to one line each, so the list scans as a list. */
+.fixture__sub {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fixture__body {
+  min-width: 0;
+}
+
+.fixture__opp {
+  min-width: 0;
+}
