@@ -72,14 +72,35 @@ WEBSITE_OVERRIDES = {
 }
 
 
-def get(url):
-    r = subprocess.run(
-        ["curl", "-sS", "-L", "--max-time", "30", "-A", UA, url],
-        capture_output=True,
-    )
-    if r.returncode != 0 or not r.stdout:
-        raise RuntimeError((r.stderr or b"empty").decode().strip()[:120])
-    return json.loads(r.stdout)
+def get(url, attempts=4):
+    """Fetch JSON, backing off when Wikipedia asks us to slow down.
+
+    Both APIs answer a burst with a 429 and a plain text body, which used to
+    land as a JSON parse error halfway through a run and lose everything
+    gathered so far.
+    """
+    delay = 2
+    last = ""
+    for attempt in range(attempts):
+        r = subprocess.run(
+            ["curl", "-sS", "-L", "--max-time", "30", "-A", UA, url],
+            capture_output=True,
+        )
+        body = r.stdout.decode("utf-8", "replace").strip()
+        if r.returncode == 0 and body.startswith(("{", "[")):
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError as exc:
+                last = str(exc)
+        else:
+            last = body[:100] or (r.stderr or b"").decode().strip()[:100]
+
+        if attempt < attempts - 1:
+            print(f"      retrying in {delay}s ({last[:60]})")
+            time.sleep(delay)
+            delay *= 2
+
+    raise RuntimeError(last or "no response")
 
 
 def wiki_batch(titles):
@@ -123,6 +144,26 @@ def wiki_batch(titles):
     return pages
 
 
+def long_extract(title):
+    """A fuller extract, including the History section.
+
+    Half the clubs have a lead paragraph that only repeats the club name, the
+    county and the division, which the app already shows above it. The history
+    is where anything worth reading lives. Wikipedia only honours exchars one
+    page at a time, so these go one by one with a pause between.
+    """
+    url = (
+        "https://en.wikipedia.org/w/api.php?action=query&format=json&redirects=1"
+        "&prop=extracts&explaintext=1&exchars=1500&exlimit=1"
+        "&titles=" + urllib.parse.quote(title, safe="")
+    )
+    pages = (get(url).get("query", {}) or {}).get("pages", {}) or {}
+    for page in pages.values():
+        if "missing" not in page:
+            return page.get("extract") or ""
+    return ""
+
+
 def wikidata(qids):
     if not qids:
         return {}
@@ -160,7 +201,8 @@ def tidy(text):
     boilerplate, which left them with a blank club page, so keep the original
     whenever the filter would strip the lot.
     """
-    text = re.sub(r"\s+", " ", text or "").strip()
+    text = re.sub(r"==+\s*[^=]+\s*==+", " ", text or "")  # drop == History == markers
+    text = re.sub(r"\s+", " ", text).strip()
     if not text:
         return ""
     parts = re.split(r"(?<=\.)\s+", text)
@@ -191,6 +233,29 @@ def main():
             "website": None,
         }
         print(f"  {slug:22} {len(clubs[slug]['summary'] or ''):4} chars")
+
+    # Where the lead is all boilerplate, go back for the history. Measuring
+    # length is no good here: boilerplate is long, it just says nothing. Test
+    # what survives the filter instead.
+    def substance(text):
+        parts = re.split(r"(?<=\.)\s+", text or "")
+        return len(" ".join(p for p in parts if not BOILERPLATE.search(p)).strip())
+
+    thin = [slug for slug, c in clubs.items() if substance(c.get("summary")) < 80]
+    if thin:
+        print(f"\n  fetching history for {len(thin)} clubs with a thin lead")
+        for slug in thin:
+            try:
+                full = long_extract(ARTICLES[slug])
+                better = tidy(full)
+                if len(better) > len(clubs[slug]["summary"] or ""):
+                    clubs[slug]["summary"] = better[:700].rsplit(". ", 1)[0] + "."
+                    print(f"    {slug:22} {len(clubs[slug]['summary']):4} chars")
+                else:
+                    print(f"    {slug:22} no better text available")
+            except Exception as exc:
+                print(f"    {slug:22} failed: {exc}")
+            time.sleep(3)  # one at a time, slowly enough to stay welcome
 
     ids = [q for q in lookups.values() if q]
     entities = {}

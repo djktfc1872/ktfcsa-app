@@ -212,15 +212,19 @@ const ROUTES = {
 function go(view, params = {}) {
   state.view = view;
   state.params = params;
-  const hash = params.id ? `#/${view}/${params.id}` : `#/${view}`;
+  const hash = params.id
+    ? `#/${view}/${params.id}${params.from ? `/${params.from}` : ""}`
+    : `#/${view}`;
   if (location.hash !== hash) history.pushState(null, "", hash);
   render({ toTop: true });
 }
 
 function readHash() {
-  const [, view, id] = (location.hash || "#/fixtures").split("/");
+  const [, view, id, from] = (location.hash || "#/fixtures").split("/");
   state.view = ROUTES[view] ? view : "fixtures";
-  state.params = id ? { id: decodeURIComponent(id) } : {};
+  state.params = id
+    ? { id: decodeURIComponent(id), from: from ? decodeURIComponent(from) : "" }
+    : {};
 }
 
 /* =================================================================== chrome */
@@ -307,7 +311,7 @@ function fixtureCard(f, { isNext = false } = {}) {
 
   const card = el(`
     <button class="fixture fixture--${isHome ? "home" : "away"} ${isNext ? "fixture--next" : ""}"
-            data-club="${esc(f.team?.id || "")}">
+            data-club="${esc(f.team?.id || "")}" data-venue="${isHome ? "home" : "away"}">
       <div class="fixture__date">
         <div class="fixture__day">${d ? d.getDate() : "?"}</div>
         <div class="fixture__mon">${d ? MONTHS[d.getMonth()].slice(0, 3) : "TBC"}</div>
@@ -878,19 +882,22 @@ function concessionNote(t) {
     : `${t.name} has not published who qualifies for a concession. At this level it is usually over 65s and students, and often under 18s in full time education, but check on the gate.`;
 }
 
-function viewClub({ id }) {
+function viewClub({ id, from }) {
   if (id === "kettering-town") return viewPoppies();
   const t = TEAMS.find((x) => x.id === id);
   if (!t) {
-    const miss = el(`<div><div class="empty"><b>Club not found</b>Head back to the away guide.</div></div>`);
-    return miss;
+    return el(`<div><div class="empty"><b>Club not found</b>Head back to the away guide.</div></div>`);
   }
 
+  const info = infoFor(t.id);
   const ours = fixtures().filter((f) => f.team?.id === t.id);
   const crest = ours.find((f) => f.opponentCrest)?.opponentCrest;
-
-  const info = infoFor(t.id);
   const awayTrip = ours.find((f) => f.venue === "Away");
+
+  /* Arriving from a home fixture means we are not going anywhere, so who they
+     are matters and their car park does not. Lead with the background and let
+     the travel detail sit further down. */
+  const cameFromHome = from === "home";
 
   const wrap = el(`<div>
     <button class="back-link" data-nav="clubs">← Away guide</button>
@@ -898,114 +905,128 @@ function viewClub({ id }) {
       ${crest ? `<img class="hub-hero__crest" src="${esc(crest)}" alt="">` : ""}
       <div class="hub-hero__text">
         <h1>${esc(t.name)}</h1>
-        <p>${esc(t.nickname)} · ${esc(t.stadium)}${
-          info?.founded ? ` · Founded ${info.founded}` : ""
-        }</p>
+        <p>${esc(t.nickname)} · ${esc(t.stadium)}${info?.founded ? ` · Founded ${info.founded}` : ""}</p>
       </div>
     </div>
   </div>`);
 
-  /* Where the away day sections apply, said plainly. Supporters were opening a
-     home fixture and finding another club's parking, which reads as a mistake
-     unless the page explains itself. */
-  wrap.append(el(`
-    <div class="notice notice--info">
-      ${awayTrip
-        ? `The travel, parking and pub details below are for <b>our trip to ${esc(t.stadium)}</b>
-           on ${esc(fmtDate(awayTrip.date, "short"))}. It is ${t.distanceMiles} miles each way from ${esc(KTFC.ground)}.`
-        : `The travel details below are for visiting <b>${esc(t.stadium)}</b>, ${t.distanceMiles} miles from ${esc(KTFC.ground)}.`}
-    </div>`));
+  /* ---- the pieces ---- */
 
-  /* fixtures against this club */
-  if (ours.length) {
-    wrap.append(el(`<h2 class="section-title">This season</h2>`));
-    ours.forEach((f) => wrap.append(fixtureCard(f)));
-  }
+  const thisSeason = () => {
+    if (!ours.length) return null;
+    const box = el(`<div></div>`);
+    box.append(el(`<h2 class="section-title">This season</h2>`));
+    ours.forEach((f) => box.append(fixtureCard(f)));
+    return box;
+  };
 
-  /* ground */
-  wrap.append(el(`<h2 class="section-title">Their ground</h2>`));
-  wrap.append(el(`
-    <div class="card">
-      <div class="info-grid info-grid--4">
-        <div class="info"><div class="info__label">Ground</div><div class="info__value">${esc(t.stadium)}</div></div>
-        <div class="info"><div class="info__label">Capacity</div><div class="info__value">${
-          typeof t.capacity === "number" ? t.capacity.toLocaleString("en-GB") : esc(t.capacity)
-        }</div></div>
-        <div class="info"><div class="info__label">Distance</div><div class="info__value">${t.distanceMiles} miles</div></div>
-        <div class="info"><div class="info__label">Postcode</div><div class="info__value">${esc(t.postcode)}</div></div>
-      </div>
-      <div class="map-actions">
-        <a class="btn btn--map" href="${directionsUrl(t)}" target="_blank" rel="noopener">${ICON.route} Directions</a>
-        <a class="btn btn--map btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
-      </div>
-    </div>`));
-
-  /* tickets */
-  wrap.append(el(`<h2 class="section-title">On the gate</h2>`));
-  wrap.append(el(`
-    <div class="card">
-      <div class="info-grid info-grid--4">
-        <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--gold-400)">${money(t.adultPrice)}</div></div>
-        <div class="info"><div class="info__label">Concession${concessionAges(t) ? ` · ${esc(concessionAges(t))}` : ""}</div><div class="info__value">${money(t.concessionPrice)}</div></div>
-        <div class="info"><div class="info__label">Youth · ${esc(t.youthRange)}</div><div class="info__value">${money(t.youthPrice)}</div></div>
-        <div class="info"><div class="info__label">Child · ${esc(t.childRange)}</div><div class="info__value">${money(t.childPrice)}</div></div>
-      </div>
-      ${t.ticketNotes ? `<div class="hint" style="margin-top:10px">${esc(t.ticketNotes)}</div>` : ""}
-      <div class="hint">${esc(concessionNote(t))}</div>
-      <div class="hint">Prices are a guide taken from the club's published rates. Always check before you travel.</div>
-      ${info?.website
-        ? `<div class="btn-row" style="margin-top:10px">
-             <a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Check on the ${esc(t.name)} site</a>
-           </div>`
-        : ""}
-    </div>`));
-
-  /* parking and pub */
-  wrap.append(el(`<h2 class="section-title">Parking and the pub at ${esc(t.stadium)}</h2>`));
-  wrap.append(el(`
-    <div class="grid grid--2">
-      <div class="card">
-        <div class="info__label">${ICON.car} Nearest car park</div>
-        <div class="info__value" style="margin-bottom:2px">${esc(t.carPark)}</div>
-        <div class="hint">${esc(t.parkingHourly)} per hour · ${esc(t.parkingDaily)} on a match day</div>
-        <a class="map-link" href="${placeUrl(t.carPark, t.carParkPostcode)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.carParkPostcode)}</a>
-      </div>
-      <div class="card">
-        <div class="info__label">${ICON.pint} Nearby pub</div>
-        <div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>
-        <div class="hint">Worth a check before you set off. Away support is not always welcome everywhere.</div>
-        <a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>
-      </div>
-    </div>`));
-
-  /* supporter pub suggestions */
-  wrap.append(el(`<h2 class="section-title">Supporter recommendations</h2>`));
-  wrap.append(pubBoard(t));
-
-  /* background: the spreadsheet's nugget, then the fuller history */
-  if (t.fact || info?.summary || info?.website) {
-    wrap.append(el(`<h2 class="section-title">About ${esc(t.name)}</h2>`));
+  const about = () => {
+    if (!t.fact && !info?.summary && !info?.website) return null;
+    const box = el(`<div></div>`);
+    box.append(el(`<h2 class="section-title">About ${esc(t.name)}</h2>`));
     const card = el(`<div class="card"></div>`);
-
-    if (t.fact) {
-      card.append(el(`<div class="club-fact">${ICON.info} ${esc(t.fact)}</div>`));
-    }
+    if (t.fact) card.append(el(`<div class="club-fact">${ICON.info} ${esc(t.fact)}</div>`));
     if (info?.summary) {
       card.append(el(`<div class="info__value info__value--body" style="margin-top:${t.fact ? 12 : 0}px">${esc(info.summary)}</div>`));
     }
-
     const links = [];
-    if (info?.website) {
-      links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Official website</a>`);
-    }
-    if (info?.wikipedia) {
-      links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.wikipedia)}" target="_blank" rel="noopener">Wikipedia</a>`);
-    }
-    if (links.length) {
-      card.append(el(`<div class="btn-row" style="margin-top:14px">${links.join("")}</div>`));
-    }
-    wrap.append(card);
-  }
+    if (info?.website) links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Official website</a>`);
+    if (info?.wikipedia) links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.wikipedia)}" target="_blank" rel="noopener">Wikipedia</a>`);
+    if (links.length) card.append(el(`<div class="btn-row" style="margin-top:14px">${links.join("")}</div>`));
+    box.append(card);
+    return box;
+  };
+
+  const travelNote = () => el(`
+    <div class="notice notice--info">
+      ${cameFromHome
+        ? `${esc(t.name)} come to ${esc(KTFC.ground)} this season. The travel, parking and
+           pub details further down are for <b>our trip to ${esc(t.stadium)}</b>${
+             awayTrip ? ` on ${esc(fmtDate(awayTrip.date, "short"))}` : ""
+           }.`
+        : awayTrip
+        ? `The travel, parking and pub details below are for <b>our trip to ${esc(t.stadium)}</b>
+           on ${esc(fmtDate(awayTrip.date, "short"))}. It is ${t.distanceMiles} miles each way from ${esc(KTFC.ground)}.`
+        : `The travel details below are for visiting <b>${esc(t.stadium)}</b>, ${t.distanceMiles} miles from ${esc(KTFC.ground)}.`}
+    </div>`);
+
+  const ground = () => {
+    const box = el(`<div></div>`);
+    box.append(el(`<h2 class="section-title">Their ground</h2>`));
+    box.append(el(`
+      <div class="card">
+        <div class="info-grid info-grid--4">
+          <div class="info"><div class="info__label">Ground</div><div class="info__value">${esc(t.stadium)}</div></div>
+          <div class="info"><div class="info__label">Capacity</div><div class="info__value">${
+            typeof t.capacity === "number" ? t.capacity.toLocaleString("en-GB") : esc(t.capacity)
+          }</div></div>
+          <div class="info"><div class="info__label">Distance</div><div class="info__value">${t.distanceMiles} miles</div></div>
+          <div class="info"><div class="info__label">Postcode</div><div class="info__value">${esc(t.postcode)}</div></div>
+        </div>
+        <div class="map-actions">
+          <a class="btn btn--map" href="${directionsUrl(t)}" target="_blank" rel="noopener">${ICON.route} Directions</a>
+          <a class="btn btn--map btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
+        </div>
+      </div>`));
+    return box;
+  };
+
+  const tickets = () => {
+    const box = el(`<div></div>`);
+    box.append(el(`<h2 class="section-title">On the gate</h2>`));
+    box.append(el(`
+      <div class="card">
+        <div class="info-grid info-grid--4">
+          <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--gold-400)">${money(t.adultPrice)}</div></div>
+          <div class="info"><div class="info__label">Concession${concessionAges(t) ? ` · ${esc(concessionAges(t))}` : ""}</div><div class="info__value">${money(t.concessionPrice)}</div></div>
+          <div class="info"><div class="info__label">Youth · ${esc(t.youthRange)}</div><div class="info__value">${money(t.youthPrice)}</div></div>
+          <div class="info"><div class="info__label">Child · ${esc(t.childRange)}</div><div class="info__value">${money(t.childPrice)}</div></div>
+        </div>
+        ${t.ticketNotes ? `<div class="hint" style="margin-top:10px">${esc(t.ticketNotes)}</div>` : ""}
+        <div class="hint">${esc(concessionNote(t))}</div>
+        <div class="hint">Prices are a guide taken from the club's published rates. Always check before you travel.</div>
+        ${info?.website
+          ? `<div class="btn-row" style="margin-top:10px">
+               <a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Check on the ${esc(t.name)} site</a>
+             </div>`
+          : ""}
+      </div>`));
+    return box;
+  };
+
+  const parkingAndPub = () => {
+    const box = el(`<div></div>`);
+    box.append(el(`<h2 class="section-title">Parking and the pub at ${esc(t.stadium)}</h2>`));
+    box.append(el(`
+      <div class="grid grid--2">
+        <div class="card">
+          <div class="info__label">${ICON.car} Nearest car park</div>
+          <div class="info__value" style="margin-bottom:2px">${esc(t.carPark)}</div>
+          <div class="hint">${esc(t.parkingHourly)} per hour · ${esc(t.parkingDaily)} on a match day</div>
+          <a class="map-link" href="${placeUrl(t.carPark, t.carParkPostcode)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.carParkPostcode)}</a>
+        </div>
+        <div class="card">
+          <div class="info__label">${ICON.pint} Nearby pub</div>
+          <div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>
+          <div class="hint">Worth a check before you set off. Away support is not always welcome everywhere.</div>
+          <a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>
+        </div>
+      </div>`));
+    box.append(el(`<h2 class="section-title">Supporter recommendations</h2>`));
+    box.append(pubBoard(t));
+    return box;
+  };
+
+  /* ---- the running order ---- */
+
+  const order = cameFromHome
+    ? [thisSeason, about, travelNote, ground, tickets, parkingAndPub]
+    : [travelNote, thisSeason, ground, tickets, parkingAndPub, about];
+
+  order.forEach((section) => {
+    const node = section();
+    if (node) wrap.append(node);
+  });
 
   return wrap;
 }
@@ -2418,7 +2439,7 @@ function wireGlobalClicks() {
     }
     const club = e.target.closest("[data-club]");
     if (club && club.dataset.club) {
-      go("club", { id: club.dataset.club });
+      go("club", { id: club.dataset.club, from: club.dataset.venue || "" });
     }
   });
 }
