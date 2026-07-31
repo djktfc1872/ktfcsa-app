@@ -2332,3 +2332,10 @@ table.league tbody tr.is-ktfc td {
 .fixture__opp {
   min-width: 0;
 }
+
+/* The drawn poppy needs to sit on the text baseline like the emoji it replaced. */
+.ic .ic-poppy,
+.ic-poppy {
+  vertical-align: -3px;
+  display: inline-block;
+}
