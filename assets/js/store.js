@@ -59,6 +59,7 @@ const live = {
   pollVotes: {},            // pollId -> option index
   pubs: [],
   pubVotes: new Set(),
+  access: [],
 };
 
 export const isOnline = () => Boolean(backend);
@@ -157,6 +158,8 @@ export async function refresh() {
       const pubs = await backend.loadPubs();
       live.pubs = pubs.pubs;
     }
+
+    live.access = await backend.loadAccess();
     onChange();
   } catch (err) {
     console.warn("Refresh failed:", err);
@@ -450,6 +453,29 @@ export function setAttendance(fixtureId, attended) {
 }
 
 export const attendanceTable = () => (backend ? backend.attendanceTable() : Promise.resolve([]));
+
+/* ------------------------------------------------------------------ access */
+
+/* Reports from supporters who have actually been. There is no reliable source
+   for this at Step 3, so an empty list means nobody has been yet, not that a
+   ground is inaccessible. The app has to say which. */
+
+export const accessFor = (clubSlug) =>
+  live.access.filter((r) => r.club_slug === clubSlug && !r.hidden);
+
+export function addAccessReport(clubSlug, report) {
+  if (!backend) {
+    onError("Access reports need an account. Ask your fellow volunteers to finish the online setup.");
+    return;
+  }
+  attempt(backend.addAccess(clubSlug, report).then(refresh), "That report did not save.");
+}
+
+export function removeAccessReport(id) {
+  live.access = live.access.filter((r) => r.id !== id);
+  onChange();
+  attempt(backend.removeAccess(id).then(refresh), "That deletion did not save.");
+}
 
 /* -------------------------------------------------------------------- pubs */
 

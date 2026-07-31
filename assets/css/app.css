@@ -3215,3 +3215,79 @@ button,
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------ access board */
+
+.access-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.access-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13.5px;
+}
+
+.access-row:last-child {
+  border-bottom: none;
+}
+
+.access-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.access-mark--ok {
+  background: rgba(63, 165, 100, 0.16);
+  color: var(--ok);
+  border: 1px solid rgba(63, 165, 100, 0.4);
+}
+
+.access-mark--no {
+  background: rgba(200, 50, 63, 0.14);
+  color: var(--stop);
+  border: 1px solid rgba(200, 50, 63, 0.38);
+}
+
+.access-mark--mixed {
+  background: rgba(214, 148, 34, 0.14);
+  color: var(--warn);
+  border: 1px solid rgba(214, 148, 34, 0.38);
+}
+
+/* "Not known" is deliberately quiet. It is an absence of information, not a
+   warning, and it should not read as though the ground is poor. */
+.access-mark--unsure {
+  background: var(--surface-3);
+  color: var(--text-3);
+  border: 1px solid var(--line);
+}
+
+.access-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.access-value {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.access-value--ok { color: var(--ok); }
+.access-value--no { color: var(--stop); }
+.access-value--mixed { color: var(--warn); }
+.access-value--unsure { color: var(--text-3); font-weight: 600; }

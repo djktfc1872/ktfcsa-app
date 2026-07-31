@@ -131,7 +131,7 @@ class Backend {
     Object.values(TABLES).forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, onChange);
     });
-    ["predictions", "attendance", "pubs", "pub_votes", "poll_votes"].forEach((table) => {
+    ["predictions", "attendance", "pubs", "pub_votes", "poll_votes", "access_reports"].forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, onChange);
     });
     channel.subscribe();
@@ -253,6 +253,32 @@ class Backend {
       .order("miles", { ascending: false });
     if (error) throw error;
     return data;
+  }
+
+  /* --------------------------------------------------------------- access */
+
+  async loadAccess() {
+    const { data, error } = await this.sb
+      .from("access_reports")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async addAccess(clubSlug, report) {
+    const { error } = await this.sb.from("access_reports").insert({
+      club_slug: clubSlug,
+      profile_id: this.profile.id,
+      author_name: this.profile.name,
+      ...report,
+    });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async removeAccess(id) {
+    const { error } = await this.sb.from("access_reports").delete().eq("id", id);
+    if (error) throw new Error(friendly(error));
   }
 
   /* ----------------------------------------------------------------- pubs */
@@ -405,6 +431,11 @@ function friendly(error) {
   if (/row-level security/i.test(m)) return "You do not have permission to do that.";
   if (/rate limit|too many/i.test(m)) return "Too many attempts. Please wait a minute and try again.";
   if (/duplicate key/i.test(m)) return "That has already been added.";
+  /* Shows up when the database has not had the latest schema.sql run against
+     it. Raw Postgres wording helps nobody standing in a car park. */
+  if (/schema cache|does not exist|PGRST205/i.test(m)) {
+    return "That part of the app is not switched on yet. Please let the KTFCSA team know.";
+  }
   if (/Failed to fetch|NetworkError/i.test(m)) return "No connection. Please try again.";
   return m || "Something went wrong. Please try again.";
 }

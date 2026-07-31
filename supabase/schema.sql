@@ -106,6 +106,35 @@ create table if not exists pubs (
 
 create index if not exists pubs_club_idx on pubs (club_slug);
 
+-- ------------------------------------------------------ access reports
+--
+-- There is no usable source for this at Step 3. OpenStreetMap has almost
+-- nothing, Level Playing Field covers the bigger clubs, and the club sites
+-- are inconsistent. Guessing would be worse than saying nothing, because a
+-- disabled supporter travelling on bad information is the one person we
+-- really cannot let down. So it comes from fans who have actually been.
+--
+-- Every field allows "not sure", and the app says plainly when nobody has
+-- reported on a ground yet.
+
+create table if not exists access_reports (
+  id                uuid primary key default gen_random_uuid(),
+  club_slug         text not null,
+  profile_id        uuid references profiles on delete set null,
+  author_name       text not null,
+  step_free         text check (step_free         in ('yes','no','unsure')) default 'unsure',
+  accessible_toilet text check (accessible_toilet in ('yes','no','unsure')) default 'unsure',
+  wheelchair_spaces text check (wheelchair_spaces in ('yes','no','unsure')) default 'unsure',
+  blue_badge_parking text check (blue_badge_parking in ('yes','no','unsure')) default 'unsure',
+  carer_free        text check (carer_free        in ('yes','no','unsure')) default 'unsure',
+  notes             text check (char_length(notes) <= 500),
+  visited_on        date,
+  hidden            boolean not null default false,
+  created_at        timestamptz not null default now()
+);
+
+create index if not exists access_club_idx on access_reports (club_slug, created_at desc);
+
 create table if not exists pub_votes (
   pub_id     uuid not null references pubs on delete cascade,
   profile_id uuid not null references profiles on delete cascade,
@@ -386,6 +415,26 @@ create policy "volunteers updates feedback" on feedback for update using (is_adm
 
 drop policy if exists "volunteers removes feedback" on feedback;
 create policy "volunteers removes feedback" on feedback for delete using (is_admin());
+
+
+-- ---- access reports -------------------------------------------------------
+alter table access_reports enable row level security;
+
+drop policy if exists "access readable" on access_reports;
+create policy "access readable" on access_reports
+  for select using (hidden = false or is_admin());
+
+drop policy if exists "report access" on access_reports;
+create policy "report access" on access_reports
+  for insert with check (auth.uid() = profile_id);
+
+drop policy if exists "edit own access report" on access_reports;
+create policy "edit own access report" on access_reports
+  for update using (auth.uid() = profile_id or is_admin());
+
+drop policy if exists "remove own access report" on access_reports;
+create policy "remove own access report" on access_reports
+  for delete using (auth.uid() = profile_id or is_admin());
 
 -- ---- coach notices --------------------------------------------------------
 drop policy if exists "coach readable" on coach_notices;

@@ -1063,11 +1063,18 @@ function viewClub({ id, from }) {
     return box;
   };
 
+  const access = () => {
+    const box = group();
+    box.append(el(`<h2 class="section-title">Getting in: access</h2>`));
+    box.append(accessBoard(t));
+    return box;
+  };
+
   /* ---- the running order ---- */
 
   const order = cameFromHome
-    ? [thisSeason, about, travelNote, ground, tickets, parkingAndPub]
-    : [travelNote, thisSeason, ground, tickets, parkingAndPub, about];
+    ? [thisSeason, about, travelNote, ground, tickets, access, parkingAndPub]
+    : [travelNote, thisSeason, ground, tickets, access, parkingAndPub, about];
 
   order.forEach((section) => {
     const node = section();
@@ -1075,6 +1082,151 @@ function viewClub({ id, from }) {
   });
 
   return wrap;
+}
+
+/* ------------------------------------------------------------ access board */
+
+/* Nobody publishes this for Step 3. OpenStreetMap had three tags across the
+   whole division and the club sites say nothing usable, so it comes from
+   supporters who have been. Where nobody has reported, the app says so rather
+   than implying a ground is inaccessible. */
+
+const ACCESS_FIELDS = [
+  ["step_free", "Step-free to a viewing area"],
+  ["wheelchair_spaces", "Designated wheelchair spaces"],
+  ["accessible_toilet", "Accessible toilet"],
+  ["blue_badge_parking", "Blue badge parking"],
+  ["carer_free", "Carer goes free or reduced"],
+];
+
+/** Combine reports: a single "no" is worth knowing, so it wins over a "yes". */
+function accessSummary(reports) {
+  const out = {};
+  ACCESS_FIELDS.forEach(([key]) => {
+    const said = reports.map((r) => r[key]).filter((v) => v && v !== "unsure");
+    if (!said.length) out[key] = "unsure";
+    else if (said.includes("no") && said.includes("yes")) out[key] = "mixed";
+    else out[key] = said[0];
+  });
+  return out;
+}
+
+const ACCESS_MARK = {
+  yes: { icon: "✓", cls: "ok", label: "Yes" },
+  no: { icon: "✕", cls: "no", label: "No" },
+  mixed: { icon: "~", cls: "mixed", label: "Reports differ" },
+  unsure: { icon: "?", cls: "unsure", label: "Not known" },
+};
+
+function accessBoard(team) {
+  const box = el(`<div></div>`);
+  const user = db.currentUser();
+
+  if (!db.isOnline()) {
+    box.append(el(`<div class="notice notice--info">Access reports need the online setup. Please ring ${esc(team.name)} before travelling.</div>`));
+    return box;
+  }
+
+  const reports = db.accessFor(team.id);
+  const summary = accessSummary(reports);
+  const anything = reports.length > 0;
+
+  const card = el(`
+    <div class="card">
+      <ul class="access-list">
+        ${ACCESS_FIELDS.map(([key, label]) => {
+          const m = ACCESS_MARK[summary[key]];
+          return `<li class="access-row">
+            <span class="access-mark access-mark--${m.cls}" aria-hidden="true">${m.icon}</span>
+            <span class="access-label">${esc(label)}</span>
+            <span class="access-value access-value--${m.cls}">${esc(m.label)}</span>
+          </li>`;
+        }).join("")}
+      </ul>
+      <div class="hint">
+        ${anything
+          ? `Based on ${reports.length} report${reports.length === 1 ? "" : "s"} from supporters who have been. Always ring the club to confirm before you travel.`
+          : `Nobody has reported on access at ${esc(team.stadium)} yet. That does not mean it is poor, only that we do not know. If you have been, please tell the next person.`}
+      </div>
+    </div>`);
+  box.append(card);
+
+  if (user) {
+    const btn = el(`<div class="btn-row--actions"><button class="btn btn--ghost">Report on access here</button></div>`);
+    btn.querySelector("button").addEventListener("click", () => accessForm(team));
+    box.append(btn);
+  } else {
+    box.append(el(`<div class="notice notice--info">Sign in to add what you know about access at ${esc(team.stadium)}.</div>`));
+  }
+
+  reports.filter((r) => r.notes).slice(0, 4).forEach((r) => {
+    const note = el(`
+      <div class="post">
+        <div class="post__head">
+          <span class="post__who">${esc(r.author_name)}</span>
+          ${r.visited_on ? `<span class="pill pill--muted">Visited ${esc(fmtDate(r.visited_on, "short"))}</span>` : ""}
+          <span class="post__when">${esc(relTime(new Date(r.created_at).getTime()))}</span>
+        </div>
+        <div class="post__body">${esc(r.notes)}</div>
+      </div>`);
+    if (r.profile_id === user?.id || db.isAdmin()) {
+      const act = el(`<div class="post__actions"><button class="link-btn">Remove</button></div>`);
+      act.querySelector("button").addEventListener("click", () => {
+        db.removeAccessReport(r.id);
+        toast("Report removed.", "good");
+      });
+      note.append(act);
+    }
+    box.append(note);
+  });
+
+  return box;
+}
+
+function accessForm(team) {
+  const choices = (key) => `
+    <div class="field">
+      <label for="ac-${key}">${esc(ACCESS_FIELDS.find(([k]) => k === key)[1])}</label>
+      <select id="ac-${key}">
+        <option value="unsure">Not sure</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>`;
+
+  const { node, close } = modal(`
+    <h2>Access at ${esc(team.stadium)}</h2>
+    <p class="sub">Only answer what you actually know. "Not sure" is a proper answer and more use than a guess.</p>
+    ${ACCESS_FIELDS.map(([k]) => choices(k)).join("")}
+    <div class="field"><label for="ac-when">When did you visit</label>
+      <input id="ac-when" type="date"></div>
+    <div class="field"><label for="ac-notes">Anything else worth knowing</label>
+      <textarea id="ac-notes" maxlength="500" placeholder="Hard standing along one side, and the club will open the gate if you ring ahead."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn--full" id="ac-save">Send report</button>
+      <button class="btn btn--ghost" id="ac-cancel">Cancel</button>
+    </div>`);
+
+  $("#ac-cancel", node).addEventListener("click", close);
+  $("#ac-save", node).addEventListener("click", () => {
+    const report = Object.fromEntries(ACCESS_FIELDS.map(([k]) => [k, $(`#ac-${k}`, node).value]));
+    const notes = $("#ac-notes", node).value.trim();
+    const when = $("#ac-when", node).value;
+
+    const saidSomething = Object.values(report).some((v) => v !== "unsure") || notes;
+    if (!saidSomething) return toast("Answer at least one question, or add a note.", "bad");
+
+    if (notes) {
+      const check = db.checkPost(notes, { minLength: 0, maxLength: 500 });
+      if (!check.ok) return toast(check.reason, "bad");
+    }
+    const limit = db.rateLimit("access", { max: 4, windowMs: 300000 });
+    if (!limit.ok) return toast(limit.reason, "bad");
+
+    db.addAccessReport(team.id, { ...report, notes: notes || null, visited_on: when || null });
+    close();
+    toast("Thank you, that will help somebody.", "good");
+  });
 }
 
 /* --------------------------------------------------- supporter pub board */
