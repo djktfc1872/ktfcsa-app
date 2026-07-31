@@ -2577,3 +2577,207 @@ table.league tbody tr.is-ktfc td {
     gap: 2px;
   }
 }
+
+/* ==========================================================================
+   VERTICAL RHYTHM
+   One scale, applied everywhere. Sections were running into each other and
+   the steps between "same group", "new heading" and "new section" were too
+   close to tell apart.
+
+     --gap          within a group, card to card
+     --gap-head     a heading to the thing it introduces
+     --gap-section  one section to the next
+   ========================================================================== */
+
+:root {
+  --gap: 12px;
+  --gap-head: 14px;
+  --gap-section: 36px;
+}
+
+/* Section headings own the space above them. */
+.section-title {
+  margin: var(--gap-section) 0 var(--gap-head);
+}
+
+.section-title:first-child {
+  margin-top: 0;
+}
+
+/* Blocks inside a section sit a consistent distance apart. */
+.card,
+.post,
+.predict,
+.poll,
+.episode,
+.fixture,
+.club-row,
+.attend,
+.table-wrap,
+.notice,
+.empty,
+.pod-hero,
+.hero,
+.grid,
+.info-grid,
+.map-actions,
+.map-toolbar {
+  margin-bottom: var(--gap);
+}
+
+/* The last thing in a section should not double up with the next heading. */
+.card:last-child,
+.post:last-child,
+.predict:last-child,
+.table-wrap:last-child,
+.grid:last-child,
+.empty:last-child,
+.notice:last-child {
+  margin-bottom: 0;
+}
+
+/* A notice explaining what follows belongs with it, not floating between. */
+.notice + .section-title {
+  margin-top: var(--gap-section);
+}
+
+.page-head {
+  margin-bottom: var(--gap-section);
+}
+
+.month {
+  margin: calc(var(--gap-section) - 6px) 0 var(--gap);
+}
+
+.month:first-of-type {
+  margin-top: var(--gap-head);
+}
+
+/* Cards get a little more room inside them too. */
+.card {
+  padding: 18px;
+}
+
+.grid,
+.info-grid {
+  gap: var(--gap);
+}
+
+.toolbar,
+.search-box {
+  margin-bottom: var(--gap-head);
+}
+
+.back-link {
+  margin-bottom: var(--gap-head);
+}
+
+.hub-hero {
+  margin-bottom: var(--gap-section);
+}
+
+/* ==========================================================================
+   BUTTONS
+   The directions pair worked, so the same treatment goes everywhere: roomy,
+   centred, full width on a phone and side by side once there is space.
+   ========================================================================== */
+
+.card .btn-row,
+.btn-row--actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: var(--gap-head);
+  justify-content: stretch;
+}
+
+@media (min-width: 520px) {
+  .card .btn-row,
+  .btn-row--actions {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    justify-content: center;
+  }
+}
+
+/* Every button in a card action row matches the directions pair. */
+.card .btn-row .btn,
+.btn-row--actions .btn {
+  padding: 13px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: var(--r);
+  justify-content: center;
+  min-height: 46px;
+}
+
+.card .btn-row .btn svg,
+.btn-row--actions .btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Buttons that stand alone above a list, centred. */
+.map-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.map-toolbar .btn {
+  padding: 11px 16px;
+  border-radius: var(--r);
+}
+
+/* Empty states and single actions read better centred. */
+.btn-row--centre {
+  justify-content: center;
+}
+
+/* ==========================================================================
+   FIXTURE ROWS
+   Long names were being cut off with an ellipsis while there was room below.
+   Two lines is fine; the row only grows when it has to.
+   ========================================================================== */
+
+.fixture__opp {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.fixture {
+  padding: 13px 14px;
+  align-items: center;
+}
+
+.fixture__body {
+  padding-right: 4px;
+}
+
+/* Only the heading that actually opens a screen loses its top margin. Scoping
+   this to a direct child of the view matters: section builders used to wrap
+   their contents, which made every heading a :first-child and quietly removed
+   the space above it. */
+.section-title:first-child {
+  margin-top: var(--gap-section);
+}
+
+.view > .section-title:first-child,
+.view > .page-head + .section-title,
+.view > .hub-hero + .section-title,
+.view > .notice:first-of-type + .section-title {
+  margin-top: 0;
+}
+
+.page-head + .section-title,
+.hub-hero + .section-title {
+  margin-top: 0;
+}

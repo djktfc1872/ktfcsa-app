@@ -912,9 +912,11 @@ function viewClub({ id, from }) {
 
   /* ---- the pieces ---- */
 
+  const group = () => document.createDocumentFragment();
+
   const thisSeason = () => {
     if (!ours.length) return null;
-    const box = el(`<div></div>`);
+    const box = group();
     box.append(el(`<h2 class="section-title">This season</h2>`));
     ours.forEach((f) => box.append(fixtureCard(f)));
     return box;
@@ -922,7 +924,7 @@ function viewClub({ id, from }) {
 
   const about = () => {
     if (!t.fact && !info?.summary && !info?.website) return null;
-    const box = el(`<div></div>`);
+    const box = group();
     box.append(el(`<h2 class="section-title">About ${esc(t.name)}</h2>`));
     const card = el(`<div class="card"></div>`);
     if (t.fact) card.append(el(`<div class="club-fact">${ICON.info} ${esc(t.fact)}</div>`));
@@ -951,7 +953,7 @@ function viewClub({ id, from }) {
     </div>`);
 
   const ground = () => {
-    const box = el(`<div></div>`);
+    const box = group();
     box.append(el(`<h2 class="section-title">Their ground</h2>`));
     box.append(el(`
       <div class="card">
@@ -972,7 +974,7 @@ function viewClub({ id, from }) {
   };
 
   const tickets = () => {
-    const box = el(`<div></div>`);
+    const box = group();
     box.append(el(`<h2 class="section-title">On the gate</h2>`));
     box.append(el(`
       <div class="card">
@@ -995,7 +997,7 @@ function viewClub({ id, from }) {
   };
 
   const parkingAndPub = () => {
-    const box = el(`<div></div>`);
+    const box = group();
     box.append(el(`<h2 class="section-title">Parking and the pub at ${esc(t.stadium)}</h2>`));
     box.append(el(`
       <div class="grid grid--2">
@@ -1146,6 +1148,10 @@ function viewMap() {
       <h1>Grounds Map</h1>
       <p>Every ground in the division. Tap a marker for the away day guide.</p>
     </div>
+    <div class="map-toolbar">
+      <button class="btn btn--sm btn--ghost" id="map-fit-all">Show every ground</button>
+      <button class="btn btn--sm btn--ghost" id="map-home">Back to Kettering</button>
+    </div>
     <div id="grounds-map" class="grounds-map" role="application" aria-label="Map of grounds"></div>
     <div class="map-legend">
       <span><i class="dot-home"></i> Latimer Park</span>
@@ -1191,7 +1197,15 @@ function viewMap() {
       marks.push([t.lat, t.lng]);
     });
 
-    map.fitBounds(marks, { padding: [26, 26] });
+    /* The division runs nearly four degrees east to west but under one north
+       to south, so fitting the lot on a phone leaves half the frame as sea.
+       Open on the grounds nearest home instead, with the full spread a tap
+       away. */
+    map.setView([KTFC.lat, KTFC.lng], 8);
+
+    const fitAll = () => map.fitBounds(marks, { padding: [26, 26] });
+    $("#map-fit-all", wrap)?.addEventListener("click", fitAll);
+    $("#map-home", wrap)?.addEventListener("click", () => map.setView([KTFC.lat, KTFC.lng], 8));
 
     if (window.ResizeObserver) {
       const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
