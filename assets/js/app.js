@@ -64,36 +64,37 @@ const todayISO = () => {
 const money = (v) => (v === "Free" || v === 0 ? "Free" : typeof v === "number" ? `£${v}` : v || "To be confirmed");
 
 /* Getting somebody to the right place.
-   
-   Naming the ground does not work: most are called things like Woodside Park,
-   The Grove or Victory Road, and a geocoder happily resolves those onto a
-   residential street of the same name miles away. That is what sent people to
-   the wrong address.
 
-   So where the ground has been confirmed on a football pitch in OpenStreetMap,
-   which is eighteen of the twenty one, the link uses that exact point and lands
-   on the pitch. The other three are not mapped as grounds anywhere, so they use
-   the postcode, which reaches the right street. Neither route can drop somebody
-   on a house picked by a guess. */
+   Two things have already gone wrong here. A bare coordinate makes the mapping
+   app snap to whatever POI is nearest, which at Bishop's Stortford is a college
+   sharing the site. Naming the ground is worse, because most are called things
+   like Woodside Park or The Grove and there is a residential street of that
+   name somewhere else.
+
+   The club name is the part that is actually distinctive, and it is what
+   mapping apps hold as a business. So the destination is the club, then the
+   ground, then the postcode, which narrows it to the right town. */
+
+const clubQuery = (t) => {
+  const name = t.name || t.stadium || "";
+  const named = /\b(fc|f\.c\.|football club|afc)\b/i.test(name)
+    ? name
+    : `${name} Football Club`;
+  return [named, t.stadium || t.ground, t.postcode].filter(Boolean).join(", ");
+};
 
 const placeUrl = (label, postcode) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     [label, postcode].filter(Boolean).join(", ")
   )}`;
 
-/** The most precise destination we can honestly give for a ground. */
-function groundTarget(t) {
-  if (t.groundVerified && t.lat && t.lng) return `${t.lat},${t.lng}`;
-  return [t.stadium || t.ground || t.name, t.postcode].filter(Boolean).join(", ");
-}
-
 const mapUrl = (t) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(groundTarget(t))}`;
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clubQuery(t))}`;
 
 const directionsUrl = (t) =>
   `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
-    `${KTFC.lat},${KTFC.lng}`
-  )}&destination=${encodeURIComponent(groundTarget(t))}`;
+    clubQuery(KTFC)
+  )}&destination=${encodeURIComponent(clubQuery(t))}`;
 
 /** League feeds spell clubs slightly differently to the spreadsheet. */
 const normalise = (name) =>
@@ -117,7 +118,9 @@ const clubName = (name) => (/kettering/i.test(name) ? KTFC.name : teamByName(nam
    no font or network request. */
 const ICON = {
   pin: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>`,
-  route: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M18 15.5a2.5 2.5 0 0 0-2.45 2H11a2.5 2.5 0 0 1 0-5h2a4.5 4.5 0 0 0 0-9 4.5 4.5 0 0 0-4.45 4h-2A2.5 2.5 0 1 0 6 10.5h2.05a4.5 4.5 0 0 0 .95 2H11a4.5 4.5 0 0 0 0 9h4.55A2.5 2.5 0 1 0 18 15.5Z"/></svg>`,
+  /* A navigation arrow. The previous winding-route glyph collapsed into
+     something like a helicopter at thirteen pixels. */
+  route: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2.2a1 1 0 0 1 .92.6l7.2 16.8a1 1 0 0 1-1.33 1.3L12 17.83l-6.79 3.07a1 1 0 0 1-1.33-1.3l7.2-16.8a1 1 0 0 1 .92-.6Z"/></svg>`,
   pint: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M6 3h12l-1.2 17.1A2 2 0 0 1 14.8 22H9.2a2 2 0 0 1-2-1.9L6 3Zm2.2 2 .2 3h7.2l.2-3H8.2Z"/></svg>`,
   globe: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 9h-3a15.7 15.7 0 0 0-1.1-5.2A8 8 0 0 1 18.9 11ZM12 4.2c.7 1 1.5 2.9 1.8 6.8h-3.6c.3-3.9 1.1-5.8 1.8-6.8ZM4.3 13h3c.1 2 .5 3.8 1 5.2A8 8 0 0 1 4.3 13Zm3-2h-3a8 8 0 0 1 4-5.2A15.7 15.7 0 0 0 7.3 11ZM12 19.8c-.7-1-1.5-2.9-1.8-6.8h3.6c-.3 3.9-1.1 5.8-1.8 6.8Zm2.8-1.6c.5-1.4.9-3.2 1-5.2h3a8 8 0 0 1-4 5.2Z"/></svg>`,
   poppy: `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" class="ic-poppy"><g fill="#c8323f"><ellipse cx="12" cy="6.8" rx="4.9" ry="4.5"/><ellipse cx="17.2" cy="12" rx="4.5" ry="4.9"/><ellipse cx="12" cy="17.2" rx="4.9" ry="4.5"/><ellipse cx="6.8" cy="12" rx="4.5" ry="4.9"/></g><circle cx="12" cy="12" r="3.4" fill="#7d111b"/><circle cx="12" cy="12" r="1.9" fill="#1b1b1f"/></svg>`,
