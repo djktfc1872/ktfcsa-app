@@ -107,6 +107,13 @@ CORRECTIONS = {
         "carParkPostcode": "WR3 7PS",
         "pubPostcode": "WR3 7RN",
     },
+    "real-bedford": {
+        # MK41 9AL is a real postcode but it is in Putnoe, over three
+        # kilometres from the ground. MK44 3LW lands 480 m from the
+        # coordinates already in the sheet, which were right all along, and
+        # next door to the MK44 3SB car park.
+        "postcode": "MK44 3LW",
+    },
     "rushall-olympic": {
         # WS4 1SJ is not a real postcode, and the coordinates sat in West
         # Northamptonshire, about 15 miles from Kettering rather than 66.
