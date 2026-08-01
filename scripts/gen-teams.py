@@ -87,6 +87,26 @@ def slug(name):
 # wrong, so the app does not keep reintroducing the error. Fix the spreadsheet
 # and the entry here can go.
 CORRECTIONS = {
+    "racing-club-warwick": {
+        # CV34 4EJ is not a real postcode. The pub name was right: the Rose &
+        # Crown is on Market Place, 570 m from Townsend Meadow.
+        "pubPostcode": "CV34 4SH",
+    },
+    "stourbridge": {
+        # DY8 1JR is not a real postcode, and was on both the car park and the
+        # pub. Parking is at the ground itself, so it takes the ground's own
+        # postcode. The Chequers Inn is at 95 High Street, Oldswinford, 560 m
+        # from the ground.
+        "carParkPostcode": "DY8 4HN",
+        "pubPostcode": "DY8 1EQ",
+    },
+    "worcester-city": {
+        # WR3 72N is not a postcode at all, and was on both the car park and
+        # the pub. Parking is at the ground. The Mug House is on Claines Lane,
+        # 600 m away, and the name in the sheet was right.
+        "carParkPostcode": "WR3 7PS",
+        "pubPostcode": "WR3 7RN",
+    },
     "rushall-olympic": {
         # WS4 1SJ is not a real postcode, and the coordinates sat in West
         # Northamptonshire, about 15 miles from Kettering rather than 66.
