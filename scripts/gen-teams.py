@@ -80,6 +80,32 @@ def slug(name):
     return s.strip("-")
 
 
+# Corrections to the master spreadsheet, applied on every regenerate.
+#
+# The spreadsheet stays the source of truth. These are cases where a value was
+# checked against the Post Office database or OpenStreetMap and found to be
+# wrong, so the app does not keep reintroducing the error. Fix the spreadsheet
+# and the entry here can go.
+CORRECTIONS = {
+    "rushall-olympic": {
+        # WS4 1SJ is not a real postcode, and the coordinates sat in West
+        # Northamptonshire, about 15 miles from Kettering rather than 66.
+        # The club is at Dales Lane, Rushall, confirmed at 124 m from the
+        # WS4 1LJ centroid, which the sheet already uses for the car park.
+        "postcode": "WS4 1LJ",
+        "lat": 52.6011,
+        "lng": -1.9525,
+    },
+}
+
+
+def apply_corrections(team):
+    fix = CORRECTIONS.get(team["id"])
+    if fix:
+        team.update(fix)
+    return team
+
+
 rows = read_rows(SRC)
 header = rows[0]
 teams = []
@@ -121,6 +147,7 @@ for cells in rows[1:]:
         "fact": r.get("Factoid about Opposition", ""),
     })
 
+teams = [apply_corrections(t) for t in teams]
 teams.sort(key=lambda t: t["name"])
 body = ",\n".join("  " + json.dumps(t, ensure_ascii=False) for t in teams)
 
