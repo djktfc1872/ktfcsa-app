@@ -63,26 +63,37 @@ const todayISO = () => {
 
 const money = (v) => (v === "Free" || v === 0 ? "Free" : typeof v === "number" ? `£${v}` : v || "To be confirmed");
 
-/* Map links use the ground name and postcode rather than a coordinate.
-   A mapping app resolves "Victory Road, IP16 4DQ" onto the ground itself,
-   whereas a coordinate that is even slightly off sends somebody to whatever
-   happens to be at that point. One of ours was a private house. Coordinates
-   are still used for the markers on our own map, where being a few metres out
-   costs nothing. */
+/* Getting somebody to the right place.
+   
+   Naming the ground does not work: most are called things like Woodside Park,
+   The Grove or Victory Road, and a geocoder happily resolves those onto a
+   residential street of the same name miles away. That is what sent people to
+   the wrong address.
+
+   So where the ground has been confirmed on a football pitch in OpenStreetMap,
+   which is eighteen of the twenty one, the link uses that exact point and lands
+   on the pitch. The other three are not mapped as grounds anywhere, so they use
+   the postcode, which reaches the right street. Neither route can drop somebody
+   on a house picked by a guess. */
 
 const placeUrl = (label, postcode) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     [label, postcode].filter(Boolean).join(", ")
   )}`;
 
-const mapUrl = (t) => placeUrl(t.stadium || t.ground || t.name, t.postcode);
+/** The most precise destination we can honestly give for a ground. */
+function groundTarget(t) {
+  if (t.groundVerified && t.lat && t.lng) return `${t.lat},${t.lng}`;
+  return [t.stadium || t.ground || t.name, t.postcode].filter(Boolean).join(", ");
+}
+
+const mapUrl = (t) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(groundTarget(t))}`;
 
 const directionsUrl = (t) =>
   `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
-    `${KTFC.ground}, ${KTFC.postcode}`
-  )}&destination=${encodeURIComponent(
-    [t.stadium || t.ground || t.name, t.postcode].filter(Boolean).join(", ")
-  )}`;
+    `${KTFC.lat},${KTFC.lng}`
+  )}&destination=${encodeURIComponent(groundTarget(t))}`;
 
 /** League feeds spell clubs slightly differently to the spreadsheet. */
 const normalise = (name) =>

@@ -95,6 +95,16 @@ def slug(name):
 # geocoding onto the right street. Three grounds are not in OpenStreetMap at
 # all, so they use their postcode centroid, which is at least on the right road
 # and never somebody's garden.
+# True where the coordinate was confirmed to sit on a football pitch or
+# stadium in OpenStreetMap. Directions use the coordinate for these, because it
+# lands on the pitch itself. The three that are false are not mapped as grounds
+# anywhere, so they fall back to the postcode, which reaches the right street.
+GROUND_VERIFIED = {
+    "leamington": False,
+    "needham-market": False,
+    "worcester-city": False,
+}
+
 GROUND_LOCATIONS = {
     "alvechurch": (52.344853, -1.956302),  # osm: Alvechurch FC
     "anstey-nomads": (52.675751, -1.18028),  # osm: Anstey Nomads FC
@@ -172,6 +182,7 @@ def apply_corrections(team):
     here = GROUND_LOCATIONS.get(team["id"])
     if here:
         team["lat"], team["lng"] = here
+    team["groundVerified"] = GROUND_VERIFIED.get(team["id"], True)
     return team
 
 
