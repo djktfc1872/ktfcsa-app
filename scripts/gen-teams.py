@@ -86,6 +86,39 @@ def slug(name):
 # checked against the Post Office database or OpenStreetMap and found to be
 # wrong, so the app does not keep reintroducing the error. Fix the spreadsheet
 # and the entry here can go.
+# Ground locations, checked one at a time.
+#
+# The coordinates in the spreadsheet were approximate and several were wrong
+# enough to matter: Leiston pointed at 36 Charles Adams Close, a private house,
+# and Alvechurch was three kilometres out. These come from the football pitch
+# or stadium that OpenStreetMap has for each club, confirmed by reverse
+# geocoding onto the right street. Three grounds are not in OpenStreetMap at
+# all, so they use their postcode centroid, which is at least on the right road
+# and never somebody's garden.
+GROUND_LOCATIONS = {
+    "alvechurch": (52.344853, -1.956302),  # osm: Alvechurch FC
+    "anstey-nomads": (52.675751, -1.18028),  # osm: Anstey Nomads FC
+    "banbury-united": (52.056795, -1.325824),  # osm: Spencer Stadium
+    "bishops-stortford": (51.872726, 0.191966),  # osm: Woodside Park
+    "bromsgrove-sporting": (52.339631, -2.05642),  # osm: Bromsgrove Sporting F.C.
+    "bury-town": (52.248897, 0.721095),  # osm: Bury Town Football Club (Ram Meadow)
+    "halesowen-town": (52.453882, -2.057641),  # osm: The Grove
+    "hitchin-town": (51.954562, -0.28416),  # osm: Hitchin Town Football Club
+    "leamington": (52.255908, -1.52781),  # postcode: ground not in OpenStreetMap
+    "leighton-town": (51.912889, -0.659649),  # osm: Leighton Town Football Club
+    "leiston": (52.204388, 1.571449),  # osm: Leiston Football Club
+    "needham-market": (52.152637, 1.054708),  # postcode: ground not in OpenStreetMap
+    "peterborough-sports": (52.593801, -0.254297),  # osm: Peterborough Sports FC
+    "racing-club-warwick": (52.275459, -1.601626),  # osm: unnamed soccer pitch
+    "real-bedford": (52.127799, -0.415085),  # osm: Real Bedford Pitch
+    "redditch-united": (52.307313, -1.952688),  # osm: unnamed soccer pitch
+    "rushall-olympic": (52.600864, -1.952292),  # osm: unnamed soccer pitch
+    "stamford": (52.665553, -0.46893),  # osm: Borderville
+    "stourbridge": (52.462455, -2.151193),  # osm: unnamed soccer pitch
+    "stratford-town": (52.19414, -1.67637),  # osm: Stratford Town Football Club
+    "worcester-city": (52.22158, -2.220699),  # postcode: ground not in OpenStreetMap
+}
+
 CORRECTIONS = {
     "racing-club-warwick": {
         # CV34 4EJ is not a real postcode. The pub name was right: the Rose &
@@ -114,6 +147,12 @@ CORRECTIONS = {
         # next door to the MK44 3SB car park.
         "postcode": "MK44 3LW",
     },
+    "stratford-town": {
+        # CV37 9NQ is in Stratford Hathaway, three and a half kilometres from
+        # the ground. Stratford Town play on Knights Lane in Tiddington, which
+        # OpenStreetMap names, and CV37 7BY is the nearest postcode to it.
+        "postcode": "CV37 7BY",
+    },
     "rushall-olympic": {
         # WS4 1SJ is not a real postcode, and the coordinates sat in West
         # Northamptonshire, about 15 miles from Kettering rather than 66.
@@ -130,6 +169,9 @@ def apply_corrections(team):
     fix = CORRECTIONS.get(team["id"])
     if fix:
         team.update(fix)
+    here = GROUND_LOCATIONS.get(team["id"])
+    if here:
+        team["lat"], team["lng"] = here
     return team
 
 

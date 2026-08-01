@@ -63,18 +63,26 @@ const todayISO = () => {
 
 const money = (v) => (v === "Free" || v === 0 ? "Free" : typeof v === "number" ? `£${v}` : v || "To be confirmed");
 
-const mapUrl = (t) =>
-  t.lat && t.lng
-    ? `https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.postcode || t.name)}`;
+/* Map links use the ground name and postcode rather than a coordinate.
+   A mapping app resolves "Victory Road, IP16 4DQ" onto the ground itself,
+   whereas a coordinate that is even slightly off sends somebody to whatever
+   happens to be at that point. One of ours was a private house. Coordinates
+   are still used for the markers on our own map, where being a few metres out
+   costs nothing. */
 
 const placeUrl = (label, postcode) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([label, postcode].filter(Boolean).join(", "))}`;
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    [label, postcode].filter(Boolean).join(", ")
+  )}`;
+
+const mapUrl = (t) => placeUrl(t.stadium || t.ground || t.name, t.postcode);
 
 const directionsUrl = (t) =>
-  `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(KTFC.postcode)}&destination=${
-    t.lat && t.lng ? `${t.lat},${t.lng}` : encodeURIComponent(t.postcode)
-  }`;
+  `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    `${KTFC.ground}, ${KTFC.postcode}`
+  )}&destination=${encodeURIComponent(
+    [t.stadium || t.ground || t.name, t.postcode].filter(Boolean).join(", ")
+  )}`;
 
 /** League feeds spell clubs slightly differently to the spreadsheet. */
 const normalise = (name) =>
