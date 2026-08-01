@@ -1554,9 +1554,17 @@ function viewMap() {
        away. */
     map.setView([KTFC.lat, KTFC.lng], 8);
 
-    const fitAll = () => map.fitBounds(marks, { padding: [26, 26] });
-    $("#map-fit-all", wrap)?.addEventListener("click", fitAll);
-    $("#map-home", wrap)?.addEventListener("click", () => map.setView([KTFC.lat, KTFC.lng], 8));
+    /* Deliberately no invalidateSize on moveend. Doing that triggers another
+       move, which redraws the tiles and restarts their fade in, so they sit
+       at a fraction of full opacity and never finish. Leaflet handles tiles on
+       its own; the only place the size genuinely needs refreshing is when the
+       container itself changes, which the observer below covers. */
+    $("#map-fit-all", wrap)?.addEventListener("click", () =>
+      map.fitBounds(marks, { padding: [26, 26] })
+    );
+    $("#map-home", wrap)?.addEventListener("click", () =>
+      map.setView([KTFC.lat, KTFC.lng], 8)
+    );
 
     if (window.ResizeObserver) {
       const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
