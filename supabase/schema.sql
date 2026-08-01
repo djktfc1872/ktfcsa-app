@@ -135,6 +135,35 @@ create table if not exists access_reports (
 
 create index if not exists access_club_idx on access_reports (club_slug, created_at desc);
 
+-- ------------------------------------------------------- ground reports
+--
+-- The practical stuff a visiting fan wants to know and nobody publishes:
+-- whether you can stay dry, whether they take a card, whether there is a cup
+-- of tea. Wikipedia's ground sections are club history rather than anything
+-- useful on the day, and Wikidata had a linked venue for one club in six,
+-- which turned out to be a ground we left years ago. So this comes from fans
+-- as well.
+
+create table if not exists ground_reports (
+  id             uuid primary key default gen_random_uuid(),
+  club_slug      text not null,
+  profile_id     uuid references profiles on delete set null,
+  author_name    text not null,
+  covered        text check (covered      in ('yes','no','unsure')) default 'unsure',
+  seating        text check (seating      in ('yes','no','unsure')) default 'unsure',
+  surface        text check (surface      in ('grass','3g','unsure')) default 'unsure',
+  card_payments  text check (card_payments in ('yes','no','unsure')) default 'unsure',
+  refreshments   text check (refreshments in ('yes','no','unsure')) default 'unsure',
+  bar            text check (bar          in ('yes','no','unsure')) default 'unsure',
+  dogs           text check (dogs         in ('yes','no','unsure')) default 'unsure',
+  notes          text check (char_length(notes) <= 500),
+  visited_on     date,
+  hidden         boolean not null default false,
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists ground_club_idx on ground_reports (club_slug, created_at desc);
+
 create table if not exists pub_votes (
   pub_id     uuid not null references pubs on delete cascade,
   profile_id uuid not null references profiles on delete cascade,
@@ -434,6 +463,26 @@ create policy "edit own access report" on access_reports
 
 drop policy if exists "remove own access report" on access_reports;
 create policy "remove own access report" on access_reports
+  for delete using (auth.uid() = profile_id or is_admin());
+
+
+-- ---- ground reports -------------------------------------------------------
+alter table ground_reports enable row level security;
+
+drop policy if exists "ground readable" on ground_reports;
+create policy "ground readable" on ground_reports
+  for select using (hidden = false or is_admin());
+
+drop policy if exists "report ground" on ground_reports;
+create policy "report ground" on ground_reports
+  for insert with check (auth.uid() = profile_id);
+
+drop policy if exists "edit own ground report" on ground_reports;
+create policy "edit own ground report" on ground_reports
+  for update using (auth.uid() = profile_id or is_admin());
+
+drop policy if exists "remove own ground report" on ground_reports;
+create policy "remove own ground report" on ground_reports
   for delete using (auth.uid() = profile_id or is_admin());
 
 -- ---- coach notices --------------------------------------------------------

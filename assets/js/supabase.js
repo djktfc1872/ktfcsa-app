@@ -131,7 +131,7 @@ class Backend {
     Object.values(TABLES).forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, onChange);
     });
-    ["predictions", "attendance", "pubs", "pub_votes", "poll_votes", "access_reports"].forEach((table) => {
+    ["predictions", "attendance", "pubs", "pub_votes", "poll_votes", "access_reports", "ground_reports"].forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, onChange);
     });
     channel.subscribe();
@@ -253,6 +253,28 @@ class Backend {
       .order("miles", { ascending: false });
     if (error) throw error;
     return data;
+  }
+
+  /* --------------------------------------------------------- ground notes */
+
+  async loadGround() {
+    const { data, error } = await this.sb
+      .from("ground_reports").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async addGround(clubSlug, report) {
+    const { error } = await this.sb.from("ground_reports").insert({
+      club_slug: clubSlug, profile_id: this.profile.id,
+      author_name: this.profile.name, ...report,
+    });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async removeGround(id) {
+    const { error } = await this.sb.from("ground_reports").delete().eq("id", id);
+    if (error) throw new Error(friendly(error));
   }
 
   /* --------------------------------------------------------------- access */

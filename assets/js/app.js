@@ -1014,6 +1014,7 @@ function viewClub({ id, from }) {
           <a class="btn btn--map btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
         </div>
       </div>`));
+    box.append(groundNotes(t));
     return box;
   };
 
@@ -1082,6 +1083,160 @@ function viewClub({ id, from }) {
   });
 
   return wrap;
+}
+
+/* ------------------------------------------------------------ ground notes */
+
+/* The practical things nobody publishes for our level: can you stay dry, do
+   they take a card, is there a cup of tea. Same shape as the access board,
+   because the same problem applies. */
+
+const GROUND_FIELDS = [
+  ["covered", "Covered standing", { yes: "Yes", no: "None" }],
+  ["seating", "Seating", { yes: "Yes", no: "Standing only" }],
+  ["refreshments", "Food and drink", { yes: "Yes", no: "None" }],
+  ["bar", "Bar at the ground", { yes: "Yes", no: "None" }],
+  ["card_payments", "Card accepted", { yes: "Yes", no: "Cash only" }],
+  ["dogs", "Dogs welcome", { yes: "Yes", no: "No" }],
+];
+
+const SURFACE_LABEL = { grass: "Grass", "3g": "3G", unsure: "Not known" };
+
+function groundNotes(team) {
+  const box = el(`<div></div>`);
+  const user = db.currentUser();
+
+  if (!db.isOnline()) return box; /* nothing to add without accounts */
+
+  const reports = db.groundFor(team.id);
+
+  /* One "no" is worth knowing, so it outranks a "yes"; disagreement is shown
+     rather than resolved. */
+  const agree = (key, allowed) => {
+    const said = reports.map((r) => r[key]).filter((v) => v && v !== "unsure" && allowed.includes(v));
+    if (!said.length) return "unsure";
+    return said.every((v) => v === said[0]) ? said[0] : "mixed";
+  };
+
+  const surface = agree("surface", ["grass", "3g"]);
+
+  const rows = GROUND_FIELDS.map(([key, label, words]) => {
+    const v = agree(key, ["yes", "no"]);
+    const m = v === "yes" ? ACCESS_MARK.yes : v === "no" ? ACCESS_MARK.no
+      : v === "mixed" ? ACCESS_MARK.mixed : ACCESS_MARK.unsure;
+    const text = v === "yes" ? words.yes : v === "no" ? words.no : m.label;
+    return `<li class="access-row">
+      <span class="access-mark access-mark--${m.cls}" aria-hidden="true">${m.icon}</span>
+      <span class="access-label">${esc(label)}</span>
+      <span class="access-value access-value--${m.cls}">${esc(text)}</span>
+    </li>`;
+  }).join("");
+
+  const surfaceMark = surface === "unsure" ? ACCESS_MARK.unsure
+    : surface === "mixed" ? ACCESS_MARK.mixed : ACCESS_MARK.yes;
+
+  box.append(el(`
+    <div class="card">
+      <ul class="access-list">
+        <li class="access-row">
+          <span class="access-mark access-mark--${surfaceMark.cls}" aria-hidden="true">${surfaceMark.icon}</span>
+          <span class="access-label">Pitch</span>
+          <span class="access-value access-value--${surfaceMark.cls}">${
+            surface === "mixed" ? "Reports differ" : esc(SURFACE_LABEL[surface] || "Not known")
+          }</span>
+        </li>
+        ${rows}
+      </ul>
+      <div class="hint">
+        ${reports.length
+          ? `From ${reports.length} supporter${reports.length === 1 ? "" : "s"} who have been. Grounds change, so give the club a ring if it matters.`
+          : `Nobody has filled this in for ${esc(team.stadium)} yet. If you have been, a minute of your time saves somebody a wet afternoon.`}
+      </div>
+    </div>`));
+
+  if (user) {
+    const btn = el(`<div class="btn-row--actions"><button class="btn btn--ghost">Add what you know</button></div>`);
+    btn.querySelector("button").addEventListener("click", () => groundForm(team));
+    box.append(btn);
+  }
+
+  reports.filter((r) => r.notes).slice(0, 3).forEach((r) => {
+    const note = el(`
+      <div class="post">
+        <div class="post__head">
+          <span class="post__who">${esc(r.author_name)}</span>
+          ${r.visited_on ? `<span class="pill pill--muted">Visited ${esc(fmtDate(r.visited_on, "short"))}</span>` : ""}
+          <span class="post__when">${esc(relTime(new Date(r.created_at).getTime()))}</span>
+        </div>
+        <div class="post__body">${esc(r.notes)}</div>
+      </div>`);
+    if (r.profile_id === user?.id || db.isAdmin()) {
+      const act = el(`<div class="post__actions"><button class="link-btn">Remove</button></div>`);
+      act.querySelector("button").addEventListener("click", () => {
+        db.removeGroundReport(r.id);
+        toast("Note removed.", "good");
+      });
+      note.append(act);
+    }
+    box.append(note);
+  });
+
+  return box;
+}
+
+function groundForm(team) {
+  const pick = (key, label, words) => `
+    <div class="field">
+      <label for="gr-${key}">${esc(label)}</label>
+      <select id="gr-${key}">
+        <option value="unsure">Not sure</option>
+        <option value="yes">${esc(words.yes)}</option>
+        <option value="no">${esc(words.no)}</option>
+      </select>
+    </div>`;
+
+  const { node, close } = modal(`
+    <h2>${esc(team.stadium)}</h2>
+    <p class="sub">What is it actually like to visit? Answer what you know and leave the rest.</p>
+    <div class="field">
+      <label for="gr-surface">Pitch</label>
+      <select id="gr-surface">
+        <option value="unsure">Not sure</option>
+        <option value="grass">Grass</option>
+        <option value="3g">3G</option>
+      </select>
+    </div>
+    ${GROUND_FIELDS.map(([k, l, w]) => pick(k, l, w)).join("")}
+    <div class="field"><label for="gr-when">When did you visit</label>
+      <input id="gr-when" type="date"></div>
+    <div class="field"><label for="gr-notes">Anything else worth knowing</label>
+      <textarea id="gr-notes" maxlength="500" placeholder="Cover behind both goals, nothing down the sides. Tea bar does a decent burger."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn--full" id="gr-save">Send</button>
+      <button class="btn btn--ghost" id="gr-cancel">Cancel</button>
+    </div>`);
+
+  $("#gr-cancel", node).addEventListener("click", close);
+  $("#gr-save", node).addEventListener("click", () => {
+    const report = Object.fromEntries(GROUND_FIELDS.map(([k]) => [k, $(`#gr-${k}`, node).value]));
+    report.surface = $("#gr-surface", node).value;
+    const notes = $("#gr-notes", node).value.trim();
+    const when = $("#gr-when", node).value;
+
+    if (!Object.values(report).some((v) => v !== "unsure") && !notes) {
+      return toast("Answer at least one, or add a note.", "bad");
+    }
+    if (notes) {
+      const check = db.checkPost(notes, { minLength: 0, maxLength: 500 });
+      if (!check.ok) return toast(check.reason, "bad");
+    }
+    const limit = db.rateLimit("ground", { max: 4, windowMs: 300000 });
+    if (!limit.ok) return toast(limit.reason, "bad");
+
+    db.addGroundReport(team.id, { ...report, notes: notes || null, visited_on: when || null });
+    close();
+    toast("Thanks, that is genuinely useful.", "good");
+  });
 }
 
 /* ------------------------------------------------------------ access board */

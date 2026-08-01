@@ -60,6 +60,7 @@ const live = {
   pubs: [],
   pubVotes: new Set(),
   access: [],
+  ground: [],
 };
 
 export const isOnline = () => Boolean(backend);
@@ -160,6 +161,7 @@ export async function refresh() {
     }
 
     live.access = await backend.loadAccess();
+    live.ground = await backend.loadGround();
     onChange();
   } catch (err) {
     console.warn("Refresh failed:", err);
@@ -453,6 +455,25 @@ export function setAttendance(fixtureId, attended) {
 }
 
 export const attendanceTable = () => (backend ? backend.attendanceTable() : Promise.resolve([]));
+
+/* ---------------------------------------------------------- ground notes */
+
+export const groundFor = (clubSlug) =>
+  live.ground.filter((r) => r.club_slug === clubSlug && !r.hidden);
+
+export function addGroundReport(clubSlug, report) {
+  if (!backend) {
+    onError("Ground notes need an account. Ask your fellow volunteers to finish the online setup.");
+    return;
+  }
+  attempt(backend.addGround(clubSlug, report).then(refresh), "That note did not save.");
+}
+
+export function removeGroundReport(id) {
+  live.ground = live.ground.filter((r) => r.id !== id);
+  onChange();
+  attempt(backend.removeGround(id).then(refresh), "That deletion did not save.");
+}
 
 /* ------------------------------------------------------------------ access */
 
