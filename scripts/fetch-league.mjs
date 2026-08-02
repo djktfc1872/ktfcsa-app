@@ -52,6 +52,26 @@ function crestFor(slug, name, logo) {
   return logo ? `${LOGO_BASE}/${logo}` : null;
 }
 
+/** The Kettering names on a team sheet, starters first then substitutes. */
+function lineupFor(match, isHome) {
+  const starters = (isHome ? match.homeLineup : match.awayLineup) || [];
+  const subs = (isHome ? match.homeSubs : match.awaySubs) || [];
+  const seen = new Set();
+  return [...starters, ...subs]
+    .map((p) => ({
+      name: String(p.personName || "").trim(),
+      number: p.number ?? null,
+      started: Boolean(p.hasStartedMatch),
+      captain: Boolean(p.isCaptain),
+    }))
+    .filter((p) => {
+      const key = p.name.toLowerCase();
+      if (!p.name || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 /** Turn the API's status codes into something we can show a supporter. */
 function readStatus(raw) {
   const s = String(raw || "").toLowerCase();
@@ -89,7 +109,9 @@ async function main() {
     .map((m) => {
       const homeName = m.homeTeam?.fullName || m.homeTeamName || "";
       const awayName = m.awayTeam?.fullName || m.awayTeamName || "";
-      const isHome = /kettering/i.test(homeName);
+      /* Match on the team id. Some records store the team name as "P", so
+         testing the name gets the wrong side. */
+      const isHome = (m.homeTeam?.id || "") === TEAM_ID || /kettering/i.test(homeName);
       const status = readStatus(m.status);
       const score = m.score?.current || {};
       return {
@@ -107,6 +129,10 @@ async function main() {
         homeScore: status === "played" || status === "live" ? score.home ?? null : null,
         awayScore: status === "played" || status === "live" ? score.away ?? null : null,
         attendance: m.attendance || null,
+        /* Who played, where the league recorded it. Coverage is patchy: two
+           full seasons of lineups, then 2025/26 stopped in September. The app
+           shows the squad and ratings only when there is something here. */
+        lineup: lineupFor(m, isHome),
       };
     })
     .sort((a, b) => (a.date + a.kickoff).localeCompare(b.date + b.kickoff));

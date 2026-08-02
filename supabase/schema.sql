@@ -566,3 +566,105 @@ alter view poll_results       set (security_invoker = true);
 alter view pub_list           set (security_invoker = true);
 
 grant select on prediction_league, attendance_summary, poll_results, pub_list to anon, authenticated;
+
+-- ===========================================================================
+-- Player ratings
+--
+-- The league's own feed names the eleven and the substitutes for most matches,
+-- so the squad builds itself as the season goes on. Coverage does slip, so
+-- volunteers can type a team sheet in by hand when it does: that is what
+-- lineups is for. Ratings are one row per supporter, per player, per match.
+-- ===========================================================================
+
+create table if not exists lineups (
+  fixture_id text primary key references fixtures on delete cascade,
+  players    jsonb not null default '[]'::jsonb,
+  posted_by  uuid references profiles on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+comment on table lineups is
+  'A team sheet entered by a volunteer, used when the league feed has none.';
+
+create table if not exists player_ratings (
+  profile_id  uuid not null references profiles on delete cascade,
+  fixture_id  text not null references fixtures on delete cascade,
+  player_name text not null check (char_length(player_name) between 2 and 60),
+  rating      int  not null check (rating between 1 and 10),
+  created_at  timestamptz not null default now(),
+  primary key (profile_id, fixture_id, player_name)
+);
+
+create index if not exists ratings_fixture_idx on player_ratings (fixture_id);
+
+-- True once a match has kicked off. Nobody rates a player before they play.
+create or replace function has_kicked_off(fixture text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from fixtures
+    where id = fixture and kickoff_at is not null and kickoff_at <= now()
+  );
+$$;
+
+-- What a player scored in one match, and how many supporters said so.
+create or replace view match_ratings as
+select
+  fixture_id,
+  player_name,
+  round(avg(rating)::numeric, 1) as average,
+  count(*)::int                  as voters
+from player_ratings
+group by fixture_id, player_name;
+
+-- A player's season so far. Every match they were rated in counts once.
+create or replace view season_ratings as
+select
+  player_name,
+  round(avg(average)::numeric, 1) as average,
+  count(*)::int                   as matches,
+  sum(voters)::int                as voters
+from match_ratings
+group by player_name;
+
+alter table lineups        enable row level security;
+alter table player_ratings enable row level security;
+
+drop policy if exists "lineups readable" on lineups;
+create policy "lineups readable" on lineups for select using (true);
+
+drop policy if exists "volunteers posts a lineup" on lineups;
+create policy "volunteers posts a lineup" on lineups
+  for insert with check (is_admin());
+
+drop policy if exists "volunteers edits a lineup" on lineups;
+create policy "volunteers edits a lineup" on lineups
+  for update using (is_admin()) with check (is_admin());
+
+drop policy if exists "volunteers removes a lineup" on lineups;
+create policy "volunteers removes a lineup" on lineups
+  for delete using (is_admin());
+
+drop policy if exists "ratings readable" on player_ratings;
+create policy "ratings readable" on player_ratings for select using (true);
+
+drop policy if exists "rate after kick-off" on player_ratings;
+create policy "rate after kick-off" on player_ratings
+  for insert with check (auth.uid() = profile_id and has_kicked_off(fixture_id));
+
+drop policy if exists "change own rating" on player_ratings;
+create policy "change own rating" on player_ratings
+  for update using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
+
+drop policy if exists "withdraw own rating" on player_ratings;
+create policy "withdraw own rating" on player_ratings
+  for delete using (auth.uid() = profile_id or is_admin());
+
+alter view match_ratings  set (security_invoker = true);
+alter view season_ratings set (security_invoker = true);
+
+grant select on match_ratings, season_ratings to anon, authenticated;

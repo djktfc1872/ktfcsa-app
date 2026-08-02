@@ -61,6 +61,8 @@ const live = {
   pubVotes: new Set(),
   access: [],
   ground: [],
+  lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
+  ratings: { match: [], season: [], mine: {} },
 };
 
 export const isOnline = () => Boolean(backend);
@@ -162,6 +164,14 @@ export async function refresh() {
 
     live.access = await backend.loadAccess();
     live.ground = await backend.loadGround();
+    /* Ratings arrived after the first release, so a database that has not had
+       the newer tables added yet must not stop everything else refreshing. */
+    try {
+      live.lineups = await backend.loadLineups();
+      live.ratings = await backend.loadRatings();
+    } catch (err) {
+      console.warn("Player ratings are not set up in the database yet:", err?.message || err);
+    }
     onChange();
   } catch (err) {
     console.warn("Refresh failed:", err);
@@ -473,6 +483,53 @@ export function removeGroundReport(id) {
   live.ground = live.ground.filter((r) => r.id !== id);
   onChange();
   attempt(backend.removeGround(id).then(refresh), "That deletion did not save.");
+}
+
+/* --------------------------------------------------------- player ratings */
+
+/* The squad is not a list anyone keeps up to date, so the app never hard codes
+   one. Names come from the league's team sheets, or from a volunteer typing one
+   in when the feed has none. */
+
+export const lineupFor = (fixtureId) => live.lineups[fixtureId] || [];
+
+export function saveLineup(fixtureId, players) {
+  if (!backend) {
+    onError("Team sheets need the online setup finishing first.");
+    return;
+  }
+  live.lineups = { ...live.lineups, [fixtureId]: players };
+  onChange();
+  attempt(backend.saveLineup(fixtureId, players).then(refresh), "That team sheet did not save.");
+}
+
+/** Everyone's average for one player in one match, or null if nobody has rated. */
+export const matchRating = (fixtureId, name) =>
+  live.ratings.match.find((r) => r.fixture_id === fixtureId && r.player_name === name) || null;
+
+/** This supporter's own mark, so the buttons can show what they picked. */
+export const myRating = (fixtureId, name) =>
+  live.ratings.mine[`${fixtureId}|${name}`] ?? null;
+
+export const seasonRatings = () => live.ratings.season;
+
+export function ratePlayer(fixtureId, name, rating) {
+  if (!backend) {
+    onError("Ratings need an account. Ask your fellow volunteers to finish the online setup.");
+    return;
+  }
+  const key = `${fixtureId}|${name}`;
+  const clearing = live.ratings.mine[key] === rating;
+  const mine = { ...live.ratings.mine };
+  if (clearing) delete mine[key];
+  else mine[key] = rating;
+  live.ratings = { ...live.ratings, mine };
+  onChange();
+  attempt(
+    (clearing ? backend.clearRating(fixtureId, name) : backend.ratePlayer(fixtureId, name, rating))
+      .then(refresh),
+    "That rating did not save.",
+  );
 }
 
 /* ------------------------------------------------------------------ access */

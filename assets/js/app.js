@@ -257,6 +257,7 @@ const ROUTES = {
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", render: viewPoppies },
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", render: viewMap },
+  players: { label: "Player Ratings", icon: "⭐", nav: "more", render: viewPlayers },
 };
 
 function go(view, params = {}) {
@@ -2017,6 +2018,198 @@ function viewPodcast() {
   return wrap;
 }
 
+/* =========================================================== player ratings */
+
+/* Nobody keeps a public squad list for this division, and the club site runs
+   behind. So the app never hard codes a squad: names come from the team sheets
+   in the league feed, and a volunteer can type one in when the feed misses a
+   game. A player appears once they have actually played. */
+
+/** The Kettering names for a fixture: the feed's sheet, or a volunteer's. */
+function squadFor(fixture) {
+  const fromFeed = fixture.lineup || [];
+  if (fromFeed.length) return { players: fromFeed, source: "feed" };
+  const typed = db.lineupFor(fixture.id);
+  if (typed.length) return { players: typed, source: "volunteer" };
+  return { players: [], source: null };
+}
+
+/** Matches that have kicked off, most recent first. */
+const ratableFixtures = () =>
+  fixtures()
+    .filter((f) => {
+      const ko = kickoffTime(f);
+      return ko && ko.getTime() <= Date.now() && f.status !== "off";
+    })
+    .reverse();
+
+/** One player, with the buttons to mark them out of ten. */
+function ratingRow(fixture, player, open) {
+  const mine = db.myRating(fixture.id, player.name);
+  const all = db.matchRating(fixture.id, player.name);
+  const row = el(`
+    <div class="rating">
+      <div class="rating__who">
+        <span class="rating__num">${player.number ?? ""}</span>
+        <span class="rating__name">${esc(player.name)}${player.captain ? ` <span class="rating__cap" title="Captain">C</span>` : ""}</span>
+        ${player.started === false ? `<span class="rating__sub">sub</span>` : ""}
+      </div>
+      <div class="rating__score">
+        ${all ? `<span class="rating__avg"><b>${all.average}</b>${all.voters} rating${all.voters === 1 ? "" : "s"}</span>`
+              : `<span class="rating__avg rating__avg--none">Not rated yet</span>`}
+      </div>
+    </div>`);
+
+  if (!open) return row;
+
+  const scale = el(`<div class="scale" role="group" aria-label="Rate ${esc(player.name)} out of ten"></div>`);
+  for (let n = 1; n <= 10; n += 1) {
+    const b = el(`<button class="scale__btn${mine === n ? " is-mine" : ""}" type="button" aria-pressed="${mine === n}">${n}</button>`);
+    b.addEventListener("click", () => db.ratePlayer(fixture.id, player.name, n));
+    scale.append(b);
+  }
+  row.append(scale);
+  if (mine) row.append(el(`<p class="rating__hint">You gave ${mine}. Tap it again to take it back.</p>`));
+  return row;
+}
+
+/** The panel that lets a supporter mark a match, shared with the reaction thread. */
+function ratingPanel(fixture) {
+  const wrap = el(`<div class="card"></div>`);
+  const { players, source } = squadFor(fixture);
+  const opponent = clubName(fixture.opponent);
+  const score = fixture.homeScore !== null ? `${fixture.homeScore} - ${fixture.awayScore}` : "";
+
+  wrap.append(el(`
+    <div class="card__head">
+      <h3>${esc(opponent)}${score ? ` <span class="card__score">${esc(score)}</span>` : ""}</h3>
+      <p>${esc(fmtDate(fixture.date))}, ${fixture.venue === "Home" ? "home" : "away"}</p>
+    </div>`));
+
+  if (!players.length) {
+    wrap.append(el(`
+      <div class="empty">
+        <b>No team sheet for this one</b>
+        The league has not published who played. A volunteer can add it below.
+      </div>`));
+    if (db.isAdmin()) wrap.append(lineupForm(fixture));
+    return wrap;
+  }
+
+  const signedIn = Boolean(db.currentUser());
+  if (!signedIn) {
+    wrap.append(el(`<p class="note">Ratings need an account, so each supporter marks a player once. The averages below are everyone's.</p>`));
+  }
+
+  players.forEach((pl) => wrap.append(ratingRow(fixture, pl, signedIn)));
+
+  if (source === "volunteer") {
+    wrap.append(el(`<p class="rating__source">Team sheet added by a volunteer.</p>`));
+  }
+  if (db.isAdmin()) wrap.append(lineupForm(fixture, players));
+  return wrap;
+}
+
+/** Volunteers type a team sheet in when the league feed has none. */
+function lineupForm(fixture, existing = []) {
+  const box = el(`
+    <details class="lineup-form">
+      <summary>${existing.length ? "Edit the team sheet" : "Add the team sheet"}</summary>
+      <p class="note">One player per line, starters first. Put a number in front if you have it, and (c) after the captain. Add "sub" after anyone who came off the bench.</p>
+      <textarea rows="8" placeholder="1 Jane Smith&#10;4 Alex Jones (c)&#10;14 Sam Patel sub"></textarea>
+      <button class="btn btn--full" type="button">Save the team sheet</button>
+    </details>`);
+
+  const ta = box.querySelector("textarea");
+  ta.value = existing
+    .map((pl) => [pl.number, pl.name, pl.captain ? "(c)" : "", pl.started === false ? "sub" : ""].filter(Boolean).join(" "))
+    .join("\n");
+
+  box.querySelector("button").addEventListener("click", () => {
+    const players = parseLineup(ta.value);
+    if (!players.length) {
+      toast("Type at least one player before saving.");
+      return;
+    }
+    db.saveLineup(fixture.id, players);
+    toast("Team sheet saved.");
+  });
+  return box;
+}
+
+/** Turns typed lines like "4 Alex Jones (c)" into player records. */
+function parseLineup(text) {
+  return String(text)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      let rest = line;
+      let number = null;
+      const num = rest.match(/^(\d{1,2})[.)]?\s+/);
+      if (num) {
+        number = Number(num[1]);
+        rest = rest.slice(num[0].length);
+      }
+      const captain = /\(c\)/i.test(rest);
+      rest = rest.replace(/\(c\)/ig, "");
+      const started = !/\bsub\b/i.test(rest);
+      rest = rest.replace(/\bsub\b/ig, "");
+      return { name: rest.replace(/\s+/g, " ").trim(), number, captain, started };
+    })
+    .filter((pl) => pl.name.length >= 2)
+    .slice(0, 25);
+}
+
+function viewPlayers() {
+  const wrap = el(`<div></div>`);
+  wrap.append(el(`
+    <div class="page-head">
+      <h1>Player ratings</h1>
+      <p>Mark the Poppies out of ten after each game. The squad builds itself from the team sheets the league publishes, so a player shows up here once they have played.</p>
+    </div>`));
+
+  /* ---- the season so far ---- */
+  const season = db.seasonRatings();
+  if (season.length) {
+    wrap.append(el(`<h2 class="section-title">This season</h2>`));
+    const table = el(`
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Player</th><th class="num">Average</th><th class="num">Games rated</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>`);
+    const body = table.querySelector("tbody");
+    season.forEach((r) => {
+      body.append(el(`
+        <tr>
+          <td>${esc(r.player_name)}</td>
+          <td class="num"><b>${r.average}</b></td>
+          <td class="num">${r.matches}</td>
+        </tr>`));
+    });
+    wrap.append(table);
+    wrap.append(el(`<p class="note">An average across every match a player has been rated in. Early in the season a single good game moves it a long way.</p>`));
+  }
+
+  /* ---- rate a match ---- */
+  const played = ratableFixtures();
+  wrap.append(el(`<h2 class="section-title">${season.length ? "Rate a match" : "Matches"}</h2>`));
+
+  if (!played.length) {
+    wrap.append(el(`
+      <div class="empty">
+        <b>Nothing to rate yet</b>
+        The season has not started. Ratings open as soon as the first game kicks off.
+      </div>`));
+    return wrap;
+  }
+
+  played.slice(0, 6).forEach((f) => wrap.append(ratingPanel(f)));
+  return wrap;
+}
+
 /* ============================================================ match threads */
 
 /* A discussion topic opens for every fixture without anyone creating one.
@@ -2115,6 +2308,16 @@ function viewThread({ id }) {
         <p>${esc(t.blurb)}</p>
       </div>
     </div>`));
+
+  /* Reaction threads carry the ratings for that game, so marking the players
+     and saying your piece happen in the same place. */
+  if (t.kind === "post") {
+    const { players } = squadFor(t.fixture);
+    if (players.length || db.isAdmin()) {
+      wrap.append(el(`<h2 class="section-title">Rate the players</h2>`));
+      wrap.append(ratingPanel(t.fixture));
+    }
+  }
 
   wrap.append(composer(t.id));
 

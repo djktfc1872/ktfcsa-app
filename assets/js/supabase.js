@@ -255,6 +255,62 @@ class Backend {
     return data;
   }
 
+  /* ------------------------------------------------------- player ratings */
+
+  /** Team sheets typed in by a volunteer, keyed by fixture. */
+  async loadLineups() {
+    const { data, error } = await this.sb.from("lineups").select("fixture_id, players");
+    if (error) throw error;
+    return Object.fromEntries((data || []).map((r) => [r.fixture_id, r.players || []]));
+  }
+
+  async saveLineup(fixtureId, players) {
+    const { error } = await this.sb.from("lineups").upsert({
+      fixture_id: fixtureId,
+      players,
+      posted_by: this.profile.id,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "fixture_id" });
+    if (error) throw new Error(friendly(error));
+  }
+
+  /** Everyone's averages, plus this supporter's own marks so they can amend. */
+  async loadRatings() {
+    const [{ data: match }, { data: season }, mine] = await Promise.all([
+      this.sb.from("match_ratings").select("*"),
+      this.sb.from("season_ratings").select("*").order("average", { ascending: false }),
+      this.profile
+        ? this.sb.from("player_ratings").select("fixture_id, player_name, rating")
+            .eq("profile_id", this.profile.id)
+        : Promise.resolve({ data: [] }),
+    ]);
+    return {
+      match: match || [],
+      season: season || [],
+      mine: Object.fromEntries(
+        (mine.data || []).map((r) => [`${r.fixture_id}|${r.player_name}`, r.rating]),
+      ),
+    };
+  }
+
+  async ratePlayer(fixtureId, playerName, rating) {
+    const { error } = await this.sb.from("player_ratings").upsert({
+      profile_id: this.profile.id,
+      fixture_id: fixtureId,
+      player_name: playerName,
+      rating,
+    }, { onConflict: "profile_id,fixture_id,player_name" });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async clearRating(fixtureId, playerName) {
+    const { error } = await this.sb.from("player_ratings").delete()
+      .eq("profile_id", this.profile.id)
+      .eq("fixture_id", fixtureId)
+      .eq("player_name", playerName);
+    if (error) throw new Error(friendly(error));
+  }
+
   /* --------------------------------------------------------- ground notes */
 
   async loadGround() {
