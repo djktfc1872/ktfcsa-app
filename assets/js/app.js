@@ -242,23 +242,29 @@ const nextFixture = () => {
 
 /* nav: "tab" shows in the mobile bar, "more" lives behind the More screen,
    "hidden" is reachable by link only. The sidebar shows tab and more. */
+/* Grouped by what a supporter is actually trying to do, not by the order these
+   were built. The four tabs stay put: they are muscle memory on a phone. */
 const ROUTES = {
-  fixtures: { label: "Fixtures", icon: "⚽", nav: "tab", render: viewFixtures },
-  table: { label: "Table", icon: "🏆", nav: "tab", render: viewTable },
-  travel: { label: "Travel", icon: "🚌", nav: "tab", render: viewTravel },
-  wall: { label: "Fan Wall", icon: "💬", nav: "tab", render: viewWall },
-  predict: { label: "Prediction League", icon: "🎯", nav: "more", render: viewPredict },
-  season: { label: "My Season", icon: "📈", nav: "more", render: viewSeason },
-  clubs: { label: "Away Guide", icon: "📖", nav: "more", render: viewClubs },
-  podcast: { label: "Poppycast", icon: "🎙️", nav: "more", render: viewPodcast },
-  feedback: { label: "Send Feedback", icon: "✉️", nav: "more", render: viewFeedback },
-  account: { label: "Account", icon: "👤", nav: "more", render: viewAccount },
+  fixtures: { label: "Fixtures", icon: "⚽", nav: "tab", group: "Matchday", render: viewFixtures },
+  table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
+  predict: { label: "Prediction League", icon: "🎯", nav: "more", group: "Matchday", render: viewPredict },
+  players: { label: "Player Ratings", icon: "⭐", nav: "more", group: "Matchday", render: viewPlayers },
+
+  travel: { label: "Travel", icon: "🚌", nav: "tab", group: "Away days", render: viewTravel },
+  clubs: { label: "Away Guide", icon: "📖", nav: "more", group: "Away days", render: viewClubs },
+  map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
+
+  wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
+  podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
+  poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", group: "Supporters", render: viewPoppies },
+
+  season: { label: "My Season", icon: "📈", nav: "more", group: "You", render: viewSeason },
+  account: { label: "Account", icon: "👤", nav: "more", group: "You", render: viewAccount },
+  feedback: { label: "Send Feedback", icon: "✉️", nav: "more", group: "You", render: viewFeedback },
+
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
-  poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", render: viewPoppies },
-  map: { label: "Grounds Map", icon: "🗺️", nav: "more", render: viewMap },
-  players: { label: "Player Ratings", icon: "⭐", nav: "more", render: viewPlayers },
 };
 
 function go(view, params = {}) {
@@ -284,11 +290,16 @@ function readHash() {
 const routesWhere = (...kinds) => Object.entries(ROUTES).filter(([, r]) => kinds.includes(r.nav));
 
 function renderNav() {
+  let lastGroup = null;
   $("#sidebar").innerHTML = routesWhere("tab", "more")
-    .map(([key, r]) => `
+    .map(([key, r]) => {
+      const heading = r.group && r.group !== lastGroup ? `<div class="sidebar__group">${r.group}</div>` : "";
+      lastGroup = r.group;
+      return `${heading}
       <button class="sidebar__link ${state.view === key ? "is-active" : ""}" data-nav="${key}">
         <span class="ic" aria-hidden="true">${r.icon}</span>${r.label}
-      </button>`)
+      </button>`;
+    })
     .join("");
 
   /* The More screen stands in for everything that will not fit on a phone. */
@@ -316,7 +327,12 @@ function viewMore() {
   const wrap = el(`<div>
     <div class="page-head"><h1>More</h1><p>Everything else in the app.</p></div>
   </div>`);
+  let seen = null;
   routesWhere("more").forEach(([key, r]) => {
+    if (r.group && r.group !== seen) {
+      wrap.append(el(`<h2 class="section-title">${esc(r.group)}</h2>`));
+      seen = r.group;
+    }
     wrap.append(el(`
       <button class="club-row" data-nav="${key}">
         <span style="font-size:19px;width:26px;text-align:center" aria-hidden="true">${r.icon}</span>
