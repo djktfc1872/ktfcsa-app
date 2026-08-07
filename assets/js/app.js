@@ -3174,7 +3174,9 @@ async function boot() {
      live updates, so a new car share or wall post appears without a refresh. */
   await Promise.all([
     loadClubInfo(),
-    loadSquad(),
+    /* Redraw when this lands. On a quick connection it beats the first paint,
+       but on a slow one the squad would otherwise sit there unrendered. */
+    loadSquad().then(() => render()),
     loadLeague().then(() => render()),
     db
       .initStore({ change: () => render(), error: (message) => toast(message) })

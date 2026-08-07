@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v6";
+const CACHE = "ktfcsa-v7";
 
 const SHELL = [
   "./",
@@ -43,7 +43,11 @@ self.addEventListener("activate", (e) => {
 });
 
 const save = (request, response) => {
-  if (response && response.ok) {
+  /* A 200 with nothing in it happens while a deploy is mid-flight. Caching one
+     would serve an empty file until the entry is evicted, so let it through
+     without keeping it. */
+  const empty = response && response.headers.get("content-length") === "0";
+  if (response && response.ok && !empty) {
     const copy = response.clone();
     caches.open(CACHE).then((c) => c.put(request, copy));
   }
