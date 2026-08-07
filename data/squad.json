@@ -1,0 +1,115 @@
+{
+  "confirmed": "2026-08-08",
+  "source": "Kettering Town FC",
+  "season": "2026/27",
+  "players": [
+    {
+      "number": 1,
+      "name": "Paul White",
+      "position": "Goalkeeper",
+      "abbrev": "GK"
+    },
+    {
+      "number": 2,
+      "name": "Blaine Rowe",
+      "position": "Defender",
+      "abbrev": "DF"
+    },
+    {
+      "number": 3,
+      "name": "Aaron Powell",
+      "position": "Defender",
+      "abbrev": "DF"
+    },
+    {
+      "number": 4,
+      "name": "Jack Newell",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    },
+    {
+      "number": 5,
+      "name": "Tom Leak",
+      "position": "Defender",
+      "abbrev": "DF"
+    },
+    {
+      "number": 6,
+      "name": "Harvey Peters",
+      "position": "Defender",
+      "abbrev": "DF"
+    },
+    {
+      "number": 7,
+      "name": "Lawson D'Ath",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    },
+    {
+      "number": 8,
+      "name": "Bayley Brown",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    },
+    {
+      "number": 9,
+      "name": "Eddie Panter",
+      "position": "Striker",
+      "abbrev": "ST"
+    },
+    {
+      "number": 10,
+      "name": "Shaun Jeffers",
+      "position": "Striker",
+      "abbrev": "ST"
+    },
+    {
+      "number": 11,
+      "name": "Theo Alexandrou",
+      "position": "Striker",
+      "abbrev": "ST"
+    },
+    {
+      "number": 12,
+      "name": "Lewis Coyle",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    },
+    {
+      "number": 13,
+      "name": "Jason Alexander",
+      "position": "Goalkeeper",
+      "abbrev": "GK"
+    },
+    {
+      "number": 15,
+      "name": "Tai Fleming",
+      "position": "Defender",
+      "abbrev": "DF"
+    },
+    {
+      "number": 16,
+      "name": "Ryan Haynes",
+      "position": "Defender",
+      "abbrev": "DF"
+    },
+    {
+      "number": 17,
+      "name": "Ismael Fatadjo",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    },
+    {
+      "number": 18,
+      "name": "William van Lier",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    },
+    {
+      "number": 19,
+      "name": "Kai Fifield",
+      "position": "Midfielder",
+      "abbrev": "MF"
+    }
+  ]
+}

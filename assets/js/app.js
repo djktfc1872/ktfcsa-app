@@ -212,6 +212,7 @@ const state = {
   fixtureFilter: "all",
   predictTab: "open",
   clubInfo: {},   // background notes and official sites, from data/clubs.json
+  squad: null,    // the squad the club confirmed, from data/squad.json
 };
 
 /** Background on a club: founding year, a fuller description, official site. */
@@ -1096,15 +1097,59 @@ function viewClub({ id, from }) {
 
   /* ---- the running order ---- */
 
-  const order = cameFromHome
-    ? [thisSeason, about, travelNote, ground, tickets, access, parkingAndPub]
-    : [travelNote, thisSeason, ground, tickets, access, parkingAndPub, about];
+  /* Coming from a home game, everything about their ground is for a trip we
+     are not making yet, and supporters told us it read as if we were. So it
+     folds away behind one switch instead of disappearing: the detail is still
+     a tap away when the away game comes round. The choice is remembered. */
+  const awayParts = [travelNote, ground, tickets, access, parkingAndPub];
 
-  order.forEach((section) => {
+  if (!cameFromHome) {
+    [travelNote, thisSeason, ground, tickets, access, parkingAndPub, about].forEach((section) => {
+      const node = section();
+      if (node) wrap.append(node);
+    });
+    return wrap;
+  }
+
+  [thisSeason, about].forEach((section) => {
     const node = section();
     if (node) wrap.append(node);
   });
 
+  const holder = el(`<div></div>`);
+  const toggle = el(`
+    <button class="away-toggle" type="button" aria-expanded="false">
+      <span class="away-toggle__text">
+        <b>Their ground and away day details</b>
+        <span>Tickets, parking and the pub for when we travel to ${esc(t.stadium)}${
+          awayTrip ? ` on ${esc(fmtDate(awayTrip.date, "short"))}` : ""
+        }.</span>
+      </span>
+      <span class="away-toggle__chevron" aria-hidden="true">›</span>
+    </button>`);
+
+  /* Starts shut every time, not just the first time. Someone who opened it once
+     for one club should not find the next home tie already unfolded. */
+  let open = false;
+
+  const paint = () => {
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.classList.toggle("is-open", open);
+    holder.replaceChildren();
+    if (!open) return;
+    awayParts.forEach((section) => {
+      const node = section();
+      if (node) holder.append(node);
+    });
+  };
+
+  toggle.addEventListener("click", () => {
+    open = !open;
+    paint();
+  });
+
+  wrap.append(toggle, holder);
+  paint();
   return wrap;
 }
 
@@ -2034,6 +2079,12 @@ function squadFor(fixture) {
   return { players: [], source: null };
 }
 
+/** The squad the club confirmed, in shirt number order. */
+const confirmedSquad = () => state.squad?.players || [];
+
+const POSITION_ORDER = ["GK", "DF", "MF", "ST"];
+const POSITION_LABEL = { GK: "Goalkeepers", DF: "Defenders", MF: "Midfielders", ST: "Forwards" };
+
 /** Matches that have kicked off, most recent first. */
 const ratableFixtures = () =>
   fixtures()
@@ -2121,9 +2172,13 @@ function lineupForm(fixture, existing = []) {
     </details>`);
 
   const ta = box.querySelector("textarea");
-  ta.value = existing
-    .map((pl) => [pl.number, pl.name, pl.captain ? "(c)" : "", pl.started === false ? "sub" : ""].filter(Boolean).join(" "))
-    .join("\n");
+  const asLines = (list) =>
+    list
+      .map((pl) => [pl.number, pl.name, pl.captain ? "(c)" : "", pl.started === false ? "sub" : ""].filter(Boolean).join(" "))
+      .join("\n");
+  /* Starting from the confirmed squad beats typing eighteen names on a phone
+     at full time. Delete whoever did not play. */
+  ta.value = existing.length ? asLines(existing) : asLines(confirmedSquad());
 
   box.querySelector("button").addEventListener("click", () => {
     const players = parseLineup(ta.value);
@@ -2166,7 +2221,7 @@ function viewPlayers() {
   wrap.append(el(`
     <div class="page-head">
       <h1>Player ratings</h1>
-      <p>Mark the Poppies out of ten after each game. The squad builds itself from the team sheets the league publishes, so a player shows up here once they have played.</p>
+      <p>Mark the Poppies out of ten after each game. Whoever the league names on the team sheet is who you rate, so loanees and new signings appear the moment they play.</p>
     </div>`));
 
   /* ---- the season so far ---- */
@@ -2191,6 +2246,36 @@ function viewPlayers() {
     });
     wrap.append(table);
     wrap.append(el(`<p class="note">An average across every match a player has been rated in. Early in the season a single good game moves it a long way.</p>`));
+  }
+
+  /* ---- the squad as the club confirmed it ---- */
+  const squad = confirmedSquad();
+  if (squad.length) {
+    wrap.append(el(`<h2 class="section-title">The squad</h2>`));
+    const seasonBy = Object.fromEntries(db.seasonRatings().map((r) => [r.player_name, r]));
+    const card = el(`<div class="card"></div>`);
+
+    POSITION_ORDER.forEach((code) => {
+      const group = squad.filter((pl) => pl.abbrev === code);
+      if (!group.length) return;
+      card.append(el(`<div class="squad__head">${esc(POSITION_LABEL[code] || code)}</div>`));
+      group.forEach((pl) => {
+        const r = seasonBy[pl.name];
+        card.append(el(`
+          <div class="squad__row">
+            <span class="squad__num">${pl.number ?? ""}</span>
+            <span class="squad__name">${esc(pl.name)}</span>
+            ${r
+              ? `<span class="squad__avg"><b>${r.average}</b>${r.matches} game${r.matches === 1 ? "" : "s"}</span>`
+              : `<span class="squad__avg squad__avg--none">Not rated yet</span>`}
+          </div>`));
+      });
+    });
+    wrap.append(card);
+
+    if (state.squad?.confirmed) {
+      wrap.append(el(`<p class="note">Squad as confirmed by ${esc(state.squad.source || "the club")} on ${esc(fmtDate(state.squad.confirmed))}. Players come and go quickly at this level, so anyone named on a team sheet who is not on this list still gets rated with everyone else.</p>`));
+    }
   }
 
   /* ---- rate a match ---- */
@@ -2955,6 +3040,17 @@ async function loadClubInfo() {
   }
 }
 
+/* The squad as the club confirmed it. Names on a team sheet are matched back
+   to this list by the fixture sync, so the app can trust the spellings. */
+async function loadSquad() {
+  try {
+    const res = await fetch("data/squad.json");
+    if (res.ok) state.squad = await res.json();
+  } catch {
+    state.squad = null; /* the ratings still work from team sheets alone */
+  }
+}
+
 async function loadLeague(force = false) {
   try {
     const res = await fetch(`data/league.json${force ? `?t=${Date.now()}` : ""}`, { cache: force ? "reload" : "default" });
@@ -3078,6 +3174,7 @@ async function boot() {
      live updates, so a new car share or wall post appears without a refresh. */
   await Promise.all([
     loadClubInfo(),
+    loadSquad(),
     loadLeague().then(() => render()),
     db
       .initStore({ change: () => render(), error: (message) => toast(message) })

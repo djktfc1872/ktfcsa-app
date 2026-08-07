@@ -9,7 +9,7 @@
  * Run locally with:  node scripts/fetch-league.mjs
  */
 import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TEAMS } from "../assets/js/data.js";
@@ -52,18 +52,114 @@ function crestFor(slug, name, logo) {
   return logo ? `${LOGO_BASE}/${logo}` : null;
 }
 
+/* ------------------------------------------------------- squad reconciliation */
+
+/* The club confirms a squad; the league feed names whoever played. The two
+   spell people differently ("Jason Alxander" for Alexander, "Ismael Botelho
+   Fatadjo" for Fatadjo, "Edward" for Eddie) and shirt numbers move between
+   seasons. Ratings are stored against a name, so left alone one player would
+   collect marks under two spellings. Every feed name is resolved back to the
+   club's spelling before it reaches the app. */
+
+const SQUAD_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "..", "data", "squad.json");
+const squad = existsSync(SQUAD_PATH)
+  ? JSON.parse(readFileSync(SQUAD_PATH, "utf8")).players || []
+  : [];
+
+/** Lower case, no accents, no punctuation: a form safe to compare. */
+const plain = (s) =>
+  String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
+
+const surname = (name) => plain(name).split(" ").pop() || "";
+
+/** Edit distance, stopping early once it passes the limit we care about. */
+function distance(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 99;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      row[j] = Math.min(
+        prev[j] + 1,
+        row[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/**
+ * The club's spelling of a player the feed has named, or null if they are not
+ * in the confirmed squad, which is how a new signing is spotted.
+ */
+function canonicalName(name, number) {
+  if (!squad.length) return null;
+  const full = plain(name);
+  const exact = squad.find((p) => plain(p.name) === full);
+  if (exact) return exact.name;
+
+  /* Surnames survive what forenames do not: Eddie for Edward, a middle name
+     the feed keeps and the club drops. */
+  const sur = surname(name);
+  const initial = full.charAt(0);
+  const bySurname = squad.filter((p) => surname(p.name) === sur);
+  /* Sharing a surname is not enough on its own: a new signing called Panter is
+     not Eddie Panter. The forename has to at least start the same way, which
+     Eddie and Edward do. */
+  if (bySurname.length === 1 && plain(bySurname[0].name).charAt(0) === initial) {
+    return bySurname[0].name;
+  }
+  if (bySurname.length > 1) {
+    const byNumber = bySurname.find((p) => p.number === number);
+    if (byNumber) return byNumber.name;
+    const forename = full.split(" ")[0];
+    const byForename = bySurname.find((p) => plain(p.name).split(" ")[0].startsWith(forename.slice(0, 3)));
+    if (byForename) return byForename.name;
+  }
+
+  /* Still nothing, so allow for a typo in the surname itself. Short surnames
+     get one edit only: "Ranger" and "Panter" are two apart, and a departed
+     player must not be quietly rewritten into a current one. A near surname
+     also has to come with a matching forename before we trust it. */
+  const forename = full.split(" ")[0];
+  const allowed = sur.length >= 8 ? 2 : 1;
+  const near = squad
+    .map((p) => ({ p, d: distance(sur, surname(p.name)) }))
+    .filter((x) => x.d <= allowed)
+    .filter((x) => {
+      const theirs = plain(x.p.name).split(" ")[0];
+      return theirs === forename || distance(theirs, forename) <= 1;
+    })
+    .sort((a, b) => a.d - b.d);
+  if (near.length && (near.length === 1 || near[0].d < near[1].d)) return near[0].p.name;
+
+  return null;
+}
+
 /** The Kettering names on a team sheet, starters first then substitutes. */
 function lineupFor(match, isHome) {
   const starters = (isHome ? match.homeLineup : match.awayLineup) || [];
   const subs = (isHome ? match.homeSubs : match.awaySubs) || [];
   const seen = new Set();
   return [...starters, ...subs]
-    .map((p) => ({
-      name: String(p.personName || "").trim(),
-      number: p.number ?? null,
-      started: Boolean(p.hasStartedMatch),
-      captain: Boolean(p.isCaptain),
-    }))
+    .map((p) => {
+      const feedName = String(p.personName || "").trim();
+      const number = p.number ?? null;
+      const known = canonicalName(feedName, number);
+      return {
+        name: known || feedName,
+        feedName: known && known !== feedName ? feedName : undefined,
+        number,
+        started: Boolean(p.hasStartedMatch),
+        captain: Boolean(p.isCaptain),
+        /* Not in the squad the club confirmed, so a new face rather than a
+           spelling we failed to match. */
+        newFace: known ? undefined : true,
+      };
+    })
     .filter((p) => {
       const key = p.name.toLowerCase();
       if (!p.name || seen.has(key)) return false;
