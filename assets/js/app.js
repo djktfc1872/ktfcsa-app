@@ -3032,23 +3032,34 @@ function setTheme(theme) {
 /* ==================================================================== data */
 
 async function loadClubInfo() {
-  try {
-    const res = await fetch("data/clubs.json");
-    if (res.ok) state.clubInfo = (await res.json()).clubs || {};
-  } catch {
-    state.clubInfo = {}; /* the club pages simply show less */
-  }
+  const data = await readJSON("data/clubs.json");
+  state.clubInfo = data?.clubs || {}; /* empty just means the club pages show less */
 }
 
 /* The squad as the club confirmed it. Names on a team sheet are matched back
    to this list by the fixture sync, so the app can trust the spellings. */
 async function loadSquad() {
-  try {
-    const res = await fetch("data/squad.json");
-    if (res.ok) state.squad = await res.json();
-  } catch {
-    state.squad = null; /* the ratings still work from team sheets alone */
+  state.squad = await readJSON("data/squad.json");
+  /* null is fine: the ratings still work from team sheets alone */
+}
+
+/**
+ * A JSON file from our own site, or null.
+ *
+ * A deploy in flight can answer 200 with an empty body, and the browser will
+ * hold that for a minute. One retry past the cache turns a blank page into a
+ * brief pause.
+ */
+async function readJSON(path) {
+  for (const init of [undefined, { cache: "no-store" }]) {
+    try {
+      const res = await fetch(path, init);
+      if (res.ok) return await res.json();
+    } catch {
+      /* fall through to the retry, then give up quietly */
+    }
   }
+  return null;
 }
 
 async function loadLeague(force = false) {
