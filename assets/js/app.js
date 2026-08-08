@@ -2101,12 +2101,22 @@ const confirmedSquad = () => state.squad?.players || [];
 const POSITION_ORDER = ["GK", "DF", "MF", "ST"];
 const POSITION_LABEL = { GK: "Goalkeepers", DF: "Defenders", MF: "Midfielders", ST: "Forwards" };
 
-/** Matches that have kicked off, most recent first. */
+/* Team sheets go up about an hour before kick-off, so the panel has to be
+   reachable before the game starts or a volunteer is locked out holding the
+   sheet. Ratings themselves still wait for kick-off. */
+const SHEET_OPENS_MS = 3 * 60 * 60 * 1000;
+
+const hasKickedOff = (f) => {
+  const ko = kickoffTime(f);
+  return Boolean(ko) && ko.getTime() <= Date.now();
+};
+
+/** Matches near enough to matter: kicked off, or kicking off shortly. */
 const ratableFixtures = () =>
   fixtures()
     .filter((f) => {
       const ko = kickoffTime(f);
-      return ko && ko.getTime() <= Date.now() && f.status !== "off";
+      return ko && ko.getTime() - SHEET_OPENS_MS <= Date.now() && f.status !== "off";
     })
     .reverse();
 
@@ -2163,8 +2173,11 @@ function ratingPanel(fixture) {
     return wrap;
   }
 
-  const signedIn = Boolean(db.currentUser());
-  if (!signedIn) {
+  const started = hasKickedOff(fixture);
+  const signedIn = Boolean(db.currentUser()) && started;
+  if (!started) {
+    wrap.append(el(`<p class="note">The team sheet is up. Marks open at kick-off.</p>`));
+  } else if (!signedIn) {
     wrap.append(el(`<p class="note">Ratings need an account, so each supporter marks a player once. The averages below are everyone's.</p>`));
   }
 
