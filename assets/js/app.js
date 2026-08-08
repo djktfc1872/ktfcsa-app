@@ -546,11 +546,11 @@ function viewTable() {
      than making the page scroll sideways. Hidden on desktop, where the full
      table already fits. */
   const fullToggle = el(`
-    <button class="cols-toggle" type="button" aria-expanded="false">Show all columns</button>`);
+    <button class="cols-toggle" type="button" aria-expanded="false">Show more columns</button>`);
   fullToggle.addEventListener("click", () => {
     const on = table.classList.toggle("is-expanded");
     fullToggle.setAttribute("aria-expanded", String(on));
-    fullToggle.textContent = on ? "Show fewer columns" : "Show all columns";
+    fullToggle.textContent = on ? "Show fewer columns" : "Show more columns";
   });
   wrap.append(fullToggle);
 

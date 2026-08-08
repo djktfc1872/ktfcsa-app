@@ -3507,7 +3507,10 @@ button,
 }
 
 /* A sideways flick inside a table should not drag the page along with it. */
-.table-wrap { overscroll-behavior-x: contain; }
+/* The tables now fit, so nothing inside here needs a sideways drag. Handing
+   vertical swipes to the page means a finger landing on the table scrolls
+   down as expected, instead of the gesture being swallowed. */
+.table-wrap { overscroll-behavior-x: contain; touch-action: pan-y; }
 
 /* The toggle that puts the missing league columns back on a phone. */
 .cols-toggle {
@@ -3531,7 +3534,16 @@ button,
     padding-left: 3px; padding-right: 3px;
     font-size: 11px;
   }
-  .table-wrap.is-expanded table.league--full td:nth-child(2) { max-width: 24vw; }
+  /* A middle ground rather than all ten. Goals for and against stay out: they
+     are the least read of the lot and the two that made the row feel cramped.
+     Eight columns leaves the type large enough to take in at a glance. */
+  .table-wrap.is-expanded table.league--full th:nth-child(n + 7):nth-child(-n + 8),
+  .table-wrap.is-expanded table.league--full td:nth-child(n + 7):nth-child(-n + 8) {
+    display: none;
+  }
+  .table-wrap.is-expanded table.league--full th,
+  .table-wrap.is-expanded table.league--full td { font-size: 12px; }
+  .table-wrap.is-expanded table.league--full td:nth-child(2) { max-width: 30vw; }
   .table-wrap.is-expanded table.league--full .crest { display: none; }
 
   /* The supporter name on the prediction and attendance tables was taking more
