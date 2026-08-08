@@ -2280,7 +2280,11 @@ function viewPlayers() {
         card.append(el(`
           <div class="squad__row">
             <span class="squad__num">${pl.number ?? ""}</span>
-            <span class="squad__name">${esc(pl.name)}</span>
+            <span class="squad__name">${esc(pl.name)}${
+              pl.loan
+                ? ` <span class="squad__loan" title="On loan${pl.loan.from ? ` from ${esc(pl.loan.from)}` : ""}${pl.loan.until ? `, back ${esc(fmtDate(pl.loan.until, "short"))}` : ""}">Loan</span>`
+                : ""
+            }</span>
             ${r
               ? `<span class="squad__avg"><b>${r.average}</b>${r.matches} game${r.matches === 1 ? "" : "s"}</span>`
               : `<span class="squad__avg squad__avg--none">Not rated yet</span>`}

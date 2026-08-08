@@ -110,6 +110,16 @@
       "name": "Kai Fifield",
       "position": "Midfielder",
       "abbrev": "MF"
+    },
+    {
+      "number": null,
+      "name": "Michael Gyasi",
+      "position": "Striker",
+      "abbrev": "ST",
+      "loan": {
+        "from": "Bedford Town",
+        "until": "2026-10-04"
+      }
     }
   ]
 }
