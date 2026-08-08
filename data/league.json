@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-08T07:58:03.636Z",
+  "updated": "2026-08-08T14:25:36.133Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -368,12 +368,114 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
+      "status": "live",
+      "rawStatus": "FirstHalf",
+      "homeScore": 1,
+      "awayScore": 0,
       "attendance": null,
-      "lineup": []
+      "lineup": [
+        {
+          "name": "Paul White",
+          "number": 1,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Jack Newell",
+          "number": 4,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tom Leak",
+          "number": 5,
+          "started": true,
+          "captain": true
+        },
+        {
+          "name": "Harvey Peters",
+          "number": 6,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Lawson D'Ath",
+          "feedName": "Lawson D'ath",
+          "number": 7,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Bayley Brown",
+          "feedName": "Bayley Antoine Brown",
+          "number": 8,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Eddie Panter",
+          "feedName": "Edward  Panter",
+          "number": 9,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Theo Alexandrou",
+          "number": 11,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tai Fleming",
+          "number": 15,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ryan Haynes",
+          "number": 16,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ismael Fatadjo",
+          "feedName": "Ismael Botelho Fatadjo",
+          "number": 17,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Jason Alexander",
+          "feedName": "Jay Alexander",
+          "number": 13,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Aaron Powell",
+          "number": 3,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Shaun Jeffers",
+          "number": 10,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Michael Gyasi",
+          "number": 14,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Kai Fifield",
+          "number": 19,
+          "started": false,
+          "captain": false
+        }
+      ]
     },
     {
       "id": "6a5a19f7ce9ef452b61f421f",
