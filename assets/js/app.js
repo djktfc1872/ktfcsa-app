@@ -541,7 +541,20 @@ function viewTable() {
     return wrap;
   }
 
-  wrap.append(el(`
+  /* Phones only ever see five columns, because ten will not fit. This puts the
+     other five back for anyone who wants them, by shrinking the type rather
+     than making the page scroll sideways. Hidden on desktop, where the full
+     table already fits. */
+  const fullToggle = el(`
+    <button class="cols-toggle" type="button" aria-expanded="false">Show all columns</button>`);
+  fullToggle.addEventListener("click", () => {
+    const on = table.classList.toggle("is-expanded");
+    fullToggle.setAttribute("aria-expanded", String(on));
+    fullToggle.textContent = on ? "Show fewer columns" : "Show all columns";
+  });
+  wrap.append(fullToggle);
+
+  const table = el(`
     <div class="table-wrap">
       <table class="league league--full">
         <thead>
@@ -564,7 +577,8 @@ function viewTable() {
             </tr>`).join("")}
         </tbody>
       </table>
-    </div>`));
+    </div>`);
+  wrap.append(table);
 
   if (rows.every((r) => r.played === 0)) {
     wrap.append(el(`<div class="notice notice--info" style="margin-top:14px">The season has not kicked off yet, so every club starts on zero. The table fills in on its own once results come through.</div>`));

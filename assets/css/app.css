@@ -3508,3 +3508,33 @@ button,
 
 /* A sideways flick inside a table should not drag the page along with it. */
 .table-wrap { overscroll-behavior-x: contain; }
+
+/* The toggle that puts the missing league columns back on a phone. */
+.cols-toggle {
+  display: none;
+  margin: 0 0 10px; padding: 7px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--gold-300);
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.cols-toggle:hover { background: var(--surface-3); }
+
+@media (max-width: 560px) {
+  .cols-toggle { display: inline-block; }
+
+  /* Expanded, every column comes back. The type shrinks and the club name
+     truncates so ten columns still land inside the screen: the whole point is
+     to avoid scrolling sideways, not to move the scroll somewhere else. */
+  .table-wrap.is-expanded table.league--full th,
+  .table-wrap.is-expanded table.league--full td {
+    display: table-cell;
+    padding-left: 3px; padding-right: 3px;
+    font-size: 11px;
+  }
+  .table-wrap.is-expanded table.league--full td:nth-child(2) { max-width: 24vw; }
+  .table-wrap.is-expanded table.league--full .crest { display: none; }
+
+  /* The supporter name on the prediction and attendance tables was taking more
+     room than it needed, squeezing the numbers people came for. */
+  table.league:not(.league--full) td:nth-child(2) { max-width: 30vw; }
+}
