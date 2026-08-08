@@ -141,7 +141,7 @@ function footer() {
       </div>
       <a class="site-footer__mail" href="mailto:${esc(email)}">${esc(email)}</a>
       <div class="site-footer__meta">
-        <span>&copy; ${year} Kettering Town Supporters' Association</span>
+        <span>&copy; ${year} Danny Jordan / Kettering Town FC Supporters' Association</span>
         <span class="site-footer__sep" aria-hidden="true">&middot;</span>
         <span>Fixtures from the Southern League</span>
         <span class="site-footer__sep" aria-hidden="true">&middot;</span>
@@ -543,7 +543,7 @@ function viewTable() {
 
   wrap.append(el(`
     <div class="table-wrap">
-      <table class="league">
+      <table class="league league--full">
         <thead>
           <tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>GD</th><th>Pts</th></tr>
         </thead>

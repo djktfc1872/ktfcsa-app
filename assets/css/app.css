@@ -3481,3 +3481,30 @@ button,
   .lb { grid-template-columns: 18px minmax(0, 1fr) 40px; gap: 8px; }
   .lb__bar { display: none; }
 }
+
+/* ------------------------------------------- tables that have to fit a phone */
+
+/* A ten column league table was wider than the screen, so the page had to be
+   nudged sideways before it would scroll down. Below 560px the columns a
+   supporter reads least drop out: won, drawn, lost, for and against. Played,
+   goal difference and points stay, which is how a table is read at a glance.
+   Only the ten column table loses columns; the five column ones already fit. */
+@media (max-width: 560px) {
+  .league--full th:nth-child(n + 4):nth-child(-n + 8),
+  .league--full td:nth-child(n + 4):nth-child(-n + 8) {
+    display: none;
+  }
+
+  /* The table carries a min-width so columns do not crush on a desktop. With
+     five columns on a phone it is what was forcing the sideways scroll. */
+  table.league { min-width: 0; }
+
+  /* A long club or supporter name must not push a table past the screen. */
+  table.league td:nth-child(2) {
+    max-width: 42vw;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}
+
+/* A sideways flick inside a table should not drag the page along with it. */
+.table-wrap { overscroll-behavior-x: contain; }
