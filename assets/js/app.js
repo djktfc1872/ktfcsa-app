@@ -2257,23 +2257,36 @@ function viewPlayers() {
   const season = db.seasonRatings();
   if (season.length) {
     wrap.append(el(`<h2 class="section-title">This season</h2>`));
-    const table = el(`
-      <div class="table-wrap">
-        <table class="table">
-          <thead><tr><th>Player</th><th class="num">Average</th><th class="num">Games rated</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>`);
-    const body = table.querySelector("tbody");
-    season.forEach((r) => {
-      body.append(el(`
-        <tr>
-          <td>${esc(r.player_name)}</td>
-          <td class="num"><b>${r.average}</b></td>
-          <td class="num">${r.matches}</td>
-        </tr>`));
+
+    /* A three column table was too wide for a phone, so this is a list: the
+       mark is the thing people look at, and a bar makes the order readable
+       without reading a single number. */
+    const byName = Object.fromEntries(confirmedSquad().map((pl) => [pl.name, pl]));
+    const board = el(`<div class="card ratings-board"></div>`);
+    const best = Math.max(...season.map((r) => Number(r.average) || 0), 0);
+
+    season.forEach((r, i) => {
+      const pl = byName[r.player_name];
+      const avg = Number(r.average) || 0;
+      const rank = i > 0 && season[i - 1].average === r.average ? "" : String(i + 1);
+      board.append(el(`
+        <div class="lb${avg === best && best > 0 ? " lb--top" : ""}">
+          <span class="lb__rank">${rank}</span>
+          <span class="lb__who">
+            <span class="lb__name">${esc(r.player_name)}${
+              pl?.loan ? ` <span class="squad__loan">Loan</span>` : ""
+            }</span>
+            <span class="lb__meta">${
+              [pl?.position, `${r.matches} game${r.matches === 1 ? "" : "s"}`,
+               r.voters ? `${r.voters} rating${r.voters === 1 ? "" : "s"}` : ""]
+                .filter(Boolean).map(esc).join(" · ")
+            }</span>
+          </span>
+          <span class="lb__bar" aria-hidden="true"><i style="width:${Math.round(avg * 10)}%"></i></span>
+          <span class="lb__avg">${r.average}</span>
+        </div>`));
     });
-    wrap.append(table);
+    wrap.append(board);
     wrap.append(el(`<p class="note">An average across every match a player has been rated in. Early in the season a single good game moves it a long way.</p>`));
   }
 

@@ -3434,3 +3434,50 @@ button,
   font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
   vertical-align: middle;
 }
+
+/* --------------------------------------------- season ratings leaderboard */
+
+/* Replaces a three column table that a phone could not show without scrolling
+   sideways. Grid columns collapse instead of overflowing. */
+.ratings-board { padding-top: 4px; padding-bottom: 4px; }
+
+.lb {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 72px 42px;
+  align-items: center; gap: 10px;
+  padding: 11px 0; border-top: 1px solid var(--line-soft);
+}
+.lb:first-child { border-top: 0; }
+
+.lb__rank {
+  font-size: 12px; font-weight: 600; color: var(--text-3);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.lb__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lb__name {
+  font-size: 15px; font-weight: 550; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lb__meta {
+  font-size: 11px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lb__bar {
+  height: 5px; border-radius: var(--r-pill); background: var(--surface-3);
+  overflow: hidden;
+}
+.lb__bar i {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold-600), var(--gold-400));
+}
+.lb__avg {
+  font-size: 19px; font-weight: 700; color: var(--gold-400);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.lb--top .lb__avg { color: var(--gold-300); }
+
+/* On a narrow phone the bar is the first thing to go: the number carries it. */
+@media (max-width: 420px) {
+  .lb { grid-template-columns: 18px minmax(0, 1fr) 40px; gap: 8px; }
+  .lb__bar { display: none; }
+}
