@@ -41,12 +41,12 @@ class Backend {
   async loadProfile(id) {
     const { data, error } = await this.sb
       .from("profiles")
-      .select("id, display_name, is_admin, avatar")
+      .select("id, display_name, is_admin")
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
     this.profile = data
-      ? { id: data.id, name: data.display_name, isAdmin: data.is_admin, avatar: data.avatar || null }
+      ? { id: data.id, name: data.display_name, isAdmin: data.is_admin }
       : null;
     return this.profile;
   }
@@ -88,19 +88,20 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
-  /** Every emblem in use, so a post can show its author's without a join. */
+  /* Badges came after the first release. A database without the column must
+     still sign people in, so this degrades to nobody having one rather than
+     taking the profile query, and with it the whole login, down with it. */
   async loadAvatars() {
     const { data, error } = await this.sb
       .from("profiles").select("id, avatar").not("avatar", "is", null);
-    if (error) throw error;
+    if (error) return {};
     return Object.fromEntries((data || []).map((r) => [r.id, r.avatar]));
   }
 
   async setAvatar(emblem) {
     const { error } = await this.sb
       .from("profiles").update({ avatar: emblem }).eq("id", this.profile.id);
-    if (error) throw new Error(friendly(error));
-    this.profile = { ...this.profile, avatar: emblem };
+    if (error) throw new Error("Badges are not set up in the database yet.");
   }
 
   async rename(displayName) {
