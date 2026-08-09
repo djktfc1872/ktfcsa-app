@@ -668,3 +668,14 @@ alter view match_ratings  set (security_invoker = true);
 alter view season_ratings set (security_invoker = true);
 
 grant select on match_ratings, season_ratings to anon, authenticated;
+
+-- ===========================================================================
+-- Profile emblems
+--
+-- A supporter can pick a small badge instead of their initials. It is a short
+-- string naming one of a fixed set the app ships, never an uploaded file, so
+-- there is nothing to host and nothing to moderate.
+-- ===========================================================================
+
+alter table profiles add column if not exists avatar text
+  check (avatar is null or char_length(avatar) <= 16);

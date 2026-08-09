@@ -61,6 +61,7 @@ const live = {
   pubVotes: new Set(),
   access: [],
   ground: [],
+  avatars: {},              // profileId -> emblem key
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
 };
@@ -167,7 +168,8 @@ export async function refresh() {
     /* Ratings arrived after the first release, so a database that has not had
        the newer tables added yet must not stop everything else refreshing. */
     try {
-      live.lineups = await backend.loadLineups();
+      live.avatars = await backend.loadAvatars();
+    live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
     } catch (err) {
       console.warn("Player ratings are not set up in the database yet:", err?.message || err);
@@ -483,6 +485,22 @@ export function removeGroundReport(id) {
   live.ground = live.ground.filter((r) => r.id !== id);
   onChange();
   attempt(backend.removeGround(id).then(refresh), "That deletion did not save.");
+}
+
+/* ---------------------------------------------------------------- emblems */
+
+/** The badge a supporter picked, or null if they are still on their initials. */
+export const avatarOf = (profileId) => live.avatars[profileId] || null;
+
+export function setAvatar(emblem) {
+  if (!backend) {
+    onError("Choosing a badge needs an account.");
+    return;
+  }
+  const me = backend.profile?.id;
+  if (me) live.avatars = { ...live.avatars, [me]: emblem };
+  onChange();
+  attempt(backend.setAvatar(emblem).then(refresh), "That badge did not save.");
 }
 
 /* --------------------------------------------------------- player ratings */

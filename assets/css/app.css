@@ -3550,3 +3550,31 @@ button,
      room than it needed, squeezing the numbers people came for. */
   table.league:not(.league--full) td:nth-child(2) { max-width: 30vw; }
 }
+
+/* ----------------------------------------------------------- avatar colours */
+
+/* Derived from the name, so the same supporter is always the same colour and
+   a page of posts is no longer a page of identical circles. */
+.avatar--t0 { background: linear-gradient(135deg, var(--gold-500), var(--red-500)); }
+.avatar--t1 { background: linear-gradient(135deg, #7f1d2e, #c2415a); }
+.avatar--t2 { background: linear-gradient(135deg, #14532d, #3f9e5c); }
+.avatar--t3 { background: linear-gradient(135deg, #1e3a5f, #4a7fb5); }
+.avatar--t4 { background: linear-gradient(135deg, #4a2b6b, #8b5fb8); }
+.avatar--t5 { background: linear-gradient(135deg, #7a4a12, #c68a3e); }
+
+.avatar--emblem { background: var(--surface-3); font-size: 15px; }
+
+.emblem-pick { margin: 4px 0 14px; }
+.emblem-pick__label {
+  margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--text-3);
+}
+.emblem-pick__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.emblem {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--surface-2);
+  font-size: 19px; line-height: 1; cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.emblem:hover { background: var(--surface-3); }
+.emblem:active { transform: scale(0.92); }
+.emblem.is-mine { border-color: var(--gold-400); background: var(--surface-3); }

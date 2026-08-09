@@ -319,7 +319,7 @@ function renderNav() {
 
   const user = db.currentUser();
   $("#account-btn").innerHTML = user
-    ? `<span class="avatar" title="${esc(user.name)}">${esc(user.initials)}</span>`
+    ? avatarHtml(user.name, user.id)
     : `<span class="btn btn--sm">Sign in</span>`;
 }
 
@@ -1887,7 +1887,7 @@ function liftCard(l) {
   const card = el(`
     <div class="post post--${l.kind}">
       <div class="post__head">
-        <span class="avatar">${esc((l.authorName || "?").slice(0, 2).toUpperCase())}</span>
+        ${avatarHtml(l.authorName, l.authorId)}
         <span class="post__who">${esc(l.authorName)}</span>
         <span class="pill pill--${l.kind === "offer" ? "home" : "muted"}">${l.kind === "offer" ? "Offering" : "Looking"}</span>
         <span class="post__when">${esc(relTime(l.createdAt))}</span>
@@ -2355,6 +2355,52 @@ function viewPlayers() {
   return wrap;
 }
 
+/* ================================================================= avatars */
+
+/* Initials plus a colour worked out from the name. Everyone used to get the
+   same gold gradient, so a page of posts was a page of identical circles. The
+   colour is derived, not stored: the same supporter always gets the same one. */
+
+const AVATAR_TONES = 6;
+
+const initialsFor = (name) => {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : parts[0].charAt(1) || "";
+  return (first + last).toUpperCase();
+};
+
+const toneFor = (name) => {
+  const s = String(name || "");
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % AVATAR_TONES;
+};
+
+/* A fixed set the app ships. Nothing is uploaded, so nothing needs hosting or
+   moderating. */
+const EMBLEMS = {
+  poppy: "\u{1F3F5}\u{FE0F}",
+  ball: "\u26BD",
+  scarf: "\u{1F9E3}",
+  boots: "\u{1F45F}",
+  trophy: "\u{1F3C6}",
+  bus: "\u{1F68C}",
+};
+const EMBLEM_LABEL = {
+  poppy: "Poppy", ball: "Football", scarf: "Scarf",
+  boots: "Boots", trophy: "Trophy", bus: "Coach",
+};
+
+/** One avatar: their badge if they picked one, otherwise initials in colour. */
+function avatarHtml(name, profileId, style = "") {
+  const emblem = profileId ? db.avatarOf(profileId) : null;
+  const badge = emblem && EMBLEMS[emblem];
+  return `<span class="avatar avatar--t${toneFor(name)}${badge ? " avatar--emblem" : ""}"
+    title="${esc(name || "")}"${style ? ` style="${style}"` : ""}>${badge || esc(initialsFor(name))}</span>`;
+}
+
 /* ============================================================ match threads */
 
 /* A discussion topic opens for every fixture without anyone creating one.
@@ -2564,7 +2610,7 @@ function wallCard(p, admin) {
   const card = el(`
     <div class="post" ${p.hidden ? 'style="opacity:.5"' : ""}>
       <div class="post__head">
-        <span class="avatar">${esc((p.authorName || "?").slice(0, 2).toUpperCase())}</span>
+        ${avatarHtml(p.authorName, p.authorId)}
         <span class="post__who">${esc(p.authorName)}</span>
         ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
         <span class="post__when">${esc(relTime(p.createdAt))}</span>
@@ -2818,22 +2864,47 @@ function viewAccount() {
     return wrap;
   }
 
-  wrap.append(el(`
+  const idCard = el(`
     <div class="card">
       <div class="post__head" style="margin-bottom:12px">
-        <span class="avatar" style="width:44px;height:44px;font-size:15px">${esc(user.initials)}</span>
+        ${avatarHtml(user.name, user.id, "width:44px;height:44px;font-size:15px")}
         <div>
           <div class="post__who" style="font-size:16px">${esc(user.name)}</div>
           <div class="hint" style="margin:0">${user.isAdmin ? "KTFCSA volunteer" : "Supporter"}</div>
         </div>
       </div>
+      <div class="emblem-pick">
+        <div class="emblem-pick__label">Your badge</div>
+        <div class="emblem-pick__row"></div>
+      </div>
+
       <div class="btn-row">
         <button class="btn btn--ghost btn--sm" id="ac-rename">Change name</button>
         <button class="btn btn--ghost btn--sm" id="ac-out">Sign out</button>
         ${!online && user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-lock">Turn off admin tools</button>` : ""}
         ${!online && !user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-admin">Volunteer sign in</button>` : ""}
       </div>
-    </div>`));
+    </div>`);
+
+  /* Badges are a fixed set, so picking one is a tap and nothing is uploaded.
+     Tapping the one you already have puts you back to your initials. */
+  const row = $(".emblem-pick__row", idCard);
+  const paintEmblems = () => {
+    const mine = db.avatarOf(user.id);
+    row.replaceChildren();
+    Object.entries(EMBLEMS).forEach(([key, glyph]) => {
+      const b = el(`
+        <button class="emblem${mine === key ? " is-mine" : ""}" type="button"
+          aria-pressed="${mine === key}" title="${esc(EMBLEM_LABEL[key] || key)}">${glyph}</button>`);
+      b.addEventListener("click", () => {
+        db.setAvatar(mine === key ? null : key);
+        toast(mine === key ? "Back to your initials." : `Badge set to ${EMBLEM_LABEL[key] || key}.`);
+      });
+      row.append(b);
+    });
+  };
+  paintEmblems();
+  wrap.append(idCard);
 
   $("#ac-rename", wrap).addEventListener("click", () => {
     const { node, close } = modal(`
