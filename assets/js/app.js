@@ -2612,6 +2612,7 @@ function wallCard(p, admin) {
       <div class="post__head">
         ${avatarHtml(p.authorName, p.authorId)}
         <span class="post__who">${esc(p.authorName)}</span>
+        ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Site admin</span>` : ""}
         ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
         <span class="post__when">${esc(relTime(p.createdAt))}</span>
       </div>

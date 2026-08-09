@@ -92,10 +92,13 @@ class Backend {
      still sign people in, so this degrades to nobody having one rather than
      taking the profile query, and with it the whole login, down with it. */
   async loadAvatars() {
-    const { data, error } = await this.sb
-      .from("profiles").select("id, avatar").not("avatar", "is", null);
-    if (error) return {};
-    return Object.fromEntries((data || []).map((r) => [r.id, r.avatar]));
+    const { data, error } = await this.sb.from("profiles").select("id, avatar, is_admin");
+    if (error) return { avatars: {}, admins: [] };
+    const rows = data || [];
+    return {
+      avatars: Object.fromEntries(rows.filter((r) => r.avatar).map((r) => [r.id, r.avatar])),
+      admins: rows.filter((r) => r.is_admin).map((r) => r.id),
+    };
   }
 
   async setAvatar(emblem) {

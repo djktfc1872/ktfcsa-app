@@ -62,6 +62,7 @@ const live = {
   access: [],
   ground: [],
   avatars: {},              // profileId -> emblem key
+  admins: new Set(),        // profileIds of KTFCSA volunteers
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
 };
@@ -168,7 +169,9 @@ export async function refresh() {
     /* Ratings arrived after the first release, so a database that has not had
        the newer tables added yet must not stop everything else refreshing. */
     try {
-      live.avatars = await backend.loadAvatars();
+      const people = await backend.loadAvatars();
+    live.avatars = people.avatars;
+    live.admins = new Set(people.admins);
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
     } catch (err) {
@@ -491,6 +494,9 @@ export function removeGroundReport(id) {
 
 /** The badge a supporter picked, or null if they are still on their initials. */
 export const avatarOf = (profileId) => live.avatars[profileId] || null;
+
+/** True when a profile belongs to a KTFCSA volunteer, so posts can say so. */
+export const isVolunteer = (profileId) => live.admins.has(profileId);
 
 export function setAvatar(emblem) {
   if (!backend) {
