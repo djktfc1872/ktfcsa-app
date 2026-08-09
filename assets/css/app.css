@@ -3585,3 +3585,34 @@ button,
   background: var(--gold-600); color: var(--ink-950);
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em;
 }
+
+/* ------------------------------------------------------ fixtures quick links */
+
+/* The space under the Fixtures heading was doing nothing, while most of what
+   the site offers sat behind the More menu unseen. These are the four things
+   worth knowing about, on the first screen everyone lands on. */
+.quick-links {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px; margin-bottom: var(--gap);
+}
+.ql {
+  display: flex; align-items: flex-start; gap: 8px; text-align: left;
+  padding: 10px; border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface); color: var(--text); font: inherit; cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.ql:hover { background: var(--surface-2); border-color: var(--gold-600); }
+.ql:active { transform: scale(0.985); }
+.ql__icon { flex: none; font-size: 17px; line-height: 1.25; }
+.ql__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ql__text b { font-size: 13.5px; font-weight: 600; }
+.ql__text { font-size: 11.5px; line-height: 1.45; color: var(--text-3); }
+
+/* Two across on any real phone. Stacking them pushed the next fixture, which
+   is what people came for, most of the way off the first screen. */
+@media (max-width: 330px) {
+  .quick-links { grid-template-columns: 1fr; }
+}
+@media (min-width: 900px) {
+  .quick-links { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

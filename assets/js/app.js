@@ -440,6 +440,24 @@ function viewFixtures() {
       <h1>Fixtures</h1>
       <p>Kettering Town, ${esc(state.league?.season || "2026/27")}. Updated automatically, cup ties included.</p>
     </div>
+    <div class="quick-links">
+      <button class="ql" data-nav="predict">
+        <span class="ql__icon" aria-hidden="true">\u{1F3AF}</span>
+        <span class="ql__text"><b>Predict the score</b>Open to everyone, no account needed.</span>
+      </button>
+      <button class="ql" data-nav="players">
+        <span class="ql__icon" aria-hidden="true">\u2B50</span>
+        <span class="ql__text"><b>Rate the players</b>Marks out of ten after every game.</span>
+      </button>
+      <button class="ql" data-nav="clubs">
+        <span class="ql__icon" aria-hidden="true">\u{1F4D6}</span>
+        <span class="ql__text"><b>Away day guide</b>Tickets, parking and a pub at every ground.</span>
+      </button>
+      <button class="ql" data-nav="wall">
+        <span class="ql__icon" aria-hidden="true">\u{1F4AC}</span>
+        <span class="ql__text"><b>Fan wall</b>A thread for every match, before and after.</span>
+      </button>
+    </div>
     <div class="how-to">
       <span class="how-to__row"><span class="pill pill--away">Away</span>
         Tap for the away day guide: tickets, parking, a pub and how to get there.</span>
@@ -2612,7 +2630,7 @@ function wallCard(p, admin) {
       <div class="post__head">
         ${avatarHtml(p.authorName, p.authorId)}
         <span class="post__who">${esc(p.authorName)}</span>
-        ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Site admin</span>` : ""}
+        ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : ""}
         ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
         <span class="post__when">${esc(relTime(p.createdAt))}</span>
       </div>
