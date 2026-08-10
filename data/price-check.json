@@ -1,0 +1,46 @@
+{
+  "checked": "2026-08-10T00:57:50+00:00",
+  "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
+  "readable": [
+    {
+      "club": "bury-town",
+      "name": "Bury Town",
+      "source": "http://www.burytownfc.co.uk/tickets",
+      "found": {
+        "adultPrice": 13,
+        "concessionPrice": 9
+      }
+    },
+    {
+      "club": "peterborough-sports",
+      "name": "Peterborough Sports",
+      "source": "https://www.psfc.co.uk/admission-prices",
+      "found": {
+        "adultPrice": 15,
+        "concessionPrice": 13
+      }
+    }
+  ],
+  "drift": [],
+  "unreadable": [
+    "alvechurch",
+    "anstey-nomads",
+    "banbury-united",
+    "bishops-stortford",
+    "bromsgrove-sporting",
+    "halesowen-town",
+    "hitchin-town",
+    "leamington",
+    "leighton-town",
+    "leiston",
+    "needham-market",
+    "racing-club-warwick",
+    "real-bedford",
+    "redditch-united",
+    "rushall-olympic",
+    "stamford",
+    "stourbridge",
+    "stratford-town",
+    "worcester-city"
+  ]
+}

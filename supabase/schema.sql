@@ -679,3 +679,44 @@ grant select on match_ratings, season_ratings to anon, authenticated;
 
 alter table profiles add column if not exists avatar text
   check (avatar is null or char_length(avatar) <= 16);
+
+-- ===========================================================================
+-- Ticket price reports
+--
+-- Only two clubs in the division publish admission prices anywhere a script
+-- can read, and both were wrong in our data when first checked. The supporter
+-- who has just paid at the turnstile is the most reliable source there is.
+-- ===========================================================================
+
+create table if not exists price_reports (
+  id          uuid primary key default gen_random_uuid(),
+  club_slug   text not null,
+  profile_id  uuid references profiles on delete set null,
+  author_name text not null,
+  adult       numeric(5,2) check (adult is null or adult between 0 and 60),
+  concession  numeric(5,2) check (concession is null or concession between 0 and 60),
+  paid_on     date,
+  notes       text check (notes is null or char_length(notes) <= 300),
+  hidden      boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists price_club_idx on price_reports (club_slug, created_at desc);
+
+alter table price_reports enable row level security;
+
+drop policy if exists "prices readable" on price_reports;
+create policy "prices readable" on price_reports
+  for select using (hidden = false or is_admin());
+
+drop policy if exists "report a price" on price_reports;
+create policy "report a price" on price_reports
+  for insert with check (auth.uid() = profile_id);
+
+drop policy if exists "edit own price report" on price_reports;
+create policy "edit own price report" on price_reports
+  for update using (auth.uid() = profile_id or is_admin());
+
+drop policy if exists "remove own price report" on price_reports;
+create policy "remove own price report" on price_reports
+  for delete using (auth.uid() = profile_id or is_admin());

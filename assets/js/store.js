@@ -61,6 +61,7 @@ const live = {
   pubVotes: new Set(),
   access: [],
   ground: [],
+  prices: [],               // what supporters say they actually paid
   avatars: {},              // profileId -> emblem key
   admins: new Set(),        // profileIds of KTFCSA volunteers
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
@@ -166,6 +167,7 @@ export async function refresh() {
 
     live.access = await backend.loadAccess();
     live.ground = await backend.loadGround();
+    live.prices = await backend.loadPrices();
     /* Ratings arrived after the first release, so a database that has not had
        the newer tables added yet must not stop everything else refreshing. */
     try {
@@ -488,6 +490,19 @@ export function removeGroundReport(id) {
   live.ground = live.ground.filter((r) => r.id !== id);
   onChange();
   attempt(backend.removeGround(id).then(refresh), "That deletion did not save.");
+}
+
+/* --------------------------------------------------------- ticket prices */
+
+export const pricesFor = (clubSlug) =>
+  live.prices.filter((r) => r.club_slug === clubSlug && !r.hidden);
+
+export function addPriceReport(clubSlug, report) {
+  if (!backend) {
+    onError("Price reports need an account.");
+    return;
+  }
+  attempt(backend.addPrice(clubSlug, report).then(refresh), "That price did not save.");
 }
 
 /* ---------------------------------------------------------------- emblems */

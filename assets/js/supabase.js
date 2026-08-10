@@ -330,6 +330,27 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
+  /* -------------------------------------------------------- ticket prices */
+
+  /* Added after the first release, so a database without the table must not
+     take anything else down with it. */
+  async loadPrices() {
+    const { data, error } = await this.sb
+      .from("price_reports").select("*").order("created_at", { ascending: false });
+    if (error) return [];
+    return data || [];
+  }
+
+  async addPrice(clubSlug, report) {
+    const { error } = await this.sb.from("price_reports").insert({
+      club_slug: clubSlug,
+      profile_id: this.profile.id,
+      author_name: this.profile.name,
+      ...report,
+    });
+    if (error) throw new Error("That price did not save.");
+  }
+
   /* --------------------------------------------------------- ground notes */
 
   async loadGround() {

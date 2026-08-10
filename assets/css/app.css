@@ -3707,3 +3707,9 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .fixture-more__chev { transition: none; }
 }
+
+/* Putting a published ticket price right. */
+.price-report {
+  display: inline-block; margin-top: 10px;
+  font-size: 12.5px; color: var(--gold-300);
+}

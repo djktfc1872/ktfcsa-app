@@ -1151,13 +1151,39 @@ function viewClub({ id, from }) {
         </div>
         ${t.ticketNotes ? `<div class="hint" style="margin-top:10px">${esc(t.ticketNotes)}</div>` : ""}
         <div class="hint">${esc(concessionNote(t))}</div>
-        <div class="hint">Prices are a guide taken from the club's published rates. Always check before you travel.</div>
+        <div class="hint">${
+          t.priceChecked
+            ? `Checked against ${esc(t.priceSource || "the club's own site")} on ${esc(fmtDate(t.priceChecked, "short"))}.`
+            : "Not independently checked. Most clubs at this level do not publish prices anywhere we can read, so treat this as a guide and have a little extra with you."
+        }</div>
         ${info?.website
           ? `<div class="btn-row" style="margin-top:10px">
                <a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Check on the ${esc(t.name)} site</a>
              </div>`
           : ""}
       </div>`));
+
+    /* What supporters say they actually paid, which beats anything published. */
+    const paid = db.pricesFor(t.id);
+    if (paid.length) {
+      const card = el(`<div class="card"><div class="events__head">What supporters paid</div></div>`);
+      paid.slice(0, 4).forEach((r) => {
+        card.append(el(`
+          <div class="event">
+            <span class="event__icon" aria-hidden="true">\u{1F39F}\u{FE0F}</span>
+            <span class="event__name event--ours">${
+              [r.adult ? `Adult ${money(Number(r.adult))}` : "",
+               r.concession ? `Concession ${money(Number(r.concession))}` : ""].filter(Boolean).join(" \u00B7 ")
+            }<span class="event__note">${esc(r.author_name)}${r.paid_on ? `, ${esc(fmtDate(r.paid_on, "short"))}` : ""}</span></span>
+          </div>`));
+        if (r.notes) card.append(el(`<p class="hint" style="margin:0 0 6px 29px">${esc(r.notes)}</p>`));
+      });
+      box.append(card);
+    }
+
+    const report = el(`<button class="link-btn price-report" type="button">Paid something different? Put us right</button>`);
+    report.addEventListener("click", () => priceModal(t));
+    box.append(report);
     return box;
   };
 
@@ -1398,6 +1424,67 @@ function groundForm(team) {
     if (!limit.ok) return toast(limit.reason, "bad");
 
     db.addGroundReport(team.id, { ...report, notes: notes || null, visited_on: when || null });
+    close();
+    toast("Thanks, that is genuinely useful.", "good");
+  });
+}
+
+/* ----------------------------------------------------- putting prices right */
+
+/* The supporter who has just been through the turnstile knows the real price,
+   which is more than can be said for most club websites. */
+function priceModal(team) {
+  if (!db.currentUser()) {
+    toast("You need an account to report a price.", "bad");
+    return;
+  }
+  const { node, close } = modal(`
+    <h2>What did you pay at ${esc(team.stadium)}?</h2>
+    <p class="sub">Only fill in what you know. It helps everyone travelling after you.</p>
+    <div class="grid grid--2">
+      <div class="field"><label for="pr-adult">Adult</label>
+        <input id="pr-adult" type="number" min="0" max="60" step="0.5" inputmode="decimal" placeholder="e.g. 13"></div>
+      <div class="field"><label for="pr-conc">Concession</label>
+        <input id="pr-conc" type="number" min="0" max="60" step="0.5" inputmode="decimal" placeholder="e.g. 9"></div>
+    </div>
+    <div class="field"><label for="pr-when">When you went</label>
+      <input id="pr-when" type="date"></div>
+    <div class="field"><label for="pr-notes">Anything worth adding</label>
+      <input id="pr-notes" maxlength="300" placeholder="Cash only, cheaper online, that sort of thing"></div>
+    <div class="btn-row">
+      <button class="btn btn--full" id="pr-go">Send it in</button>
+      <button class="btn btn--ghost" id="pr-cancel">Cancel</button>
+    </div>`);
+
+  $("#pr-cancel", node).addEventListener("click", close);
+  $("#pr-go", node).addEventListener("click", () => {
+    const num = (id) => {
+      const raw = $(id, node).value.trim();
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 && n <= 60 ? n : NaN;
+    };
+    const adult = num("#pr-adult");
+    const concession = num("#pr-conc");
+    if (Number.isNaN(adult) || Number.isNaN(concession)) {
+      return toast("Those prices do not look right.", "bad");
+    }
+    if (adult === null && concession === null) {
+      return toast("Put in at least one price.", "bad");
+    }
+    const notes = $("#pr-notes", node).value.trim();
+    if (notes) {
+      const check = db.checkPost(notes, { minLength: 0, maxLength: 300 });
+      if (!check.ok) return toast(check.reason, "bad");
+    }
+    const limit = db.rateLimit("price", { max: 4, windowMs: 300000 });
+    if (!limit.ok) return toast(limit.reason, "bad");
+
+    db.addPriceReport(team.id, {
+      adult, concession,
+      paid_on: $("#pr-when", node).value || null,
+      notes: notes || null,
+    });
     close();
     toast("Thanks, that is genuinely useful.", "good");
   });

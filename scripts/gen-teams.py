@@ -130,6 +130,27 @@ GROUND_LOCATIONS = {
 }
 
 CORRECTIONS = {
+    "bury-town": {
+        # Checked against burytownfc.com on 11 August 2026, which lists Adults
+        # £13, Concessions £9, Under 16s £4, Under 10s free. The sheet had £12,
+        # £8 and £5.
+        "adultPrice": 13,
+        "concessionPrice": 9,
+        "youthPrice": 4,
+        "childPrice": "Free",
+        "youthRange": "10-15",
+        "childRange": "Under 10",
+        "priceChecked": "2026-08-11",
+        "priceSource": "Bury Town official website",
+    },
+    "peterborough-sports": {
+        # Checked against the club's admission prices page on 11 August 2026:
+        # adult £15 on the day, concession £13. The sheet had £14 and £10.
+        "adultPrice": 15,
+        "concessionPrice": 13,
+        "priceChecked": "2026-08-11",
+        "priceSource": "Peterborough Sports official website",
+    },
     "racing-club-warwick": {
         # CV34 4EJ is not a real postcode. The pub name was right: the Rose &
         # Crown is on Market Place, 570 m from Townsend Meadow.

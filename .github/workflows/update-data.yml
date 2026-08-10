@@ -44,6 +44,18 @@ jobs:
         continue-on-error: true # a podcast hiccup must not block fixture updates
         run: node scripts/fetch-podcast.mjs
 
+      # Only a couple of clubs publish prices where a script can read them, but
+      # both were wrong in our data when this was first run. Sundays only: the
+      # prices do not move week to week and the clubs' sites deserve the rest.
+      - name: Check published ticket prices
+        continue-on-error: true # a club site being down must never block results
+        run: |
+          if [ "$(date -u +%u)" = "7" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python3 scripts/check-prices.py
+          else
+            echo "Not Sunday, skipping the price check."
+          fi
+
       - name: Commit any changes
         run: |
           git config user.name "KTFCSA data bot"
