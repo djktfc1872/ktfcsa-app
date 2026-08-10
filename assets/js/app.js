@@ -3125,7 +3125,7 @@ function findThread(id) {
   return threadsFor(fixture).find((t) => t.id === id) || null;
 }
 
-const threadPosts = (id) => db.list("wall").filter((p) => p.thread === id);
+const threadPosts = (id) => db.list("wall").filter((p) => p.thread === id && !p.replyTo);
 
 function threadCard(t) {
   const count = threadPosts(t.id).length;
@@ -3197,37 +3197,85 @@ function viewThread({ id }) {
   return wrap;
 }
 
+/** A reply: the same post, drawn quieter and tucked under its parent. */
+function replyCard(p, admin) {
+  const card = el(`
+    <div class="reply" ${p.hidden ? 'style="opacity:.5"' : ""}>
+      <div class="post__head">
+        ${avatarHtml(p.authorName, p.authorId)}
+        <span class="post__who">${esc(p.authorName)}</span>
+        ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : ""}
+        ${!db.isVolunteer(p.authorId) && db.isContributor(p.authorId)
+          ? `<span class="pill pill--contrib" title="Has added ground or access information">Contributor</span>` : ""}
+        ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
+        <span class="post__when">${esc(relTime(p.createdAt))}</span>
+      </div>
+      <div class="post__body">${esc(p.text)}</div>
+      <div class="post__actions">
+        <button class="link-btn" data-act="report">Report</button>
+        ${admin ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
+        ${db.canEdit(p) ? `<button class="link-btn" data-act="del">Delete</button>` : ""}
+      </div>
+    </div>`);
+
+  const act = (name, fn) => {
+    const b = card.querySelector(`[data-act="${name}"]`);
+    if (b) b.addEventListener("click", fn);
+  };
+  act("report", () => {
+    db.update("wall", p.id, { reports: (p.reports || 0) + 1 });
+    toast("Reported. A volunteer will take a look.", "good");
+  });
+  act("hide", () => db.update("wall", p.id, { hidden: !p.hidden }));
+  act("del", () => db.drop("wall", p.id));
+  return card;
+}
+
 /** The post box, shared by the open wall and by each match thread. */
-function composer(thread = null) {
+function composer(thread = null, { replyTo = null, onDone = null } = {}) {
   const user = db.currentUser();
   if (!user) {
-    return el(`<div class="notice notice--info">Sign in to post. All it needs is a name.</div>`);
+    return el(`<div class="notice notice--info">Sign in to ${replyTo ? "reply" : "post"}. All it needs is a name.</div>`);
   }
+
+  /* Several of these can be on screen at once now that every post can be
+     replied to, so the ids have to be unique or the labels point at the wrong
+     box and screen readers read the wrong thing. */
+  const uid = `c${Math.random().toString(36).slice(2, 8)}`;
 
   const box = el(`
     <div class="card" style="margin-bottom:16px">
-      <label for="wall-text" class="sr-only">Your message</label>
-      <textarea id="wall-text" maxlength="600" placeholder="${
-        thread ? "Have your say on this one." : "What did you make of that, then?"
+      <label for="${uid}-text" class="sr-only">${replyTo ? "Your reply" : "Your message"}</label>
+      <textarea id="${uid}-text" maxlength="600" placeholder="${
+        replyTo ? "Reply to this" : thread ? "Have your say on this one." : "What did you make of that, then?"
       }"></textarea>
-      <div class="char-count" id="wall-count">0 / 600</div>
-      <div class="btn-row"><button class="btn btn--sm" id="wall-post">Post</button></div>
+      <div class="char-count" id="${uid}-count">0 / 600</div>
+      <div class="btn-row">
+        <button class="btn btn--sm" id="${uid}-post">${replyTo ? "Reply" : "Post"}</button>
+        ${replyTo ? `<button class="btn btn--sm btn--ghost" id="${uid}-cancel">Cancel</button>` : ""}
+      </div>
     </div>`);
 
-  const ta = $("#wall-text", box);
-  const count = $("#wall-count", box);
+  const ta = $(`#${uid}-text`, box);
+  const count = $(`#${uid}-count`, box);
   ta.addEventListener("input", () => {
     count.textContent = `${ta.value.length} / 600`;
     count.classList.toggle("is-over", ta.value.length > 600);
   });
-  $("#wall-post", box).addEventListener("click", () => {
+
+  const cancel = $(`#${uid}-cancel`, box);
+  if (cancel) cancel.addEventListener("click", () => (onDone ? onDone() : box.remove()));
+
+  $(`#${uid}-post`, box).addEventListener("click", () => {
+    /* A reply goes through exactly the same checks as a post. */
     const check = db.checkPost(ta.value);
     if (!check.ok) return toast(check.reason, "bad");
     const limit = db.rateLimit("wall", { max: 5, windowMs: 120000 });
     if (!limit.ok) return toast(limit.reason, "bad");
-    db.add("wall", { text: ta.value.trim(), thread });
+    db.add("wall", { text: ta.value.trim(), thread, replyTo });
     ta.value = "";
-    toast("Posted.", "good");
+    toast(replyTo ? "Replied." : "Posted.", "good");
+    if (onDone) onDone();
     render();
   });
   return box;
@@ -3270,7 +3318,7 @@ function viewWall() {
   wrap.append(el(`<h2 class="section-title">Everything else</h2>`));
   wrap.append(composer(null));
 
-  const posts = db.list("wall").filter((p) => !p.thread && (!p.hidden || admin));
+  const posts = db.list("wall").filter((p) => !p.thread && !p.replyTo && (!p.hidden || admin));
   if (!posts.length) {
     wrap.append(el(`<div class="empty"><b>Nothing posted yet</b>Get the conversation going.</div>`));
   } else {
@@ -3300,8 +3348,38 @@ function wallCard(p, admin) {
         <button class="link-btn" data-act="report">Report</button>
         ${admin ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
         ${db.canEdit(p) ? `<button class="link-btn" data-act="del">Delete</button>` : ""}
+        ${p.replyTo ? "" : `<button class="link-btn" data-act="reply">Reply</button>`}
       </div>
+      ${p.replyTo ? "" : `<div class="replies"></div>`}
     </div>`);
+
+  /* Replies hang off the post they answer. One level only, so a phone screen
+     never ends up with a column six indents wide. */
+  if (!p.replyTo) {
+    const holder = card.querySelector(".replies");
+    const kids = db.list("wall")
+      .filter((r) => r.replyTo === p.id && (!r.hidden || admin))
+      .sort((a, b) => a.createdAt - b.createdAt);
+    kids.forEach((r) => holder.append(replyCard(r, admin)));
+
+    const replyBtn = card.querySelector('[data-act="reply"]');
+    if (replyBtn) {
+      replyBtn.addEventListener("click", () => {
+        /* Signed out, the composer is a sign in notice with no textarea in it,
+           so the focus has to be conditional or it throws on the click. */
+        const focus = (node) => {
+          const ta = node && node.querySelector("textarea");
+          if (ta) ta.focus();
+        };
+        const existing = card.querySelector(".reply-box");
+        if (existing) return focus(existing);
+        const box = composer(p.thread || null, { replyTo: p.id, onDone: () => box.remove() });
+        box.classList.add("reply-box");
+        holder.append(box);
+        focus(box);
+      });
+    }
+  }
 
   card.querySelector('[data-act="like"]').addEventListener("click", () => {
     const now = !liked;

@@ -720,3 +720,37 @@ create policy "edit own price report" on price_reports
 drop policy if exists "remove own price report" on price_reports;
 create policy "remove own price report" on price_reports
   for delete using (auth.uid() = profile_id or is_admin());
+
+-- ===========================================================================
+-- Replies on the fan wall
+--
+-- A wall of separate posts is a noticeboard, not a conversation. A reply is
+-- just a post that points at another one, so it inherits every rule already
+-- written: the same word filter, the same reporting, the same hiding.
+-- ===========================================================================
+
+alter table wall_posts add column if not exists reply_to uuid
+  references wall_posts (id) on delete cascade;
+
+create index if not exists wall_reply_idx on wall_posts (reply_to, created_at);
+
+-- A reply cannot itself be replied to. One level deep stays readable on a
+-- phone and nobody loses the thread.
+create or replace function reply_is_top_level()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.reply_to is not null
+     and exists (select 1 from wall_posts where id = new.reply_to and reply_to is not null)
+  then
+    raise exception 'Replies only go one level deep';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists wall_reply_depth on wall_posts;
+create trigger wall_reply_depth
+  before insert or update on wall_posts
+  for each row execute function reply_is_top_level();

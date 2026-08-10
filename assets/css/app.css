@@ -3854,3 +3854,26 @@ button,
 }
 .welcome__close:hover { background: var(--surface-3); color: var(--text); }
 .welcome__body { padding-right: 22px; }
+
+/* ------------------------------------------------------- replies on the wall */
+
+/* Hung off the post they answer, one level deep, with a claret spine so the
+   conversation reads as a conversation rather than a list. */
+.replies { margin: 4px 0 0 14px; }
+.reply {
+  position: relative;
+  margin-top: 12px; padding: 12px 14px 10px 16px;
+  border-left: 2px solid var(--red-600, #7a1422);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: var(--surface-2);
+}
+.reply .post__head { margin-bottom: 6px; }
+.reply .post__body { font-size: 14px; }
+.reply .post__actions { margin-top: 8px; }
+.reply .avatar { width: 24px; height: 24px; font-size: 10px; }
+.reply-box { margin-top: 12px !important; }
+
+@media (max-width: 420px) {
+  .replies { margin-left: 8px; }
+  .reply { padding-left: 12px; }
+}

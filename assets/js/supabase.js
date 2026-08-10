@@ -499,7 +499,7 @@ function toRow(name, r, profile) {
       fixture_date: r.fixtureDate || null, area: r.area, leaving: r.leaving,
       seats: String(r.seats || ""), contact: r.contact, notes: r.notes };
   }
-  if (name === "wall") return { ...base, text: r.text, thread: r.thread || null };
+  if (name === "wall") return { ...base, text: r.text, thread: r.thread || null, replyTo: r.reply_to || null };
   if (name === "poll") return { ...base, question: r.question, options: r.options.map((o) => o.label) };
   return base;
 }
@@ -533,6 +533,7 @@ function fromRow(name, row) {
   }
   if (name === "wall") {
     return { ...base, text: row.text, thread: row.thread || null,
+      reply_to: row.replyTo || null,
       likes: row.likes, reports: row.reports, hidden: row.hidden };
   }
   if (name === "poll") {
