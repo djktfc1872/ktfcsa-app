@@ -3713,3 +3713,44 @@ button,
   display: inline-block; margin-top: 10px;
   font-size: 12.5px; color: var(--gold-300);
 }
+
+/* --------------------------------------------------- season headline strip */
+
+/* The goals, cards and gate numbers were all behind one menu item, so nobody
+   found them. These three sit on the first screen and lead to the rest. */
+.season-strip {
+  display: block; width: 100%; margin-bottom: var(--gap);
+  padding: 14px 16px; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface); color: var(--text); cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.season-strip:hover { background: var(--surface-2); border-color: var(--gold-600); }
+.season-strip__label {
+  margin-bottom: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.season-strip__row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.season-cell { min-width: 0; }
+.season-cell__label { font-size: 10.5px; color: var(--text-3); }
+.season-cell__big {
+  margin: 2px 0 1px; font-size: 17px; font-weight: 700; color: var(--gold-400);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.season-cell__sub { font-size: 10.5px; color: var(--text-3); }
+.season-strip__more {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft);
+  font-size: 11.5px; color: var(--gold-300);
+}
+
+/* The score on a match page. */
+.match-score {
+  flex: none; text-align: right; font-size: 26px; font-weight: 800;
+  color: var(--gold-400); font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.match-score span {
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.event[data-player] { cursor: pointer; }
+.event[data-player]:hover .event__name { color: var(--gold-300); }

@@ -252,7 +252,7 @@ const ROUTES = {
   fixtures: { label: "Fixtures", icon: "⚽", nav: "tab", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
   predict: { label: "Prediction League", icon: "🎯", nav: "more", group: "Matchday", render: viewPredict },
-  players: { label: "Player Ratings", icon: "⭐", nav: "more", group: "Matchday", render: viewPlayers },
+  players: { label: "Players & Stats", icon: "⭐", nav: "more", group: "Matchday", render: viewPlayers },
 
   travel: { label: "Travel", icon: "🚌", nav: "tab", group: "Away days", render: viewTravel },
   clubs: { label: "Away Guide", icon: "📖", nav: "more", group: "Away days", render: viewClubs },
@@ -270,6 +270,7 @@ const ROUTES = {
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
+  match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
 };
 
 function go(view, params = {}) {
@@ -384,7 +385,8 @@ function fixtureCard(f, { isNext = false } = {}) {
 
   const card = el(`
     <button class="fixture fixture--${isHome ? "home" : "away"} ${isNext ? "fixture--next" : ""}"
-            data-club="${esc(f.team?.id || "")}" data-venue="${isHome ? "home" : "away"}">
+            data-match="${esc(f.id)}" data-club-fallback="${esc(f.team?.id || "")}"
+            data-venue="${isHome ? "home" : "away"}">
       <div class="fixture__date">
         <div class="fixture__day">${d ? d.getDate() : "?"}</div>
         <div class="fixture__mon">${d ? MONTHS[d.getMonth()].slice(0, 3) : "TBC"}</div>
@@ -407,31 +409,7 @@ function fixtureCard(f, { isNext = false } = {}) {
 
   if (!f.team) card.style.cursor = "default";
 
-  /* A played game can open up to show who scored, who was booked and the gate,
-     without leaving the fixture list. Only wrapped when there is something to
-     show, so every other row stays exactly as it was. */
-  const hasDetail = played && (f.events?.goals?.length || f.events?.cards?.length || f.attendance);
-  if (!hasDetail) return card;
-
-  const row = el(`<div class="fixture-row"></div>`);
-  const toggle = el(`
-    <button class="fixture-more" type="button" aria-expanded="false">
-      <span>Match detail</span><span class="fixture-more__chev" aria-hidden="true">\u203A</span>
-    </button>`);
-  const holder = el(`<div></div>`);
-  let open = false;
-  toggle.addEventListener("click", () => {
-    open = !open;
-    toggle.setAttribute("aria-expanded", String(open));
-    toggle.classList.toggle("is-open", open);
-    holder.replaceChildren();
-    if (open) {
-      const ev = matchEvents(f);
-      if (ev) holder.append(ev);
-    }
-  });
-  row.append(card, toggle, holder);
-  return row;
+  return card;
 }
 
 function countdown(f) {
@@ -470,6 +448,7 @@ function viewFixtures() {
       <h1>Fixtures</h1>
       <p>Kettering Town, ${esc(state.league?.season || "2026/27")}. Updated automatically, cup ties included.</p>
     </div>
+    <div class="season-strip" data-nav="players" role="button" tabindex="0"></div>
     <div class="quick-links">
       <button class="ql" data-nav="predict">
         <span class="ql__icon" aria-hidden="true">\u{1F3AF}</span>
@@ -477,7 +456,7 @@ function viewFixtures() {
       </button>
       <button class="ql" data-nav="players">
         <span class="ql__icon" aria-hidden="true">\u2B50</span>
-        <span class="ql__text"><b>Rate the players</b>Marks out of ten after every game.</span>
+        <span class="ql__text"><b>Players &amp; stats</b>Ratings, goals, cards and attendances.</span>
       </button>
       <button class="ql" data-nav="clubs">
         <span class="ql__icon" aria-hidden="true">\u{1F4D6}</span>
@@ -490,11 +469,49 @@ function viewFixtures() {
     </div>
     <div class="how-to">
       <span class="how-to__row"><span class="pill pill--away">Away</span>
-        Tap for the away day guide: tickets, parking, a pub and how to get there.</span>
+        Tap any fixture for the match, and the away day guide with it: tickets, parking and a pub.</span>
       <span class="how-to__row"><span class="pill pill--home">Home</span>
-        Tap to read up on the visitors before they come to ${esc(KTFC.ground)}.</span>
+        Tap for the match, team sheet and everything on the visitors to ${esc(KTFC.ground)}.</span>
     </div>
   </div>`);
+
+  /* Goals, cards and gates were all sat behind one menu item nobody opened.
+     The headline numbers now sit on the page everyone lands on, and tapping
+     them goes through to the rest. */
+  const strip = $(".season-strip", wrap);
+  const stats = seasonStats();
+  const rated = db.seasonRatings();
+  if (strip) {
+    if (!stats.played) {
+      strip.remove();
+    } else {
+      const gates = stats.gates;
+      const cells = [
+        stats.scorers.length
+          ? ["Top scorer", stats.scorers[0].name.split(" ").slice(-1)[0], `${stats.scorers[0].goals} goal${stats.scorers[0].goals === 1 ? "" : "s"}`]
+          : null,
+        rated.length
+          ? ["Best rated", rated[0].player_name.split(" ").slice(-1)[0], `${rated[0].average} out of 10`]
+          : null,
+        gates.length
+          ? ["Average gate", Math.round(gates.reduce((n, g) => n + g, 0) / gates.length).toLocaleString("en-GB"), `${gates.length} home game${gates.length === 1 ? "" : "s"}`]
+          : null,
+      ].filter(Boolean);
+      if (!cells.length) strip.remove();
+      else {
+        strip.append(el(`<div class="season-strip__label">Season so far</div>`));
+        const row = el(`<div class="season-strip__row"></div>`);
+        cells.forEach(([label, big, sub]) => row.append(el(`
+          <div class="season-cell">
+            <div class="season-cell__label">${esc(label)}</div>
+            <div class="season-cell__big">${esc(big)}</div>
+            <div class="season-cell__sub">${esc(sub)}</div>
+          </div>`)));
+        strip.append(row);
+        strip.append(el(`<div class="season-strip__more">Goals, cards, attendances and ratings \u203A</div>`));
+      }
+    }
+  }
 
   if (next) {
     const t = next.team;
@@ -2657,6 +2674,102 @@ function viewPlayers() {
   return wrap;
 }
 
+/* ============================================================= match page */
+
+/* Everything about one game in one place: the score, who scored, who was
+   booked, the gate, the team sheet, the marks, and a way through to the away
+   day guide and the discussion. Before this, a supporter tapping a fixture
+   landed on the opposing club's page and the match detail was three menus
+   away. */
+
+function viewMatch({ id }) {
+  const f = fixtures().find((x) => String(x.id) === String(id));
+  const wrap = el(`<div><button class="back-link" data-nav="fixtures">\u2190 Fixtures</button></div>`);
+
+  if (!f) {
+    wrap.append(el(`<div class="empty"><b>Match not found</b>It may have been rearranged. The fixture list will have it.</div>`));
+    return wrap;
+  }
+
+  const isHome = f.venue === "Home";
+  const played = f.status === "played" && f.homeScore !== null;
+  const ours = isHome ? f.homeScore : f.awayScore;
+  const theirs = isHome ? f.awayScore : f.homeScore;
+  const result = played ? (ours > theirs ? "Won" : ours < theirs ? "Lost" : "Drew") : "";
+
+  wrap.append(el(`
+    <div class="hub-hero">
+      ${f.opponentCrest ? `<img class="hub-hero__crest" src="${esc(f.opponentCrest)}" alt="">` : ""}
+      <div class="hub-hero__text">
+        <h1>${esc(clubName(f.opponent))}</h1>
+        <p>${esc(fmtDate(f.date))} \u00B7 ${esc(f.kickoff || "TBC")} \u00B7 ${isHome ? "Home" : "Away"}${
+          f.competition && !/premier central/i.test(f.competition) ? ` \u00B7 ${esc(f.competition)}` : ""
+        }</p>
+      </div>
+      ${played ? `<div class="match-score">${ours} - ${theirs}<span>${result}</span></div>` : ""}
+    </div>`));
+
+  if (!played && f.status !== "off") {
+    const ko = kickoffTime(f);
+    wrap.append(el(`<p class="note">${
+      ko && ko.getTime() > Date.now()
+        ? `Not played yet. ${esc(isHome ? `At ${KTFC.ground}` : `At ${f.team?.stadium || "their ground"}`)}.`
+        : "Under way, or the result has not come through yet."
+    }</p>`));
+  }
+  if (f.status === "off") {
+    wrap.append(el(`<div class="notice notice--info">This game is ${esc((f.rawStatus || "off").toLowerCase())}.</div>`));
+  }
+
+  const ev = matchEvents(f);
+  if (ev) {
+    wrap.append(el(`<h2 class="section-title">How it went</h2>`));
+    wrap.append(ev);
+  }
+
+  const { players, source } = squadFor(f);
+  if (players.length) {
+    wrap.append(el(`<h2 class="section-title">Team sheet</h2>`));
+    const card = el(`<div class="card"></div>`);
+    const line = (list, heading) => {
+      if (!list.length) return;
+      card.append(el(`<div class="events__head">${heading}</div>`));
+      list.forEach((pl) => card.append(el(`
+        <div class="event" data-player="${esc(pl.name)}">
+          <span class="event__icon">${pl.number ?? ""}</span>
+          <span class="event__name event--ours">${esc(pl.name)}${pl.captain ? ` <span class="rating__cap">C</span>` : ""}</span>
+        </div>`)));
+    };
+    line(players.filter((pl) => pl.started !== false), "Started");
+    line(players.filter((pl) => pl.started === false), "Substitutes");
+    if (source === "volunteer") card.append(el(`<p class="rating__source">Team sheet added by a volunteer.</p>`));
+    wrap.append(card);
+  }
+
+  /* Marks, but only once a game has actually started. */
+  if (kickoffTime(f) && kickoffTime(f).getTime() - 3 * 60 * 60 * 1000 <= Date.now() && f.status !== "off") {
+    wrap.append(el(`<h2 class="section-title">Rate the players</h2>`));
+    wrap.append(ratingPanel(f, { withEvents: false }));
+  }
+
+  /* Through to the rest, rather than dead-ending here. */
+  const links = el(`<div class="btn-row" style="margin-top:18px"></div>`);
+  if (f.team) {
+    const guide = el(`<button class="btn btn--sm btn--ghost">${isHome ? "About" : "Away day guide"}: ${esc(clubName(f.opponent))}</button>`);
+    guide.addEventListener("click", () => go("club", { id: f.team.id, from: isHome ? "home" : "away" }));
+    links.append(guide);
+  }
+  const t = findThread(`post:${f.id}`) || findThread(`pre:${f.id}`);
+  if (t) {
+    const talk = el(`<button class="btn btn--sm btn--ghost">Discussion</button>`);
+    talk.addEventListener("click", () => go("thread", { id: t.id }));
+    links.append(talk);
+  }
+  if (links.children.length) wrap.append(links);
+
+  return wrap;
+}
+
 /* =========================================================== player profile */
 
 /* One player, gathered from data already loaded: appearances from team sheets,
@@ -3766,6 +3879,11 @@ function wireGlobalClicks() {
     const player = e.target.closest("[data-player]");
     if (player && player.dataset.player) {
       go("player", { id: encodeURIComponent(player.dataset.player) });
+      return;
+    }
+    const match = e.target.closest("[data-match]");
+    if (match && match.dataset.match) {
+      go("match", { id: match.dataset.match });
       return;
     }
     const club = e.target.closest("[data-club]");
