@@ -2862,10 +2862,20 @@ function viewMatch({ id }) {
     wrap.append(ratingPanel(f, { withEvents: false }));
   }
 
+  /* For an away game the practical stuff is the reason most people opened this
+     page, so it sits here rather than behind a button. A home game only needs a
+     way through to read up on the visitors. */
+  if (f.team && !isHome) {
+    wrap.append(el(`<h2 class="section-title">Getting there</h2>`));
+    wrap.append(awayEssentials(f.team));
+  }
+
   /* Through to the rest, rather than dead-ending here. */
   const links = el(`<div class="btn-row" style="margin-top:18px"></div>`);
   if (f.team) {
-    const guide = el(`<button class="btn btn--sm btn--ghost">${isHome ? "About" : "Away day guide"}: ${esc(clubName(f.opponent))}</button>`);
+    const guide = el(`<button class="btn ${isHome ? "btn--sm btn--ghost" : "btn--full"}">${
+      isHome ? `About: ${esc(clubName(f.opponent))}` : `The full away day guide`
+    }</button>`);
     guide.addEventListener("click", () => go("club", { id: f.team.id, from: isHome ? "home" : "away" }));
     links.append(guide);
   }
@@ -2878,6 +2888,42 @@ function viewMatch({ id }) {
   if (links.children.length) wrap.append(links);
 
   return wrap;
+}
+
+/** The away day in short: how far, what it costs, where to park and drink. */
+function awayEssentials(t) {
+  const info = infoFor(t.id);
+  const card = el(`<div class="card"></div>`);
+
+  card.append(el(`
+    <div class="info-grid info-grid--4">
+      <div class="info"><div class="info__label">Ground</div><div class="info__value">${esc(t.stadium)}</div></div>
+      <div class="info"><div class="info__label">Distance</div><div class="info__value">${t.distanceMiles} miles</div></div>
+      <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--gold-400)">${money(t.adultPrice)}</div></div>
+      <div class="info"><div class="info__label">Concession</div><div class="info__value">${money(t.concessionPrice)}</div></div>
+    </div>`));
+
+  card.append(el(`
+    <div class="btn-row" style="margin-top:14px">
+      <a class="btn btn--sm" href="${directionsUrl(t)}" target="_blank" rel="noopener">${ICON.route} Directions</a>
+      <a class="btn btn--sm btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.postcode)}</a>
+    </div>`));
+
+  const bits = [];
+  if (t.carPark) {
+    bits.push(`<div class="essential"><span class="essential__label">${ICON.car} Parking</span>
+      <a class="essential__value" href="${placeUrl(t.carPark, t.carParkPostcode)}" target="_blank" rel="noopener">${esc(t.carPark)}${t.parkingDaily ? ` \u00B7 ${esc(t.parkingDaily)} on a match day` : ""}</a></div>`);
+  }
+  if (t.pub) {
+    bits.push(`<div class="essential"><span class="essential__label">${ICON.pint} Pub</span>
+      <a class="essential__value" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank" rel="noopener">${esc(t.pub)}${t.pubPostcode ? ` \u00B7 ${esc(t.pubPostcode)}` : ""}</a></div>`);
+  }
+  if (bits.length) card.append(el(`<div class="essentials">${bits.join("")}</div>`));
+
+  if (!t.groundVerified) {
+    card.append(el(`<p class="hint">The exact spot is from the postcode rather than the ground itself, so check on the way.</p>`));
+  }
+  return card;
 }
 
 /* ================================================================== videos */

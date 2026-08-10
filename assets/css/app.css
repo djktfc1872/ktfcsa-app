@@ -3976,3 +3976,13 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .live-strip__dot { animation: none; }
 }
+
+/* The away day in short, on the match page itself. */
+.essentials { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.essential { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; }
+.essential__label {
+  flex: none; min-width: 84px; font-size: 11.5px; color: var(--text-3);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.essential__value { font-size: 13.5px; color: var(--gold-300); text-decoration: none; }
+.essential__value:hover { text-decoration: underline; }
