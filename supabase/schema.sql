@@ -364,8 +364,13 @@ $$;
 
 -- ---- profiles -------------------------------------------------------------
 drop policy if exists "profiles readable" on profiles;
+-- Readable by anyone. A guest could already see who had filed a ground report,
+-- because that table is public, so an admin showed up tagged Contributor and
+-- never Admin: the worst of both, since it mislabelled them. The columns here
+-- are a display name that already appears on every post, a badge the supporter
+-- chose, and whether they help run the site. No email and no auth data.
 create policy "profiles readable" on profiles
-  for select using (auth.role() = 'authenticated');
+  for select using (true);
 
 drop policy if exists "own profile update" on profiles;
 create policy "own profile update" on profiles
