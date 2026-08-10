@@ -549,6 +549,9 @@ function fromRow(name, row) {
 /* Postgres errors are not written for supporters. */
 function friendly(error) {
   const m = String(error?.message || "");
+  /* PostgREST puts the useful part in a code, not the sentence. Matching the
+     wording alone missed both cases the first time this was written. */
+  const code = String(error?.code || "");
   if (/Invalid login credentials/i.test(m)) return "That email address or password was not recognised.";
   if (/User already registered/i.test(m)) return "There is already an account with that email address.";
   if (/Password should be/i.test(m)) return "Please use a password of at least six characters.";
@@ -556,10 +559,20 @@ function friendly(error) {
   if (/row-level security/i.test(m)) return "You do not have permission to do that.";
   if (/rate limit|too many/i.test(m)) return "Too many attempts. Please wait a minute and try again.";
   if (/duplicate key/i.test(m)) return "That has already been added.";
-  /* Shows up when the database has not had the latest schema.sql run against
-     it. Raw Postgres wording helps nobody standing in a car park. */
-  if (/schema cache|does not exist|PGRST205/i.test(m)) {
+  /* A missing table really does mean the latest schema.sql has not been run.
+     Raw Postgres wording helps nobody standing in a car park. */
+  if (code === "PGRST205" || /Could not find the table/i.test(m) || /relation .* does not exist/i.test(m)) {
     return "That part of the app is not switched on yet. Please let the KTFCSA team know.";
+  }
+
+  /* A missing column is different: the table is there, so the schema is fine
+     and the app has asked for a field that does not exist. That is our
+     mistake, and saying "not switched on yet" sends people looking for a
+     migration that has already run. It cost us two rounds of bug reports on
+     the fan wall, so it is worth being honest and loud about it. */
+  if (code === "PGRST204" || /Could not find the .* column/i.test(m) || /column .* does not exist/i.test(m)) {
+    console.error("Field name mismatch between the app and the database:", m);
+    return "Something in the app is out of step with the database. That is a fault our end, not yours.";
   }
   if (/Failed to fetch|NetworkError/i.test(m)) return "No connection. Please try again.";
   return m || "Something went wrong. Please try again.";
