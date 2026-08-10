@@ -143,12 +143,39 @@ CORRECTIONS = {
         "priceChecked": "2026-08-11",
         "priceSource": "Bury Town official website",
     },
+    "leighton-town": {
+        # Checked against the club's own admission prices page for 2026/27 on
+        # 10 August 2026: Adults £13, Concession £8, 12-17 £4, Under 12 free.
+        # The sheet had £10 and £7, so a supporter turning up with a tenner
+        # would have been three pounds short.
+        "adultPrice": 13,
+        "concessionPrice": 8,
+        "priceChecked": "2026-08-10",
+        "priceSource": "Leighton Town official website",
+    },
+    "bishops-stortford": {
+        # Checked 10 August 2026. Adult and concession were already right. The
+        # youth band is 8 rather than 6. Note the club's page also lists a
+        # cheaper pre-season block, which is not what a supporter pays now.
+        "youthPrice": 8,
+        "priceChecked": "2026-08-10",
+        "priceSource": "Bishop's Stortford official website",
+    },
     "peterborough-sports": {
-        # Checked against the club's admission prices page on 11 August 2026:
-        # adult £15 on the day, concession £13. The sheet had £14 and £10.
-        "adultPrice": 15,
+        # The club publishes two sets and an earlier pass here mixed them: the
+        # online adult price with the matchday concession. These are the gate
+        # prices, which is what this column means. Buying online before the
+        # Friday saves three pounds on an adult.
+        # Checked 10 August 2026: gate Adult £18, Concession £13, U18 £10,
+        # U13 £5, U3 free. Online Adult £15, Concession £10, U18 £7, U13 £3.
+        "adultPrice": 18,
         "concessionPrice": 13,
-        "priceChecked": "2026-08-11",
+        "youthPrice": 10,
+        "youthRange": "13-17",
+        "childPrice": 5,
+        "childRange": "Under 13",
+        "ticketNotes": "Cash and card on the gate. Buying online before Friday 23:45 saves £3 on an adult.",
+        "priceChecked": "2026-08-10",
         "priceSource": "Peterborough Sports official website",
     },
     "racing-club-warwick": {
@@ -170,6 +197,17 @@ CORRECTIONS = {
         # 600 m away, and the name in the sheet was right.
         "carParkPostcode": "WR3 7PS",
         "pubPostcode": "WR3 7RN",
+        # Checked 10 August 2026 against the club's published gate prices:
+        # Adults £14, Concessions £9.50 (66+ or student), Youths £5 (12-17),
+        # Juniors £3 (under 12 with an adult). Every band was out, and under
+        # 12s are not free here.
+        "adultPrice": 14,
+        "concessionPrice": 9.5,
+        "youthPrice": 5,
+        "childPrice": 3,
+        "childRange": "Under 12, with an adult",
+        "priceChecked": "2026-08-10",
+        "priceSource": "Worcester City official website",
     },
     "real-bedford": {
         # MK41 9AL is a real postcode but it is in Putnoe, over three
@@ -194,6 +232,23 @@ CORRECTIONS = {
         "lng": -1.9525,
     },
 }
+
+
+# A repeated club id in any of the tables above is legal Python and silently
+# keeps only the last one, which is how a set of corrected Worcester City
+# prices vanished without a word. Fail loudly instead.
+def _no_duplicate_ids():
+    source = pathlib.Path(__file__).read_text()
+    for table in ("CORRECTIONS", "GROUND_LOCATIONS", "GROUND_VERIFIED"):
+        start = source.index(f"{table} = {{")
+        body = source[start : source.index("\n}\n", start)]
+        ids = re.findall(r'^\s{4}"([a-z0-9-]+)":', body, re.M)
+        clashes = {i for i in ids if ids.count(i) > 1}
+        if clashes:
+            raise SystemExit(f"{table} lists {', '.join(sorted(clashes))} more than once.")
+
+
+_no_duplicate_ids()
 
 
 def apply_corrections(team):

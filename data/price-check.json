@@ -1,7 +1,16 @@
 {
-  "checked": "2026-08-10T00:57:50+00:00",
+  "checked": "2026-08-10T17:31:55+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
+    {
+      "club": "bishops-stortford",
+      "name": "Bishop's Stortford",
+      "source": "https://bsfc.co.uk/ticket-information/",
+      "found": {
+        "adultPrice": 15,
+        "concessionPrice": 10
+      }
+    },
     {
       "club": "bury-town",
       "name": "Bury Town",
@@ -12,12 +21,30 @@
       }
     },
     {
+      "club": "leighton-town",
+      "name": "Leighton Town",
+      "source": "https://www.leightontownfc.co.uk/a/admission-prices-202627-season--68349.html",
+      "found": {
+        "adultPrice": 13,
+        "concessionPrice": 8
+      }
+    },
+    {
       "club": "peterborough-sports",
       "name": "Peterborough Sports",
       "source": "https://www.psfc.co.uk/admission-prices",
       "found": {
-        "adultPrice": 15,
+        "adultPrice": 18,
         "concessionPrice": 13
+      }
+    },
+    {
+      "club": "worcester-city",
+      "name": "Worcester City",
+      "source": "https://worcestercityfc.org/season-tickets/",
+      "found": {
+        "adultPrice": 14,
+        "concessionPrice": 9.5
       }
     }
   ],
@@ -26,12 +53,10 @@
     "alvechurch",
     "anstey-nomads",
     "banbury-united",
-    "bishops-stortford",
     "bromsgrove-sporting",
     "halesowen-town",
     "hitchin-town",
     "leamington",
-    "leighton-town",
     "leiston",
     "needham-market",
     "racing-club-warwick",
@@ -40,7 +65,6 @@
     "rushall-olympic",
     "stamford",
     "stourbridge",
-    "stratford-town",
-    "worcester-city"
+    "stratford-town"
   ]
 }

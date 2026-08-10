@@ -74,17 +74,55 @@ def readable(raw):
     return re.sub(r"\s+", " ", text)
 
 
+def price_links(base, raw):
+    """
+    Pages the club itself links to about admission. Guessing fixed paths missed
+    Leighton entirely, whose prices sit at an article URL like
+    /a/admission-prices-202627-season--68349.html. Following the club's own
+    links finds those without having to guess the shape.
+    """
+    found = []
+    for href, text in re.findall(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', raw, re.S | re.I):
+        label = re.sub(r"<[^>]+>", " ", text)
+        if re.search(r"admission|ticket|price", href + " " + label, re.I):
+            link = urljoin(base, href)
+            if link.startswith("http") and link not in found:
+                found.append(link)
+    return found[:6]
+
+
 def prices_on(url):
     """Prices a page states plainly, or an empty dict if it states none."""
     found = {}
     text = readable(fetch(url))
+
+    # A club can list several sets on one page and reading top to bottom picks
+    # the wrong one. Bishop's Stortford put a cheaper pre-season block first,
+    # and Peterborough Sports list online prices above the gate prices, which
+    # are three pounds dearer. This column means what you pay at the turnstile,
+    # so jump to that heading where a page has one.
+    for heading in (r"matchday prices", r"match day prices", r"gate prices", r"general admission"):
+        found_at = re.search(heading, text, re.I)
+        if found_at:
+            text = text[found_at.start():]
+            break
     for field, words in LABELS:
-        m = re.search(rf"(?:{words})\s*[:\-]?\s*£\s?(\d{{1,2}})(?!\d)", text, re.I)
+        # Clubs write these as "Adults £13", "Adult - £15", "Adult – £15",
+        # "Concessions (60+) – £10" and "Concessions: £9.50". Allow a
+        # qualifier in brackets, any kind of dash, and pence.
+        m = re.search(
+            rf"(?:{words})\s*(?:\([^)]*\))?\s*[:\-\u2013\u2014]?\s*£\s?(\d{{1,2}}(?:\.\d{{2}})?)(?!\d)",
+            text, re.I,
+        )
         if m:
-            value = int(m.group(1))
-            # Season tickets share the same words. A matchday price at this
-            # level is single figures or low teens, never fifty pounds.
-            if 2 <= value <= 30:
+            value = float(m.group(1))
+            if value == int(value):
+                value = int(value)
+            # Season tickets share the same words, so anything above what a
+            # gate realistically charges is one of those. Racing Club Warwick
+            # reported a £30 concession this way.
+            ceiling = 25 if field == "adultPrice" else 18
+            if 2 <= value <= ceiling:
                 found[field] = value
     return found
 
@@ -101,9 +139,16 @@ def main():
 
         seen = {}
         source = None
-        for path in PATHS:
+        candidates = [urljoin(base.rstrip("/") + "/", p) for p in PATHS]
+
+        # Then whatever the club links to itself.
+        try:
+            candidates += price_links(base, fetch(base))
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
+            pass
+
+        for url in candidates:
             try:
-                url = urljoin(base.rstrip("/") + "/", path)
                 seen = prices_on(url)
             except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
                 continue
