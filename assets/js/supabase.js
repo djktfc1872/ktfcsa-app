@@ -499,7 +499,10 @@ function toRow(name, r, profile) {
       fixture_date: r.fixtureDate || null, area: r.area, leaving: r.leaving,
       seats: String(r.seats || ""), contact: r.contact, notes: r.notes };
   }
-  if (name === "wall") return { ...base, text: r.text, thread: r.thread || null, replyTo: r.reply_to || null };
+  /* Column names here are the database's, not the app's. Sending replyTo
+     instead of reply_to made PostgREST reject every wall post, reply or not,
+     and the supporter was told the feature was not switched on. */
+  if (name === "wall") return { ...base, text: r.text, thread: r.thread || null, reply_to: r.reply_to || null };
   if (name === "poll") return { ...base, question: r.question, options: r.options.map((o) => o.label) };
   return base;
 }
