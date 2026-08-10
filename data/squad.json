@@ -82,6 +82,17 @@
       "abbrev": "GK"
     },
     {
+      "number": 14,
+      "name": "Michael Gyasi",
+      "position": "Striker",
+      "abbrev": "ST",
+      "loan": {
+        "from": "Bedford Town",
+        "until": "2026-10-04"
+      },
+      "numberSource": "League team sheet, Alvechurch 8 August 2026"
+    },
+    {
       "number": 15,
       "name": "Tai Fleming",
       "position": "Defender",
@@ -110,16 +121,6 @@
       "name": "Kai Fifield",
       "position": "Midfielder",
       "abbrev": "MF"
-    },
-    {
-      "number": null,
-      "name": "Michael Gyasi",
-      "position": "Striker",
-      "abbrev": "ST",
-      "loan": {
-        "from": "Bedford Town",
-        "until": "2026-10-04"
-      }
     }
   ]
 }
