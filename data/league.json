@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-09T19:47:22.187Z",
+  "updated": "2026-08-10T00:07:51.257Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -475,7 +475,75 @@
           "started": false,
           "captain": false
         }
-      ]
+      ],
+      "events": {
+        "goals": [
+          {
+            "name": "Eddie Panter",
+            "minute": 9,
+            "ours": true,
+            "type": null
+          }
+        ],
+        "cards": [
+          {
+            "name": "Jonny Ngandu",
+            "minute": 40,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 56,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 69,
+            "ours": true,
+            "type": null,
+            "second": true,
+            "dismissed": true
+          },
+          {
+            "name": "Jack Kelly",
+            "minute": 72,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Kieran Wakefield",
+            "minute": 78,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Archie Crowther",
+            "minute": 86,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Ryan Haynes",
+            "minute": 94,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          }
+        ]
+      }
     },
     {
       "id": "6a5a19f7ce9ef452b61f421f",
@@ -492,7 +560,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a19f5ce9ef452b61f41be",
@@ -509,7 +581,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a19f6ce9ef452b61f41f5",
@@ -526,7 +602,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a19f7ce9ef452b61f420d",
@@ -543,7 +623,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1a68ce9ef452b61f425e",
@@ -560,7 +644,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1a68ce9ef452b61f429d",
@@ -577,7 +665,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1aacce9ef452b61f42c3",
@@ -594,7 +686,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1aacce9ef452b61f42f0",
@@ -611,7 +707,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1b0ece9ef452b61f4316",
@@ -628,7 +728,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1b0ece9ef452b61f4344",
@@ -645,7 +749,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1b79ce9ef452b61f4370",
@@ -662,7 +770,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1b79ce9ef452b61f43a3",
@@ -679,7 +791,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1b79ce9ef452b61f43cb",
@@ -696,7 +812,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1bf6ce9ef452b61f440e",
@@ -713,7 +833,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1bf6ce9ef452b61f443b",
@@ -730,7 +854,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1cc3ce9ef452b61f4465",
@@ -747,7 +875,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1cc3ce9ef452b61f448e",
@@ -764,7 +896,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1cc3ce9ef452b61f44c0",
@@ -781,7 +917,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1cc3ce9ef452b61f44e5",
@@ -798,7 +938,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1cc3ce9ef452b61f4514",
@@ -815,7 +959,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1cc3ce9ef452b61f453f",
@@ -832,7 +980,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1d2ace9ef452b61f4570",
@@ -849,7 +1001,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1d2ace9ef452b61f4599",
@@ -866,7 +1022,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1da9ce9ef452b61f45c2",
@@ -883,7 +1043,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1da9ce9ef452b61f45f4",
@@ -900,7 +1064,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1da9ce9ef452b61f461a",
@@ -917,7 +1085,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1e2ace9ef452b61f4647",
@@ -934,7 +1106,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1e2bce9ef452b61f4672",
@@ -951,7 +1127,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1e2bce9ef452b61f46a2",
@@ -968,7 +1148,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f8ece9ef452b61f46c9",
@@ -985,7 +1169,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f8fce9ef452b61f46fb",
@@ -1002,7 +1190,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f8fce9ef452b61f4724",
@@ -1019,7 +1211,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f8fce9ef452b61f4751",
@@ -1036,7 +1232,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f8fce9ef452b61f4778",
@@ -1053,7 +1253,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f90ce9ef452b61f47a6",
@@ -1070,7 +1274,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f90ce9ef452b61f47d7",
@@ -1087,7 +1295,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f90ce9ef452b61f47fe",
@@ -1104,7 +1316,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a1f90ce9ef452b61f4828",
@@ -1121,7 +1337,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a2018ce9ef452b61f4856",
@@ -1138,7 +1358,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a2018ce9ef452b61f4883",
@@ -1155,7 +1379,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     },
     {
       "id": "6a5a2018ce9ef452b61f48ad",
@@ -1172,7 +1400,11 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": []
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
     }
   ]
 }

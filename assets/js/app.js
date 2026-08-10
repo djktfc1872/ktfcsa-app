@@ -2183,7 +2183,7 @@ function ratingRow(fixture, player, open) {
 }
 
 /** The panel that lets a supporter mark a match, shared with the reaction thread. */
-function ratingPanel(fixture) {
+function ratingPanel(fixture, { withEvents = true } = {}) {
   const wrap = el(`<div class="card"></div>`);
   const { players, source } = squadFor(fixture);
   const opponent = clubName(fixture.opponent);
@@ -2194,6 +2194,11 @@ function ratingPanel(fixture) {
       <h3>${esc(opponent)}${score ? ` <span class="card__score">${esc(score)}</span>` : ""}</h3>
       <p>${esc(fmtDate(fixture.date))}, ${fixture.venue === "Home" ? "home" : "away"}</p>
     </div>`));
+
+  /* The reaction thread prints these above the panel already, so it asks for
+     them to be left out rather than showing the same eight lines twice. */
+  const ev = withEvents ? matchEvents(fixture) : null;
+  if (ev) wrap.append(ev);
 
   if (!players.length) {
     wrap.append(el(`
@@ -2322,6 +2327,65 @@ function viewPlayers() {
     wrap.append(el(`<p class="note">An average across every match a player has been rated in. Early in the season a single good game moves it a long way.</p>`));
   }
 
+  /* ---- goals, cards and gates from the league feed ---- */
+  const stats = seasonStats();
+  if (stats.played) {
+    const byName = Object.fromEntries(confirmedSquad().map((pl) => [pl.name, pl]));
+
+    if (stats.scorers.length) {
+      wrap.append(el(`<h2 class="section-title">Goals</h2>`));
+      const most = stats.scorers[0].goals;
+      const card = el(`<div class="card ratings-board"></div>`);
+      stats.scorers.forEach((r, i) => {
+        const pl = byName[r.name];
+        const rank = i > 0 && stats.scorers[i - 1].goals === r.goals ? "" : String(i + 1);
+        card.append(el(`
+          <div class="lb">
+            <span class="lb__rank">${rank}</span>
+            <span class="lb__who">
+              <span class="lb__name">${esc(r.name)}</span>
+              <span class="lb__meta">${esc(pl?.position || "")}</span>
+            </span>
+            <span class="lb__bar" aria-hidden="true"><i style="width:${Math.round((r.goals / most) * 100)}%"></i></span>
+            <span class="lb__avg">${r.goals}</span>
+          </div>`));
+      });
+      wrap.append(card);
+    }
+
+    if (stats.discipline.length) {
+      wrap.append(el(`<h2 class="section-title">Cards</h2>`));
+      const card = el(`<div class="card ratings-board"></div>`);
+      stats.discipline.forEach((r) => {
+        card.append(el(`
+          <div class="lb lb--plain">
+            <span class="lb__who">
+              <span class="lb__name">${esc(r.name)}</span>
+              <span class="lb__meta">${esc(byName[r.name]?.position || "")}</span>
+            </span>
+            <span class="lb__cards">${
+              [r.yellows ? `${ICON_YELLOW} ${r.yellows}` : "", r.reds ? `${ICON_RED} ${r.reds}` : ""]
+                .filter(Boolean).join(" ")
+            }</span>
+          </div>`));
+      });
+      wrap.append(card);
+    }
+
+    if (stats.gates.length) {
+      const avg = Math.round(stats.gates.reduce((n, g) => n + g, 0) / stats.gates.length);
+      wrap.append(el(`<h2 class="section-title">At the gate</h2>`));
+      wrap.append(el(`
+        <div class="card">
+          <div class="info-grid info-grid--4">
+            <div class="info"><div class="info__label">Home games</div><div class="info__value">${stats.gates.length}</div></div>
+            <div class="info"><div class="info__label">Average</div><div class="info__value" style="color:var(--gold-400)">${avg.toLocaleString("en-GB")}</div></div>
+            <div class="info"><div class="info__label">Best</div><div class="info__value">${Math.max(...stats.gates).toLocaleString("en-GB")}</div></div>
+          </div>
+        </div>`));
+    }
+  }
+
   /* ---- the squad as the club confirmed it ---- */
   const squad = confirmedSquad();
   if (squad.length) {
@@ -2371,6 +2435,83 @@ function viewPlayers() {
 
   played.slice(0, 6).forEach((f) => wrap.append(ratingPanel(f)));
   return wrap;
+}
+
+/* ============================================================ match events */
+
+/* Goals, cards and the gate, all straight from the league feed. A match with
+   nothing recorded renders nothing at all rather than an empty box. */
+
+const ICON_GOAL = "\u26BD";
+const ICON_YELLOW = "\u{1F7E8}";
+const ICON_RED = "\u{1F7E5}";
+
+function matchEvents(fixture) {
+  const ev = fixture.events || { goals: [], cards: [] };
+  const gate = fixture.attendance;
+  if (!ev.goals.length && !ev.cards.length && !gate) return null;
+
+  const box = el(`<div class="card events"></div>`);
+
+  const line = (icon, e, note) => `
+    <div class="event${e.ours ? " event--ours" : ""}">
+      <span class="event__icon" aria-hidden="true">${icon}</span>
+      <span class="event__name">${esc(e.name)}${note ? ` <span class="event__note">${esc(note)}</span>` : ""}</span>
+      <span class="event__min">${e.minute === null ? "" : `${e.minute}'`}</span>
+    </div>`;
+
+  if (ev.goals.length) {
+    box.append(el(`<div class="events__head">Goals</div>`));
+    ev.goals.forEach((g) => box.append(el(line(ICON_GOAL, g, g.ours ? "" : "for them"))));
+  }
+
+  if (ev.cards.length) {
+    box.append(el(`<div class="events__head">Cards</div>`));
+    ev.cards.forEach((c) => {
+      const icon = c.dismissed ? ICON_RED : ICON_YELLOW;
+      const note = c.second ? "second yellow, off" : c.dismissed ? "sent off" : c.ours ? "" : "for them";
+      box.append(el(line(icon, c, note)));
+    });
+  }
+
+  if (gate) {
+    box.append(el(`
+      <p class="events__gate">${Number(gate).toLocaleString("en-GB")} at ${
+        esc(fixture.venue === "Home" ? KTFC.ground : fixture.ground || clubName(fixture.opponent))
+      }.</p>`));
+  }
+
+  return box;
+}
+
+/** Goals, cards and gates totted up across every played game so far. */
+function seasonStats() {
+  const played = fixtures().filter((f) => f.status === "played" && f.events);
+  const scorers = new Map();
+  const discipline = new Map();
+  const gates = [];
+
+  played.forEach((f) => {
+    (f.events.goals || []).filter((g) => g.ours).forEach((g) => {
+      scorers.set(g.name, (scorers.get(g.name) || 0) + 1);
+    });
+    (f.events.cards || []).filter((c) => c.ours).forEach((c) => {
+      const d = discipline.get(c.name) || { yellows: 0, reds: 0 };
+      if (c.dismissed) d.reds += 1;
+      else d.yellows += 1;
+      discipline.set(c.name, d);
+    });
+    if (f.venue === "Home" && f.attendance) gates.push(f.attendance);
+  });
+
+  return {
+    played: played.length,
+    scorers: [...scorers.entries()].map(([name, goals]) => ({ name, goals }))
+      .sort((a, b) => b.goals - a.goals),
+    discipline: [...discipline.entries()].map(([name, d]) => ({ name, ...d }))
+      .sort((a, b) => b.reds - a.reds || b.yellows - a.yellows),
+    gates,
+  };
 }
 
 /* ================================================================= avatars */
@@ -2521,10 +2662,15 @@ function viewThread({ id }) {
   /* Reaction threads carry the ratings for that game, so marking the players
      and saying your piece happen in the same place. */
   if (t.kind === "post") {
+    const ev = matchEvents(t.fixture);
+    if (ev) {
+      wrap.append(el(`<h2 class="section-title">How it went</h2>`));
+      wrap.append(ev);
+    }
     const { players } = squadFor(t.fixture);
     if (players.length || db.isAdmin()) {
       wrap.append(el(`<h2 class="section-title">Rate the players</h2>`));
-      wrap.append(ratingPanel(t.fixture));
+      wrap.append(ratingPanel(t.fixture, { withEvents: false }));
     }
   }
 

@@ -168,6 +168,52 @@ function lineupFor(match, isHome) {
     });
 }
 
+/**
+ * Goals and cards for both sides. Our players are resolved to the club's
+ * spelling; the opposition are left as the feed writes them, because we have
+ * no squad list to check them against.
+ *
+ * The feed left every card's type null on the opening day, so a sending off is
+ * worked out rather than read: a second card for the same player in the same
+ * match is a second yellow. An explicit red still counts as one.
+ */
+function eventsFor(match, isHome) {
+  const ourSide = isHome ? "home" : "away";
+
+  const read = (key, ours) =>
+    (match[key] || []).map((e) => {
+      const raw = String(e.personName || "").trim();
+      return {
+        name: ours ? canonicalName(raw, e.number ?? null) || raw : raw,
+        minute: typeof e.minute === "number" ? e.minute : null,
+        ours,
+        type: String(e.type || "").toLowerCase() || null,
+      };
+    }).filter((e) => e.name);
+
+  const goals = [
+    ...read(`${ourSide}Goals`, true),
+    ...read(ourSide === "home" ? "awayGoals" : "homeGoals", false),
+  ].sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
+
+  const cards = [
+    ...read(`${ourSide}Cards`, true),
+    ...read(ourSide === "home" ? "awayCards" : "homeCards", false),
+  ].sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
+
+  /* Walk in order so the dismissal lands on the second card, not the first. */
+  const seen = new Map();
+  cards.forEach((c) => {
+    const key = `${c.ours ? "us" : "them"}|${plain(c.name)}`;
+    const before = seen.get(key) || 0;
+    seen.set(key, before + 1);
+    c.second = before > 0;
+    c.dismissed = before > 0 || c.type === "red" || c.type === "redcard";
+  });
+
+  return { goals, cards };
+}
+
 /** Turn the API's status codes into something we can show a supporter. */
 function readStatus(raw) {
   const s = String(raw || "").toLowerCase();
@@ -229,6 +275,7 @@ async function main() {
            full seasons of lineups, then 2025/26 stopped in September. The app
            shows the squad and ratings only when there is something here. */
         lineup: lineupFor(m, isHome),
+        events: eventsFor(m, isHome),
       };
     })
     .sort((a, b) => (a.date + a.kickoff).localeCompare(b.date + b.kickoff));
