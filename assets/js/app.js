@@ -217,6 +217,7 @@ const state = {
   overviews: {},  // our own club write-ups, from data/club-overviews.json
   videos: [],     // the club's YouTube uploads, from data/videos.json
   facts: null,    // researched club history, from data/club-facts.json
+  bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
 };
 
@@ -275,6 +276,7 @@ const ROUTES = {
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
+  admin: { label: "Admin", icon: "🛠️", nav: "hidden", render: viewAdmin },
   match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
 };
 
@@ -3017,6 +3019,166 @@ function awayEssentials(t) {
   return card;
 }
 
+/* ================================================================== admin */
+
+/* For whoever runs the site. Hidden from the menus and refuses to render for
+   anyone else, though the real protection is in the database: the counts view
+   returns nothing to a non-admin and the tag function raises rather than
+   writing. This page is a convenience, not the lock. */
+
+function viewAdmin() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Admin</h1>
+      <p>How the site is being used, and the people using it.</p>
+    </div>
+  </div>`);
+
+  if (!db.isAdmin()) {
+    wrap.append(el(`
+      <div class="empty">
+        <b>Not for you, sorry</b>
+        This page is for the volunteers who run the site.
+      </div>`));
+    return wrap;
+  }
+
+  const STATS = [
+    ["supporters", "Supporters"], ["supporters_this_week", "Joined this week"],
+    ["posts", "Wall posts"], ["replies", "Replies"],
+    ["ratings", "Player ratings"], ["predictions", "Predictions"],
+    ["attendances", "Games marked"], ["ground_reports", "Ground reports"],
+    ["access_reports", "Access reports"], ["price_reports", "Price reports"],
+    ["pubs", "Pubs"], ["feedback_waiting", "Feedback waiting"],
+  ];
+
+  wrap.append(el(`<h2 class="section-title">Activity</h2>`));
+  const statCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+  wrap.append(statCard);
+
+  db.adminOverview().then((o) => {
+    statCard.replaceChildren();
+    if (!o) {
+      statCard.append(el(`<p class="note" style="margin:0">Counts are not available. The newer part of the schema may not have been run yet.</p>`));
+      return;
+    }
+    const grid = el(`<div class="info-grid info-grid--4"></div>`);
+    STATS.forEach(([key, label]) => {
+      if (o[key] === undefined || o[key] === null) return;
+      const urgent = key === "feedback_waiting" && o[key] > 0;
+      grid.append(el(`
+        <div class="info">
+          <div class="info__label">${esc(label)}</div>
+          <div class="info__value"${urgent ? ` style="color:var(--gold-400)"` : ""}>${Number(o[key]).toLocaleString("en-GB")}</div>
+        </div>`));
+    });
+    statCard.append(grid);
+    statCard.append(el(`<p class="note">These are things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
+  });
+
+  wrap.append(el(`<h2 class="section-title">People</h2>`));
+  const peopleCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+  wrap.append(peopleCard);
+
+  const paintPeople = () => {
+    db.adminPeople().then((rows) => {
+      peopleCard.replaceChildren();
+      if (!rows.length) {
+        peopleCard.append(el(`<p class="note" style="margin:0">Nobody yet.</p>`));
+        return;
+      }
+      const search = el(`<input class="admin-search" type="search" placeholder="Search ${rows.length} supporters" aria-label="Search supporters">`);
+      peopleCard.append(search);
+      const list = el(`<div></div>`);
+      peopleCard.append(list);
+
+      const draw = (filter = "") => {
+        const want = filter.trim().toLowerCase();
+        const shown = rows.filter((r) => !want || (r.display_name || "").toLowerCase().includes(want));
+        list.replaceChildren();
+        if (!shown.length) {
+          list.append(el(`<p class="note">Nobody by that name.</p>`));
+          return;
+        }
+        shown.slice(0, 60).forEach((r) => {
+          const row = el(`
+            <div class="person">
+              <div class="person__who">
+                <span class="person__name">${esc(r.display_name)}</span>
+                <span class="person__meta">${r.is_admin ? "Admin \u00B7 " : ""}joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
+              </div>
+            </div>`);
+          const picker = el(`<div class="person__tags"></div>`);
+          [["", "None"], ...Object.entries(TAG_LABEL)].forEach(([key, label]) => {
+            const on = (r.tag || "") === key;
+            const b = el(`<button class="tag-btn${on ? " is-on" : ""}" type="button">${esc(label)}</button>`);
+            b.addEventListener("click", async () => {
+              if (on) return;
+              b.disabled = true;
+              try {
+                await db.setTag(r.id, key || null);
+                r.tag = key || null;
+                toast(key ? `${r.display_name} is now ${TAG_LABEL[key]}.` : `Tag removed from ${r.display_name}.`, "good");
+                draw(search.value);
+              } catch (err) {
+                toast(err.message || "That did not save.", "bad");
+                b.disabled = false;
+              }
+            });
+            picker.append(b);
+          });
+          row.append(picker);
+          list.append(row);
+        });
+        if (shown.length > 60) {
+          list.append(el(`<p class="note">Showing 60 of ${shown.length}. Search to narrow it down.</p>`));
+        }
+      };
+
+      search.addEventListener("input", () => draw(search.value));
+      draw();
+    });
+  };
+  paintPeople();
+
+  return wrap;
+}
+
+/* =========================================================== supporter tags */
+
+const TAG_LABEL = {
+  contributor: "Contributor",
+  volunteer: "Volunteer",
+  reporter: "Reporter",
+  photographer: "Photographer",
+  legend: "Legend",
+};
+
+const TAG_WHY = {
+  contributor: "Has added information other supporters rely on",
+  volunteer: "Helps run the association",
+  reporter: "Writes for the site",
+  photographer: "Takes the photographs",
+  legend: "One of the good ones",
+};
+
+/**
+ * The tag next to a name. A volunteer can hand one out, which beats anything
+ * worked out from the rows: Darren Young wrote every pen pic on the site and
+ * had never filed a ground report, so nothing would have marked him.
+ */
+function supporterTag(profileId) {
+  if (!profileId || db.isVolunteer(profileId)) return "";
+  const given = db.tagOf(profileId);
+  if (given) {
+    return `<span class="pill pill--contrib" title="${esc(TAG_WHY[given] || "")}">${esc(TAG_LABEL[given] || given)}</span>`;
+  }
+  if (db.isContributor(profileId)) {
+    return `<span class="pill pill--contrib" title="Has added ground or access information for other supporters">Contributor</span>`;
+  }
+  return "";
+}
+
 /* ================================================================== videos */
 
 /* The club streams commentary on a match and puts up highlights and interviews
@@ -3191,13 +3353,16 @@ function viewPlayer({ id }) {
       </div>
     </div>`));
 
-  /* Sits above the record on every profile, played or not, so it reads as
-     something on the way rather than something missing. */
-  wrap.append(el(`
-    <div class="soon">
-      <span class="soon__tag">Coming soon</span>
-      <span>Player bios. Where they came from, what they have done, and a bit about them.</span>
-    </div>`));
+  /* Keyed on shirt number rather than name: the pen pics and the club's squad
+     sheet do not always spell one the same way. */
+  const bio = pl?.number != null ? state.bios?.players?.[String(pl.number)] : null;
+  if (bio) {
+    wrap.append(el(`
+      <div class="card">
+        <p class="club-overview">${esc(bio.bio)}</p>
+        <p class="bio-credit">Pen pic by ${esc(state.bios.credit)}</p>
+      </div>`));
+  }
 
   if (!rec.games.length) {
     wrap.append(el(`
@@ -3646,9 +3811,7 @@ function wallCard(p, admin) {
         ${avatarHtml(p.authorName, p.authorId)}
         <span class="post__who">${esc(p.authorName)}</span>
         ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : ""}
-        ${!db.isVolunteer(p.authorId) && db.isContributor(p.authorId)
-          ? `<span class="pill pill--contrib" title="Has added ground or access information for other supporters">Contributor</span>`
-          : ""}
+        ${supporterTag(p.authorId)}
         ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
         <span class="post__when">${esc(relTime(p.createdAt))}</span>
       </div>
@@ -4063,6 +4226,16 @@ function viewAccount() {
       </div>`));
   }
 
+  if (user.isAdmin) {
+    wrap.append(el(`<h2 class="section-title">Running the site</h2>`));
+    const panel = el(`
+      <div class="card">
+        <p class="note" style="margin:0 0 12px">Activity across the site, and the people using it.</p>
+        <button class="btn btn--full" data-nav="admin">Open the admin panel</button>
+      </div>`);
+    wrap.append(panel);
+  }
+
   /* appearance */
   wrap.append(el(`<h2 class="section-title">Appearance</h2>`));
   const themeCard = el(`
@@ -4259,6 +4432,7 @@ async function loadSquad() {
   state.squad = await readJSON("data/squad.json");
   state.videos = (await readJSON("data/videos.json"))?.videos || [];
   state.facts = await readJSON("data/club-facts.json");
+  state.bios = await readJSON("data/player-bios.json");
   /* null is fine: the ratings still work from team sheets alone */
 }
 

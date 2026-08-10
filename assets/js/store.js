@@ -64,6 +64,7 @@ const live = {
   prices: [],               // what supporters say they actually paid
   avatars: {},              // profileId -> emblem key
   admins: new Set(),        // profileIds of KTFCSA volunteers
+  tags: {},                 // profileId -> a tag a volunteer handed out
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
 };
@@ -174,6 +175,7 @@ export async function refresh() {
       const people = await backend.loadAvatars();
     live.avatars = people.avatars;
     live.admins = new Set(people.admins);
+    live.tags = people.tags || {};
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
     } catch (err) {
@@ -516,6 +518,17 @@ export const isVolunteer = (profileId) => live.admins.has(profileId);
 /* Anyone who has filed a ground note, an access report or suggested a pub.
    Worked out from rows the app has already loaded, so it costs no extra query
    and no extra column. */
+/** A tag handed out by a volunteer, which beats anything worked out from rows. */
+export const tagOf = (profileId) => live.tags[profileId] || null;
+
+export const adminOverview = () => (backend ? backend.adminOverview() : Promise.resolve(null));
+export const adminPeople = () => (backend ? backend.adminPeople() : Promise.resolve([]));
+
+export function setTag(profileId, tag) {
+  if (!backend) return Promise.reject(new Error("Not connected."));
+  return backend.setTag(profileId, tag).then(refresh);
+}
+
 export function isContributor(profileId) {
   if (!profileId) return false;
   return live.ground.some((r) => r.profile_id === profileId)

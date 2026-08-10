@@ -764,3 +764,65 @@ drop trigger if exists wall_reply_depth on wall_posts;
 create trigger wall_reply_depth
   before insert or update on wall_posts
   for each row execute function reply_is_top_level();
+
+-- ===========================================================================
+-- Admin panel
+--
+-- A tag a volunteer can hand out, and a set of counts for the people running
+-- the site. The Contributor tag was worked out from whether somebody had filed
+-- a ground report, which is fine as a default but cannot recognise a
+-- contribution made anywhere else: Darren Young wrote every player pen pic and
+-- had filed nothing.
+-- ===========================================================================
+
+alter table profiles add column if not exists tag text
+  check (tag is null or tag in ('contributor', 'volunteer', 'reporter', 'photographer', 'legend'));
+
+/* Setting a tag is separated out rather than done through a policy that lets
+   an admin update any profile row. A broad update policy would also let one
+   admin make somebody else an admin, which is a bigger power than handing out
+   a label. This touches the tag column and nothing else. */
+create or replace function set_user_tag(target uuid, new_tag text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can set a tag';
+  end if;
+  if new_tag is not null and new_tag not in ('contributor', 'volunteer', 'reporter', 'photographer', 'legend') then
+    raise exception 'Unknown tag';
+  end if;
+  update profiles set tag = new_tag where id = target;
+end;
+$$;
+
+revoke all on function set_user_tag(uuid, text) from public;
+grant execute on function set_user_tag(uuid, text) to authenticated;
+
+-- What the people running the site can see at a glance. Counts only, no
+-- reading of anybody's messages.
+create or replace view admin_overview as
+select * from (
+select
+  (select count(*) from profiles)                                  as supporters,
+  (select count(*) from profiles where created_at > now() - interval '7 days') as supporters_this_week,
+  (select count(*) from wall_posts where hidden = false)           as posts,
+  (select count(*) from wall_posts where reply_to is not null and hidden = false) as replies,
+  (select count(*) from player_ratings)                            as ratings,
+  (select count(*) from predictions)                               as predictions,
+  (select count(*) from attendance)                                as attendances,
+  (select count(*) from ground_reports where hidden = false)       as ground_reports,
+  (select count(*) from access_reports where hidden = false)       as access_reports,
+  (select count(*) from price_reports where hidden = false)        as price_reports,
+  (select count(*) from pubs where hidden = false)                 as pubs,
+  (select count(*) from feedback where handled = false)            as feedback_waiting
+) counts
+/* Returns nothing at all to anyone who is not a volunteer, rather than
+   handing out most of the numbers and hiding one. */
+where is_admin();
+
+alter view admin_overview set (security_invoker = true);
+grant select on admin_overview to authenticated;

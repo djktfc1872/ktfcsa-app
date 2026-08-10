@@ -96,12 +96,13 @@ class Backend {
      still sign people in, so this degrades to nobody having one rather than
      taking the profile query, and with it the whole login, down with it. */
   async loadAvatars() {
-    const { data, error } = await this.sb.from("profiles").select("id, avatar, is_admin");
-    if (error) return { avatars: {}, admins: [] };
+    const { data, error } = await this.sb.from("profiles").select("id, avatar, is_admin, tag");
+    if (error) return { avatars: {}, admins: [], tags: {} };
     const rows = data || [];
     return {
       avatars: Object.fromEntries(rows.filter((r) => r.avatar).map((r) => [r.id, r.avatar])),
       admins: rows.filter((r) => r.is_admin).map((r) => r.id),
+      tags: Object.fromEntries(rows.filter((r) => r.tag).map((r) => [r.id, r.tag])),
     };
   }
 
@@ -331,6 +332,30 @@ class Backend {
       .eq("profile_id", this.profile.id)
       .eq("fixture_id", fixtureId)
       .eq("player_name", playerName);
+    if (error) throw new Error(friendly(error));
+  }
+
+  /* ---------------------------------------------------------- admin panel */
+
+  /** Counts for whoever runs the site. Returns nothing to anyone else. */
+  async adminOverview() {
+    const { data, error } = await this.sb.from("admin_overview").select("*").maybeSingle();
+    if (error) return null;
+    return data;
+  }
+
+  /** Everyone with an account, newest first, for the people page. */
+  async adminPeople() {
+    const { data, error } = await this.sb
+      .from("profiles")
+      .select("id, display_name, is_admin, avatar, tag, created_at")
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return data || [];
+  }
+
+  async setTag(profileId, tag) {
+    const { error } = await this.sb.rpc("set_user_tag", { target: profileId, new_tag: tag });
     if (error) throw new Error(friendly(error));
   }
 
