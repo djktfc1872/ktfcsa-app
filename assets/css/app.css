@@ -4026,3 +4026,10 @@ button,
   background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-950);
 }
 .tag-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Top Contributor and Legend are meant to read as a cut above the rest. */
+.pill--special {
+  background: linear-gradient(135deg, var(--gold-500), var(--gold-300));
+  border-color: var(--gold-300);
+  color: var(--ink-950);
+}

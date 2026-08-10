@@ -95,8 +95,8 @@ def main():
         "source": source.name,
         "imported": __import__("datetime").date.today().isoformat(),
         "note": (
-            "Player pen pics written by Darren Young. Keyed on shirt number, because the "
-            "pen pics and the club's squad sheet do not always spell a name the same way."
+            "Player bios written by Darren Young. Keyed on shirt number, because the "
+            "source and the club's squad sheet do not always spell a name the same way."
         ),
         "manager": manager(raw),
         "players": {str(n): found[n] for n in sorted(found)},

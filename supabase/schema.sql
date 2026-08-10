@@ -776,7 +776,8 @@ create trigger wall_reply_depth
 -- ===========================================================================
 
 alter table profiles add column if not exists tag text
-  check (tag is null or tag in ('contributor', 'volunteer', 'reporter', 'photographer', 'legend'));
+  check (tag is null or tag in ('contributor', 'top-contributor', 'volunteer', 'reporter', 'photographer',
+                    'commentator', 'historian', 'groundhopper', 'legend'));
 
 /* Setting a tag is separated out rather than done through a policy that lets
    an admin update any profile row. A broad update policy would also let one
@@ -792,7 +793,8 @@ begin
   if not is_admin() then
     raise exception 'Only a volunteer can set a tag';
   end if;
-  if new_tag is not null and new_tag not in ('contributor', 'volunteer', 'reporter', 'photographer', 'legend') then
+  if new_tag is not null and new_tag not in ('contributor', 'top-contributor', 'volunteer', 'reporter', 'photographer',
+                    'commentator', 'historian', 'groundhopper', 'legend') then
     raise exception 'Unknown tag';
   end if;
   update profiles set tag = new_tag where id = target;

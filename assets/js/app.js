@@ -3148,19 +3148,30 @@ function viewAdmin() {
 
 const TAG_LABEL = {
   contributor: "Contributor",
+  "top-contributor": "Top Contributor",
   volunteer: "Volunteer",
   reporter: "Reporter",
   photographer: "Photographer",
+  commentator: "Commentator",
+  historian: "Historian",
+  groundhopper: "Groundhopper",
   legend: "Legend",
 };
 
 const TAG_WHY = {
   contributor: "Has added information other supporters rely on",
+  "top-contributor": "Has put a great deal into this site",
   volunteer: "Helps run the association",
   reporter: "Writes for the site",
   photographer: "Takes the photographs",
+  commentator: "Calls the games",
+  historian: "Knows the club's past better than anyone",
+  groundhopper: "Does the away days, all of them",
   legend: "One of the good ones",
 };
+
+/* A couple of these are meant to stand out from the rest. */
+const TAG_SPECIAL = new Set(["top-contributor", "legend"]);
 
 /**
  * The tag next to a name. A volunteer can hand one out, which beats anything
@@ -3171,7 +3182,8 @@ function supporterTag(profileId) {
   if (!profileId || db.isVolunteer(profileId)) return "";
   const given = db.tagOf(profileId);
   if (given) {
-    return `<span class="pill pill--contrib" title="${esc(TAG_WHY[given] || "")}">${esc(TAG_LABEL[given] || given)}</span>`;
+    const cls = TAG_SPECIAL.has(given) ? "pill pill--contrib pill--special" : "pill pill--contrib";
+    return `<span class="${cls}" title="${esc(TAG_WHY[given] || "")}">${esc(TAG_LABEL[given] || given)}</span>`;
   }
   if (db.isContributor(profileId)) {
     return `<span class="pill pill--contrib" title="Has added ground or access information for other supporters">Contributor</span>`;
@@ -3360,7 +3372,7 @@ function viewPlayer({ id }) {
     wrap.append(el(`
       <div class="card">
         <p class="club-overview">${esc(bio.bio)}</p>
-        <p class="bio-credit">Pen pic by ${esc(state.bios.credit)}</p>
+        <p class="bio-credit">Player bio by ${esc(state.bios.credit)}</p>
       </div>`));
   }
 
