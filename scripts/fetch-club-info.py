@@ -64,10 +64,13 @@ WEBSITE_OVERRIDES = {
     "leighton-town": "https://www.leightontownfc.co.uk/",
     "peterborough-sports": "https://www.psfc.co.uk/",
     "racing-club-warwick": "https://www.rcwfc.co.uk/",
+    # Wikipedia gives this as http, which times out. The https URL answers.
+    "redditch-united": "https://www.redditchutdfc.co.uk/",
     "real-bedford": "https://www.realbedford.com/",
     "stratford-town": "https://stratfordtownfc.co.uk/",
-    # Rushall Olympic: no working official site found, so the club page falls
-    # back to its Wikipedia entry rather than linking somewhere broken.
+    # Rushall Olympic: still no working official site. Their Pitchero page
+    # answers but says "Club not live", checked again 10 August 2026, so the
+    # club page falls back to Wikipedia rather than linking somewhere broken.
     "rushall-olympic": None,
 }
 
