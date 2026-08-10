@@ -342,6 +342,9 @@ class Backend {
   }
 
   async addPrice(clubSlug, report) {
+    /* A session can lapse while a form is open. Without this the insert throws
+       on a null profile and the supporter sees a raw type error. */
+    if (!this.profile) throw new Error("Your session has expired. Sign in again and it will save.");
     const { error } = await this.sb.from("price_reports").insert({
       club_slug: clubSlug,
       profile_id: this.profile.id,
