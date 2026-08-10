@@ -2892,6 +2892,14 @@ function viewPlayer({ id }) {
       </div>
     </div>`));
 
+  /* Sits above the record on every profile, played or not, so it reads as
+     something on the way rather than something missing. */
+  wrap.append(el(`
+    <div class="soon">
+      <span class="soon__tag">Coming soon</span>
+      <span>Player bios. Where they came from, what they have done, and a bit about them.</span>
+    </div>`));
+
   if (!rec.games.length) {
     wrap.append(el(`
       <div class="empty">
