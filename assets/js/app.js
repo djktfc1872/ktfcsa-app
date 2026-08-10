@@ -963,6 +963,9 @@ function viewClubs() {
           <div style="flex:1;min-width:0">
             <div class="club-row__name">${esc(t.name)}</div>
             <div class="club-row__sub">${esc(t.stadium)} · ${esc(t.postcode)}</div>
+            ${db.groundFor(t.id).length
+              ? ""
+              : `<div class="club-row__gap">Nobody has reported on this ground yet</div>`}
           </div>
           <span class="badge">${t.distanceMiles} mi</span>
           <span style="color:var(--text-3)">›</span>
@@ -1086,6 +1089,8 @@ function viewClub({ id, from }) {
           <a class="btn btn--map btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
         </div>
       </div>`));
+    const ask = groundPrompt(t, awayTrip);
+    if (ask) box.append(ask);
     box.append(groundNotes(t));
     return box;
   };
@@ -1353,6 +1358,85 @@ function groundForm(team) {
     close();
     toast("Thanks, that is genuinely useful.", "good");
   });
+}
+
+/* --------------------------------------------------- asking people who went */
+
+/* The boards were barely used: four ground reports and no pubs across the whole
+   division. The information has no other source at this level, so the problem
+   was never the form, it was that nobody was ever asked. This asks the people
+   who were actually there, one question at a time, about the things still
+   unknown for that ground. */
+
+/** Fields nobody has answered yet for a club, hardest gaps first. */
+function unknownGroundFields(clubSlug) {
+  const reports = db.groundFor(clubSlug);
+  return GROUND_FIELDS.filter(([key]) =>
+    !reports.some((r) => r[key] && r[key] !== "unsure"));
+}
+
+/**
+ * A short prompt for a supporter who attended. Asks up to three of the open
+ * questions, one at a time, then files them as a single report. Answering is
+ * optional throughout and nothing blocks the page.
+ */
+function groundPrompt(team, fixture) {
+  if (!db.currentUser()) return null;
+  const open = unknownGroundFields(team.id).slice(0, 3);
+  if (!open.length) return null;
+
+  const answers = {};
+  let i = 0;
+
+  const box = el(`<div class="card ask"></div>`);
+
+  const finish = () => {
+    const report = Object.fromEntries(GROUND_FIELDS.map(([k]) => [k, answers[k] || "unsure"]));
+    report.surface = "unsure";
+    if (Object.values(report).every((v) => v === "unsure")) {
+      box.replaceChildren(el(`<p class="ask__done">No bother. It is on the club page if you change your mind.</p>`));
+      return;
+    }
+    db.addGroundReport(team.id, {
+      ...report,
+      notes: null,
+      visited_on: fixture?.date || null,
+    });
+    box.replaceChildren(el(`<p class="ask__done">Thanks, that is genuinely useful to the next lot going.</p>`));
+  };
+
+  const paint = () => {
+    if (i >= open.length) return finish();
+    const [key, label, words] = open[i];
+    box.replaceChildren();
+    box.append(el(`
+      <div class="ask__head">
+        <b>You were at ${esc(team.stadium)}</b>
+        <span>Help the next supporters going. ${open.length - i} quick question${open.length - i === 1 ? "" : "s"}.</span>
+      </div>
+      <div class="ask__q">${esc(label)}?</div>`));
+
+    const row = el(`<div class="ask__row"></div>`);
+    [["yes", words.yes], ["no", words.no], ["unsure", "Not sure"]].forEach(([value, text]) => {
+      const b = el(`<button class="btn btn--sm${value === "unsure" ? " btn--ghost" : ""}" type="button">${esc(text)}</button>`);
+      b.addEventListener("click", () => {
+        answers[key] = value;
+        i += 1;
+        paint();
+      });
+      row.append(b);
+    });
+    box.append(row);
+
+    const skip = el(`<button class="link-btn ask__skip" type="button">Not now</button>`);
+    skip.addEventListener("click", () => {
+      box.replaceChildren(el(`<p class="ask__done">No bother. It is on the club page if you change your mind.</p>`));
+    });
+    box.append(skip);
+  };
+
+  paint();
+  return box;
 }
 
 /* ------------------------------------------------------------ access board */
@@ -2667,6 +2751,15 @@ function viewThread({ id }) {
       wrap.append(el(`<h2 class="section-title">How it went</h2>`));
       wrap.append(ev);
     }
+    /* Only for an away game, and only for someone who said they went. */
+    if (t.fixture.venue === "Away" && t.fixture.team && db.didAttend(t.fixture.id)) {
+      const ask = groundPrompt(t.fixture.team, t.fixture);
+      if (ask) {
+        wrap.append(el(`<h2 class="section-title">You were there</h2>`));
+        wrap.append(ask);
+      }
+    }
+
     const { players } = squadFor(t.fixture);
     if (players.length || db.isAdmin()) {
       wrap.append(el(`<h2 class="section-title">Rate the players</h2>`));
