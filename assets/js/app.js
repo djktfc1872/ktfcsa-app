@@ -212,11 +212,15 @@ const state = {
   fixtureFilter: "all",
   predictTab: "open",
   clubInfo: {},   // background notes and official sites, from data/clubs.json
+  overviews: {},  // our own club write-ups, from data/club-overviews.json
   squad: null,    // the squad the club confirmed, from data/squad.json
 };
 
 /** Background on a club: founding year, a fuller description, official site. */
 const infoFor = (slug) => state.clubInfo[slug] || null;
+
+/** Our own write-up for a club, which reads better than the encyclopaedia one. */
+const overviewFor = (slug) => state.overviews[slug] || null;
 
 /** Fixtures come from the league feed. The spreadsheet fills in the away day
     detail. If the feed cannot be reached we build the list from the
@@ -265,6 +269,7 @@ const ROUTES = {
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
+  player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
 };
 
 function go(view, params = {}) {
@@ -401,7 +406,32 @@ function fixtureCard(f, { isNext = false } = {}) {
     </button>`);
 
   if (!f.team) card.style.cursor = "default";
-  return card;
+
+  /* A played game can open up to show who scored, who was booked and the gate,
+     without leaving the fixture list. Only wrapped when there is something to
+     show, so every other row stays exactly as it was. */
+  const hasDetail = played && (f.events?.goals?.length || f.events?.cards?.length || f.attendance);
+  if (!hasDetail) return card;
+
+  const row = el(`<div class="fixture-row"></div>`);
+  const toggle = el(`
+    <button class="fixture-more" type="button" aria-expanded="false">
+      <span>Match detail</span><span class="fixture-more__chev" aria-hidden="true">\u203A</span>
+    </button>`);
+  const holder = el(`<div></div>`);
+  let open = false;
+  toggle.addEventListener("click", () => {
+    open = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.classList.toggle("is-open", open);
+    holder.replaceChildren();
+    if (open) {
+      const ev = matchEvents(f);
+      if (ev) holder.append(ev);
+    }
+  });
+  row.append(card, toggle, holder);
+  return row;
 }
 
 function countdown(f) {
@@ -1047,8 +1077,21 @@ function viewClub({ id, from }) {
     box.append(el(`<h2 class="section-title">About ${esc(t.name)}</h2>`));
     const card = el(`<div class="card"></div>`);
     if (t.fact) card.append(el(`<div class="club-fact">${ICON.info} ${esc(t.fact)}</div>`));
+    const ours = overviewFor(t.id);
+    if (ours) {
+      card.append(el(`<p class="club-overview">${esc(ours.text)}</p>`));
+    }
+
+    /* The Wikipedia text is thorough but reads like a reference book, so it
+       sits underneath for anyone who wants the full history. */
     if (info?.summary) {
-      card.append(el(`<div class="info__value info__value--body" style="margin-top:${t.fact ? 12 : 0}px">${esc(info.summary)}</div>`));
+      if (ours) {
+        const more = el(`<details class="club-history"><summary>More history</summary></details>`);
+        more.append(el(`<div class="info__value info__value--body">${esc(info.summary)}</div>`));
+        card.append(more);
+      } else {
+        card.append(el(`<div class="info__value info__value--body" style="margin-top:${t.fact ? 12 : 0}px">${esc(info.summary)}</div>`));
+      }
     }
     const links = [];
     if (info?.website) links.push(`<a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Official website</a>`);
@@ -1382,8 +1425,13 @@ function unknownGroundFields(clubSlug) {
  */
 function groundPrompt(team, fixture) {
   if (!db.currentUser()) return null;
-  const open = unknownGroundFields(team.id).slice(0, 3);
+  /* One question, not a queue of them. Anyone who wants to add more can use
+     the full form underneath. */
+  const open = unknownGroundFields(team.id).slice(0, 1);
   if (!open.length) return null;
+
+  /* Turned down once is an answer. Do not raise the same ground again. */
+  if (db.read(`askedOff:${team.id}`, false)) return null;
 
   const answers = {};
   let i = 0;
@@ -1411,8 +1459,8 @@ function groundPrompt(team, fixture) {
     box.replaceChildren();
     box.append(el(`
       <div class="ask__head">
-        <b>You were at ${esc(team.stadium)}</b>
-        <span>Help the next supporters going. ${open.length - i} quick question${open.length - i === 1 ? "" : "s"}.</span>
+        <b>One question, if you have a second</b>
+        <span>You were at ${esc(team.stadium)}. Anything you know helps the next supporters going, and it is always appreciated. Ignore this if you would rather not.</span>
       </div>
       <div class="ask__q">${esc(label)}?</div>`));
 
@@ -1430,7 +1478,8 @@ function groundPrompt(team, fixture) {
 
     const skip = el(`<button class="link-btn ask__skip" type="button">Not now</button>`);
     skip.addEventListener("click", () => {
-      box.replaceChildren(el(`<p class="ask__done">No bother. It is on the club page if you change your mind.</p>`));
+      db.write(`askedOff:${team.id}`, true);
+      box.replaceChildren(el(`<p class="ask__done">No bother at all. It is on the club page if you ever fancy it.</p>`));
     });
     box.append(skip);
   };
@@ -2394,7 +2443,7 @@ function viewPlayers() {
         <div class="lb${avg === best && best > 0 ? " lb--top" : ""}">
           <span class="lb__rank">${rank}</span>
           <span class="lb__who">
-            <span class="lb__name">${esc(r.player_name)}${
+            <span class="lb__name" data-player="${esc(r.player_name)}">${esc(r.player_name)}${
               pl?.loan ? ` <span class="squad__loan">Loan</span>` : ""
             }</span>
             <span class="lb__meta">${
@@ -2427,7 +2476,7 @@ function viewPlayers() {
           <div class="lb">
             <span class="lb__rank">${rank}</span>
             <span class="lb__who">
-              <span class="lb__name">${esc(r.name)}</span>
+              <span class="lb__name" data-player="${esc(r.name)}">${esc(r.name)}</span>
               <span class="lb__meta">${esc(pl?.position || "")}</span>
             </span>
             <span class="lb__bar" aria-hidden="true"><i style="width:${Math.round((r.goals / most) * 100)}%"></i></span>
@@ -2444,7 +2493,7 @@ function viewPlayers() {
         card.append(el(`
           <div class="lb lb--plain">
             <span class="lb__who">
-              <span class="lb__name">${esc(r.name)}</span>
+              <span class="lb__name" data-player="${esc(r.name)}">${esc(r.name)}</span>
               <span class="lb__meta">${esc(byName[r.name]?.position || "")}</span>
             </span>
             <span class="lb__cards">${
@@ -2484,7 +2533,7 @@ function viewPlayers() {
       group.forEach((pl) => {
         const r = seasonBy[pl.name];
         card.append(el(`
-          <div class="squad__row">
+          <div class="squad__row" data-player="${esc(pl.name)}" role="button" tabindex="0">
             <span class="squad__num">${pl.number ?? ""}</span>
             <span class="squad__name">${esc(pl.name)}${
               pl.loan
@@ -2518,6 +2567,99 @@ function viewPlayers() {
   }
 
   played.slice(0, 6).forEach((f) => wrap.append(ratingPanel(f)));
+  return wrap;
+}
+
+/* =========================================================== player profile */
+
+/* One player, gathered from data already loaded: appearances from team sheets,
+   goals and cards from the feed, and the marks other supporters gave them.
+   No new tables behind any of it. */
+
+function playerRecord(name) {
+  const key = String(name || "").toLowerCase();
+  const games = [];
+  fixtures().forEach((f) => {
+    if (f.status !== "played") return;
+    const sheet = (f.lineup || []).find((pl) => pl.name.toLowerCase() === key);
+    const goals = (f.events?.goals || []).filter((g) => g.ours && g.name.toLowerCase() === key);
+    const cards = (f.events?.cards || []).filter((c) => c.ours && c.name.toLowerCase() === key);
+    if (!sheet && !goals.length && !cards.length) return;
+    games.push({ fixture: f, sheet, goals, cards, rating: db.matchRating(f.id, name) });
+  });
+  return {
+    games,
+    starts: games.filter((g) => g.sheet?.started).length,
+    goals: games.reduce((n, g) => n + g.goals.length, 0),
+    yellows: games.reduce((n, g) => n + g.cards.filter((c) => !c.dismissed).length, 0),
+    reds: games.reduce((n, g) => n + g.cards.filter((c) => c.dismissed).length, 0),
+  };
+}
+
+function viewPlayer({ id }) {
+  const name = decodeURIComponent(id || "");
+  const wrap = el(`<div><button class="back-link" data-nav="players">\u2190 Player ratings</button></div>`);
+  const pl = confirmedSquad().find((p) => p.name === name);
+  const rec = playerRecord(name);
+  const season = db.seasonRatings().find((r) => r.player_name === name);
+  const sub = [pl?.position, pl?.number ? `Shirt ${pl.number}` : "",
+    pl?.loan?.from ? `on loan from ${pl.loan.from}` : ""].filter(Boolean).join(" \u00B7 ");
+
+  wrap.append(el(`
+    <div class="hub-hero">
+      <div class="hub-hero__text">
+        <h1>${esc(name)}${pl?.loan ? ` <span class="squad__loan">Loan</span>` : ""}</h1>
+        <p>${esc(sub || "Named on a team sheet this season")}</p>
+      </div>
+    </div>`));
+
+  if (!rec.games.length) {
+    wrap.append(el(`
+      <div class="empty">
+        <b>Nothing to show yet</b>
+        ${esc(name)} has not appeared in a team sheet this season. The record fills in once they play.
+      </div>`));
+    return wrap;
+  }
+
+  wrap.append(el(`<h2 class="section-title">This season</h2>`));
+  wrap.append(el(`
+    <div class="card">
+      <div class="info-grid info-grid--4">
+        <div class="info"><div class="info__label">Appearances</div><div class="info__value">${rec.games.length}</div></div>
+        <div class="info"><div class="info__label">Started</div><div class="info__value">${rec.starts}</div></div>
+        <div class="info"><div class="info__label">Goals</div><div class="info__value" style="color:var(--gold-400)">${rec.goals}</div></div>
+        <div class="info"><div class="info__label">Fan rating</div><div class="info__value">${season ? season.average : "\u2014"}</div></div>
+      </div>
+    </div>`));
+
+  if (rec.yellows || rec.reds) {
+    wrap.append(el(`<p class="note">${[
+      rec.yellows ? `${rec.yellows} booking${rec.yellows === 1 ? "" : "s"}` : "",
+      rec.reds ? `${rec.reds} sending off` : "",
+    ].filter(Boolean).join(" and ")} this season.</p>`));
+  }
+
+  wrap.append(el(`<h2 class="section-title">Game by game</h2>`));
+  const card = el(`<div class="card ratings-board"></div>`);
+  rec.games.slice().reverse().forEach((g) => {
+    const f = g.fixture;
+    const marks = [
+      g.goals.length ? `${ICON_GOAL} ${g.goals.length}` : "",
+      g.cards.filter((c) => !c.dismissed).length ? ICON_YELLOW : "",
+      g.cards.some((c) => c.dismissed) ? ICON_RED : "",
+      g.sheet && !g.sheet.started ? "sub" : "",
+    ].filter(Boolean).join(" ");
+    card.append(el(`
+      <div class="lb lb--plain">
+        <span class="lb__who">
+          <span class="lb__name">${esc(clubName(f.opponent))}</span>
+          <span class="lb__meta">${esc(fmtDate(f.date, "short"))} \u00B7 ${f.venue === "Home" ? "H" : "A"} ${f.homeScore}-${f.awayScore}${marks ? ` \u00B7 ${marks}` : ""}</span>
+        </span>
+        <span class="lb__avg">${g.rating ? g.rating.average : ""}</span>
+      </div>`));
+  });
+  wrap.append(card);
   return wrap;
 }
 
@@ -2751,19 +2893,16 @@ function viewThread({ id }) {
       wrap.append(el(`<h2 class="section-title">How it went</h2>`));
       wrap.append(ev);
     }
-    /* Only for an away game, and only for someone who said they went. */
-    if (t.fixture.venue === "Away" && t.fixture.team && db.didAttend(t.fixture.id)) {
-      const ask = groundPrompt(t.fixture.team, t.fixture);
-      if (ask) {
-        wrap.append(el(`<h2 class="section-title">You were there</h2>`));
-        wrap.append(ask);
-      }
-    }
-
     const { players } = squadFor(t.fixture);
     if (players.length || db.isAdmin()) {
       wrap.append(el(`<h2 class="section-title">Rate the players</h2>`));
       wrap.append(ratingPanel(t.fixture, { withEvents: false }));
+    }
+
+    /* Below the ratings, never between a supporter and what they came for. */
+    if (t.fixture.venue === "Away" && t.fixture.team && db.didAttend(t.fixture.id)) {
+      const ask = groundPrompt(t.fixture.team, t.fixture);
+      if (ask) wrap.append(ask);
     }
   }
 
@@ -2870,6 +3009,9 @@ function wallCard(p, admin) {
         ${avatarHtml(p.authorName, p.authorId)}
         <span class="post__who">${esc(p.authorName)}</span>
         ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : ""}
+        ${!db.isVolunteer(p.authorId) && db.isContributor(p.authorId)
+          ? `<span class="pill pill--contrib" title="Has added ground or access information for other supporters">Contributor</span>`
+          : ""}
         ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
         <span class="post__when">${esc(relTime(p.createdAt))}</span>
       </div>
@@ -3423,6 +3565,8 @@ function setTheme(theme) {
 async function loadClubInfo() {
   const data = await readJSON("data/clubs.json");
   state.clubInfo = data?.clubs || {}; /* empty just means the club pages show less */
+  const written = await readJSON("data/club-overviews.json");
+  state.overviews = written?.clubs || {};
 }
 
 /* The squad as the club confirmed it. Names on a team sheet are matched back
@@ -3528,6 +3672,13 @@ function wireGlobalClicks() {
     const nav = e.target.closest("[data-nav]");
     if (nav) {
       go(nav.dataset.nav);
+      return;
+    }
+    /* Player names open their profile. Checked before the club handler because
+       a player row can sit inside a card that also carries a club id. */
+    const player = e.target.closest("[data-player]");
+    if (player && player.dataset.player) {
+      go("player", { id: encodeURIComponent(player.dataset.player) });
       return;
     }
     const club = e.target.closest("[data-club]");

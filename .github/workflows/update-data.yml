@@ -5,12 +5,14 @@ name: Update league and podcast data
 # a result comes in, the next run picks it up and the site updates itself.
 on:
   schedule:
-    # Every 20 minutes between 14:00 and 22:00 UTC on Saturdays (match day).
-    - cron: "*/20 14-22 * * 6"
-    # Every 20 minutes between 18:00 and 22:00 UTC Tuesday and Wednesday (midweek games).
-    - cron: "*/20 18-22 * * 2,3"
-    # Twice a day the rest of the week, to catch fixture changes early.
-    - cron: "15 7,19 * * *"
+    # Every 20 minutes between 14:00 and 22:00 UTC, every day. Saturday and
+    # midweek cover most of the season, but three fixtures fall on a Monday or
+    # Friday (Stamford on 31 August, Leighton on 26 March, Banbury on Easter
+    # Monday) and those results used to sit stale until the evening run.
+    # The repository is public, so Actions minutes cost nothing.
+    - cron: "*/20 14-22 * * *"
+    # Early morning, to pick up a fixture change before anyone sets off.
+    - cron: "15 7 * * *"
   workflow_dispatch: # lets an admin refresh on demand from the Actions tab
 
 permissions:

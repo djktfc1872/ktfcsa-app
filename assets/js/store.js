@@ -498,6 +498,16 @@ export const avatarOf = (profileId) => live.avatars[profileId] || null;
 /** True when a profile belongs to a KTFCSA volunteer, so posts can say so. */
 export const isVolunteer = (profileId) => live.admins.has(profileId);
 
+/* Anyone who has filed a ground note, an access report or suggested a pub.
+   Worked out from rows the app has already loaded, so it costs no extra query
+   and no extra column. */
+export function isContributor(profileId) {
+  if (!profileId) return false;
+  return live.ground.some((r) => r.profile_id === profileId)
+    || live.access.some((r) => r.profile_id === profileId)
+    || live.pubs.some((r) => r.profile_id === profileId);
+}
+
 export function setAvatar(emblem) {
   if (!backend) {
     onError("Choosing a badge needs an account.");
