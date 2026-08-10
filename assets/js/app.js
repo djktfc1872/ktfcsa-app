@@ -447,8 +447,24 @@ function viewFixtures() {
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Fixtures</h1>
-      <p>Kettering Town, ${esc(state.league?.season || "2026/27")}. Updated automatically, cup ties included.</p>
+      <p>Kettering Town FC, ${esc(state.league?.season || "2026/27")}. Every game, cup ties included, kept up to date on its own.</p>
     </div>
+
+    <!-- The first thing anyone sees was a heading and a date range, which said
+         nothing about what this is or who it is for. -->
+    <div class="welcome">
+      <div class="welcome__mark" aria-hidden="true">${ICON.poppy}</div>
+      <div class="welcome__body">
+        <h2>Welcome to the Poppies Fan Companion</h2>
+        <p>Everything for following the Poppies this season, in one place. The fixtures and the
+        table look after themselves, the away day guides tell you what it costs to get in, where
+        to park and where to get a pint, and you can predict the scores, rate the players and
+        have your say after every game.</p>
+        <p class="welcome__sign">Free, no adverts, put together by supporters. Up the Poppies.</p>
+      </div>
+      <button class="welcome__close" type="button" aria-label="Hide this introduction">\u00D7</button>
+    </div>
+
     <div class="season-strip" data-nav="players" role="button" tabindex="0"></div>
     <div class="quick-links">
       <button class="ql" data-nav="predict">
@@ -479,6 +495,20 @@ function viewFixtures() {
   /* Goals, cards and gates were all sat behind one menu item nobody opened.
      The headline numbers now sit on the page everyone lands on, and tapping
      them goes through to the rest. */
+  /* Says what this is to anyone arriving for the first time, then gets out of
+     the way. Someone who comes every Saturday wants the next game, not the
+     welcome mat, so closing it sticks. */
+  const welcome = $(".welcome", wrap);
+  if (welcome) {
+    if (db.read("welcomeHidden", false)) welcome.remove();
+    else {
+      $(".welcome__close", welcome).addEventListener("click", () => {
+        db.write("welcomeHidden", true);
+        welcome.remove();
+      });
+    }
+  }
+
   const strip = $(".season-strip", wrap);
   const stats = seasonStats();
   const rated = db.seasonRatings();

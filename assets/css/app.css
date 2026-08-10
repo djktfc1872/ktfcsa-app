@@ -3811,3 +3811,46 @@ button,
 }
 .older-match summary:hover { border-color: var(--gold-600); color: var(--text); }
 .older-match[open] summary { margin-bottom: 10px; }
+
+/* ----------------------------------------------------------------- welcome */
+
+/* The landing page opened on a heading and a date range, which told a first
+   time visitor nothing. Claret and gold, the club's own colours, so it reads
+   as a welcome rather than a notice. */
+.welcome {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 18px; margin-bottom: var(--gap);
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgba(200, 50, 63, 0.22), transparent 62%),
+    radial-gradient(90% 120% at 100% 100%, rgba(207, 169, 99, 0.14), transparent 60%),
+    var(--surface);
+}
+.welcome__mark { flex: none; margin-top: 2px; }
+.welcome__mark svg { width: 26px; height: 26px; }
+.welcome__body { min-width: 0; }
+.welcome h2 {
+  margin: 0 0 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--text);
+}
+.welcome p { margin: 0; font-size: 13.5px; line-height: 1.65; color: var(--text-2); }
+.welcome__sign {
+  margin-top: 10px !important; padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12.5px !important; color: var(--gold-300) !important; font-weight: 550;
+}
+
+@media (max-width: 420px) {
+  .welcome { padding: 15px; gap: 11px; }
+  .welcome h2 { font-size: 15.5px; }
+}
+
+.welcome { position: relative; }
+.welcome__close {
+  position: absolute; top: 8px; right: 10px;
+  width: 28px; height: 28px; padding: 0;
+  border: 0; border-radius: 50%; background: transparent;
+  color: var(--text-3); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.welcome__close:hover { background: var(--surface-3); color: var(--text); }
+.welcome__body { padding-right: 22px; }
