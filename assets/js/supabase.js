@@ -335,6 +335,15 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
+  /** How many supporters have an account. Profiles are readable by anyone. */
+  async supporterCount() {
+    const { count, error } = await this.sb
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
+    if (error) return null;
+    return count ?? null;
+  }
+
   /* ---------------------------------------------------------- admin panel */
 
   /** Counts for whoever runs the site. Returns nothing to anyone else. */

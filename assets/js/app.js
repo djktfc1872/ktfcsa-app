@@ -932,8 +932,15 @@ function viewSeason() {
 
   const user = db.currentUser();
   if (!user) {
-    wrap.append(el(`<div class="empty"><b>Sign in to track your season</b>Your record follows your account between devices.</div>`));
-    wrap.append(el(`<div class="btn-row" style="justify-content:center"><button class="btn" data-nav="account">Sign in or join</button></div>`));
+    wrap.append(joinPrompt({
+      heading: "Keep a record of your season",
+      blurb: "Tick off every game you go to and the app keeps count for you, home and away.",
+      points: [
+        "Games watched, and the miles you have put in getting there",
+        "Follows your account, so it is the same on your phone and at home",
+        "Nobody sees your record but you",
+      ],
+    }));
     return wrap;
   }
 
@@ -3019,6 +3026,33 @@ function awayEssentials(t) {
   return card;
 }
 
+/* ============================================================ join prompt */
+
+/**
+ * What a signed-out supporter sees on a page that needs an account. Both the
+ * season tracker and the feedback form had their own version of this, and the
+ * feedback one in particular read like a refusal. Saying how many people have
+ * already joined does more than explaining the rule does.
+ */
+function joinPrompt({ heading, blurb, points = [], footer = null }) {
+  const count = db.supporterCount();
+  const card = el(`
+    <div class="join">
+      <div class="join__mark" aria-hidden="true">${ICON.poppy}</div>
+      <h2 class="join__heading">${esc(heading)}</h2>
+      <p class="join__blurb">${esc(blurb)}</p>
+      ${points.length ? `<ul class="join__points">${points.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+      <button class="btn btn--full join__go" data-nav="account">Sign in or join</button>
+      <p class="join__count">${
+        count
+          ? `Join ${count.toLocaleString("en-GB")} Poppies supporters. It takes about thirty seconds and all it needs is a name.`
+          : "It takes about thirty seconds and all it needs is a name."
+      }</p>
+      ${footer ? `<p class="join__footer">${footer}</p>` : ""}
+    </div>`);
+  return card;
+}
+
 /* ================================================================== admin */
 
 /* For whoever runs the site. Hidden from the menus and refuses to render for
@@ -3982,16 +4016,15 @@ function viewFeedback() {
      looked fine and then failed at the database, so they are sent to the email
      address instead, which reaches the same place. */
   if (db.isOnline() && !user) {
-    wrap.append(el(`
-      <div class="card">
-        <p class="note" style="margin-top:0">Feedback needs an account, so we know who to thank and
-          so nobody can send it in somebody else's name. It takes about thirty seconds.</p>
-        <div class="btn-row" style="margin-top:12px">
-          <button class="btn btn--full" data-nav="account">Sign in or join</button>
-        </div>
-        <p class="note">Would rather not? Email
-          <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a> and it reaches the same place.</p>
-      </div>`));
+    wrap.append(joinPrompt({
+      heading: "Tell us what you think",
+      blurb: "Feedback comes through an account so we know who to thank, and so nobody can send it in somebody else's name.",
+      points: [
+        "Goes straight to the volunteers, and nobody else sees it",
+        "Tell us what works, what does not, or what is missing",
+      ],
+      footer: `Would rather not sign up? Email <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a> and it reaches the same people.`,
+    }));
     return wrap;
   }
 

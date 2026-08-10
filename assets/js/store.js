@@ -65,6 +65,7 @@ const live = {
   avatars: {},              // profileId -> emblem key
   admins: new Set(),        // profileIds of KTFCSA volunteers
   tags: {},                 // profileId -> a tag a volunteer handed out
+  supporters: null,         // how many accounts there are, for the join prompts
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
 };
@@ -176,6 +177,7 @@ export async function refresh() {
     live.avatars = people.avatars;
     live.admins = new Set(people.admins);
     live.tags = people.tags || {};
+    live.supporters = await backend.supporterCount();
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
     } catch (err) {
@@ -520,6 +522,9 @@ export const isVolunteer = (profileId) => live.admins.has(profileId);
    and no extra column. */
 /** A tag handed out by a volunteer, which beats anything worked out from rows. */
 export const tagOf = (profileId) => live.tags[profileId] || null;
+
+/** How many supporters have signed up, or null while we do not know yet. */
+export const supporterCount = () => live.supporters;
 
 export const adminOverview = () => (backend ? backend.adminOverview() : Promise.resolve(null));
 export const adminPeople = () => (backend ? backend.adminPeople() : Promise.resolve([]));
