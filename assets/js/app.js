@@ -210,6 +210,7 @@ const state = {
   league: null,
   podcast: null,
   fixtureFilter: "all",
+  playerTab: "rate",  // which part of Players & Stats is showing
   predictTab: "open",
   clubInfo: {},   // background notes and official sites, from data/clubs.json
   overviews: {},  // our own club write-ups, from data/club-overviews.json
@@ -2523,13 +2524,37 @@ function viewPlayers() {
   const wrap = el(`<div></div>`);
   wrap.append(el(`
     <div class="page-head">
-      <h1>Player ratings</h1>
+      <h1>Players &amp; stats</h1>
       <p>Mark the Poppies out of ten after each game. Whoever the league names on the team sheet is who you rate, so loanees and new signings appear the moment they play.</p>
     </div>`));
 
+  /* Everything on one page came to six screens of numbers, which is more than
+     anyone wants to scroll past to find one thing. Same segmented control the
+     fixture list and the prediction league already use. */
+  const TABS = [["rate", "Rate"], ["ratings", "Ratings"], ["stats", "Stats"], ["squad", "Squad"]];
+  const tab = state.playerTab;
+  const tabBar = el(`
+    <div class="segmented" style="margin-bottom:16px" role="group" aria-label="Players and stats">
+      ${TABS.map(([k, label]) => `<button data-pltab="${k}" class="${tab === k ? "is-active" : ""}">${label}</button>`).join("")}
+    </div>`);
+  tabBar.querySelectorAll("[data-pltab]").forEach((b) =>
+    b.addEventListener("click", () => {
+      state.playerTab = b.dataset.pltab;
+      render({ toTop: true });
+    }));
+  wrap.append(tabBar);
+
+  const BLURB = {
+    rate: "Give them a mark out of ten. Everyone gets one vote per player.",
+    ratings: "How the supporters have marked them so far this season.",
+    stats: "Who is scoring, and who keeps finding the referee's notebook.",
+    squad: "The squad as the club confirmed it, with anyone else who has played.",
+  };
+  wrap.append(el(`<p class="tab-blurb">${esc(BLURB[tab] || "")}</p>`));
+
   /* ---- the season so far ---- */
   const season = db.seasonRatings();
-  if (season.length) {
+  if (season.length && tab === "ratings") {
     wrap.append(el(`<h2 class="section-title">This season</h2>`));
 
     /* A three column table was too wide for a phone, so this is a list: the
@@ -2545,7 +2570,7 @@ function viewPlayers() {
       const rank = i > 0 && season[i - 1].average === r.average ? "" : String(i + 1);
       board.append(el(`
         <div class="lb${avg === best && best > 0 ? " lb--top" : ""}">
-          <span class="lb__rank">${rank}</span>
+          <span class="lb__rank lb__rank--${rank && Number(rank) <= 3 ? rank : "plain"}">${rank}</span>
           <span class="lb__who">
             <span class="lb__name" data-player="${esc(r.player_name)}">${esc(r.player_name)}${
               pl?.loan ? ` <span class="squad__loan">Loan</span>` : ""
@@ -2566,16 +2591,31 @@ function viewPlayers() {
 
   /* ---- goals, cards and gates from the league feed ---- */
   const stats = seasonStats();
-  if (stats.played) {
+  if (stats.played && tab === "stats") {
     const byName = Object.fromEntries(confirmedSquad().map((pl) => [pl.name, pl]));
 
     if (stats.scorers.length) {
       wrap.append(el(`<h2 class="section-title">Goals</h2>`));
       const most = stats.scorers[0].goals;
+      const lead = stats.scorers[0];
+      const leadPl = byName[lead.name];
+      wrap.append(el(`
+        <div class="topscorer">
+          <div class="topscorer__ball" aria-hidden="true">\u26BD</div>
+          <div class="topscorer__who">
+            <div class="topscorer__label">Leading scorer</div>
+            <div class="topscorer__name" data-player="${esc(lead.name)}">${esc(lead.name)}</div>
+            <div class="topscorer__sub">${esc(leadPl?.position || "")}${leadPl?.number ? ` \u00B7 shirt ${leadPl.number}` : ""}</div>
+          </div>
+          <div class="topscorer__count">${lead.goals}<span>goal${lead.goals === 1 ? "" : "s"}</span></div>
+        </div>`));
       const card = el(`<div class="card ratings-board"></div>`);
-      stats.scorers.forEach((r, i) => {
+      /* The leading scorer already has the card above. Repeating them straight
+         underneath just reads as a mistake. */
+      stats.scorers.slice(1).forEach((r, i0) => {
+        const i = i0 + 1;
         const pl = byName[r.name];
-        const rank = i > 0 && stats.scorers[i - 1].goals === r.goals ? "" : String(i + 1);
+        const rank = stats.scorers[i - 1].goals === r.goals ? "" : String(i + 1);
         card.append(el(`
           <div class="lb">
             <span class="lb__rank">${rank}</span>
@@ -2587,7 +2627,7 @@ function viewPlayers() {
             <span class="lb__avg">${r.goals}</span>
           </div>`));
       });
-      wrap.append(card);
+      if (stats.scorers.length > 1) wrap.append(card);
     }
 
     if (stats.discipline.length) {
@@ -2625,7 +2665,7 @@ function viewPlayers() {
 
   /* ---- the squad as the club confirmed it ---- */
   const squad = confirmedSquad();
-  if (squad.length) {
+  if (squad.length && tab === "squad") {
     wrap.append(el(`<h2 class="section-title">The squad</h2>`));
     const seasonBy = Object.fromEntries(db.seasonRatings().map((r) => [r.player_name, r]));
     const card = el(`<div class="card"></div>`);
@@ -2658,9 +2698,9 @@ function viewPlayers() {
   }
 
   /* ---- rate a match ---- */
-  const played = ratableFixtures();
-  wrap.append(el(`<h2 class="section-title">${season.length ? "Rate a match" : "Matches"}</h2>`));
+  if (tab !== "rate") return wrap;
 
+  const played = ratableFixtures();
   if (!played.length) {
     wrap.append(el(`
       <div class="empty">
@@ -2670,7 +2710,16 @@ function viewPlayers() {
     return wrap;
   }
 
-  played.slice(0, 6).forEach((f) => wrap.append(ratingPanel(f)));
+  /* One game at a time. Six panels of sixteen players each was the bulk of the
+     scrolling, and nobody is rating a match from five weeks ago. */
+  played.slice(0, 3).forEach((f, i) => {
+    if (i === 0) return wrap.append(ratingPanel(f));
+    const later = el(`<details class="older-match"><summary>${esc(clubName(f.opponent))}, ${esc(fmtDate(f.date, "short"))}</summary></details>`);
+    later.addEventListener("toggle", () => {
+      if (later.open && later.children.length === 1) later.append(ratingPanel(f));
+    }, { once: false });
+    wrap.append(later);
+  });
   return wrap;
 }
 
