@@ -211,10 +211,12 @@ const state = {
   podcast: null,
   fixtureFilter: "all",
   playerTab: "rate",  // which part of Players & Stats is showing
+  poppiesTab: "ground",  // which part of the Kettering Town page is showing
   predictTab: "open",
   clubInfo: {},   // background notes and official sites, from data/clubs.json
   overviews: {},  // our own club write-ups, from data/club-overviews.json
   videos: [],     // the club's YouTube uploads, from data/videos.json
+  facts: null,    // researched club history, from data/club-facts.json
   squad: null,    // the squad the club confirmed, from data/squad.json
 };
 
@@ -2007,6 +2009,22 @@ function viewPoppies() {
     </div>
   </div>`);
 
+  /* Built out with the club's history this page ran to nearly eight screens,
+     which is the same complaint the ratings page had. Same fix. */
+  const PTABS = [["ground", "Ground"], ["story", "Story"], ["records", "Records"], ["fixtures", "Fixtures"]];
+  const ptab = state.poppiesTab;
+  const ptabBar = el(`
+    <div class="segmented" style="margin-bottom:16px" role="group" aria-label="About Kettering Town">
+      ${PTABS.map(([k, l]) => `<button data-potab="${k}" class="${ptab === k ? "is-active" : ""}">${l}</button>`).join("")}
+    </div>`);
+  ptabBar.querySelectorAll("[data-potab]").forEach((b) =>
+    b.addEventListener("click", () => {
+      state.poppiesTab = b.dataset.potab;
+      render({ toTop: true });
+    }));
+  wrap.append(ptabBar);
+
+  if (ptab === "ground") {
   wrap.append(el(`<h2 class="section-title">Latimer Park</h2>`));
   wrap.append(el(`
     <div class="card">
@@ -2037,8 +2055,10 @@ function viewPoppies() {
       </div>
       <div class="hint">Confirmed 2026/27 general admission. Buy on the gate or through the club's ticketing.</div>
     </div>`));
+  }
 
-  if (info?.summary) {
+
+  if (ptab === "story" && info?.summary) {
     wrap.append(el(`<h2 class="section-title">About the club</h2>`));
     const card = el(`<div class="card"><div class="info__value info__value--body">${esc(info.summary)}</div></div>`);
     const links = [];
@@ -2047,6 +2067,77 @@ function viewPoppies() {
     if (links.length) card.append(el(`<div class="btn-row" style="margin-top:14px">${links.join("")}</div>`));
     wrap.append(card);
   }
+
+  /* Researched rather than guessed. Every claim here traces to the club's own
+     site or its Wikipedia article, and the file says which. */
+  const facts = state.facts;
+  if (facts && ptab === "story") {
+    facts.story.forEach((bit) => {
+      wrap.append(el(`<h2 class="section-title">${esc(bit.title)}</h2>`));
+      wrap.append(el(`<div class="card"><p class="club-overview">${esc(bit.text)}</p></div>`));
+    });
+
+  }
+
+  if (facts && ptab === "records") {
+    if (facts.records?.length) {
+      wrap.append(el(`<h2 class="section-title">Club records</h2>`));
+      const card = el(`<div class="card ratings-board"></div>`);
+      facts.records.forEach((r) => {
+        card.append(el(`
+          <div class="lb lb--plain">
+            <span class="lb__who">
+              <span class="lb__name">${esc(r.value)}</span>
+              <span class="lb__meta">${esc([r.label, r.detail].filter(Boolean).join(" \u00B7 "))}</span>
+            </span>
+          </div>`));
+      });
+      wrap.append(card);
+    }
+
+    if (facts.honours?.length) {
+      wrap.append(el(`<h2 class="section-title">Honours</h2>`));
+      const card = el(`<div class="card"></div>`);
+      facts.honours.forEach((h) => {
+        card.append(el(`<div class="events__head">${esc(h.competition)}</div>`));
+        h.wins.forEach((w) => card.append(el(`<div class="honour">${esc(w)}</div>`)));
+      });
+      wrap.append(card);
+    }
+
+    if (facts.managers?.notable?.length) {
+      wrap.append(el(`<h2 class="section-title">In the dugout</h2>`));
+      const card = el(`<div class="card"></div>`);
+      if (facts.managers.note) card.append(el(`<p class="note" style="margin:0 0 10px">${esc(facts.managers.note)}</p>`));
+      facts.managers.notable.forEach((m) => {
+        card.append(el(`
+          <div class="event">
+            <span class="event__name event--ours">${esc(m.name)}</span>
+            <span class="event__min">${esc(m.years)}</span>
+          </div>`));
+      });
+      wrap.append(card);
+    }
+
+    if (facts.officials?.length) {
+      wrap.append(el(`<h2 class="section-title">Who runs the club</h2>`));
+      const card = el(`<div class="card"></div>`);
+      facts.officials.forEach((o) => {
+        card.append(el(`
+          <div class="event">
+            <span class="event__name event--ours">${esc(o.name)}${
+              o.detail ? `<span class="event__note">${esc(o.detail)}</span>` : ""
+            }</span>
+            <span class="event__min">${esc(o.role)}</span>
+          </div>`));
+      });
+      wrap.append(card);
+    }
+
+    wrap.append(el(`<p class="note">Club history from the Kettering Town Wikipedia article and the club's own site.</p>`));
+  }
+
+  if (ptab !== "fixtures") return wrap;
 
   const next = home.find((f) => f.date >= todayISO());
   if (next) {
@@ -4167,6 +4258,7 @@ async function loadClubInfo() {
 async function loadSquad() {
   state.squad = await readJSON("data/squad.json");
   state.videos = (await readJSON("data/videos.json"))?.videos || [];
+  state.facts = await readJSON("data/club-facts.json");
   /* null is fine: the ratings still work from team sheets alone */
 }
 

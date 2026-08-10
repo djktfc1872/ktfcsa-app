@@ -3986,3 +3986,11 @@ button,
 }
 .essential__value { font-size: 13.5px; color: var(--gold-300); text-decoration: none; }
 .essential__value:hover { text-decoration: underline; }
+
+/* Honours read as a list of lines, not a grid. */
+.honour {
+  padding: 4px 0; font-size: 13.5px; color: var(--text-2); line-height: 1.5;
+}
+
+/* A note under a name, rather than run straight on from it. */
+.event__name .event__note { display: block; margin-top: 2px; }

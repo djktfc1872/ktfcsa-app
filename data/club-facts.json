@@ -1,0 +1,149 @@
+{
+  "written": "2026-08-10",
+  "note": "Researched from the club's Wikipedia article and the club's own website, then checked by Danny before it went live. Everything here is sourced, nothing invented.",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Kettering_Town_F.C.",
+    "https://www.ketteringtownfc.com/"
+  ],
+  "founded": 1872,
+  "nickname": "The Poppies",
+  "colours": "Red and black",
+  "story": [
+    {
+      "title": "The first shirt sponsors in England",
+      "text": "In January 1976, under Derek Dougan, Kettering became the first English club to wear a sponsor on its shirts, carrying Kettering Tyres against Bath City on 24 January. The FA ordered the logo removed and threatened a £1,000 fine. Dougan tried shortening it to Kettering T and claimed the T stood for Town. The FA were not amused and it came off, but by June 1977 they had relented and allowed sponsors' logos of up to two and a half square inches. Every shirt in English football since owes something to that afternoon."
+    },
+    {
+      "title": "More FA Cup goals than anyone",
+      "text": "Kettering have scored more goals in the FA Cup than any other club in the competition's history, which takes some doing for a club outside the Football League. The best runs came in 1988-89 and 2008-09, both ending in the fourth round."
+    },
+    {
+      "title": "From Rockingham Road to Latimer Park",
+      "text": "The club played at North Park, then Green Lane, before settling at Rockingham Road in 1897 and staying for over a century. In 2012 they were forced out and spent a season at Steel Park in Corby, moving to Burton Park Wanderers' ground at Latimer Park in Burton Latimer the year after. It is a long way from Rockingham Road, and plenty of supporters will tell you so."
+    }
+  ],
+  "records": [
+    {
+      "label": "Record attendance",
+      "value": "11,536 v Peterborough United",
+      "detail": "FA Cup first round replay, 1958-59"
+    },
+    {
+      "label": "Biggest win",
+      "value": "16-0 v Higham YMCI",
+      "detail": "FA Cup, 1909"
+    },
+    {
+      "label": "Heaviest defeat",
+      "value": "0-13 v Mardy",
+      "detail": "Southern League Division Two, 1911-12"
+    },
+    {
+      "label": "Most goals",
+      "value": "Roy Clayton, 171",
+      "detail": "1972 to 1981"
+    },
+    {
+      "label": "Most appearances",
+      "value": "Roger Ashby",
+      "detail": ""
+    },
+    {
+      "label": "Best FA Cup run",
+      "value": "Fourth round",
+      "detail": "1988-89 and 2008-09"
+    },
+    {
+      "label": "Best FA Trophy run",
+      "value": "Finalists",
+      "detail": "1978-79 and 1999-2000"
+    },
+    {
+      "label": "Record fee received",
+      "value": "£150,000",
+      "detail": "Andy Hunt to Newcastle United, 1991"
+    },
+    {
+      "label": "Record fee paid",
+      "value": "£25,000",
+      "detail": "Carl Alford from Macclesfield Town, 1994"
+    }
+  ],
+  "honours": [
+    {
+      "competition": "Conference North",
+      "wins": [
+        "Champions 2007-08"
+      ]
+    },
+    {
+      "competition": "Conference League Cup",
+      "wins": [
+        "Winners 1986-87"
+      ]
+    },
+    {
+      "competition": "Southern League",
+      "wins": [
+        "Champions 1927-28, 1956-57, 1972-73, 2001-02",
+        "Premier Division Central champions 2018-19",
+        "Division One champions 1960-61",
+        "Division One Central champions 2014-15",
+        "Division One North champions 1971-72",
+        "Eastern Division champions 1927-28, 1928-29",
+        "League Cup winners 1974-75"
+      ]
+    },
+    {
+      "competition": "Midland League",
+      "wins": [
+        "Champions 1895-96, 1899-1900"
+      ]
+    },
+    {
+      "competition": "United Counties League",
+      "wins": [
+        "Champions 1904-05, 1938-39"
+      ]
+    },
+    {
+      "competition": "Northamptonshire Senior Cup",
+      "wins": [
+        "Winners eleven times, from 1883-84 to 1946-47"
+      ]
+    }
+  ],
+  "managers": {
+    "note": "A few names supporters elsewhere will recognise, from a list going back to 1956.",
+    "notable": [
+      {
+        "name": "Tommy Lawton",
+        "years": "1956-57 and 1963-64"
+      },
+      {
+        "name": "Ron Atkinson",
+        "years": "1971-74"
+      },
+      {
+        "name": "Derek Dougan",
+        "years": "1975-77"
+      },
+      {
+        "name": "Paul Gascoigne",
+        "years": "2005"
+      }
+    ]
+  },
+  "officials": [
+    {
+      "role": "Chairman and owner",
+      "name": "Nadim 'George' Akhtar"
+    },
+    {
+      "role": "Interim managers",
+      "name": "Nick Green and David Bridgewater",
+      "detail": "In charge since Liam McDonald stepped down on 6 August 2026",
+      "confirmed": "Danny, 10 August 2026"
+    }
+  ]
+}
