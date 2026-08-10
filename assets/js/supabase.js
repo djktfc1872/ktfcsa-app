@@ -502,7 +502,7 @@ function toRow(name, r, profile) {
   /* Column names here are the database's, not the app's. Sending replyTo
      instead of reply_to made PostgREST reject every wall post, reply or not,
      and the supporter was told the feature was not switched on. */
-  if (name === "wall") return { ...base, text: r.text, thread: r.thread || null, reply_to: r.reply_to || null };
+  if (name === "wall") return { ...base, text: r.text, thread: r.thread || null, reply_to: r.replyTo || null };
   if (name === "poll") return { ...base, question: r.question, options: r.options.map((o) => o.label) };
   return base;
 }
@@ -536,7 +536,7 @@ function fromRow(name, row) {
   }
   if (name === "wall") {
     return { ...base, text: row.text, thread: row.thread || null,
-      reply_to: row.replyTo || null,
+      replyTo: row.reply_to || null,
       likes: row.likes, reports: row.reports, hidden: row.hidden };
   }
   if (name === "poll") {
