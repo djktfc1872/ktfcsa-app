@@ -18,19 +18,21 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8750
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
-# Kept in step with _headers so a policy that breaks the app shows up here
-# rather than after it has gone live.
-CSP = (
-    "default-src 'self'; "
-    "script-src 'self' https://esm.sh; "
-    "style-src 'self' 'unsafe-inline'; "
-    "img-src 'self' data: https:; "
-    "media-src 'self' https:; "
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co "
-    "https://esm.sh https://anchor.fm https://*.cloudfront.net; "
-    "font-src 'self'; manifest-src 'self'; worker-src 'self'; "
-    "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-)
+# Read straight out of _headers rather than kept in step by hand. The two had
+# already drifted once: _headers gained frame-src for the YouTube embed and this
+# copy did not, so the embed worked locally and would have been blocked live.
+def _csp():
+    headers = ROOT / "_headers"
+    if not headers.exists():
+        return "default-src 'self'"
+    for line in headers.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("Content-Security-Policy:"):
+            return line.split(":", 1)[1].strip()
+    return "default-src 'self'"
+
+
+CSP = _csp()
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):

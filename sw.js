@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v35";
+const CACHE = "ktfcsa-v38";
 
 const SHELL = [
   "./",
@@ -60,18 +60,9 @@ self.addEventListener("fetch", (e) => {
 
   const url = new URL(request.url);
 
-  /* Versioned third party modules. The URL carries the version, so a cached
-     copy can never be out of date. */
-  const versionedLibrary =
-    (url.hostname === "esm.sh" || url.hostname === "www.gstatic.com") &&
-    /@\d|\/firebasejs\//.test(url.pathname);
-
-  if (versionedLibrary) {
-    e.respondWith(
-      caches.match(request).then((hit) => hit || fetch(request).then((res) => save(request, res)))
-    );
-    return;
-  }
+  /* Nothing third party is loaded any more: the Supabase SDK and Leaflet are
+     both served from assets/vendor, so they follow the ordinary rules below.
+     The Content-Security-Policy no longer permits scripts from anywhere else. */
 
   /* Anything else off-site, including Supabase, is left alone. */
   if (url.origin !== location.origin) return;

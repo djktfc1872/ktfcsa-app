@@ -6,7 +6,11 @@
 
 import { CONFIG } from "./config.js";
 
-const SDK = "https://esm.sh/@supabase/supabase-js@2.45.4";
+/* Vendored rather than fetched from esm.sh at runtime. A CDN serving the code
+   that handles sign-in is a third party with execution on the page, and pinning
+   a version does not help if the CDN itself is compromised. Same reasoning as
+   Leaflet next door. Update by re-downloading, not by editing. */
+const SDK = "../vendor/supabase.mjs";
 
 /* Board name used by the app -> table name in Postgres. */
 export const TABLES = {

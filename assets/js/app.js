@@ -214,6 +214,7 @@ const state = {
   predictTab: "open",
   clubInfo: {},   // background notes and official sites, from data/clubs.json
   overviews: {},  // our own club write-ups, from data/club-overviews.json
+  videos: [],     // the club's YouTube uploads, from data/videos.json
   squad: null,    // the squad the club confirmed, from data/squad.json
 };
 
@@ -252,15 +253,16 @@ const nextFixture = () => {
 const ROUTES = {
   fixtures: { label: "Fixtures", icon: "⚽", nav: "tab", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
-  predict: { label: "Prediction League", icon: "🎯", nav: "more", group: "Matchday", render: viewPredict },
+  predict: { label: "Prediction League", short: "Predict", icon: "🎯", nav: "tab", group: "Matchday", render: viewPredict },
   players: { label: "Players & Stats", icon: "⭐", nav: "more", group: "Matchday", render: viewPlayers },
 
-  travel: { label: "Travel", icon: "🚌", nav: "tab", group: "Away days", render: viewTravel },
+  travel: { label: "Travel", icon: "🚌", nav: "more", group: "Away days", render: viewTravel },
   clubs: { label: "Away Guide", icon: "📖", nav: "more", group: "Away days", render: viewClubs },
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
 
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
+  videos: { label: "Club Videos", icon: "📺", nav: "more", group: "Supporters", render: viewVideos },
   poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", group: "Supporters", render: viewPoppies },
 
   season: { label: "My Season", icon: "📈", nav: "more", group: "You", render: viewSeason },
@@ -316,7 +318,7 @@ function renderNav() {
       .map(([key, r]) => `
         <button class="${state.view === key ? "is-active" : ""}" data-nav="${key}"
                 aria-current="${state.view === key ? "page" : "false"}">
-          <span class="ic" aria-hidden="true">${r.icon}</span>${r.label}
+          <span class="ic" aria-hidden="true">${r.icon}</span>${r.short || r.label}
         </button>`)
       .join("") +
     `<button class="${onMore ? "is-active" : ""}" data-nav="more"
@@ -444,6 +446,8 @@ function viewFixtures() {
     return f.status !== "played" || f.date >= today;
   });
 
+  const liveNow = liveBanner();
+
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Fixtures</h1>
@@ -465,6 +469,7 @@ function viewFixtures() {
       <button class="welcome__close" type="button" aria-label="Hide this introduction">\u00D7</button>
     </div>
 
+    <div class="live-slot"></div>
     <div class="season-strip" data-nav="players" role="button" tabindex="0"></div>
     <div class="quick-links">
       <button class="ql" data-nav="predict">
@@ -580,8 +585,7 @@ function viewFixtures() {
           .map(([k, label]) => `<button data-filter="${k}" class="${filter === k ? "is-active" : ""}">${label}</button>`)
           .join("")}
       </div>
-      <div style="flex:1"></div>
-      <button class="btn btn--sm btn--ghost" data-nav="clubs">Away guide</button>
+      <button class="btn btn--ghost toolbar__guide" data-nav="clubs">📖 Away guide</button>
     </div>`);
   bar.querySelectorAll("[data-filter]").forEach((b) =>
     b.addEventListener("click", () => {
@@ -589,6 +593,8 @@ function viewFixtures() {
       render();
     })
   );
+  if (liveNow) $(".live-slot", wrap).append(liveNow);
+
   wrap.append(bar);
 
   if (!shown.length) {
@@ -2800,10 +2806,35 @@ function viewMatch({ id }) {
     wrap.append(el(`<div class="notice notice--info">This game is ${esc((f.rawStatus || "off").toLowerCase())}.</div>`));
   }
 
+  /* Commentary first when a game is on, because that is what someone opening
+     this page mid match actually wants. */
+  const vids = videosFor(f.id);
+  const commentary = vids.find((v) => v.kind === "commentary");
+  if (commentary) {
+    const ko = kickoffTime(f);
+    const onNow = ko && Date.now() >= ko.getTime() - LIVE_FROM_MS
+      && Date.now() <= ko.getTime() + LIVE_UNTIL_MS;
+    wrap.append(el(`<h2 class="section-title">${onNow ? "Commentary" : "Full commentary"}</h2>`));
+    if (onNow) {
+      wrap.append(el(`<p class="note" style="margin-top:0">Should be live now. The club streams most games, though not every one.</p>`));
+    }
+    wrap.append(videoEmbed(commentary));
+  }
+
   const ev = matchEvents(f);
   if (ev) {
     wrap.append(el(`<h2 class="section-title">How it went</h2>`));
     wrap.append(ev);
+  }
+
+  /* Highlights and interviews for this game, under the report rather than above
+     it, since they land days later. */
+  const extras = vids.filter((v) => v !== commentary);
+  if (extras.length) {
+    wrap.append(el(`<h2 class="section-title">Watch</h2>`));
+    const card = el(`<div class="card vid-list"></div>`);
+    extras.forEach((v) => card.append(videoRow(v)));
+    wrap.append(card);
   }
 
   const { players, source } = squadFor(f);
@@ -2846,6 +2877,137 @@ function viewMatch({ id }) {
   }
   if (links.children.length) wrap.append(links);
 
+  return wrap;
+}
+
+/* ================================================================== videos */
+
+/* The club streams commentary on a match and puts up highlights and interviews
+   afterwards. All of it comes from the channel's public feed, tied to a fixture
+   where the title allows. Nothing here needs an API key. */
+
+const VIDEO_KIND = {
+  commentary: "Commentary",
+  highlights: "Highlights",
+  interview: "Interview",
+  other: "From the club",
+};
+
+const videosFor = (fixtureId) => state.videos.filter((v) => v.fixtureId === fixtureId);
+
+const videoUrl = (v) => `https://www.youtube.com/watch?v=${encodeURIComponent(v.videoId)}`;
+const videoThumb = (v) => `https://i.ytimg.com/vi/${encodeURIComponent(v.videoId)}/mqdefault.jpg`;
+
+/* Commentary is worth pointing at while a game is on. The feed does not say
+   whether a stream is live, so this is a window around kick-off rather than a
+   fact, and it is worded that way. */
+const LIVE_FROM_MS = 30 * 60 * 1000;
+const LIVE_UNTIL_MS = 150 * 60 * 1000;
+
+function liveCommentary() {
+  const now = Date.now();
+  for (const f of fixtures()) {
+    const ko = kickoffTime(f);
+    if (!ko) continue;
+    const t = ko.getTime();
+    if (now < t - LIVE_FROM_MS || now > t + LIVE_UNTIL_MS) continue;
+    const v = videosFor(f.id).find((x) => x.kind === "commentary");
+    if (v) return { fixture: f, video: v };
+  }
+  return null;
+}
+
+/** The banner shown on Fixtures and the Fan Wall while a game is on. */
+function liveBanner() {
+  const live = liveCommentary();
+  if (!live) return null;
+  const node = el(`
+    <a class="live-strip" href="${esc(videoUrl(live.video))}" target="_blank" rel="noopener">
+      <span class="live-strip__dot" aria-hidden="true"></span>
+      <span class="live-strip__text">
+        <b>Commentary should be live now</b>
+        <span>${esc(clubName(live.fixture.opponent))}, on the club's YouTube channel.</span>
+      </span>
+      <span class="live-strip__go" aria-hidden="true">Watch</span>
+    </a>`);
+  return node;
+}
+
+/** An embedded player, used on the match page. */
+function videoEmbed(v) {
+  return el(`
+    <div class="embed">
+      <iframe src="https://www.youtube-nocookie.com/embed/${esc(v.videoId)}"
+        title="${esc(v.title)}" loading="lazy" allowfullscreen
+        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>`);
+}
+
+/** A row in a list of videos: thumbnail, title, what sort it is. */
+function videoRow(v) {
+  return el(`
+    <a class="vid" href="${esc(videoUrl(v))}" target="_blank" rel="noopener">
+      <img class="vid__thumb" src="${esc(videoThumb(v))}" alt="" loading="lazy" width="160" height="90">
+      <span class="vid__text">
+        <span class="vid__kind">${esc(VIDEO_KIND[v.kind] || VIDEO_KIND.other)}</span>
+        <span class="vid__title">${esc(v.title)}</span>
+        <span class="vid__when">${esc(fmtDate(v.published.slice(0, 10), "short"))}</span>
+      </span>
+    </a>`);
+}
+
+function viewVideos() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Club videos</h1>
+      <p>Commentary, highlights and interviews from the Kettering Town FC channel,
+         gathered here and tied to the game they belong to.</p>
+    </div>
+  </div>`);
+
+  if (!state.videos.length) {
+    wrap.append(el(`
+      <div class="empty">
+        <b>Nothing to show yet</b>
+        The club's videos will appear here as they are posted.
+      </div>`));
+    return wrap;
+  }
+
+  const live = liveBanner();
+  if (live) wrap.append(live);
+
+  /* Grouped by fixture where we know it, so commentary, highlights and the
+     interviews from one game sit together. */
+  const byFixture = new Map();
+  const loose = [];
+  state.videos.forEach((v) => {
+    if (!v.fixtureId) return loose.push(v);
+    if (!byFixture.has(v.fixtureId)) byFixture.set(v.fixtureId, []);
+    byFixture.get(v.fixtureId).push(v);
+  });
+
+  const all = fixtures();
+  [...byFixture.entries()]
+    .map(([id, vids]) => ({ fixture: all.find((f) => f.id === id), vids }))
+    .filter((g) => g.fixture)
+    .sort((a, b) => b.fixture.date.localeCompare(a.fixture.date))
+    .forEach(({ fixture, vids }) => {
+      wrap.append(el(`<h2 class="section-title">${esc(clubName(fixture.opponent))}, ${esc(fmtDate(fixture.date, "short"))}</h2>`));
+      const card = el(`<div class="card vid-list"></div>`);
+      vids.forEach((v) => card.append(videoRow(v)));
+      wrap.append(card);
+    });
+
+  if (loose.length) {
+    wrap.append(el(`<h2 class="section-title">Everything else</h2>`));
+    const card = el(`<div class="card vid-list"></div>`);
+    loose.forEach((v) => card.append(videoRow(v)));
+    wrap.append(card);
+  }
+
+  wrap.append(el(`<p class="note">Straight from the club's YouTube channel. Videos are matched to a game by their title, so the odd one may sit under Everything else.</p>`));
   return wrap;
 }
 
@@ -3299,6 +3461,9 @@ function viewWall() {
       <p>Open to every supporter. Keep it civil and it stays open.</p>
     </div>
   </div>`);
+
+  const onAir = liveBanner();
+  if (onAir) wrap.append(onAir);
 
   /* ---- match threads, opened automatically around each fixture ---- */
   const threads = openThreads();
@@ -3955,6 +4120,7 @@ async function loadClubInfo() {
    to this list by the fixture sync, so the app can trust the spellings. */
 async function loadSquad() {
   state.squad = await readJSON("data/squad.json");
+  state.videos = (await readJSON("data/videos.json"))?.videos || [];
   /* null is fine: the ratings still work from team sheets alone */
 }
 
