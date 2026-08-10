@@ -3493,6 +3493,23 @@ function viewFeedback() {
     </div>
   </div>`);
 
+  /* Feedback needs an account now. Anyone signed out used to get a form that
+     looked fine and then failed at the database, so they are sent to the email
+     address instead, which reaches the same place. */
+  if (db.isOnline() && !user) {
+    wrap.append(el(`
+      <div class="card">
+        <p class="note" style="margin-top:0">Feedback needs an account, so we know who to thank and
+          so nobody can send it in somebody else's name. It takes about thirty seconds.</p>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn btn--full" data-nav="account">Sign in or join</button>
+        </div>
+        <p class="note">Would rather not? Email
+          <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a> and it reaches the same place.</p>
+      </div>`));
+    return wrap;
+  }
+
   const form = el(`
     <div class="card">
       <div class="field">

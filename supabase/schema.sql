@@ -439,7 +439,12 @@ create policy "own pub vote" on pub_votes
 -- Anyone, signed in or not, may send feedback. Only the KTFCSA team reads it,
 -- so one supporter can never see another's message.
 drop policy if exists "send feedback" on feedback;
-create policy "send feedback" on feedback for insert with check (true);
+-- Was "with check (true)", which let anyone holding the anon key, and it ships
+-- in the app, write as many rows as they liked and put another supporter's
+-- profile_id on them. Feedback now needs an account and can only be sent as
+-- yourself. Anyone signed out is pointed at the email address instead.
+create policy "send feedback" on feedback
+  for insert with check (auth.uid() is not null and profile_id = auth.uid());
 
 drop policy if exists "volunteers reads feedback" on feedback;
 create policy "volunteers reads feedback" on feedback for select using (is_admin());
