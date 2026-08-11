@@ -3521,16 +3521,26 @@ function matchEvents(fixture) {
       <span class="event__min">${e.minute === null ? "" : `${e.minute}'`}</span>
     </div>`;
 
+  /* Naming the other lot reads better than "for them", and on a results page
+     weeks later it saves working out who they were playing. */
+  const theirs = clubName(fixture.opponent);
+
   if (ev.goals.length) {
     box.append(el(`<div class="events__head">Goals</div>`));
-    ev.goals.forEach((g) => box.append(el(line(ICON_GOAL, g, g.ours ? "" : "for them"))));
+    ev.goals.forEach((g) => box.append(el(line(ICON_GOAL, g, g.ours ? "" : `for ${theirs}`))));
   }
 
   if (ev.cards.length) {
     box.append(el(`<div class="events__head">Cards</div>`));
     ev.cards.forEach((c) => {
       const icon = c.dismissed ? ICON_RED : ICON_YELLOW;
-      const note = c.second ? "second yellow, off" : c.dismissed ? "sent off" : c.ours ? "" : "for them";
+      const note = c.second
+        ? (c.ours ? "second yellow, off" : `${theirs}, second yellow, off`)
+        : c.dismissed
+        ? (c.ours ? "sent off" : `${theirs}, sent off`)
+        : c.ours
+        ? ""
+        : `for ${theirs}`;
       box.append(el(line(icon, c, note)));
     });
   }
