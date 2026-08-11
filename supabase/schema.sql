@@ -375,7 +375,13 @@ create policy "profiles readable" on profiles
 drop policy if exists "own profile update" on profiles;
 create policy "own profile update" on profiles
   for update using (auth.uid() = id)
-  with check (auth.uid() = id and is_admin = (select is_admin from profiles where id = auth.uid()));
+  with check (
+    auth.uid() = id
+    and is_admin = (select is_admin from profiles where id = auth.uid())
+    -- The lion is the association's own mark. The picker only offers it to
+    -- volunteers, but the picker is just JavaScript, so the rule lives here too.
+    and (avatar is distinct from 'lion' or is_admin())
+  );
 
 -- ---- fixtures -------------------------------------------------------------
 -- Read-only to everyone. Only the sync job, which uses the service role key

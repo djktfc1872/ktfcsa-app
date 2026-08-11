@@ -4131,3 +4131,9 @@ button,
   min-width: 62px;
   text-align: center;
 }
+
+/* A drawn poppy and the association lion sit alongside the emoji badges, so
+   they need the same footprint. */
+.emblem svg, .emblem .emblem-img { width: 22px; height: 22px; display: block; margin: 0 auto; }
+.avatar--emblem svg, .avatar--emblem .emblem-img { width: 17px; height: 17px; display: block; }
+.emblem-img { object-fit: contain; }

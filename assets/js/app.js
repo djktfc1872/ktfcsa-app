@@ -3610,18 +3610,51 @@ const toneFor = (name) => {
 
 /* A fixed set the app ships. Nothing is uploaded, so nothing needs hosting or
    moderating. */
+/* A red poppy for a club called the Poppies. The gold rosette that was here
+   before read as a flower of some sort but never as a poppy, and sat next to a
+   red scarf that looked more like one than it did. Drawn rather than picked
+   from the emoji set, so it is the right red on every phone. */
+const POPPY_SVG = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+  <g fill="#c8323f">
+    <ellipse cx="12" cy="6.6" rx="5.1" ry="4.7"/>
+    <ellipse cx="17.4" cy="12" rx="4.7" ry="5.1"/>
+    <ellipse cx="12" cy="17.4" rx="5.1" ry="4.7"/>
+    <ellipse cx="6.6" cy="12" rx="4.7" ry="5.1"/>
+  </g>
+  <circle cx="12" cy="12" r="3.5" fill="#7d111b"/>
+  <circle cx="12" cy="12" r="1.9" fill="#1b1b1f"/>
+</svg>`;
+
+/* The lion from the association's own badge, cut out of the crest so it reads
+   as a gold lion rather than a busy roundel at nineteen pixels. Volunteers
+   only, so it means something. */
+const LION_IMG = `<img class="emblem-img" src="assets/img/lion.png" alt="" width="19" height="19">`;
+
 const EMBLEMS = {
-  poppy: "\u{1F3F5}\u{FE0F}",
+  poppy: POPPY_SVG,
   ball: "\u26BD",
   scarf: "\u{1F9E3}",
+  shirt: "\u{1F455}",
   boots: "\u{1F45F}",
   trophy: "\u{1F3C6}",
   bus: "\u{1F68C}",
+  pint: "\u{1F37A}",
+  ticket: "\u{1F39F}\u{FE0F}",
+  flag: "\u{1F6A9}",
+  drum: "\u{1F941}",
+  star: "\u2B50",
+  lion: LION_IMG,
 };
+
 const EMBLEM_LABEL = {
-  poppy: "Poppy", ball: "Football", scarf: "Scarf",
-  boots: "Boots", trophy: "Trophy", bus: "Coach",
+  poppy: "Poppy", ball: "Football", scarf: "Scarf", shirt: "Shirt",
+  boots: "Boots", trophy: "Trophy", bus: "Coach", pint: "Pint",
+  ticket: "Ticket", flag: "Flag", drum: "Drum", star: "Star",
+  lion: "KTFCSA lion",
 };
+
+/** The lion is the association's own mark, so only volunteers can wear it. */
+const ADMIN_ONLY_EMBLEMS = new Set(["lion"]);
 
 /** One avatar: their badge if they picked one, otherwise initials in colour. */
 function avatarHtml(name, profileId, style = "") {
@@ -4283,6 +4316,7 @@ function viewAccount() {
     const mine = db.avatarOf(user.id);
     row.replaceChildren();
     Object.entries(EMBLEMS).forEach(([key, glyph]) => {
+      if (ADMIN_ONLY_EMBLEMS.has(key) && !db.isAdmin()) return;
       const b = el(`
         <button class="emblem${mine === key ? " is-mine" : ""}" type="button"
           aria-pressed="${mine === key}" title="${esc(EMBLEM_LABEL[key] || key)}">${glyph}</button>`);
