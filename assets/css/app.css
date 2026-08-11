@@ -4143,3 +4143,38 @@ button,
 .event__note--inline {
   font-size: 11px; font-weight: 400; color: var(--text-3);
 }
+
+/* ------------------------------------------------------------- people rows */
+
+/* These used to borrow .event, which is built for match events: a short name
+   and a two character minute. A manager called Thomas Baillie & Scott Machin
+   with "1956-57 and 1963-64" beside him collapsed the name column to a single
+   letter and an ellipsis. Names get the room here, and wrap rather than
+   truncate. */
+.crew {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; padding: 7px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.crew:first-of-type { border-top: 0; }
+.crew__who {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 14.5px; font-weight: 550; color: var(--text);
+  overflow-wrap: anywhere;
+}
+.crew__note {
+  display: block; margin-top: 2px;
+  font-size: 12px; font-weight: 400; line-height: 1.45; color: var(--text-3);
+}
+.crew__tag {
+  font-size: 11px; font-weight: 400; color: var(--text-3);
+}
+.crew__when {
+  flex: 0 0 auto; text-align: right;
+  font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 380px) {
+  .crew { flex-direction: column; gap: 2px; }
+  .crew__when { text-align: left; }
+}

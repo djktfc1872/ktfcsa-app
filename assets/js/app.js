@@ -2132,11 +2132,11 @@ function viewPoppies() {
       if (facts.managers.note) card.append(el(`<p class="note" style="margin:0 0 12px">${esc(facts.managers.note)}</p>`));
       facts.managers.notable.forEach((m) => {
         card.append(el(`
-          <div class="event">
-            <span class="event__name event--ours">${esc(m.name)}${
-              m.detail ? `<span class="event__note">${esc(m.detail)}</span>` : ""
+          <div class="crew">
+            <span class="crew__who">${esc(m.name)}${
+              m.detail ? `<span class="crew__note">${esc(m.detail)}</span>` : ""
             }</span>
-            <span class="event__min">${esc(m.years)}</span>
+            <span class="crew__when">${esc(m.years)}</span>
           </div>`));
       });
       wrap.append(card);
@@ -2152,11 +2152,11 @@ function viewPoppies() {
         facts.managers.history.slice().reverse().forEach((m) => {
           const note = [m.caretaker ? "caretaker" : "", m.joint ? "joint" : ""].filter(Boolean).join(", ");
           inner.append(el(`
-            <div class="event">
-              <span class="event__name event--ours">${esc(m.name)}${
-                note ? ` <span class="event__note--inline">${esc(note)}</span>` : ""
+            <div class="crew">
+              <span class="crew__who">${esc(m.name)}${
+                note ? ` <span class="crew__tag">${esc(note)}</span>` : ""
               }</span>
-              <span class="event__min">${esc(m.years)}</span>
+              <span class="crew__when">${esc(m.years)}</span>
             </div>`));
         });
         all.append(inner);
@@ -2176,11 +2176,11 @@ function viewPoppies() {
         card.append(el(`<div class="events__head">${esc(heading)}</div>`));
         list.forEach((o) => {
           card.append(el(`
-            <div class="event">
-              <span class="event__name event--ours">${esc(o.name)}${
-                o.detail ? `<span class="event__note">${esc(o.detail)}</span>` : ""
+            <div class="crew">
+              <span class="crew__who">${esc(o.name)}${
+                o.detail ? `<span class="crew__note">${esc(o.detail)}</span>` : ""
               }</span>
-              <span class="event__min">${esc(o.role)}</span>
+              <span class="crew__when">${esc(o.role)}</span>
             </div>`));
         });
       };
