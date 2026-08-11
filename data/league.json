@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-11T22:21:57.311Z",
+  "updated": "2026-08-11T23:20:53.467Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -683,6 +683,30 @@
             "name": "Theo Alexandrou",
             "minute": 26,
             "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Luke Pyman",
+            "minute": 34,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Charlie Pattison",
+            "minute": 63,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tolu Ikuyinminu",
+            "minute": 84,
+            "ours": false,
             "type": null,
             "second": false,
             "dismissed": false
