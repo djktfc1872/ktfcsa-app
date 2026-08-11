@@ -2141,21 +2141,29 @@ function viewPoppies() {
       });
       wrap.append(card);
 
-      if (facts.managers.recent?.length) {
-        const recent = el(`
+      /* The full list rather than a slice of it. Newest first, because that is
+         the end people are looking for. */
+      if (facts.managers.history?.length) {
+        const all = el(`
           <details class="older-match">
-            <summary>Every manager since 2015</summary>
+            <summary>All ${facts.managers.history.length} spells in charge, 1956 to now</summary>
           </details>`);
         const inner = el(`<div class="card" style="margin-top:10px"></div>`);
-        facts.managers.recent.slice().reverse().forEach((m) => {
+        facts.managers.history.slice().reverse().forEach((m) => {
+          const note = [m.caretaker ? "caretaker" : "", m.joint ? "joint" : ""].filter(Boolean).join(", ");
           inner.append(el(`
             <div class="event">
-              <span class="event__name event--ours">${esc(m.name)}</span>
+              <span class="event__name event--ours">${esc(m.name)}${
+                note ? ` <span class="event__note--inline">${esc(note)}</span>` : ""
+              }</span>
               <span class="event__min">${esc(m.years)}</span>
             </div>`));
         });
-        recent.append(inner);
-        wrap.append(recent);
+        all.append(inner);
+        wrap.append(all);
+        if (facts.managers.churn) {
+          wrap.append(el(`<p class="note">${esc(facts.managers.churn)}</p>`));
+        }
       }
     }
 
@@ -2176,8 +2184,14 @@ function viewPoppies() {
             </div>`));
         });
       };
-      group("The boardroom", people.board);
       group("Behind the team", people.staff);
+      if (people.staffNote) {
+        card.append(el(`<p class="note" style="margin:8px 0 14px">${esc(people.staffNote)}</p>`));
+      }
+      group("The boardroom", people.board);
+      if (people.boardNote) {
+        card.append(el(`<p class="note" style="margin:8px 0 0">${esc(people.boardNote)}</p>`));
+      }
       wrap.append(card);
     }
 

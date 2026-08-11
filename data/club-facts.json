@@ -126,7 +126,7 @@
     }
   ],
   "managers": {
-    "note": "Fifty three managers are on record since 1956. A few names supporters elsewhere will recognise:",
+    "note": "Fifty three spells in charge since 1956, and six men have had the job more than once. Morell Maison managed it three times. Steve Gammon lasted longest, six years from 1965, which nobody has come close to since.",
     "notable": [
       {
         "name": "Tommy Lawton",
@@ -168,57 +168,266 @@
         "detail": "Thirty nine days in charge"
       }
     ],
-    "recent": [
+    "history": [
       {
-        "name": "Marcus Law",
-        "years": "2015-19"
+        "years": "1956-1957",
+        "name": "Tommy Lawton"
       },
       {
-        "name": "Nicky Eaden",
-        "years": "2019"
+        "years": "1957-1958",
+        "name": "Harry Mather"
       },
       {
-        "name": "Paul Cox",
-        "years": "2019-22"
+        "years": "1958-1961",
+        "name": "Jack Froggatt"
       },
       {
-        "name": "Ian Culverhouse",
-        "years": "2022"
+        "years": "1961-1963",
+        "name": "Wally Akers"
       },
       {
-        "name": "Lee Glover",
-        "years": "2022-23"
+        "years": "1963-1964",
+        "name": "Tommy Lawton"
       },
       {
-        "name": "Andy Leese",
-        "years": "2023-24"
+        "years": "1964-1965",
+        "name": "Dick White"
       },
       {
-        "name": "Jim LeMesurier",
-        "years": "2023-24"
+        "years": "1965",
+        "name": "George Swindin"
       },
       {
-        "name": "Richard Lavery",
-        "years": "2024-25"
+        "years": "1965-1971",
+        "name": "Steve Gammon"
       },
       {
-        "name": "Simon Hollyhead",
-        "years": "2025"
+        "years": "1971-1974",
+        "name": "Ron Atkinson"
       },
       {
-        "name": "Liam McDonald",
-        "years": "2025-26"
+        "years": "1974-1975",
+        "name": "Geoff Vowden"
       },
       {
-        "name": "Nick Green",
-        "years": "2026-"
+        "years": "1975-1977",
+        "name": "Derek Dougan"
+      },
+      {
+        "years": "1977-1979",
+        "name": "Mick Jones"
+      },
+      {
+        "years": "1979-1982",
+        "name": "Colin Clarke"
+      },
+      {
+        "years": "1983-1986",
+        "name": "David Needham"
+      },
+      {
+        "years": "1986-1988",
+        "name": "Alan Buckley"
+      },
+      {
+        "years": "1988-1992",
+        "name": "Peter Morris"
+      },
+      {
+        "years": "1992",
+        "name": "Dave Cusack"
+      },
+      {
+        "years": "1992-1995",
+        "name": "Graham Carr"
+      },
+      {
+        "years": "1995-1996",
+        "name": "Gary Johnson"
+      },
+      {
+        "years": "1996-1998",
+        "name": "Steve Berry"
+      },
+      {
+        "years": "1998-2001",
+        "name": "Peter Morris"
+      },
+      {
+        "years": "2001-2003",
+        "name": "Carl Shutt"
+      },
+      {
+        "years": "2003",
+        "name": "Domenico Genovese"
+      },
+      {
+        "years": "2003",
+        "name": "Nick Platnauer",
+        "caretaker": true
+      },
+      {
+        "years": "2003-2005",
+        "name": "Kevin Wilson"
+      },
+      {
+        "years": "2005",
+        "name": "Paul Gascoigne"
+      },
+      {
+        "years": "2005-2006",
+        "name": "Kevin Wilson"
+      },
+      {
+        "years": "2006-2007",
+        "name": "Morell Maison"
+      },
+      {
+        "years": "2007",
+        "name": "Graham Westley",
+        "caretaker": true
+      },
+      {
+        "years": "2007-2009",
+        "name": "Mark Cooper"
+      },
+      {
+        "years": "2009-2010",
+        "name": "Lee Harper"
+      },
+      {
+        "years": "2010",
+        "name": "Morell Maison",
+        "caretaker": true
+      },
+      {
+        "years": "2010-2011",
+        "name": "Marcus Law"
+      },
+      {
+        "years": "2011",
+        "name": "Morell Maison"
+      },
+      {
+        "years": "2011-2012",
+        "name": "Mark Stimson"
+      },
+      {
+        "years": "2012",
+        "name": "Mark Cooper"
+      },
+      {
+        "years": "2012",
+        "name": "Ashley Westwood"
+      },
+      {
+        "years": "2012",
+        "name": "John Beck"
+      },
+      {
+        "years": "2012-2013",
+        "name": "Alan Doyle",
+        "caretaker": true
+      },
+      {
+        "years": "2013",
+        "name": "Thomas Baillie"
+      },
+      {
+        "years": "2013-2014",
+        "name": "Dean Thomas"
+      },
+      {
+        "years": "2014-2015",
+        "name": "Thomas Baillie & Scott Machin",
+        "joint": true
+      },
+      {
+        "years": "2015-2019",
+        "name": "Marcus Law"
+      },
+      {
+        "years": "2019",
+        "name": "Nicky Eaden"
+      },
+      {
+        "years": "2019-2022",
+        "name": "Paul Cox"
+      },
+      {
+        "years": "2022",
+        "name": "Ian Culverhouse"
+      },
+      {
+        "years": "2022-2023",
+        "name": "Lee Glover"
+      },
+      {
+        "years": "2023-2024",
+        "name": "Andy Leese"
+      },
+      {
+        "years": "2023-2024",
+        "name": "Jim LeMesurier"
+      },
+      {
+        "years": "2024-2025",
+        "name": "Richard Lavery"
+      },
+      {
+        "years": "2025",
+        "name": "Simon Hollyhead"
+      },
+      {
+        "years": "2025-2026",
+        "name": "Liam McDonald"
+      },
+      {
+        "years": "2026",
+        "name": "Nick Green"
       }
-    ]
+    ],
+    "churn": "Eight of those fifty three have come since 2022. Whatever else the last few seasons have been, they have not been settled."
   },
   "officials": {
+    "staff": [
+      {
+        "role": "Manager",
+        "name": "Nick Green"
+      },
+      {
+        "role": "Assistant manager",
+        "name": "David Bridgewater"
+      },
+      {
+        "role": "First team coach",
+        "name": "David Bridgewater"
+      },
+      {
+        "role": "Goalkeeping coach",
+        "name": "Paul White"
+      },
+      {
+        "role": "Physiotherapist",
+        "name": "Michael Hunter"
+      },
+      {
+        "role": "Kit managers",
+        "name": "Malcolm Lewer, Dan Willis and Aaron Lewer"
+      },
+      {
+        "role": "Club doctor",
+        "name": "Dr Clive Shackleton"
+      },
+      {
+        "role": "Head of academy",
+        "name": "Josh McGoldrick"
+      }
+    ],
+    "staffNote": "Nick Green and David Bridgewater took interim charge after Liam McDonald stepped down on 6 August 2026, days before the season started.",
     "board": [
       {
-        "role": "Chairman and owner",
+        "role": "Chairman",
         "name": "Nadim 'George' Akhtar"
       },
       {
@@ -258,33 +467,7 @@
         "name": "Fabian Forde"
       }
     ],
-    "staff": [
-      {
-        "role": "Interim managers",
-        "name": "Nick Green and David Bridgewater",
-        "detail": "In charge since Liam McDonald stepped down on 6 August 2026"
-      },
-      {
-        "role": "Goalkeeping coach",
-        "name": "Paul White"
-      },
-      {
-        "role": "Physiotherapist",
-        "name": "Michael Hunter"
-      },
-      {
-        "role": "Club doctor",
-        "name": "Dr Clive Shackleton"
-      },
-      {
-        "role": "Head of academy",
-        "name": "Josh McGoldrick"
-      },
-      {
-        "role": "Kit managers",
-        "name": "Malcolm Lewer, Dan Willis and Aaron Lewer"
-      }
-    ]
+    "boardNote": "Ten of them, chaired by the owner. Two names here will be familiar from the club's YouTube channel: George Akhtar and Fabian Forde do most of the talking after a game."
   },
   "ground": {
     "name": "Latimer Park",
