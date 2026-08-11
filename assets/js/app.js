@@ -2052,6 +2052,18 @@ function viewPoppies() {
       <div class="hint" style="text-align:center">${esc(KTFC.street)}, ${esc(KTFC.town)}, ${esc(KTFC.postcode)}</div>
     </div>`));
 
+  /* Where the ground actually is catches people out, so it is worth saying
+     plainly rather than leaving them to the postcode. */
+  const gd = state.facts?.ground;
+  if (gd) {
+    const card = el(`<div class="card"></div>`);
+    gd.paragraphs.forEach((t, i) => {
+      card.append(el(`<p class="club-overview"${i ? ` style="margin-top:12px"` : ""}>${esc(t)}</p>`));
+    });
+    if (gd.note) card.append(el(`<p class="hint" style="margin-top:12px">${esc(gd.note)}</p>`));
+    wrap.append(card);
+  }
+
   /* tickets, confirmed from the club's own ticketing rather than estimated */
   wrap.append(el(`<h2 class="section-title">On the gate at Latimer Park</h2>`));
   wrap.append(el(`
@@ -2117,29 +2129,55 @@ function viewPoppies() {
     if (facts.managers?.notable?.length) {
       wrap.append(el(`<h2 class="section-title">In the dugout</h2>`));
       const card = el(`<div class="card"></div>`);
-      if (facts.managers.note) card.append(el(`<p class="note" style="margin:0 0 10px">${esc(facts.managers.note)}</p>`));
+      if (facts.managers.note) card.append(el(`<p class="note" style="margin:0 0 12px">${esc(facts.managers.note)}</p>`));
       facts.managers.notable.forEach((m) => {
         card.append(el(`
           <div class="event">
-            <span class="event__name event--ours">${esc(m.name)}</span>
+            <span class="event__name event--ours">${esc(m.name)}${
+              m.detail ? `<span class="event__note">${esc(m.detail)}</span>` : ""
+            }</span>
             <span class="event__min">${esc(m.years)}</span>
           </div>`));
       });
       wrap.append(card);
+
+      if (facts.managers.recent?.length) {
+        const recent = el(`
+          <details class="older-match">
+            <summary>Every manager since 2015</summary>
+          </details>`);
+        const inner = el(`<div class="card" style="margin-top:10px"></div>`);
+        facts.managers.recent.slice().reverse().forEach((m) => {
+          inner.append(el(`
+            <div class="event">
+              <span class="event__name event--ours">${esc(m.name)}</span>
+              <span class="event__min">${esc(m.years)}</span>
+            </div>`));
+        });
+        recent.append(inner);
+        wrap.append(recent);
+      }
     }
 
-    if (facts.officials?.length) {
+    const people = facts.officials;
+    if (people?.board?.length || people?.staff?.length) {
       wrap.append(el(`<h2 class="section-title">Who runs the club</h2>`));
       const card = el(`<div class="card"></div>`);
-      facts.officials.forEach((o) => {
-        card.append(el(`
-          <div class="event">
-            <span class="event__name event--ours">${esc(o.name)}${
-              o.detail ? `<span class="event__note">${esc(o.detail)}</span>` : ""
-            }</span>
-            <span class="event__min">${esc(o.role)}</span>
-          </div>`));
-      });
+      const group = (heading, list) => {
+        if (!list?.length) return;
+        card.append(el(`<div class="events__head">${esc(heading)}</div>`));
+        list.forEach((o) => {
+          card.append(el(`
+            <div class="event">
+              <span class="event__name event--ours">${esc(o.name)}${
+                o.detail ? `<span class="event__note">${esc(o.detail)}</span>` : ""
+              }</span>
+              <span class="event__min">${esc(o.role)}</span>
+            </div>`));
+        });
+      };
+      group("The boardroom", people.board);
+      group("Behind the team", people.staff);
       wrap.append(card);
     }
 

@@ -15,11 +15,23 @@
     },
     {
       "title": "More FA Cup goals than anyone",
-      "text": "Kettering have scored more goals in the FA Cup than any other club in the competition's history, which takes some doing for a club outside the Football League. The best runs came in 1988-89 and 2008-09, both ending in the fourth round."
+      "text": "Kettering have scored more goals in the FA Cup than any other club in the competition's history, which takes some doing for a club outside the Football League. The best of it came in 1988-89: Dartford in the first round, then Football League Bristol Rovers, then Halifax Town, before a 2-1 defeat at First Division Charlton Athletic in the fourth. The club got that far again in 2008-09."
+    },
+    {
+      "title": "One vote from the Football League",
+      "text": "Four times between the wars the club applied to join the Football League and four times it was turned down, twice receiving a single vote. The closest they came was in the early 1960s, when they polled sixteen votes as the highest-ranked non-League club in the ballot, only five behind Fourth Division Workington. Automatic promotion did not exist yet, so that was the only door in, and it stayed shut."
+    },
+    {
+      "title": "Founder members of the national league",
+      "text": "In 1979 Kettering were among the founder members of the Alliance Premier League, the first single national division at the top of non-League football and the direct ancestor of today's National League. They were runners-up in 1980-81 and again in 1988-89, losing the play-off final 4-2 to AFC Telford United after seeing off Harborough Town on penalties in the semi."
     },
     {
       "title": "From Rockingham Road to Latimer Park",
       "text": "The club played at North Park, then Green Lane, before settling at Rockingham Road in 1897 and staying for over a century. In 2012 they were forced out and spent a season at Steel Park in Corby, moving to Burton Park Wanderers' ground at Latimer Park in Burton Latimer the year after. It is a long way from Rockingham Road, and plenty of supporters will tell you so."
+    },
+    {
+      "title": "Last season",
+      "text": "Kettering reached the play-offs under Liam McDonald, finishing fourth having been close to the relegation places at the halfway point. The season ended with a 3-1 defeat to Real Bedford in the semi-final. McDonald stepped down on 6 August 2026, days before the new campaign started."
     }
   ],
   "records": [
@@ -114,36 +126,174 @@
     }
   ],
   "managers": {
-    "note": "A few names supporters elsewhere will recognise, from a list going back to 1956.",
+    "note": "Fifty three managers are on record since 1956. A few names supporters elsewhere will recognise:",
     "notable": [
       {
         "name": "Tommy Lawton",
-        "years": "1956-57 and 1963-64"
+        "years": "1956-57 and 1963-64",
+        "detail": "England centre forward, 22 goals in 23 caps"
+      },
+      {
+        "name": "Jack Froggatt",
+        "years": "1958-61",
+        "detail": "England international, league title with Portsmouth"
+      },
+      {
+        "name": "George Swindin",
+        "years": "1965",
+        "detail": "Arsenal goalkeeper, later their manager"
       },
       {
         "name": "Ron Atkinson",
-        "years": "1971-74"
+        "years": "1971-74",
+        "detail": "Later Manchester United and Aston Villa"
       },
       {
         "name": "Derek Dougan",
-        "years": "1975-77"
+        "years": "1975-77",
+        "detail": "Put the first sponsor on an English shirt"
+      },
+      {
+        "name": "Alan Buckley",
+        "years": "1986-88"
+      },
+      {
+        "name": "Graham Carr",
+        "years": "1992-95",
+        "detail": "Later a renowned scout for Newcastle United"
       },
       {
         "name": "Paul Gascoigne",
-        "years": "2005"
+        "years": "2005",
+        "detail": "Thirty nine days in charge"
+      }
+    ],
+    "recent": [
+      {
+        "name": "Marcus Law",
+        "years": "2015-19"
+      },
+      {
+        "name": "Nicky Eaden",
+        "years": "2019"
+      },
+      {
+        "name": "Paul Cox",
+        "years": "2019-22"
+      },
+      {
+        "name": "Ian Culverhouse",
+        "years": "2022"
+      },
+      {
+        "name": "Lee Glover",
+        "years": "2022-23"
+      },
+      {
+        "name": "Andy Leese",
+        "years": "2023-24"
+      },
+      {
+        "name": "Jim LeMesurier",
+        "years": "2023-24"
+      },
+      {
+        "name": "Richard Lavery",
+        "years": "2024-25"
+      },
+      {
+        "name": "Simon Hollyhead",
+        "years": "2025"
+      },
+      {
+        "name": "Liam McDonald",
+        "years": "2025-26"
+      },
+      {
+        "name": "Nick Green",
+        "years": "2026-"
       }
     ]
   },
-  "officials": [
-    {
-      "role": "Chairman and owner",
-      "name": "Nadim 'George' Akhtar"
-    },
-    {
-      "role": "Interim managers",
-      "name": "Nick Green and David Bridgewater",
-      "detail": "In charge since Liam McDonald stepped down on 6 August 2026",
-      "confirmed": "Danny, 10 August 2026"
-    }
-  ]
+  "officials": {
+    "board": [
+      {
+        "role": "Chairman and owner",
+        "name": "Nadim 'George' Akhtar"
+      },
+      {
+        "role": "Director",
+        "name": "Nadiya Akhtar"
+      },
+      {
+        "role": "Director",
+        "name": "Naheed Shears"
+      },
+      {
+        "role": "Director",
+        "name": "Rob McGreavey"
+      },
+      {
+        "role": "Director",
+        "name": "Tom Isaacs"
+      },
+      {
+        "role": "Director",
+        "name": "Paula Conde-Sharpe"
+      },
+      {
+        "role": "Director",
+        "name": "Paul Bailey"
+      },
+      {
+        "role": "Director",
+        "name": "Ross Patrick"
+      },
+      {
+        "role": "Director",
+        "name": "Yousef Miah"
+      },
+      {
+        "role": "Director",
+        "name": "Fabian Forde"
+      }
+    ],
+    "staff": [
+      {
+        "role": "Interim managers",
+        "name": "Nick Green and David Bridgewater",
+        "detail": "In charge since Liam McDonald stepped down on 6 August 2026"
+      },
+      {
+        "role": "Goalkeeping coach",
+        "name": "Paul White"
+      },
+      {
+        "role": "Physiotherapist",
+        "name": "Michael Hunter"
+      },
+      {
+        "role": "Club doctor",
+        "name": "Dr Clive Shackleton"
+      },
+      {
+        "role": "Head of academy",
+        "name": "Josh McGoldrick"
+      },
+      {
+        "role": "Kit managers",
+        "name": "Malcolm Lewer, Dan Willis and Aaron Lewer"
+      }
+    ]
+  },
+  "ground": {
+    "name": "Latimer Park",
+    "address": "Polwell Lane, Burton Latimer, Kettering, NN15 5PS",
+    "since": 2013,
+    "paragraphs": [
+      "Latimer Park is not in Kettering. It sits in Burton Latimer, about two and a half miles south east of the town centre and a similar distance from where Rockingham Road used to be, which catches out plenty of first-time visitors. Set the postcode rather than the town.",
+      "The club has been here since 2013, sharing with Burton Park Wanderers, after being forced out of Rockingham Road in 2012 and spending a season at Steel Park in Corby. Rockingham Road had been home since 1897."
+    ],
+    "note": "No official capacity for Latimer Park is published anywhere we can find, so there is no figure here rather than a guess."
+  }
 }
