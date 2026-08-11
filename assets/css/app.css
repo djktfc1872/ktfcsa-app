@@ -4077,3 +4077,57 @@ button,
   font-size: 12.5px; color: var(--text-3);
 }
 .join__footer a { color: var(--gold-300); }
+
+/* ------------------------------------------------------------- fan wall feed */
+
+/* Match threads and polls sit in bounded panels so they read as things to skim
+   past, leaving the feed below plainly the place to talk. */
+.wall-block {
+  padding: 14px; margin-bottom: var(--gap);
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface-2);
+}
+.wall-block__head { margin-bottom: 12px; }
+.wall-block__head h2 {
+  margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--gold-300);
+}
+.wall-block__head span { font-size: 12px; color: var(--text-3); }
+.wall-block .club-row { background: var(--surface); }
+
+.feed-head {
+  display: flex; align-items: baseline; gap: 10px;
+  margin: 26px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.feed-head h2 {
+  margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--text);
+}
+.feed-head span { font-size: 12.5px; color: var(--text-3); }
+
+/* Each conversation is one block in the feed. */
+.feed .post { margin-bottom: 14px; }
+
+/* Nesting: the indent shrinks as it goes deeper so three levels still fit a
+   phone, and the thread line makes the shape readable. */
+.replies { margin: 4px 0 0 14px; }
+.reply .replies { margin-left: 10px; }
+.reply .reply .replies { margin-left: 8px; }
+.reply .reply { background: var(--surface-3); }
+.reply .reply .reply { background: var(--surface-2); }
+
+@media (max-width: 420px) {
+  .replies { margin-left: 9px; }
+  .reply { padding-left: 11px; }
+  .reply .replies, .reply .reply .replies { margin-left: 6px; }
+}
+
+/* The panel is narrower than the page was, and a fixed 62px width broke these
+   mid-word into "REACTI / ON". Size to the text instead. */
+.thread__tag {
+  white-space: nowrap;
+  flex: none;
+  width: auto;
+  min-width: 62px;
+  text-align: center;
+}

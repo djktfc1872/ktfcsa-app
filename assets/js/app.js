@@ -3621,6 +3621,9 @@ function avatarHtml(name, profileId, style = "") {
     title="${esc(name || "")}"${style ? ` style="${style}"` : ""}>${badge || esc(initialsFor(name))}</span>`;
 }
 
+/** How far a conversation can nest. The database enforces the same number. */
+const MAX_REPLY_DEPTH = 3;
+
 /* ============================================================ match threads */
 
 /* A discussion topic opens for every fixture without anyone creating one.
@@ -3754,7 +3757,7 @@ function viewThread({ id }) {
 }
 
 /** A reply: the same post, drawn quieter and tucked under its parent. */
-function replyCard(p, admin) {
+function replyCard(p, admin, depth = 1) {
   const card = el(`
     <div class="reply" ${p.hidden ? 'style="opacity:.5"' : ""}>
       <div class="post__head">
@@ -3768,11 +3771,37 @@ function replyCard(p, admin) {
       </div>
       <div class="post__body">${esc(p.text)}</div>
       <div class="post__actions">
+        ${depth < MAX_REPLY_DEPTH ? `<button class="link-btn" data-act="reply">Reply</button>` : ""}
         <button class="link-btn" data-act="report">Report</button>
         ${admin ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
         ${db.canEdit(p) ? `<button class="link-btn" data-act="del">Delete</button>` : ""}
       </div>
+      <div class="replies"></div>
     </div>`);
+
+  /* Its own answers, then a box to add one. Stops at MAX_REPLY_DEPTH, which
+     the database enforces too, so a stale tab cannot get past it. */
+  const holder = card.querySelector(".replies");
+  db.list("wall")
+    .filter((r) => r.replyTo === p.id && (!r.hidden || admin))
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .forEach((r) => holder.append(replyCard(r, admin, depth + 1)));
+
+  const replyBtn = card.querySelector('[data-act="reply"]');
+  if (replyBtn) {
+    replyBtn.addEventListener("click", () => {
+      const existing = card.querySelector(":scope > .replies > .reply-box");
+      if (existing) {
+        const ta = existing.querySelector("textarea");
+        return ta && ta.focus();
+      }
+      const box = composer(p.thread || null, { replyTo: p.id, onDone: () => box.remove() });
+      box.classList.add("reply-box");
+      holder.append(box);
+      const ta = box.querySelector("textarea");
+      if (ta) ta.focus();
+    });
+  }
 
   const act = (name, fn) => {
     const b = card.querySelector(`[data-act="${name}"]`);
@@ -3851,37 +3880,57 @@ function viewWall() {
   const onAir = liveBanner();
   if (onAir) wrap.append(onAir);
 
-  /* ---- match threads, opened automatically around each fixture ---- */
+  /* Three different things used to run together down one column with nothing
+     but a heading between them, so the wall itself read as an afterthought
+     rather than the place to talk. Match threads and polls are now bounded
+     panels you can skim past, and the feed below is plainly the feed. */
+
   const threads = openThreads();
   if (threads.length) {
-    wrap.append(el(`<h2 class="section-title">Match threads</h2>`));
-    threads.forEach((t) => wrap.append(threadCard(t)));
+    const box = el(`
+      <section class="wall-block">
+        <div class="wall-block__head">
+          <h2>Match threads</h2>
+          <span>Open from five days before a game to five days after</span>
+        </div>
+      </section>`);
+    threads.forEach((t) => box.append(threadCard(t)));
+    wrap.append(box);
   }
 
-  /* ---- polls ---- */
   const polls = db.list("poll");
   if (polls.length || admin) {
-    wrap.append(el(`<h2 class="section-title">Polls</h2>`));
+    const box = el(`
+      <section class="wall-block">
+        <div class="wall-block__head">
+          <h2>Polls</h2>
+          <span>${polls.length ? "Have your say" : "Nothing running just now"}</span>
+        </div>
+      </section>`);
     if (admin) {
-      const b = el(`<button class="btn btn--sm" style="margin-bottom:10px">Create a poll</button>`);
+      const b = el(`<button class="btn btn--sm" style="margin-bottom:12px">Create a poll</button>`);
       b.addEventListener("click", pollForm);
-      wrap.append(b);
+      box.append(b);
     }
-    if (!polls.length) {
-      wrap.append(el(`<div class="empty"><b>No polls running</b>Create one to get supporters talking.</div>`));
-    }
-    polls.forEach((p) => wrap.append(pollCard(p)));
+    polls.forEach((p) => box.append(pollCard(p)));
+    if (polls.length || admin) wrap.append(box);
   }
 
-  /* ---- the open wall, for anything that is not about one game ---- */
-  wrap.append(el(`<h2 class="section-title">Everything else</h2>`));
+  /* ---- the feed ---- */
+  const posts = db.list("wall").filter((p) => !p.thread && !p.replyTo && (!p.hidden || admin));
+  wrap.append(el(`
+    <div class="feed-head">
+      <h2>The wall</h2>
+      <span>${posts.length ? `${posts.length} conversation${posts.length === 1 ? "" : "s"}` : "Anything not about one game"}</span>
+    </div>`));
   wrap.append(composer(null));
 
-  const posts = db.list("wall").filter((p) => !p.thread && !p.replyTo && (!p.hidden || admin));
   if (!posts.length) {
     wrap.append(el(`<div class="empty"><b>Nothing posted yet</b>Get the conversation going.</div>`));
   } else {
-    posts.forEach((p) => wrap.append(wallCard(p, admin)));
+    const feed = el(`<div class="feed"></div>`);
+    posts.forEach((p) => feed.append(wallCard(p, admin)));
+    wrap.append(feed);
   }
 
   return wrap;
@@ -3910,14 +3959,15 @@ function wallCard(p, admin) {
       ${p.replyTo ? "" : `<div class="replies"></div>`}
     </div>`);
 
-  /* Replies hang off the post they answer. One level only, so a phone screen
-     never ends up with a column six indents wide. */
+  /* Replies hang off the post they answer, three deep. Deeper than that and a
+     phone screen turns into a column of slivers, so the Reply button stops
+     appearing and the database refuses it as well. */
   if (!p.replyTo) {
     const holder = card.querySelector(".replies");
     const kids = db.list("wall")
       .filter((r) => r.replyTo === p.id && (!r.hidden || admin))
       .sort((a, b) => a.createdAt - b.createdAt);
-    kids.forEach((r) => holder.append(replyCard(r, admin)));
+    kids.forEach((r) => holder.append(replyCard(r, admin, 1)));
 
     const replyBtn = card.querySelector('[data-act="reply"]');
     if (replyBtn) {

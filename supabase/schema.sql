@@ -750,11 +750,24 @@ create or replace function reply_is_top_level()
 returns trigger
 language plpgsql
 as $$
+declare
+  steps int := 0;
+  cursor_id uuid := new.reply_to;
 begin
-  if new.reply_to is not null
-     and exists (select 1 from wall_posts where id = new.reply_to and reply_to is not null)
-  then
-    raise exception 'Replies only go one level deep';
+  /* One level was too shallow for a real conversation: somebody answering an
+     answer had to start again at the top and the thread lost its shape. Three
+     is deep enough to follow a back and forth and shallow enough that a phone
+     screen does not end up as a column of slivers.
+
+     The loop walks up the chain rather than looking one step back, and carries
+     its own ceiling so a cycle, however it got there, cannot spin forever. */
+  while cursor_id is not null and steps < 10 loop
+    select reply_to into cursor_id from wall_posts where id = cursor_id;
+    steps := steps + 1;
+  end loop;
+
+  if steps >= 3 then
+    raise exception 'Replies only go three deep';
   end if;
   return new;
 end;
