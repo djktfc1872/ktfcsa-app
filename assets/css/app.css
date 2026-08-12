@@ -4178,3 +4178,6 @@ button,
   .crew { flex-direction: column; gap: 2px; }
   .crew__when { text-align: left; }
 }
+
+/* More than one leading scorer: the names stack rather than run together. */
+.topscorer__who .topscorer__name + .topscorer__name { margin-top: 2px; }

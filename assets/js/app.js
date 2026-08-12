@@ -528,7 +528,21 @@ function viewFixtures() {
       const gates = stats.gates;
       const cells = [
         stats.scorers.length
-          ? ["Top scorer", stats.scorers[0].name.split(" ").slice(-1)[0], `${stats.scorers[0].goals} goal${stats.scorers[0].goals === 1 ? "" : "s"}`]
+          ? (() => {
+              /* Surnames only, because the strip is four cells wide on a
+                 phone. Level at the top reads as "Panter & Gyasi", and beyond
+                 two it gives up and counts them. */
+              const most = stats.scorers[0].goals;
+              const tied = stats.scorers.filter((r) => r.goals === most);
+              const surname = (n) => n.split(" ").slice(-1)[0];
+              const label = tied.length === 1
+                ? surname(tied[0].name)
+                : tied.length === 2
+                ? `${surname(tied[0].name)} & ${surname(tied[1].name)}`
+                : `${tied.length} level`;
+              return [tied.length > 1 ? "Top scorers" : "Top scorer", label,
+                `${most} goal${most === 1 ? "" : "s"}`];
+            })()
           : null,
         rated.length
           ? ["Best rated", rated[0].player_name.split(" ").slice(-1)[0], `${rated[0].average} out of 10`]
@@ -2785,25 +2799,42 @@ function viewPlayers() {
     if (stats.scorers.length) {
       wrap.append(el(`<h2 class="section-title">Goals</h2>`));
       const most = stats.scorers[0].goals;
-      const lead = stats.scorers[0];
-      const leadPl = byName[lead.name];
-      wrap.append(el(`
-        <div class="topscorer">
-          <div class="topscorer__ball" aria-hidden="true">\u26BD</div>
-          <div class="topscorer__who">
-            <div class="topscorer__label">Leading scorer</div>
-            <div class="topscorer__name" data-player="${esc(lead.name)}">${esc(lead.name)}</div>
-            <div class="topscorer__sub">${esc(leadPl?.position || "")}${leadPl?.number ? ` \u00B7 shirt ${leadPl.number}` : ""}</div>
-          </div>
-          <div class="topscorer__count">${lead.goals}<span>goal${lead.goals === 1 ? "" : "s"}</span></div>
-        </div>`));
-      const card = el(`<div class="card ratings-board"></div>`);
-      /* The leading scorer already has the card above. Repeating them straight
-         underneath just reads as a mistake. */
-      stats.scorers.slice(1).forEach((r, i0) => {
-        const i = i0 + 1;
+
+      /* Early in a season half the squad is on one goal, so the card has to
+         cope with a tie rather than crowning whoever sorted first. */
+      const leaders = stats.scorers.filter((r) => r.goals === most);
+      const leadCard = el(`<div class="topscorer"></div>`);
+      leadCard.append(el(`<div class="topscorer__ball" aria-hidden="true">\u26BD</div>`));
+
+      const who = el(`<div class="topscorer__who"></div>`);
+      who.append(el(`<div class="topscorer__label">${
+        leaders.length > 1 ? `Leading scorers, level on ${most}` : "Leading scorer"
+      }</div>`));
+      leaders.slice(0, 4).forEach((r) => {
         const pl = byName[r.name];
-        const rank = stats.scorers[i - 1].goals === r.goals ? "" : String(i + 1);
+        who.append(el(`
+          <div class="topscorer__name" data-player="${esc(r.name)}">${esc(r.name)}</div>`));
+        if (leaders.length === 1) {
+          who.append(el(`<div class="topscorer__sub">${esc(pl?.position || "")}${
+            pl?.number ? ` \u00B7 shirt ${pl.number}` : ""
+          }</div>`));
+        }
+      });
+      if (leaders.length > 4) {
+        who.append(el(`<div class="topscorer__sub">and ${leaders.length - 4} more</div>`));
+      }
+      leadCard.append(who);
+      leadCard.append(el(`<div class="topscorer__count">${most}<span>goal${most === 1 ? "" : "s"}</span></div>`));
+      wrap.append(leadCard);
+      const card = el(`<div class="card ratings-board"></div>`);
+      /* Whoever is on the card above does not appear again underneath. Skipping
+         only the first was fine while there was one leader, and duplicated
+         Gyasi the moment two were level. */
+      const rest = stats.scorers.filter((r) => r.goals !== most);
+      rest.forEach((r, i0) => {
+        const i = leaders.length + i0;
+        const pl = byName[r.name];
+        const rank = i0 > 0 && rest[i0 - 1].goals === r.goals ? "" : String(i + 1);
         card.append(el(`
           <div class="lb">
             <span class="lb__rank">${rank}</span>
@@ -2815,7 +2846,7 @@ function viewPlayers() {
             <span class="lb__avg">${r.goals}</span>
           </div>`));
       });
-      if (stats.scorers.length > 1) wrap.append(card);
+      if (rest.length) wrap.append(card);
     }
 
     if (stats.discipline.length) {
