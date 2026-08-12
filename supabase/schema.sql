@@ -847,3 +847,54 @@ where is_admin();
 
 alter view admin_overview set (security_invoker = true);
 grant select on admin_overview to authenticated;
+
+-- ===========================================================================
+-- Email consent
+--
+-- Danny wants to email supporters about the app and about forming the
+-- Supporters' Association. The ICO treats promoting the aims of a not for
+-- profit as direct marketing, so that needs consent rather than an assumption,
+-- and consent has to be a positive act: unticked by default, freely given, and
+-- as easy to withdraw as it was to give.
+--
+-- What is recorded is the answer and the moment it was given, because being
+-- able to show when somebody agreed is the point of keeping it.
+-- ===========================================================================
+
+alter table profiles add column if not exists email_opt_in boolean not null default false;
+alter table profiles add column if not exists email_opt_in_at timestamptz;
+
+comment on column profiles.email_opt_in is
+  'Consent to be emailed about the app and the Supporters Association. Never ads.';
+comment on column profiles.email_opt_in_at is
+  'When consent was last given or withdrawn, so it can be evidenced.';
+
+/* Stamp the moment consent changes, rather than trusting the client to. */
+create or replace function stamp_email_consent()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.email_opt_in is distinct from old.email_opt_in then
+    new.email_opt_in_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_email_consent on profiles;
+create trigger profiles_email_consent
+  before update on profiles
+  for each row execute function stamp_email_consent();
+
+/* A count for the admin panel. Not the addresses: those live in auth.users,
+   which the app has no business reading. */
+create or replace view email_consent_summary as
+select
+  count(*) filter (where email_opt_in)::int      as opted_in,
+  count(*) filter (where not email_opt_in)::int  as opted_out,
+  count(*)::int                                   as total
+from profiles;
+
+alter view email_consent_summary set (security_invoker = true);
+grant select on email_consent_summary to anon, authenticated;

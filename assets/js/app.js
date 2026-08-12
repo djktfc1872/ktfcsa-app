@@ -143,6 +143,8 @@ function footer() {
       <div class="site-footer__meta">
         <span>&copy; ${year} Danny Jordan / Kettering Town FC Supporters' Association</span>
         <span class="site-footer__sep" aria-hidden="true">&middot;</span>
+        <button class="link-btn site-footer__link" data-nav="privacy">Your data</button>
+        <span class="site-footer__sep" aria-hidden="true">&middot;</span>
         <span>Fixtures from the Southern League</span>
         <span class="site-footer__sep" aria-hidden="true">&middot;</span>
         <span>Club notes from Wikipedia</span>
@@ -274,6 +276,7 @@ const ROUTES = {
 
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
+  privacy: { label: "Your data", icon: "🔒", nav: "hidden", render: viewPrivacy },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   admin: { label: "Admin", icon: "🛠️", nav: "hidden", render: viewAdmin },
@@ -3109,6 +3112,75 @@ function awayEssentials(t) {
   return card;
 }
 
+/* =========================================================== privacy notice */
+
+/* Written plainly rather than as a wall of legal text nobody reads. It has to
+   say what is held, why, on what basis, how long, and how to get it back or
+   get rid of it. */
+function viewPrivacy() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Your data</h1>
+      <p>What this site holds about you, why, and how to get rid of it.</p>
+    </div>
+  </div>`);
+
+  const section = (title, body) => {
+    wrap.append(el(`<h2 class="section-title">${esc(title)}</h2>`));
+    const card = el(`<div class="card"></div>`);
+    body.forEach((t, i) => card.append(el(`<p class="club-overview"${i ? ' style="margin-top:12px"' : ""}>${t}</p>`)));
+    wrap.append(card);
+  };
+
+  section("Who runs this", [
+    `This site is run by Danny Jordan for the Kettering Town FC Supporters' Association.
+     If you want anything here changed or deleted, email
+     <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a> and it will be done.`,
+  ]);
+
+  section("What is held", [
+    `<b>If you have not made an account</b>, nothing about you personally. No tracking, no
+     advertising, no analytics following you around. Anything you tick or pick is kept on your own
+     phone and never leaves it.`,
+    `<b>If you have made an account</b>: the name you chose, your email address, and whatever you
+     have posted, predicted, rated or reported. Your email address is held by Supabase, who provide
+     the sign-in, and is never shown to other supporters.`,
+    `Anything you post on the fan wall, any ground or price report, and your prediction league
+     entries are visible to other supporters under the name you chose. Do not put anything in a
+     post you would not want a stranger to read.`,
+  ]);
+
+  section("Why, and on what basis", [
+    `Your account exists so your posts, predictions and ratings follow you between devices. That is
+     the service you asked for by signing up.`,
+    `Emails about the app and about forming the Supporters' Association are sent only to people who
+     ticked the box asking for them. That box is never ticked for you, and unticking it in your
+     account stops them immediately. There are no adverts and nothing is ever sold or passed on.`,
+  ]);
+
+  section("How long", [
+    `For as long as you have an account. Ask for it to be deleted and it goes, along with your
+     posts, ratings and predictions.`,
+  ]);
+
+  section("What you can ask for", [
+    `A copy of everything held about you, a correction, or deletion. Email
+     <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a>. There is no charge and no form to fill
+     in. If you are not happy with how it is handled you can complain to the Information
+     Commissioner's Office at ico.org.uk.`,
+  ]);
+
+  section("Cookies and tracking", [
+    `There are none. No advertising, no analytics, no third party trackers. The site stores a couple
+     of things in your browser to keep you signed in and remember your theme, and that is all.`,
+    `Videos are embedded from YouTube's no-cookie player, which does not set cookies until you press
+     play. Maps and directions open in your own maps app rather than loading anything here.`,
+  ]);
+
+  wrap.append(el(`<p class="note">Last updated 12 August 2026.</p>`));
+  return wrap;
+}
+
 /* ============================================================ join prompt */
 
 /**
@@ -4367,6 +4439,24 @@ function viewAccount() {
 
   /* Badges are a fixed set, so picking one is a tap and nothing is uploaded.
      Tapping the one you already have puts you back to your initials. */
+  /* As easy to withdraw as it was to give, which is the whole point. */
+  const mail = el(`
+    <div class="consent-row">
+      <label class="consent">
+        <input type="checkbox" id="ac-emails"${db.emailOptIn() ? " checked" : ""}>
+        <span>
+          <b>Emails about the app and the Association</b>
+          News about the app and about forming the Supporters' Association. Never adverts, never
+          passed to anybody else.
+        </span>
+      </label>
+    </div>`);
+  $("#ac-emails", mail).addEventListener("change", (e) => {
+    db.setEmailOptIn(e.target.checked);
+    toast(e.target.checked ? "We will keep you posted." : "No more emails.", "good");
+  });
+  idCard.append(mail);
+
   const row = $(".emblem-pick__row", idCard);
   const paintEmblems = () => {
     const mine = db.avatarOf(user.id);
@@ -4560,12 +4650,24 @@ function authPanel() {
         <div class="field"><label for="au-email">Email address</label>
           <input id="au-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
         <div class="field"><label for="au-pass">Password</label>
-          <input id="au-pass" type="password" autocomplete="new-password" placeholder="At least six characters"></div>`));
+          <input id="au-pass" type="password" autocomplete="new-password" placeholder="At least six characters"></div>
+
+        <label class="consent">
+          <input type="checkbox" id="au-emails">
+          <span>
+            <b>Keep me posted by email</b>
+            News about the app and about forming the Supporters' Association. Never adverts, never
+            passed to anybody else, and you can stop it any time from your account.
+          </span>
+        </label>
+        <p class="hint" style="margin-top:10px">Creating an account means we hold your name and email
+          address. <button class="link-btn" data-nav="privacy">What we do with it</button>.</p>`));
       const go = el(`<button class="btn btn--full">Create account</button>`);
       go.addEventListener("click", () =>
         withBusy(go, "Creating account", async () => {
           try {
-            await db.signUp($("#au-email", box).value, $("#au-pass", box).value, $("#au-name", box).value);
+            await db.signUp($("#au-email", box).value, $("#au-pass", box).value, $("#au-name", box).value,
+              { emails: $("#au-emails", box).checked });
             toast("Welcome along.", "good");
             render();
           } catch (err) {

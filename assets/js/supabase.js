@@ -55,7 +55,7 @@ class Backend {
     return this.profile;
   }
 
-  async signUp(email, password, displayName) {
+  async signUp(email, password, displayName, { emails = false } = {}) {
     const { data, error } = await this.sb.auth.signUp({
       email,
       password,
@@ -65,6 +65,12 @@ class Backend {
     if (!data.session) {
       throw new Error("Check your inbox to confirm your address, then sign in.");
     }
+    /* Consent is recorded only if it was actually given. Unticked is a valid
+       answer and stays the default. */
+    if (emails) {
+      await this.sb.from("profiles").update({ email_opt_in: true }).eq("id", data.user.id);
+    }
+
     /* The trigger creates the profile row; give it a moment on a cold start. */
     for (let i = 0; i < 4; i += 1) {
       await this.loadProfile(data.user.id);
@@ -95,15 +101,37 @@ class Backend {
   /* Badges came after the first release. A database without the column must
      still sign people in, so this degrades to nobody having one rather than
      taking the profile query, and with it the whole login, down with it. */
+  /* Email consent rides along here rather than in loadProfile, which must not
+     ask for a column that might not exist yet: that query gates sign-in, and
+     asking it for a missing column once took every account down with it. This
+     one already fails soft. */
   async loadAvatars() {
-    const { data, error } = await this.sb.from("profiles").select("id, avatar, is_admin, tag");
-    if (error) return { avatars: {}, admins: [], tags: {} };
-    const rows = data || [];
+    const { data, error } = await this.sb
+      .from("profiles").select("id, avatar, is_admin, tag, email_opt_in");
+    if (error) {
+      /* Older database without the consent column: ask again without it. */
+      const retry = await this.sb.from("profiles").select("id, avatar, is_admin, tag");
+      if (retry.error) return { avatars: {}, admins: [], tags: {}, optIn: {} };
+      return this.shapePeople(retry.data || []);
+    }
+    return this.shapePeople(data || []);
+  }
+
+  shapePeople(rows) {
     return {
       avatars: Object.fromEntries(rows.filter((r) => r.avatar).map((r) => [r.id, r.avatar])),
       admins: rows.filter((r) => r.is_admin).map((r) => r.id),
       tags: Object.fromEntries(rows.filter((r) => r.tag).map((r) => [r.id, r.tag])),
+      optIn: Object.fromEntries(rows.map((r) => [r.id, !!r.email_opt_in])),
     };
+  }
+
+  /** Turn emails on or off. The trigger stamps when it changed. */
+  async setEmailOptIn(on) {
+    const { error } = await this.sb
+      .from("profiles").update({ email_opt_in: !!on }).eq("id", this.profile.id);
+    if (error) throw new Error(friendly(error));
+    this.profile = { ...this.profile, emailOptIn: !!on };
   }
 
   async setAvatar(emblem) {

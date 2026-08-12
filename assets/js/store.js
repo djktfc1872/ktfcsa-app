@@ -66,6 +66,7 @@ const live = {
   admins: new Set(),        // profileIds of KTFCSA volunteers
   tags: {},                 // profileId -> a tag a volunteer handed out
   supporters: null,         // how many accounts there are, for the join prompts
+  optIn: {},                // profileId -> whether they agreed to emails
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
 };
@@ -177,6 +178,7 @@ export async function refresh() {
     live.avatars = people.avatars;
     live.admins = new Set(people.admins);
     live.tags = people.tags || {};
+    live.optIn = people.optIn || {};
     live.supporters = await backend.supporterCount();
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
@@ -198,7 +200,7 @@ function attempt(promise, fallbackMessage) {
 
 /* ---------------------------------------------------------------- accounts */
 
-export async function signUp(email, password, displayName) {
+export async function signUp(email, password, displayName, options = {}) {
   const name = String(displayName || "").trim().replace(/\s+/g, " ").slice(0, 40);
   if (name.length < 2) throw new Error("Please enter a name of at least two characters.");
   if (!backend) return signInLocal(name);
@@ -525,6 +527,23 @@ export const tagOf = (profileId) => live.tags[profileId] || null;
 
 /** How many supporters have signed up, or null while we do not know yet. */
 export const supporterCount = () => live.supporters;
+
+/** Whether this supporter agreed to be emailed. */
+export const emailOptIn = () => {
+  const me = currentUser();
+  return me ? Boolean(live.optIn[me.id]) : false;
+};
+
+export function setEmailOptIn(on) {
+  if (!backend) {
+    onError("Email settings need an account.");
+    return;
+  }
+  const me = currentUser();
+  if (me) live.optIn = { ...live.optIn, [me.id]: Boolean(on) };
+  onChange();
+  attempt(backend.setEmailOptIn(on).then(refresh), "That setting did not save.");
+}
 
 export const adminOverview = () => (backend ? backend.adminOverview() : Promise.resolve(null));
 export const adminPeople = () => (backend ? backend.adminPeople() : Promise.resolve([]));

@@ -4181,3 +4181,18 @@ button,
 
 /* More than one leading scorer: the names stack rather than run together. */
 .topscorer__who .topscorer__name + .topscorer__name { margin-top: 2px; }
+
+/* ------------------------------------------------------- consent and privacy */
+
+.consent {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px; margin-top: 4px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); cursor: pointer;
+}
+.consent input { flex: none; margin-top: 2px; width: 18px; height: 18px; accent-color: var(--gold-500); }
+.consent span { font-size: 12.5px; line-height: 1.5; color: var(--text-3); }
+.consent b { display: block; margin-bottom: 2px; font-size: 13.5px; font-weight: 600; color: var(--text); }
+.consent-row { margin: 4px 0 14px; }
+
+.site-footer__link { font-size: inherit; color: var(--gold-300); }
