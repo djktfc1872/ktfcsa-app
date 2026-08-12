@@ -40,6 +40,7 @@ const plain = (s) =>
  */
 function kindOf(title) {
   const t = String(title || "");
+  if (UNTITLED.test(t.trim())) return "commentary";
   if (/\binterview\b|\bq&a\b/i.test(t)) return "interview";
   if (t.includes("|")) return "highlights";
   if (/\bvs?\.?\b/i.test(t)) return "commentary";
@@ -71,6 +72,13 @@ function opponentIn(title) {
   return cleaned[ours === 0 ? 1 : 0] || null;
 }
 
+/**
+ * Titles YouTube gives a stream nobody bothered to name. The Leighton
+ * commentary went up as "My Broadcast" and was reported to Danny as no
+ * commentary at all, because it names neither club nor date.
+ */
+const UNTITLED = /^(my broadcast|live stream|untitled|broadcast|live)\b/i;
+
 /** A date written into the title, like "(08/08/2026)", as a timestamp. */
 function dateIn(title) {
   const m = String(title || "").match(/\((\d{1,2})\/(\d{1,2})\/(\d{4})\)/);
@@ -88,6 +96,18 @@ function dateIn(title) {
 function fixtureFor(title, published, fixtures) {
   const opponent = opponentIn(title);
   const dated = dateIn(title);
+
+  /* An unnamed stream says nothing about itself, so the only evidence is when
+     it went up. A tight window around a kick-off is enough: the club is not
+     streaming anything else at ten o'clock on a Tuesday night. */
+  if (UNTITLED.test(String(title || "").trim())) {
+    const when = Date.parse(published);
+    const near = fixtures.filter((f) => {
+      const ko = Date.parse(`${f.date}T${f.kickoff || "15:00"}:00Z`);
+      return when > ko - 60 * 60000 && when < ko + 4 * 60 * 60000;
+    });
+    return near.length === 1 ? near[0].id : null;
+  }
 
   /* An interview often names nobody but carries the date, as in "George Akhtar
      and Fabian Forde Interview (08/08/2026)". A date with a game on it is

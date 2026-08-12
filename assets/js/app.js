@@ -3323,6 +3323,17 @@ const VIDEO_KIND = {
 
 const videosFor = (fixtureId) => state.videos.filter((v) => v.fixtureId === fixtureId);
 
+/* A stream nobody named comes through as "My Broadcast", which tells a
+   supporter nothing. Where we know the game it belongs to, say that instead. */
+const UNTITLED_VIDEO = /^(my broadcast|live stream|untitled|broadcast|live)\b/i;
+
+function videoTitle(v) {
+  const raw = String(v.title || "").trim();
+  if (!UNTITLED_VIDEO.test(raw)) return raw;
+  const f = fixtures().find((x) => x.id === v.fixtureId);
+  return f ? `Commentary: ${clubName(f.opponent)}` : "Match commentary";
+}
+
 const videoUrl = (v) => `https://www.youtube.com/watch?v=${encodeURIComponent(v.videoId)}`;
 const videoThumb = (v) => `https://i.ytimg.com/vi/${encodeURIComponent(v.videoId)}/mqdefault.jpg`;
 
@@ -3366,7 +3377,7 @@ function videoEmbed(v) {
   return el(`
     <div class="embed">
       <iframe src="https://www.youtube-nocookie.com/embed/${esc(v.videoId)}"
-        title="${esc(v.title)}" loading="lazy" allowfullscreen
+        title="${esc(videoTitle(v))}" loading="lazy" allowfullscreen
         allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
         referrerpolicy="strict-origin-when-cross-origin"></iframe>
     </div>`);
@@ -3379,7 +3390,7 @@ function videoRow(v) {
       <img class="vid__thumb" src="${esc(videoThumb(v))}" alt="" loading="lazy" width="160" height="90">
       <span class="vid__text">
         <span class="vid__kind">${esc(VIDEO_KIND[v.kind] || VIDEO_KIND.other)}</span>
-        <span class="vid__title">${esc(v.title)}</span>
+        <span class="vid__title">${esc(videoTitle(v))}</span>
         <span class="vid__when">${esc(fmtDate(v.published.slice(0, 10), "short"))}</span>
       </span>
     </a>`);

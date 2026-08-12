@@ -1,8 +1,22 @@
 {
-  "updated": "2026-08-10T16:51:48.984Z",
+  "updated": "2026-08-12T14:47:15.773Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "OmLkaBXdlqI",
+      "title": "Post Match Interview | Leighton Town 1-1 Kettering Town (12/08/2026)",
+      "published": "2026-08-12T08:55:32+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a19f7ce9ef452b61f421f"
+    },
+    {
+      "videoId": "vGPTM0u0V0Y",
+      "title": "My Broadcast",
+      "published": "2026-08-11T20:39:09+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a19f7ce9ef452b61f421f"
+    },
     {
       "videoId": "R3I4L1js3cs",
       "title": "THE CAMPAIGN BEGINS | Kettering Town 1-0 Alvechurch (08/08/2026) | HIGHLIGHTS",
@@ -75,7 +89,7 @@
     },
     {
       "videoId": "bqUNdIqtZBk",
-      "title": "Kettering Town VS Bedford Town",
+      "title": "Leighton Town vs Kettering Town",
       "published": "2026-04-25T13:56:39+00:00",
       "kind": "commentary",
       "fixtureId": null
