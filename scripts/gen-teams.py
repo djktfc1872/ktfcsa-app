@@ -143,6 +143,24 @@ CORRECTIONS = {
         "priceChecked": "2026-08-11",
         "priceSource": "Bury Town official website",
     },
+    "leamington": {
+        # Checked against the club's own admission prices page for 2026/27 on
+        # 12 August 2026. Adults £16, Over 60s £12, Students £9, Under 18s £6,
+        # Under 12s free, all three pounds less bought online in advance. The
+        # sheet had £14 and £10, and parking at £8 to £10 when it is a fiver.
+        "adultPrice": 16,
+        "concessionPrice": 12,
+        "youthPrice": 6,
+        "youthRange": "12-17",
+        "childPrice": "Free",
+        "childRange": "Under 12",
+        "parkingHourly": "£5",
+        "parkingDaily": "£5 on the day, £3 in advance",
+        "ticketNotes": ("Every price is £1 less bought online before match day. Students £9, "
+                        "and serving Armed Forces get half price with military ID at the turnstile."),
+        "priceChecked": "2026-08-12",
+        "priceSource": "Leamington official website",
+    },
     "leighton-town": {
         # Checked against the club's own admission prices page for 2026/27 on
         # 10 August 2026: Adults £13, Concession £8, 12-17 £4, Under 12 free.

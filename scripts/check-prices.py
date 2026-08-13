@@ -27,11 +27,20 @@ OUT = ROOT / "data" / "price-check.json"
 UA = "Mozilla/5.0 (KTFCSA supporters app; checking published admission prices)"
 PATHS = ["tickets", "admission", "admission-prices", "ticket-prices", "matchday", ""]
 
-# Labels a club might use, mapped to the field we hold.
+# Labels a club might use, mapped to the field we hold. Leamington say "Over
+# 60s" and never use the word concession at all.
 LABELS = [
     ("adultPrice", r"adults?"),
-    ("concessionPrice", r"concessions?|senior citizens?"),
+    ("concessionPrice", r"concessions?|senior citizens?|over\s*60s?"),
 ]
+
+# Pages we know about that nothing links to in a way a script can follow.
+# Leamington's sits at /internal/admission-prices and the home page only offers
+# "Buy Tickets", which goes to a JavaScript ticketing app with no prices in it.
+PRICE_PAGES = {
+    "leamington": "https://leamingtonfc.co.uk/internal/admission-prices",
+    "leighton-town": "https://www.leightontownfc.co.uk/a/admission-prices-202627-season--68349.html",
+}
 
 CTX = ssl.create_default_context()
 
@@ -139,7 +148,10 @@ def main():
 
         seen = {}
         source = None
-        candidates = [urljoin(base.rstrip("/") + "/", p) for p in PATHS]
+        candidates = []
+        if team["id"] in PRICE_PAGES:
+            candidates.append(PRICE_PAGES[team["id"]])
+        candidates += [urljoin(base.rstrip("/") + "/", p) for p in PATHS]
 
         # Then whatever the club links to itself.
         try:
