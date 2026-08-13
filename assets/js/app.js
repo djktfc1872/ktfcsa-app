@@ -2736,7 +2736,7 @@ function viewPlayers() {
   /* Everything on one page came to six screens of numbers, which is more than
      anyone wants to scroll past to find one thing. Same segmented control the
      fixture list and the prediction league already use. */
-  const TABS = [["rate", "Rate"], ["ratings", "Ratings"], ["stats", "Stats"], ["squad", "Squad"]];
+  const TABS = [["rate", "Rate"], ["ratings", "Season Ratings"], ["stats", "Season Stats"], ["squad", "Squad"]];
   const tab = state.playerTab;
   const tabBar = el(`
     <div class="segmented" style="margin-bottom:16px" role="group" aria-label="Players and stats">
