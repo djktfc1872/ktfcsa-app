@@ -380,7 +380,10 @@ create policy "own profile update" on profiles
     and is_admin = (select is_admin from profiles where id = auth.uid())
     -- The lion is the association's own mark. The picker only offers it to
     -- volunteers, but the picker is just JavaScript, so the rule lives here too.
-    and (avatar is distinct from 'lion' or is_admin())
+    /* Badges that assert who somebody is, rather than what they like, are
+       refused here as well as being hidden in the picker. A hidden button is
+       not a control. */
+    and (avatar is null or avatar not in ('lion', 'admin') or is_admin())
   );
 
 -- ---- fixtures -------------------------------------------------------------

@@ -3798,6 +3798,7 @@ const POPPY_SVG = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="
    as a gold lion rather than a busy roundel at nineteen pixels. Volunteers
    only, so it means something. */
 const LION_IMG = `<img class="emblem-img" src="assets/img/lion.png" alt="" width="19" height="19">`;
+const ADMIN_IMG = `<img class="emblem-img" src="assets/img/admin-badge.png" alt="" width="19" height="19">`;
 
 const EMBLEMS = {
   poppy: POPPY_SVG,
@@ -3813,6 +3814,7 @@ const EMBLEMS = {
   drum: "\u{1F941}",
   star: "\u2B50",
   lion: LION_IMG,
+  admin: ADMIN_IMG,
 };
 
 const EMBLEM_LABEL = {
@@ -3820,10 +3822,14 @@ const EMBLEM_LABEL = {
   boots: "Boots", trophy: "Trophy", bus: "Coach", pint: "Pint",
   ticket: "Ticket", flag: "Flag", drum: "Drum", star: "Star",
   lion: "KTFCSA lion",
+  admin: "Admin crest",
 };
 
 /** The lion is the association's own mark, so only volunteers can wear it. */
-const ADMIN_ONLY_EMBLEMS = new Set(["lion"]);
+/* Badges that say something about who you are rather than what you like. The
+   database refuses these to anyone who is not a volunteer, so a hidden button
+   is not the only thing stopping it. */
+const ADMIN_ONLY_EMBLEMS = new Set(["lion", "admin"]);
 
 /** One avatar: their badge if they picked one, otherwise initials in colour. */
 function avatarHtml(name, profileId, style = "") {
