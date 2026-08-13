@@ -4196,3 +4196,17 @@ button,
 .consent-row { margin: 4px 0 14px; }
 
 .site-footer__link { font-size: inherit; color: var(--gold-300); }
+
+/* A single ask, then it stays gone. */
+.nudge {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 15px; margin-bottom: var(--gap);
+  border: 1px solid var(--gold-600); border-radius: var(--r);
+  background: linear-gradient(135deg, rgba(122, 20, 34, 0.3), var(--surface));
+}
+.nudge__mark { flex: none; font-size: 20px; line-height: 1.2; }
+.nudge__mark svg { width: 20px; height: 20px; }
+.nudge__body { flex: 1; min-width: 0; }
+.nudge__body b { display: block; margin-bottom: 3px; font-size: 15px; font-weight: 650; }
+.nudge__body span { font-size: 13px; line-height: 1.55; color: var(--text-3); }
+.nudge__done { margin: 0; font-size: 13.5px; color: var(--text-2); }

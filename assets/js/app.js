@@ -3112,6 +3112,47 @@ function awayEssentials(t) {
   return card;
 }
 
+/* ============================================================ email nudge */
+
+/**
+ * Everyone who joined before the tickbox existed is opted out, which is the
+ * correct default and also means nobody would ever hear about the Association.
+ * So it is worth asking once. Turned down once, it stays down: a nudge that
+ * keeps coming back is nagging, and consent nagged out of somebody is not
+ * worth having.
+ */
+function consentNudge() {
+  const user = db.currentUser();
+  if (!user || !db.isOnline()) return null;
+  if (db.emailOptIn()) return null;
+  if (db.read("nudge:emails", false)) return null;
+
+  const box = el(`
+    <div class="nudge">
+      <div class="nudge__mark" aria-hidden="true">${ICON.poppy}</div>
+      <div class="nudge__body">
+        <b>Want the occasional email?</b>
+        <span>News about the app and about getting the Supporters' Association off the ground.
+          Never adverts, never passed on, and one tap to stop.</span>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn btn--sm" data-yes>Yes, keep me posted</button>
+          <button class="link-btn" data-no>No thanks</button>
+        </div>
+      </div>
+    </div>`);
+
+  box.querySelector("[data-yes]").addEventListener("click", () => {
+    db.setEmailOptIn(true);
+    db.write("nudge:emails", true);
+    box.replaceChildren(el(`<p class="nudge__done">Thanks. You can stop them any time from your account.</p>`));
+  });
+  box.querySelector("[data-no]").addEventListener("click", () => {
+    db.write("nudge:emails", true);
+    box.remove();
+  });
+  return box;
+}
+
 /* =========================================================== privacy notice */
 
 /* Written plainly rather than as a wall of legal text nobody reads. It has to
@@ -4088,6 +4129,9 @@ function viewWall() {
   }
 
   /* ---- the feed ---- */
+  const nudge = consentNudge();
+  if (nudge) wrap.append(nudge);
+
   const posts = db.list("wall").filter((p) => !p.thread && !p.replyTo && (!p.hidden || admin));
   wrap.append(el(`
     <div class="feed-head">
