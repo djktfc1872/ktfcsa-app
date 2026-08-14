@@ -372,6 +372,12 @@ class Backend {
     return count ?? null;
   }
 
+  /** Approve or bin a suggested poll. Volunteers only, enforced in the database. */
+  async setPollStatus(id, status) {
+    const { error } = await this.sb.rpc("set_poll_status", { target: id, new_status: status });
+    if (error) throw new Error(friendly(error));
+  }
+
   /* ---------------------------------------------------------- admin panel */
 
   /** Counts for whoever runs the site. Returns nothing to anyone else. */
@@ -569,7 +575,7 @@ function toRow(name, r, profile) {
      instead of reply_to made PostgREST reject every wall post, reply or not,
      and the supporter was told the feature was not switched on. */
   if (name === "wall") return { ...base, text: r.text, thread: r.thread || null, reply_to: r.replyTo || null };
-  if (name === "poll") return { ...base, question: r.question, options: r.options.map((o) => o.label) };
+  if (name === "poll") return { ...base, question: r.question, options: r.options.map((o) => o.label), status: r.status || "pending" };
   return base;
 }
 
@@ -607,6 +613,7 @@ function fromRow(name, row) {
   }
   if (name === "poll") {
     return { ...base, question: row.question, closed: row.closed,
+      status: row.status || "live",
       options: (row.options || []).map((label) => ({ label, votes: 0 })) };
   }
   return base;

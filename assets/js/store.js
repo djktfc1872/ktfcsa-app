@@ -525,6 +525,15 @@ export const isVolunteer = (profileId) => live.admins.has(profileId);
 /** A tag handed out by a volunteer, which beats anything worked out from rows. */
 export const tagOf = (profileId) => live.tags[profileId] || null;
 
+/** Approve or bin a suggested poll. */
+export function setPollStatus(id, status) {
+  if (!backend) return;
+  const row = (cache.poll || []).find((p) => p.id === id);
+  if (row) row.status = status;
+  onChange();
+  attempt(backend.setPollStatus(id, status).then(refresh), "That did not save.");
+}
+
 /** How many supporters have signed up, or null while we do not know yet. */
 export const supporterCount = () => live.supporters;
 

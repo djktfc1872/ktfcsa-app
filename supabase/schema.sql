@@ -901,3 +901,70 @@ from profiles;
 
 alter view email_consent_summary set (security_invoker = true);
 grant select on email_consent_summary to anon, authenticated;
+
+-- ===========================================================================
+-- Supporter suggested polls
+--
+-- Anybody with an account can put a poll forward, but it does not appear until
+-- a volunteer says so. The gate is here rather than in the app: hiding the
+-- button is not a control.
+-- ===========================================================================
+
+alter table polls add column if not exists status text not null default 'live'
+  check (status in ('pending', 'live', 'rejected'));
+
+comment on column polls.status is
+  'pending until a volunteer approves it. Anything a volunteer creates starts live.';
+
+/* Everything that existed before this column did was made by a volunteer, so
+   it stays live. Only new suggestions arrive pending. */
+update polls set status = 'live' where status is null;
+
+drop policy if exists "polls readable" on polls;
+create policy "polls readable" on polls
+  for select using (
+    status = 'live'
+    or is_admin()
+    or auth.uid() = profile_id   -- you can see your own while it waits
+  );
+
+drop policy if exists "volunteers creates polls" on polls;
+drop policy if exists "suggest a poll" on polls;
+create policy "suggest a poll" on polls
+  for insert with check (
+    auth.uid() = profile_id
+    /* A volunteer's poll goes straight up. Anybody else's has to wait, and
+       cannot set its own status to live on the way in. */
+    and (is_admin() or status = 'pending')
+  );
+
+/**
+ * Approving or rejecting a suggestion. A function rather than an update policy
+ * so a supporter cannot flip their own poll live by patching the row.
+ */
+create or replace function set_poll_status(target uuid, new_status text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can approve a poll';
+  end if;
+  if new_status not in ('pending', 'live', 'rejected') then
+    raise exception 'Unknown status';
+  end if;
+  update polls set status = new_status where id = target;
+end;
+$$;
+
+revoke all on function set_poll_status(uuid, text) from public;
+grant execute on function set_poll_status(uuid, text) to authenticated;
+
+/* How many are waiting, for the admin panel. */
+create or replace view poll_queue_count as
+select count(*)::int as pending from polls where status = 'pending';
+
+alter view poll_queue_count set (security_invoker = true);
+grant select on poll_queue_count to authenticated;

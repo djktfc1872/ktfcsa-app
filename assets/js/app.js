@@ -4144,8 +4144,44 @@ function viewWall() {
     wrap.append(box);
   }
 
-  const polls = db.list("poll");
-  if (polls.length || admin) {
+  const allPolls = db.list("poll");
+  const polls = allPolls.filter((p) => (p.status || "live") === "live");
+  const waiting = allPolls.filter((p) => p.status === "pending");
+
+  /* Suggestions waiting on a volunteer. Only they see this. */
+  if (admin && waiting.length) {
+    const queue = el(`
+      <section class="wall-block wall-block--queue">
+        <div class="wall-block__head">
+          <h2>Waiting for you</h2>
+          <span>${waiting.length} poll${waiting.length === 1 ? "" : "s"} supporters have suggested</span>
+        </div>
+      </section>`);
+    waiting.forEach((p) => {
+      const card = el(`
+        <div class="card suggestion">
+          <div class="suggestion__who">${esc(p.authorName)} suggested</div>
+          <div class="suggestion__q">${esc(p.question)}</div>
+          <ul class="suggestion__opts">${p.options.map((o) => `<li>${esc(o.label)}</li>`).join("")}</ul>
+          <div class="btn-row">
+            <button class="btn btn--sm" data-ok>Put it up</button>
+            <button class="btn btn--sm btn--ghost" data-no>Not this one</button>
+          </div>
+        </div>`);
+      card.querySelector("[data-ok]").addEventListener("click", () => {
+        db.setPollStatus(p.id, "live");
+        toast("Poll is up.", "good");
+      });
+      card.querySelector("[data-no]").addEventListener("click", () => {
+        db.setPollStatus(p.id, "rejected");
+        toast("Turned down.");
+      });
+      queue.append(card);
+    });
+    wrap.append(queue);
+  }
+
+  if (polls.length || db.currentUser()) {
     const box = el(`
       <section class="wall-block">
         <div class="wall-block__head">
@@ -4153,13 +4189,17 @@ function viewWall() {
           <span>${polls.length ? "Have your say" : "Nothing running just now"}</span>
         </div>
       </section>`);
-    if (admin) {
-      const b = el(`<button class="btn btn--sm" style="margin-bottom:12px">Create a poll</button>`);
+    /* Anybody signed in can put one forward. A volunteer's goes straight up,
+       everybody else's waits for one of them to look at it. */
+    if (db.currentUser()) {
+      const b = el(`<button class="btn btn--sm" style="margin-bottom:12px">${
+        admin ? "Create a poll" : "Suggest a poll"
+      }</button>`);
       b.addEventListener("click", pollForm);
       box.append(b);
     }
     polls.forEach((p) => box.append(pollCard(p)));
-    if (polls.length || admin) wrap.append(box);
+    if (polls.length || db.currentUser()) wrap.append(box);
   }
 
   /* ---- the feed ---- */
@@ -4300,16 +4340,19 @@ function pollCard(p) {
 }
 
 function pollForm() {
+  const admin = db.isAdmin();
   const { node, close } = modal(`
-    <h2>Create a poll</h2>
-    <p class="sub">Two to four options works best.</p>
+    <h2>${admin ? "Create a poll" : "Suggest a poll"}</h2>
+    <p class="sub">${admin
+      ? "Two to four options works best."
+      : "Two to four options works best. A volunteer will have a look before it goes up."}</p>
     <div class="field"><label for="pf-q">Question</label>
       <input id="pf-q" maxlength="120" placeholder="Who was your man of the match?"></div>
     ${[1, 2, 3, 4].map((n) => `
       <div class="field"><label for="pf-o${n}">Option ${n}${n > 2 ? " (optional)" : ""}</label>
         <input id="pf-o${n}" maxlength="60"></div>`).join("")}
     <div class="btn-row">
-      <button class="btn btn--full" id="pf-save">Publish poll</button>
+      <button class="btn btn--full" id="pf-save">${admin ? "Publish poll" : "Send it in"}</button>
       <button class="btn btn--ghost" id="pf-cancel">Cancel</button>
     </div>`);
 
@@ -4322,9 +4365,15 @@ function pollForm() {
       .filter(Boolean)
       .map((label) => ({ label, votes: 0 }));
     if (options.length < 2) return toast("Add at least two options.");
-    db.add("poll", { question, options });
+    const limit = db.rateLimit("poll", { max: 3, windowMs: 600000 });
+    if (!limit.ok) return toast(limit.reason, "bad");
+    const check = db.checkPost(`${question} ${options.map((o) => o.label).join(" ")}`,
+      { minLength: 5, maxLength: 400 });
+    if (!check.ok) return toast(check.reason, "bad");
+
+    db.add("poll", { question, options, status: admin ? "live" : "pending" });
     close();
-    toast("Poll published.", "good");
+    toast(admin ? "Poll published." : "Thanks, a volunteer will take a look.", "good");
     render();
   });
 }
