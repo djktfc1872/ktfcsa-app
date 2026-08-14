@@ -68,10 +68,9 @@ WEBSITE_OVERRIDES = {
     "redditch-united": "https://www.redditchutdfc.co.uk/",
     "real-bedford": "https://www.realbedford.com/",
     "stratford-town": "https://stratfordtownfc.co.uk/",
-    # Rushall Olympic: still no working official site. Their Pitchero page
-    # answers but says "Club not live", checked again 10 August 2026, so the
-    # club page falls back to Wikipedia rather than linking somewhere broken.
-    "rushall-olympic": None,
+    # Rushall Olympic do have a site after all, at rofc.co.uk. The Pitchero
+    # page that says "Club not live" had sent me the wrong way.
+    "rushall-olympic": "https://www.rofc.co.uk/",
 }
 
 

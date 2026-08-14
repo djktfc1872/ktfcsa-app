@@ -3506,11 +3506,19 @@ button,
   }
 }
 
-/* A sideways flick inside a table should not drag the page along with it. */
-/* The tables now fit, so nothing inside here needs a sideways drag. Handing
-   vertical swipes to the page means a finger landing on the table scrolls
-   down as expected, instead of the gesture being swallowed. */
-.table-wrap { overscroll-behavior-x: contain; touch-action: pan-y; }
+/* On a desktop the wrapper may need to scroll sideways, so it stays a scroll
+   container there and a sideways flick inside it does not drag the page. */
+.table-wrap { overscroll-behavior-x: contain; }
+
+/* On a phone it must not be one at all. The tables already fit below 560px,
+   but "overflow-x: auto" still makes the browser treat the wrapper as
+   scrollable, and a vertical drag that starts inside a scroll container with
+   nothing to scroll does nothing at all. That is what supporters kept
+   reporting as the page being hard to scroll. touch-action was a patch over
+   it; not creating the container is the fix. */
+@media (max-width: 560px) {
+  .table-wrap { overflow-x: visible; overscroll-behavior-x: auto; }
+}
 
 /* The toggle that puts the missing league columns back on a phone. */
 .cols-toggle {

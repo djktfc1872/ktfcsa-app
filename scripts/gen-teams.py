@@ -143,6 +143,50 @@ CORRECTIONS = {
         "priceChecked": "2026-08-11",
         "priceSource": "Bury Town official website",
     },
+    "anstey-nomads": {
+        # From the club's own account, 13 August 2026: Adults £10,
+        # Concessions £6, Under 18s £3, and junior members in free with a
+        # membership pass. The sheet had £7 concessions and £5 youth.
+        "adultPrice": 10,
+        "concessionPrice": 6,
+        "youthPrice": 3,
+        "youthRange": "Under 18",
+        "ticketNotes": "Junior members get in free with a membership pass.",
+        "priceChecked": "2026-08-13",
+        "priceSource": "Anstey Nomads, via the club's own posts",
+    },
+    "bromsgrove-sporting": {
+        # Checked 13 August 2026. Their page leads with season tickets; the
+        # gate prices are underneath. At the gate: Adult £14, Concessions £11,
+        # Teens £8, Junior £4, under fives free. A pound less online. The sheet
+        # had £12 and £9.
+        "adultPrice": 14,
+        "concessionPrice": 11,
+        "youthPrice": 8,
+        "youthRange": "13-17",
+        "childPrice": 4,
+        "childRange": "5-12 (under 5s free)",
+        "ticketNotes": ("A pound off every band bought online. Cash or card at the turnstile. "
+                        "Teens and juniors must be with an adult, and a carer comes in free."),
+        "priceChecked": "2026-08-13",
+        "priceSource": "Bromsgrove Sporting official website",
+    },
+    "hitchin-town": {
+        # Checked 13 August 2026. Hitchin charge a premium at the gate: £17
+        # adult and £12 concession on the day, against £15 and £10 bought
+        # online. The sheet had £14 and £10. This column is what you pay at the
+        # turnstile, so it takes the dearer set.
+        "adultPrice": 17,
+        "concessionPrice": 12,
+        "youthPrice": 6,
+        "youthRange": "13-19",
+        "childPrice": 4,
+        "childRange": "Under 13, with an adult",
+        "ticketNotes": ("Two pounds cheaper on every band bought online before the game. "
+                        "Concessions are 60+ or students 20+ with ID, and a carer comes in free."),
+        "priceChecked": "2026-08-13",
+        "priceSource": "Hitchin Town official website",
+    },
     "leamington": {
         # Checked against the club's own admission prices page for 2026/27 on
         # 12 August 2026. Adults £16, Over 60s £12, Students £9, Under 18s £6,
@@ -233,6 +277,20 @@ CORRECTIONS = {
         # coordinates already in the sheet, which were right all along, and
         # next door to the MK44 3SB car park.
         "postcode": "MK44 3LW",
+        # Away section prices, which is what a Kettering supporter pays.
+        # Checked 13 August 2026: on the day Adult £14, Concession 60+ £9,
+        # Youth 13-17 £6, Child under 12 £3, each two pounds less in advance.
+        # The sheet had £10 and £7.
+        "adultPrice": 14,
+        "concessionPrice": 9,
+        "youthPrice": 6,
+        "youthRange": "13-17",
+        "childPrice": 3,
+        "childRange": "Under 12",
+        "ticketNotes": ("Away section prices. Two pounds off each band booked in advance: "
+                        "£12 adult, £7 concession, £4 youth, £2 child."),
+        "priceChecked": "2026-08-13",
+        "priceSource": "Real Bedford ticketing",
     },
     "stratford-town": {
         # CV37 9NQ is in Stratford Hathaway, three and a half kilometres from
@@ -248,6 +306,21 @@ CORRECTIONS = {
         "postcode": "WS4 1LJ",
         "lat": 52.6011,
         "lng": -1.9525,
+        # Checked 13 August 2026 against the club's stadium page, which is
+        # where they keep the prices. Adults £14, concessions £10, U18s £6,
+        # U12s £2, each 50p less in advance. Parking £3. The sheet had £13.
+        "adultPrice": 14,
+        "concessionPrice": 10,
+        "youthPrice": 6,
+        "youthRange": "Under 18",
+        "childPrice": 2,
+        "childRange": "Under 12",
+        "parkingHourly": "£3",
+        "parkingDaily": "£3",
+        "ticketNotes": ("Fifty pence off each band bought in advance. Concessions cover over 60s, "
+                        "students with NUS, emergency services, NHS and forces with a Blue Light card."),
+        "priceChecked": "2026-08-13",
+        "priceSource": "Rushall Olympic official website",
     },
 }
 
