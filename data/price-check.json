@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-13T12:38:28+00:00",
+  "checked": "2026-08-14T00:46:03+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -48,6 +48,15 @@
       }
     },
     {
+      "club": "rushall-olympic",
+      "name": "Rushall Olympic",
+      "source": "https://www.rofc.co.uk/club-info/online-tickets",
+      "found": {
+        "adultPrice": 14,
+        "concessionPrice": 10
+      }
+    },
+    {
       "club": "worcester-city",
       "name": "Worcester City",
       "source": "https://worcestercityfc.org/season-tickets/",
@@ -70,7 +79,6 @@
     "racing-club-warwick",
     "real-bedford",
     "redditch-united",
-    "rushall-olympic",
     "stamford",
     "stourbridge",
     "stratford-town"

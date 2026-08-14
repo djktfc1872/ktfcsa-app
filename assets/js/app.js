@@ -1234,7 +1234,9 @@ function viewClub({ id, from }) {
         ${t.ticketNotes ? `<div class="hint" style="margin-top:10px">${esc(t.ticketNotes)}</div>` : ""}
         <div class="hint">${esc(concessionNote(t))}</div>
         <div class="hint">${
-          t.priceChecked
+          t.priceChecked && t.priceSeason
+            ? `The latest ${esc(t.priceSeason)} prices ${esc(t.priceSource || "the club")} has published, read on ${esc(fmtDate(t.priceChecked, "short"))}. They may have gone up since, so take a little extra.`
+            : t.priceChecked
             ? `Checked against ${esc(t.priceSource || "the club's own site")} on ${esc(fmtDate(t.priceChecked, "short"))}.`
             : "Not independently checked. Most clubs at this level do not publish prices anywhere we can read, so treat this as a guide and have a little extra with you."
         }</div>
