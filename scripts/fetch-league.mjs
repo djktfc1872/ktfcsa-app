@@ -214,6 +214,42 @@ function eventsFor(match, isHome) {
   return { goals, cards };
 }
 
+/**
+ * The last five results for every club in the table, as a string like "WWDLW".
+ * One request each, run a few at a time so the league's server is not hammered.
+ */
+async function formByTeam(rows) {
+  const out = {};
+  const ids = rows.map((r) => r.team?.id).filter(Boolean);
+
+  for (let i = 0; i < ids.length; i += 4) {
+    const batch = ids.slice(i, i + 4);
+    await Promise.all(batch.map(async (id) => {
+      try {
+        /* Not 400. The API returns oldest first with no way to sort, and a club
+           with a long enough history fills 400 before it reaches this season:
+           Leiston have 451 and came back with nothing but 2018 to 2026. */
+        const res = await get(`/matches?teamId=${id}&limit=1000`);
+        const played = (res.items || [])
+          .filter((m) => m.date >= SEASON_FROM && m.date <= SEASON_TO)
+          .filter((m) => readStatus(m.status) === "played")
+          .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
+
+        out[id] = played.slice(-5).map((m) => {
+          const home = (m.homeTeam?.id || "") === id;
+          const ours = home ? m.score?.current?.home : m.score?.current?.away;
+          const theirs = home ? m.score?.current?.away : m.score?.current?.home;
+          if (ours == null || theirs == null) return "";
+          return ours > theirs ? "W" : ours < theirs ? "L" : "D";
+        }).join("");
+      } catch {
+        out[id] = ""; /* one club failing must not cost the whole table */
+      }
+    }));
+  }
+  return out;
+}
+
 /** Turn the API's status codes into something we can show a supporter. */
 function readStatus(raw) {
   const s = String(raw || "").toLowerCase();
@@ -226,8 +262,17 @@ function readStatus(raw) {
 async function main() {
   const [tableRes, matchRes] = await Promise.all([
     get(`/competitions/league-table?competitionId=${COMPETITION_ID}`),
-    get(`/matches?teamId=${TEAM_ID}&limit=400`),
+    /* Same reason as the form fetch: 400 is not enough once a club has a few
+       seasons behind it, and there is no way to ask for the newest first. */
+    get(`/matches?teamId=${TEAM_ID}&limit=1000`),
   ]);
+
+  /* Recent form, five games, oldest first so it reads left to right the way a
+     supporter expects. The competition endpoint ignores every date and sort
+     parameter it was offered and always returns 2018 first, so the only way to
+     get current results is to ask club by club. Twenty two small requests, a
+     couple of times a day, which is nothing. */
+  const form = await formByTeam(tableRes.data || []);
 
   const table = (tableRes.data || []).map((row) => ({
     position: row.position,
@@ -244,6 +289,7 @@ async function main() {
     goalDifference: row.total?.goalDifference ?? 0,
     points: row.points ?? 0,
     deduction: (row.deductions || []).reduce((n, d) => n + (d.points || 0), 0),
+    form: form[row.team?.id] || "",
   }));
 
   const fixtures = (matchRes.items || [])

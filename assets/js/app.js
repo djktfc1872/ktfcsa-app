@@ -681,7 +681,7 @@ function viewTable() {
     <div class="table-wrap">
       <table class="league league--full">
         <thead>
-          <tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>GD</th><th>Pts</th></tr>
+          <tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>GD</th><th class="col-form">Form</th><th>Pts</th></tr>
         </thead>
         <tbody>
           ${rows.map((r) => `
@@ -696,6 +696,7 @@ function viewTable() {
               <td>${r.played}</td><td>${r.won}</td><td>${r.drawn}</td><td>${r.lost}</td>
               <td>${r.for}</td><td>${r.against}</td>
               <td>${r.goalDifference > 0 ? "+" : ""}${r.goalDifference}</td>
+              <td class="col-form">${formRun(r.form)}</td>
               <td class="pts">${r.points}</td>
             </tr>`).join("")}
         </tbody>
@@ -2994,6 +2995,13 @@ function viewMatch({ id }) {
     wrap.append(el(`<div class="notice notice--info">This game is ${esc((f.rawStatus || "off").toLowerCase())}.</div>`));
   }
 
+  /* How the other lot have been going, which is the first thing anybody asks. */
+  const theirForm = formFor(f.opponent);
+  if (theirForm) {
+    wrap.append(el(`
+      <p class="opp-form">${esc(clubName(f.opponent))} last ${theirForm.length}: ${formRun(theirForm)}</p>`));
+  }
+
   /* Commentary first when a game is on, because that is what someone opening
      this page mid match actually wants. */
   const vids = videosFor(f.id);
@@ -3422,6 +3430,24 @@ function supporterTag(profileId) {
   }
   return "";
 }
+
+/** Last five results, oldest first, as a row of letters a supporter can read. */
+function formRun(run) {
+  if (!run) return "";
+  return `<span class="form">${[...run].map((r) =>
+    `<span class="form__r form__r--${r.toLowerCase()}" title="${
+      r === "W" ? "Won" : r === "L" ? "Lost" : "Drew"
+    }">${r}</span>`).join("")}</span>`;
+}
+
+/** A club's form from the league table, since that is where the sync puts it. */
+const formFor = (name) => {
+  const row = (state.league?.table || []).find((r) => plainClub(r.name) === plainClub(name));
+  return row?.form || "";
+};
+
+const plainClub = (s) => String(s || "").toLowerCase()
+  .replace(/\b(f\.?c\.?|football club|afc)\b/g, "").replace(/[^a-z0-9]/g, "");
 
 /* ================================================================== videos */
 

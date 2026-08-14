@@ -4218,3 +4218,29 @@ button,
 .nudge__body b { display: block; margin-bottom: 3px; font-size: 15px; font-weight: 650; }
 .nudge__body span { font-size: 13px; line-height: 1.55; color: var(--text-3); }
 .nudge__done { margin: 0; font-size: 13.5px; color: var(--text-2); }
+
+/* --------------------------------------------------------------- form guide */
+
+.form { display: inline-flex; gap: 3px; }
+.form__r {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 17px; height: 17px; border-radius: 4px;
+  font-size: 10px; font-weight: 800; line-height: 1;
+}
+.form__r--w { background: var(--ok, #2e7d4f); color: #fff; }
+.form__r--d { background: var(--surface-3); color: var(--text-2); }
+.form__r--l { background: var(--red-600, #7a1422); color: #fff; }
+
+.opp-form {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 var(--gap); font-size: 13px; color: var(--text-3);
+}
+
+/* Form stays off the table on a phone, in both states. Putting it in the
+   expanded view pushed nine columns past the screen and brought back the
+   sideways scroll this was all meant to remove. The match page carries each
+   opponent's form instead, which is where anybody actually asks the question. */
+@media (max-width: 560px) {
+  table.league .col-form,
+  .table-wrap.is-expanded table.league--full .col-form { display: none; }
+}
