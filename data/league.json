@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-14T00:50:42.067Z",
+  "updated": "2026-08-14T08:37:16.356Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -695,7 +695,7 @@
           },
           {
             "name": "Michael Gyasi",
-            "minute": 68,
+            "minute": 70,
             "ours": true,
             "type": null
           }
@@ -711,7 +711,7 @@
           },
           {
             "name": "Luke Pyman",
-            "minute": 34,
+            "minute": 33,
             "ours": false,
             "type": null,
             "second": false,
