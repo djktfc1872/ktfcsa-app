@@ -315,9 +315,11 @@ CORRECTIONS = {
         "youthPrice": 10,
         "youthRange": "13-17",
         "childPrice": 5,
-        "childRange": "Under 13",
-        "ticketNotes": "Cash and card on the gate. Buying online before Friday 23:45 saves £3 on an adult.",
-        "priceChecked": "2026-08-10",
+        "childRange": "3-12, under 3s free",
+        "ticketNotes": ("Cash and card on the gate. Booking online before Friday 23:45 saves £3 a head: "
+                        "£15 adult, £10 concession, £7 under 18. Concessions are 65+ or Blue Light card "
+                        "holders, with ID at the turnstile. Under 3s go in free."),
+        "priceChecked": "2026-08-15",
         "priceSource": "Peterborough Sports official website",
     },
     "racing-club-warwick": {
