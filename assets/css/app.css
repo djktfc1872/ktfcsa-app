@@ -4265,3 +4265,32 @@ button,
   content: ""; position: absolute; left: 3px; top: 11px;
   width: 5px; height: 5px; border-radius: 50%; background: var(--text-3);
 }
+
+/* The score boxes looked off centre because a number input reserves room for
+   its spin buttons on the right, shoving centred text left. Nobody needs
+   spinners to type a 2. */
+.predict__inputs input::-webkit-outer-spin-button,
+.predict__inputs input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.predict__inputs input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* The discussion button on a match page, which is where most people are headed. */
+.talk-btn {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  margin-top: 18px; padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(122, 20, 34, 0.4), var(--surface));
+  border: 1px solid var(--gold-600); color: var(--text);
+}
+.talk-btn:hover { border-color: var(--gold-400); }
+.talk-btn__icon { flex: none; font-size: 19px; line-height: 1; }
+.talk-btn__text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.talk-btn__text b { font-size: 15px; font-weight: 650; }
+.talk-btn__text span { font-size: 12.5px; font-weight: 400; color: var(--text-3); }
+.talk-btn__go { flex: none; font-size: 20px; color: var(--gold-400); }

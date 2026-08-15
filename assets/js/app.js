@@ -3069,17 +3069,31 @@ function viewMatch({ id }) {
   /* Through to the rest, rather than dead-ending here. */
   const links = el(`<div class="btn-row" style="margin-top:18px"></div>`);
   if (f.team) {
-    const guide = el(`<button class="btn ${isHome ? "btn--sm btn--ghost" : "btn--full"}">${
+    /* Ghost, not solid. The essentials are already on the page above, so this
+       is a way through to the rest rather than the thing to press, and a solid
+       gold button next to the discussion one drowned it out. */
+    const guide = el(`<button class="btn ${isHome ? "btn--sm btn--ghost" : "btn--full btn--ghost"}">${
       isHome ? `About: ${esc(clubName(f.opponent))}` : `The full away day guide`
     }</button>`);
     guide.addEventListener("click", () => go("club", { id: f.team.id, from: isHome ? "home" : "away" }));
     links.append(guide);
   }
+  /* The way through to the talking, which was a small grey button among other
+     small grey buttons. On a match page it is the thing most people want. */
   const t = findThread(`post:${f.id}`) || findThread(`pre:${f.id}`);
   if (t) {
-    const talk = el(`<button class="btn btn--sm btn--ghost">Discussion</button>`);
+    const count = threadPosts(t.id).length;
+    const talk = el(`
+      <button class="btn btn--full talk-btn">
+        <span class="talk-btn__icon" aria-hidden="true">\u{1F4AC}</span>
+        <span class="talk-btn__text">
+          <b>${t.kind === "post" ? "Reaction" : "Build-up"}</b>
+          <span>${count ? `${count} post${count === 1 ? "" : "s"}, have your say` : "Be the first to say something"}</span>
+        </span>
+        <span class="talk-btn__go" aria-hidden="true">\u203A</span>
+      </button>`);
     talk.addEventListener("click", () => go("thread", { id: t.id }));
-    links.append(talk);
+    wrap.append(talk);
   }
   if (links.children.length) wrap.append(links);
 
