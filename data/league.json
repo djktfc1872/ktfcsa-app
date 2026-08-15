@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-15T16:42:36.863Z",
+  "updated": "2026-08-15T17:12:10.198Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -750,7 +750,7 @@
       "rawStatus": "FullTime",
       "homeScore": 0,
       "awayScore": 1,
-      "attendance": null,
+      "attendance": 785,
       "lineup": [
         {
           "name": "Paul White",
