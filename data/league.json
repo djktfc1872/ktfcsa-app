@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-15T15:51:40.312Z",
+  "updated": "2026-08-15T16:12:43.073Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -19,7 +19,7 @@
       "goalDifference": 6,
       "points": 9,
       "deduction": 0,
-      "form": "WW"
+      "form": "WWW"
     },
     {
       "position": 2,
@@ -36,24 +36,24 @@
       "goalDifference": 4,
       "points": 9,
       "deduction": 0,
-      "form": "WW"
+      "form": "WWW"
     },
     {
       "position": 3,
-      "name": "Stourbridge FC",
-      "short": "Stourbridge",
-      "slug": "Stourbridge FC",
-      "crest": "assets/crests/stourbridge-fc.png",
-      "played": 2,
+      "name": "Kettering Town",
+      "short": "Kettering",
+      "slug": "kettering-town",
+      "crest": "assets/crests/kettering-town.png",
+      "played": 3,
       "won": 2,
-      "drawn": 0,
+      "drawn": 1,
       "lost": 0,
-      "for": 4,
-      "against": 0,
-      "goalDifference": 4,
-      "points": 6,
+      "for": 3,
+      "against": 1,
+      "goalDifference": 2,
+      "points": 7,
       "deduction": 0,
-      "form": "W"
+      "form": "WDW"
     },
     {
       "position": 4,
@@ -70,10 +70,27 @@
       "goalDifference": 3,
       "points": 6,
       "deduction": 0,
-      "form": "LW"
+      "form": "LWW"
     },
     {
       "position": 5,
+      "name": "Stourbridge FC",
+      "short": "Stourbridge",
+      "slug": "Stourbridge FC",
+      "crest": "assets/crests/stourbridge-fc.png",
+      "played": 2,
+      "won": 2,
+      "drawn": 0,
+      "lost": 0,
+      "for": 4,
+      "against": 1,
+      "goalDifference": 3,
+      "points": 6,
+      "deduction": 0,
+      "form": "WW"
+    },
+    {
+      "position": 6,
       "name": "Bromsgrove Sporting",
       "short": "BromsgroveSporting",
       "slug": "bromsgrove-sporting",
@@ -87,10 +104,10 @@
       "goalDifference": 2,
       "points": 6,
       "deduction": 0,
-      "form": "WW"
+      "form": "WWL"
     },
     {
-      "position": 6,
+      "position": 7,
       "name": "Rushall Olympic",
       "short": "Rushall",
       "slug": "rushall-olympic",
@@ -104,10 +121,10 @@
       "goalDifference": 1,
       "points": 6,
       "deduction": 0,
-      "form": "WL"
+      "form": "WLW"
     },
     {
-      "position": 7,
+      "position": 8,
       "name": "Anstey Nomads",
       "short": "Anstey",
       "slug": "anstey-nomads",
@@ -121,10 +138,10 @@
       "goalDifference": 1,
       "points": 5,
       "deduction": 0,
-      "form": "DD"
+      "form": "DDW"
     },
     {
-      "position": 8,
+      "position": 9,
       "name": "Leighton Town",
       "short": "Leighton",
       "slug": "leighton-town",
@@ -138,24 +155,7 @@
       "goalDifference": 1,
       "points": 5,
       "deduction": 0,
-      "form": "DD"
-    },
-    {
-      "position": 9,
-      "name": "Kettering Town",
-      "short": "Kettering",
-      "slug": "kettering-town",
-      "crest": "assets/crests/kettering-town.png",
-      "played": 3,
-      "won": 1,
-      "drawn": 2,
-      "lost": 0,
-      "for": 2,
-      "against": 1,
-      "goalDifference": 1,
-      "points": 5,
-      "deduction": 0,
-      "form": "WD"
+      "form": "DDW"
     },
     {
       "position": 10,
@@ -172,7 +172,7 @@
       "goalDifference": 1,
       "points": 4,
       "deduction": 0,
-      "form": "DW"
+      "form": "DWL"
     },
     {
       "position": 11,
@@ -189,7 +189,7 @@
       "goalDifference": 0,
       "points": 4,
       "deduction": 0,
-      "form": "DWLDL"
+      "form": "WLDLW"
     },
     {
       "position": 12,
@@ -206,7 +206,7 @@
       "goalDifference": -1,
       "points": 4,
       "deduction": 0,
-      "form": "DW"
+      "form": "DWL"
     },
     {
       "position": 13,
@@ -223,7 +223,7 @@
       "goalDifference": 0,
       "points": 3,
       "deduction": 0,
-      "form": "DD"
+      "form": "DDD"
     },
     {
       "position": 14,
@@ -240,7 +240,7 @@
       "goalDifference": 0,
       "points": 3,
       "deduction": 0,
-      "form": "L"
+      "form": "LW"
     },
     {
       "position": 15,
@@ -257,27 +257,10 @@
       "goalDifference": -2,
       "points": 3,
       "deduction": 0,
-      "form": "LW"
+      "form": "LWL"
     },
     {
       "position": 16,
-      "name": "Leamington",
-      "short": "Leamington",
-      "slug": "leamington",
-      "crest": "assets/crests/leamington.png",
-      "played": 3,
-      "won": 0,
-      "drawn": 2,
-      "lost": 1,
-      "for": 3,
-      "against": 5,
-      "goalDifference": -2,
-      "points": 2,
-      "deduction": 0,
-      "form": "LD"
-    },
-    {
-      "position": 17,
       "name": "Stratford Town",
       "short": "Stratford Town",
       "slug": "stratford-town",
@@ -291,10 +274,10 @@
       "goalDifference": -2,
       "points": 2,
       "deduction": 0,
-      "form": "DD"
+      "form": "DDL"
     },
     {
-      "position": 18,
+      "position": 17,
       "name": "Hitchin Town",
       "short": "HitchinTown",
       "slug": "hitchin-town",
@@ -308,7 +291,24 @@
       "goalDifference": -3,
       "points": 1,
       "deduction": 0,
-      "form": "LL"
+      "form": "LLD"
+    },
+    {
+      "position": 18,
+      "name": "Leamington",
+      "short": "Leamington",
+      "slug": "leamington",
+      "crest": "assets/crests/leamington.png",
+      "played": 3,
+      "won": 0,
+      "drawn": 1,
+      "lost": 2,
+      "for": 3,
+      "against": 6,
+      "goalDifference": -3,
+      "points": 1,
+      "deduction": 0,
+      "form": "LDL"
     },
     {
       "position": 19,
@@ -325,10 +325,27 @@
       "goalDifference": -3,
       "points": 1,
       "deduction": 0,
-      "form": "DL"
+      "form": "DLL"
     },
     {
       "position": 20,
+      "name": "Peterborough Sports",
+      "short": "sports",
+      "slug": "peterborough-sports",
+      "crest": "assets/crests/peterborough-sports.png",
+      "played": 3,
+      "won": 0,
+      "drawn": 1,
+      "lost": 2,
+      "for": 2,
+      "against": 5,
+      "goalDifference": -3,
+      "points": 1,
+      "deduction": 0,
+      "form": "DLL"
+    },
+    {
+      "position": 21,
       "name": "Bishop's Stortford",
       "short": "Bishop's Stortford",
       "slug": "Bishop's Stortford",
@@ -342,24 +359,7 @@
       "goalDifference": -3,
       "points": 1,
       "deduction": 0,
-      "form": "DL"
-    },
-    {
-      "position": 21,
-      "name": "Peterborough Sports",
-      "short": "sports",
-      "slug": "peterborough-sports",
-      "crest": "assets/crests/peterborough-sports.png",
-      "played": 3,
-      "won": 0,
-      "drawn": 1,
-      "lost": 2,
-      "for": 1,
-      "against": 5,
-      "goalDifference": -4,
-      "points": 1,
-      "deduction": 0,
-      "form": "DL"
+      "form": "DLL"
     },
     {
       "position": 22,
@@ -376,7 +376,7 @@
       "goalDifference": -4,
       "points": 0,
       "deduction": 0,
-      "form": "LL"
+      "form": "LLL"
     }
   ],
   "fixtures": [
@@ -746,10 +746,10 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "live",
-      "rawStatus": "SecondHalf",
+      "status": "played",
+      "rawStatus": "FullTime",
       "homeScore": 0,
-      "awayScore": 0,
+      "awayScore": 1,
       "attendance": null,
       "lineup": [
         {
@@ -855,7 +855,14 @@
         }
       ],
       "events": {
-        "goals": [],
+        "goals": [
+          {
+            "name": "Bayley Brown",
+            "minute": 94,
+            "ours": true,
+            "type": null
+          }
+        ],
         "cards": [
           {
             "name": "Jahdahn Fridye-Harper",
