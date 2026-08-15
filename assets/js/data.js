@@ -7,15 +7,20 @@ export const KTFC = {
   postcode: "NN15 5PS",
   lat: 52.366747,
   lng: -0.690147,
-  /* Confirmed from the club's own ticketing, 2026/27. */
+  /* No 2026/27 admission prices are published anywhere by the club: its own
+     ticket page is still placeholder text, the Ticket Tailor store is empty
+     and Fanbase sits behind a login. These follow the Football Ground Guide
+     entry updated March 2026, which agrees with the club's own 2024/25
+     arithmetic. The old under-11 band at \u00a32 was dropped: it traced back to
+     a reduced FA Trophy price from October 2024, not to league admission. */
   adultPrice: 15,
-  adultRange: "18\u201360",
+  adultRange: "Adult",
   concessionPrice: 10,
-  concessionRange: "60+ or NUS card",
+  concessionRange: "60+ or student ID",
   youthPrice: 5,
-  youthRange: "11\u201318, secondary school age",
-  childPrice: 2,
-  childRange: "Under 11",
+  youthRange: "Under 18",
+  priceNote: "Concessions are over 60s or a valid student card. The club has not published 2026/27 prices anywhere, so these follow the Football Ground Guide, updated March 2026. Nothing lists a price for younger children, so ask at the turnstile.",
+  priceChecked: "2026-08-15",
 };
 
 export const TEAMS = [

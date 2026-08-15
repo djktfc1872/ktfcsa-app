@@ -2088,13 +2088,12 @@ function viewPoppies() {
   wrap.append(el(`<h2 class="section-title">On the gate at Latimer Park</h2>`));
   wrap.append(el(`
     <div class="card">
-      <div class="info-grid info-grid--4">
-        <div class="info"><div class="info__label">Adult · ${esc(KTFC.adultRange)}</div><div class="info__value" style="color:var(--gold-400)">£${KTFC.adultPrice}</div></div>
-        <div class="info"><div class="info__label">Concession · ${esc(KTFC.concessionRange)}</div><div class="info__value">£${KTFC.concessionPrice}</div></div>
-        <div class="info"><div class="info__label">Youth · ${esc(KTFC.youthRange)}</div><div class="info__value">£${KTFC.youthPrice}</div></div>
-        <div class="info"><div class="info__label">Child · ${esc(KTFC.childRange)}</div><div class="info__value">£${KTFC.childPrice}</div></div>
+      <div class="info-grid info-grid--3">
+        <div class="info"><div class="info__label">${esc(KTFC.adultRange)}</div><div class="info__value" style="color:var(--gold-400)">£${KTFC.adultPrice}</div></div>
+        <div class="info"><div class="info__label">Concession</div><div class="info__value">£${KTFC.concessionPrice}</div></div>
+        <div class="info"><div class="info__label">${esc(KTFC.youthRange)}</div><div class="info__value">£${KTFC.youthPrice}</div></div>
       </div>
-      <div class="hint">Confirmed 2026/27 general admission. Buy on the gate or through the club's ticketing.</div>
+      <div class="hint">${esc(KTFC.priceNote)}</div>
     </div>`));
   }
 

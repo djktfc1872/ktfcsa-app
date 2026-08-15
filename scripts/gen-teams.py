@@ -518,15 +518,22 @@ OUT.write_text(
     '  postcode: "NN15 5PS",\n'
     "  lat: 52.366747,\n"
     "  lng: -0.690147,\n"
-    "  /* Confirmed from the club's own ticketing, 2026/27. */\n"
+    "  /* No 2026/27 admission prices are published anywhere by the club: its own\n"
+    "     ticket page is still placeholder text, the Ticket Tailor store is empty\n"
+    "     and Fanbase sits behind a login. These follow the Football Ground Guide\n"
+    "     entry updated March 2026, which agrees with the club's own 2024/25\n"
+    "     arithmetic. The old under-11 band at \\u00a32 was dropped: it traced back to\n"
+    "     a reduced FA Trophy price from October 2024, not to league admission. */\n"
     "  adultPrice: 15,\n"
-    '  adultRange: "18\\u201360",\n'
+    '  adultRange: "Adult",\n'
     "  concessionPrice: 10,\n"
-    '  concessionRange: "60+ or NUS card",\n'
+    '  concessionRange: "60+ or student ID",\n'
     "  youthPrice: 5,\n"
-    '  youthRange: "11\\u201318, secondary school age",\n'
-    "  childPrice: 2,\n"
-    '  childRange: "Under 11",\n'
+    '  youthRange: "Under 18",\n'
+    '  priceNote: "Concessions are over 60s or a valid student card. The club has not '
+    'published 2026/27 prices anywhere, so these follow the Football Ground Guide, updated '
+    'March 2026. Nothing lists a price for younger children, so ask at the turnstile.",\n'
+    '  priceChecked: "2026-08-15",\n'
     "};\n\n"
     "export const TEAMS = [\n" + body + "\n];\n",
     encoding="utf-8",

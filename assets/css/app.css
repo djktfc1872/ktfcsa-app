@@ -995,6 +995,12 @@ table.league tbody tr.is-ktfc td {
   }
 }
 
+/* Three price bands sit evenly across at every width; the values are short
+   enough that a narrow column still reads clearly. */
+.info-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .info {
   background: var(--surface-2);
   border: 1px solid var(--line-soft);
