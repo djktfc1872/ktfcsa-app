@@ -1,8 +1,22 @@
 {
-  "updated": "2026-08-12T14:47:15.773Z",
+  "updated": "2026-08-15T18:14:34.743Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "MYZnKx8ihrI",
+      "title": "My Broadcast",
+      "published": "2026-08-15T16:08:04+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a19f5ce9ef452b61f41be"
+    },
+    {
+      "videoId": "YuJNkBwX-QQ",
+      "title": "My Broadcast",
+      "published": "2026-08-15T13:56:05+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a19f5ce9ef452b61f41be"
+    },
     {
       "videoId": "OmLkaBXdlqI",
       "title": "Post Match Interview | Leighton Town 1-1 Kettering Town (12/08/2026)",
@@ -89,7 +103,7 @@
     },
     {
       "videoId": "bqUNdIqtZBk",
-      "title": "Leighton Town vs Kettering Town",
+      "title": "Leamington FC vs Kettering Town",
       "published": "2026-04-25T13:56:39+00:00",
       "kind": "commentary",
       "fixtureId": null

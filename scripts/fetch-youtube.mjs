@@ -79,6 +79,29 @@ function opponentIn(title) {
  */
 const UNTITLED = /^(my broadcast|live stream|untitled|broadcast|live)\b/i;
 
+/**
+ * A kick-off turned into a real instant. The feed stores UK wall clock time,
+ * so treating "15:00" as UTC is an hour out all summer, which is enough to
+ * push a stream that started at ten to three outside its own match window.
+ */
+function kickoffAt(f) {
+  const [y, m, d] = f.date.split("-").map(Number);
+  const [hh, mm] = (f.kickoff || "15:00").split(":").map(Number);
+  const wall = Date.UTC(y, m - 1, d, hh || 15, mm || 0);
+  const offset = (when) => {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London", hour12: false,
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    }).formatToParts(when).filter((x) => x.type !== "literal");
+    const q = Object.fromEntries(parts.map((x) => [x.type, Number(x.value)]));
+    return Date.UTC(q.year, q.month - 1, q.day, q.hour, q.minute, q.second) - when.getTime();
+  };
+  let guess = wall;
+  for (let i = 0; i < 2; i += 1) guess = wall - offset(new Date(guess));
+  return guess;
+}
+
 /** A date written into the title, like "(08/08/2026)", as a timestamp. */
 function dateIn(title) {
   const m = String(title || "").match(/\((\d{1,2})\/(\d{1,2})\/(\d{4})\)/);
@@ -103,8 +126,10 @@ function fixtureFor(title, published, fixtures) {
   if (UNTITLED.test(String(title || "").trim())) {
     const when = Date.parse(published);
     const near = fixtures.filter((f) => {
-      const ko = Date.parse(`${f.date}T${f.kickoff || "15:00"}:00Z`);
-      return when > ko - 60 * 60000 && when < ko + 4 * 60 * 60000;
+      const ko = kickoffAt(f);
+      /* Ninety minutes before, to catch a stream opened early, through to four
+         hours after. */
+      return when > ko - 90 * 60000 && when < ko + 4 * 60 * 60000;
     });
     return near.length === 1 ? near[0].id : null;
   }
@@ -128,8 +153,7 @@ function fixtureFor(title, published, fixtures) {
 
   for (const f of fixtures) {
     if (!plain(f.opponent).includes(opponent) && !opponent.includes(plain(f.opponent))) continue;
-    const kickoff = Date.parse(`${f.date}T${f.kickoff || "15:00"}:00Z`);
-    const gap = Math.abs(kickoff - when);
+    const gap = Math.abs(kickoffAt(f) - when);
     if (gap < bestGap) {
       bestGap = gap;
       best = f;
