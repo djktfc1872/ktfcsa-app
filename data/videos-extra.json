@@ -1,0 +1,14 @@
+{
+  "note": "Videos from somewhere other than Kettering's own channel, added by hand. scripts/fetch-youtube.mjs merges these into videos.json on every run and never overwrites them, because the RSS feed it reads only covers the club's channel and will never see an opponent's highlights. Set 'channel' to whoever uploaded it, so the app can credit them.",
+  "videos": [
+    {
+      "videoId": "FcoTu2hOqhs",
+      "title": "Leamington vs Kettering Town - Match Highlights - 15 August 2026",
+      "published": "2026-08-15T20:00:00+00:00",
+      "kind": "highlights",
+      "channel": "LeamingtonFCTV",
+      "channelUrl": "https://www.youtube.com/@LeamingtonFCTV",
+      "fixtureId": "6a5a19f5ce9ef452b61f41be"
+    }
+  ]
+}

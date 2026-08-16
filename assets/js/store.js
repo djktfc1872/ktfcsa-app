@@ -687,6 +687,22 @@ export function setAvatar(emblem) {
 
 export const lineupFor = (fixtureId) => live.lineups[fixtureId] || [];
 
+export function deleteLineup(fixtureId) {
+  if (!backend) return;
+  attempt(backend.deleteLineup(fixtureId).then(refresh), "That team sheet did not come off.");
+}
+
+/** Which players have marks against them for a fixture, whoever gave them. */
+export const ratedNamesFor = (fixtureId) =>
+  live.ratings.match.filter((r) => r.fixture_id === fixtureId).map((r) => r.player_name);
+
+export async function clearRatingsFor(fixtureId, names) {
+  if (!backend) return 0;
+  const n = await backend.clearRatingsFor(fixtureId, names);
+  await refresh();
+  return n;
+}
+
 export function saveLineup(fixtureId, players) {
   if (!backend) {
     onError("Team sheets need the online setup finishing first.");

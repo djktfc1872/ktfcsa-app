@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-16T17:12:11.897Z",
+  "updated": "2026-08-16T17:32:11.260Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
@@ -8,6 +8,15 @@
       "title": "Post Match Interview | Leamington 0-1 Kettering Town (15/08/2026)",
       "published": "2026-08-15T21:35:12+00:00",
       "kind": "interview",
+      "fixtureId": "6a5a19f5ce9ef452b61f41be"
+    },
+    {
+      "videoId": "FcoTu2hOqhs",
+      "title": "Leamington vs Kettering Town - Match Highlights - 15 August 2026",
+      "published": "2026-08-15T20:00:00+00:00",
+      "kind": "highlights",
+      "channel": "LeamingtonFCTV",
+      "channelUrl": "https://www.youtube.com/@LeamingtonFCTV",
       "fixtureId": "6a5a19f5ce9ef452b61f41be"
     },
     {

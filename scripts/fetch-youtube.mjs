@@ -212,6 +212,21 @@ async function main() {
     byId.set(v.videoId, row);
   }
 
+  /* Videos from anyone else's channel. The RSS feed above only ever covers
+     Kettering's own uploads, so an opponent posting the highlights - which the
+     home club usually does - would never appear otherwise. Added by hand in
+     data/videos-extra.json and merged here, always winning over anything the
+     feed guessed, because a person set the fixture deliberately. */
+  const EXTRA = resolve(dirname(OUT), "videos-extra.json");
+  let borrowed = 0;
+  if (existsSync(EXTRA)) {
+    for (const v of JSON.parse(await readFile(EXTRA, "utf8")).videos || []) {
+      if (!v.videoId) continue;
+      byId.set(v.videoId, { ...byId.get(v.videoId), ...v });
+      borrowed += 1;
+    }
+  }
+
   const videos = [...byId.values()].sort((a, b) => b.published.localeCompare(a.published));
 
   await mkdir(dirname(OUT), { recursive: true });
@@ -223,7 +238,7 @@ async function main() {
   }, null, 2) + "\n", "utf8");
 
   const tied = videos.filter((v) => v.fixtureId).length;
-  console.log(`Videos: ${videos.length} known (${added} new this run), ${tied} tied to a fixture.`);
+  console.log(`Videos: ${videos.length} known (${added} new this run, ${borrowed} from other channels), ${tied} tied to a fixture.`);
 }
 
 main().catch((err) => {

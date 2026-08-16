@@ -326,6 +326,28 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
+  /** Hand the sheet back to the league's version. Volunteers only, by policy. */
+  async deleteLineup(fixtureId) {
+    const { error } = await this.sb.from("lineups").delete().eq("fixture_id", fixtureId);
+    if (error) throw new Error(friendly(error));
+  }
+
+  /**
+   * Marks left behind by a correction. Somebody rated a player who turns out
+   * not to have been on the pitch, and the row would otherwise keep counting
+   * towards his season average for ever.
+   */
+  async clearRatingsFor(fixtureId, names) {
+    if (!names.length) return 0;
+    const { error, count } = await this.sb
+      .from("player_ratings")
+      .delete({ count: "exact" })
+      .eq("fixture_id", fixtureId)
+      .in("player_name", names);
+    if (error) throw new Error(friendly(error));
+    return count || 0;
+  }
+
   /** Everyone's averages, plus this supporter's own marks so they can amend. */
   async loadRatings() {
     const [{ data: match }, { data: season }, mine] = await Promise.all([

@@ -2583,12 +2583,25 @@ function viewPodcast() {
    in the league feed, and a volunteer can type one in when the feed misses a
    game. A player appears once they have actually played. */
 
-/** The Kettering names for a fixture: the feed's sheet, or a volunteer's. */
+/**
+ * The Kettering names for a fixture: a volunteer's sheet if there is one, else
+ * the feed's.
+ *
+ * This used to be the other way round, which made the editor a lie. The feed
+ * named two players for the Leamington game who did not play, a volunteer took
+ * them out, the save worked, the toast said so, and the page went on showing
+ * the feed because the feed was checked first. The row was correct in the
+ * database the whole time and nothing read it.
+ *
+ * A volunteer wins now, because they were at the ground and the feed was not.
+ * Only an admin can type one, and the card says whose sheet is being shown
+ * with a way to hand it back to the league's.
+ */
 function squadFor(fixture) {
-  const fromFeed = fixture.lineup || [];
-  if (fromFeed.length) return { players: fromFeed, source: "feed" };
   const typed = db.lineupFor(fixture.id);
   if (typed.length) return { players: typed, source: "volunteer" };
+  const fromFeed = fixture.lineup || [];
+  if (fromFeed.length) return { players: fromFeed, source: "feed" };
   return { players: [], source: null };
 }
 
@@ -2686,18 +2699,59 @@ function ratingPanel(fixture, { withEvents = true } = {}) {
   players.forEach((pl) => wrap.append(ratingRow(fixture, pl, signedIn)));
 
   if (source === "volunteer") {
-    wrap.append(el(`<p class="rating__source">Team sheet added by a volunteer.</p>`));
+    const note = el(`<p class="rating__source">Team sheet corrected by a volunteer, not the league's.</p>`);
+    if (db.isAdmin()) {
+      const undo = el(`<button class="link-btn">Use the league's sheet instead</button>`);
+      undo.addEventListener("click", () => {
+        db.deleteLineup(fixture.id);
+        toast("Back to the league's team sheet.");
+      });
+      note.append(document.createTextNode(" "));
+      note.append(undo);
+    }
+    wrap.append(note);
   }
+
+  /* A correction leaves marks behind: somebody rated a player who turns out
+     not to have been on the pitch, and that mark would go on counting towards
+     his season average. Only offered when there is actually something stranded. */
+  if (db.isAdmin()) {
+    const onSheet = new Set(players.map((p) => p.name.toLowerCase()));
+    const stranded = [...new Set(db.ratedNamesFor(fixture.id))]
+      .filter((n) => !onSheet.has(String(n).toLowerCase()));
+    if (stranded.length) {
+      const row = el(`
+        <div class="empty" style="text-align:left;padding:14px 16px">
+          <b>Marks for ${stranded.length} player${stranded.length === 1 ? "" : "s"} no longer on this sheet</b>
+          ${esc(stranded.join(", "))}. These still count towards a season average.
+        </div>`);
+      const go = el(`<button class="btn btn--sm btn--ghost" style="margin-top:10px">Remove those marks</button>`);
+      go.addEventListener("click", async () => {
+        go.disabled = true;
+        try {
+          const n = await db.clearRatingsFor(fixture.id, stranded);
+          toast(n ? `Removed ${n} mark${n === 1 ? "" : "s"}.` : "Nothing to remove.");
+          render();
+        } catch (err) {
+          go.disabled = false;
+          toast(err.message || "Those marks did not come off.");
+        }
+      });
+      row.append(go);
+      wrap.append(row);
+    }
+  }
+
   if (db.isAdmin()) wrap.append(lineupForm(fixture, players));
   return wrap;
 }
 
-/** Volunteers type a team sheet in when the league feed has none. */
+/** Volunteers type a team sheet in, whether to fill a gap or correct the feed. */
 function lineupForm(fixture, existing = []) {
   const box = el(`
     <details class="lineup-form">
       <summary>${existing.length ? "Edit the team sheet" : "Add the team sheet"}</summary>
-      <p class="note">One player per line, starters first. Put a number in front if you have it, and (c) after the captain. Add "sub" after anyone who came off the bench.</p>
+      <p class="note">Saving this replaces the league\u2019s sheet for this game. One player per line, starters first. Put a number in front if you have it, and (c) after the captain. Add "sub" after anyone who came off the bench.</p>
       <textarea rows="8" placeholder="1 Jane Smith&#10;4 Alex Jones (c)&#10;14 Sam Patel sub"></textarea>
       <button class="btn btn--full" type="button">Save the team sheet</button>
     </details>`);
@@ -3607,7 +3661,11 @@ function videoRow(v) {
       <span class="vid__text">
         <span class="vid__kind">${esc(VIDEO_KIND[v.kind] || VIDEO_KIND.other)}</span>
         <span class="vid__title">${esc(videoTitle(v))}</span>
-        <span class="vid__when">${esc(fmtDate(v.published.slice(0, 10), "short"))}</span>
+        <span class="vid__when">${esc(fmtDate(v.published.slice(0, 10), "short"))}${
+          /* Whose upload it is, when it is not the club's own. The home side
+             films the highlights more often than we do, and they deserve the
+             credit on their own work. */
+          v.channel ? ` · ${esc(v.channel)}` : ""}</span>
       </span>
     </a>`);
 }
