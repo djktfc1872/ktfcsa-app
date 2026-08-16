@@ -527,6 +527,78 @@ class Backend {
     return data;
   }
 
+  /* ---------------------------------------------------------- consultation */
+
+  /* Answers are readable by volunteers alone. Everyone, signed in or not, sees
+     the aggregate views, which run as owner for exactly that reason. */
+
+  async submitConsultation(answer) {
+    const row = {
+      profile_id: this.profile?.id || null,
+      device_key: answer.deviceKey,
+      confidence: answer.confidence,
+      direction: answer.direction,
+      representation: answer.representation || {},
+      positives: answer.positives || [],
+      concerns: answer.concerns || [],
+      actions: answer.actions || [],
+      positive_note: answer.positiveNote || null,
+      concern_note: answer.concernNote || null,
+      question: answer.question || null,
+      attribution: answer.attribution || null,
+      meeting: answer.meeting || null,
+      publish_ok: Boolean(answer.publishOk),
+    };
+    const { error } = await this.sb.from("consultation_responses").insert(row);
+    if (error) {
+      /* The unique index on device_key is the duplicate guard. */
+      if (error.code === "23505") throw new Error("You have already answered from this device. Thank you.");
+      throw new Error(friendly(error));
+    }
+  }
+
+  async consultationResults() {
+    const [summary, confidence, choices, representation, published] = await Promise.all([
+      this.sb.from("consultation_summary").select("*").maybeSingle(),
+      this.sb.from("consultation_confidence").select("*").order("score"),
+      this.sb.from("consultation_choices").select("*").order("people", { ascending: false }),
+      this.sb.from("consultation_representation").select("*"),
+      this.sb.from("consultation_published").select("*").order("created_at", { ascending: false }),
+    ]);
+    if (summary.error) return null;
+    return {
+      summary: summary.data || null,
+      confidence: confidence.data || [],
+      choices: choices.data || [],
+      representation: representation.data || [],
+      published: published.data || [],
+    };
+  }
+
+  /* Volunteers only, gated in the policy rather than here. */
+  async consultationQueue() {
+    const { data, error } = await this.sb
+      .from("consultation_responses")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return data || [];
+  }
+
+  async setConsultationStatus(id, patch) {
+    const { error } = await this.sb
+      .from("consultation_responses")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(friendly(error));
+  }
+
+  async pendingActions() {
+    const { data, error } = await this.sb.from("pending_actions").select("*").maybeSingle();
+    if (error) return null;
+    return data;
+  }
+
   /* -------------------------------------------------------- ticket prices */
 
   /* Added after the first release, so a database without the table must not

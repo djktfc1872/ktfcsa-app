@@ -276,6 +276,7 @@ const ROUTES = {
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
 
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
+  consult: { label: "Have Your Say", short: "Say", icon: "📣", nav: "more", group: "Supporters", render: viewConsult },
   daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
   heritage: { label: "Archive Project", icon: "📼", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
@@ -315,6 +316,18 @@ function readHash() {
 
 /* =================================================================== chrome */
 
+/* Everything waiting on a volunteer. Admin only, and zero for everybody else,
+   so the badge simply never renders. Refreshed on nav paint rather than polled. */
+let pendingWaiting = 0;
+const pendingCount = () => (db.isAdmin() ? pendingWaiting : 0);
+function refreshPending() {
+  if (!db.isAdmin()) { pendingWaiting = 0; return; }
+  db.pendingActions().then((p) => {
+    const n = p ? (p.consultation || 0) + (p.polls || 0) + (p.feedback || 0) : 0;
+    if (n !== pendingWaiting) { pendingWaiting = n; renderNav(); }
+  }).catch(() => { /* not migrated yet */ });
+}
+
 const routesWhere = (...kinds) => Object.entries(ROUTES).filter(([, r]) => kinds.includes(r.nav));
 
 function renderNav() {
@@ -323,9 +336,11 @@ function renderNav() {
     .map(([key, r]) => {
       const heading = r.group && r.group !== lastGroup ? `<div class="sidebar__group">${r.group}</div>` : "";
       lastGroup = r.group;
+      const waiting = key === "admin" ? pendingCount() : 0;
       return `${heading}
       <button class="sidebar__link ${state.view === key ? "is-active" : ""}" data-nav="${key}">
-        <span class="ic" aria-hidden="true">${r.icon}</span>${r.label}
+        <span class="ic" aria-hidden="true">${r.icon}</span>${r.label}${
+          waiting ? `<span class="nav-badge">${waiting}</span>` : ""}
       </button>`;
     })
     .join("");
@@ -342,7 +357,8 @@ function renderNav() {
       .join("") +
     `<button class="${onMore ? "is-active" : ""}" data-nav="more"
              aria-current="${onMore ? "page" : "false"}">
-       <span class="ic" aria-hidden="true">⋯</span>More
+       <span class="ic" aria-hidden="true">⋯</span>More${
+         pendingCount() ? `<span class="nav-badge">${pendingCount()}</span>` : ""}
      </button>`;
 
   const user = db.currentUser();
@@ -365,6 +381,7 @@ function viewMore() {
       <button class="club-row" data-nav="${key}">
         <span style="font-size:19px;width:26px;text-align:center" aria-hidden="true">${r.icon}</span>
         <div style="flex:1;min-width:0"><div class="club-row__name">${r.label}</div></div>
+        ${key === "admin" && pendingCount() ? `<span class="nav-badge">${pendingCount()}</span>` : ""}
         <span style="color:var(--text-3)">›</span>
       </button>`));
   });
@@ -373,6 +390,7 @@ function viewMore() {
 
 function render({ toTop = false } = {}) {
   renderNav();
+  refreshPending();
   const main = $("#main");
   main.innerHTML = "";
   const node = ROUTES[state.view].render(state.params);
@@ -632,6 +650,8 @@ function viewFixtures() {
   /* Fixtures is where every session starts, so this is where the daily habit
      is worth nudging. The tabs stay as they are - the comment above ROUTES is
      right that four of them is muscle memory. */
+  const say = consultPromo();
+  if (say) $(".daily-slot", wrap).append(say);
   const promo = dailyPromo();
   if (promo) $(".daily-slot", wrap).append(promo);
   $(".otd-slot", wrap).append(onThisDayCard());
@@ -3315,7 +3335,14 @@ function viewPrivacy() {
      play. Maps and directions open in your own maps app rather than loading anything here.`,
   ]);
 
-  wrap.append(el(`<p class="note">Last updated 12 August 2026.</p>`));
+  wrap.append(section("The fan consultation", [
+    "Between 17 and 21 August 2026 we asked supporters what they make of the way the club is being run. Anyone could answer, with or without an account.",
+    "We keep what you chose from the lists, the confidence score you gave, and anything you typed. If you were signed in, the answer is linked to your account so you can amend it. If you were not, it is linked only to a random string kept in your browser, which exists so you are not asked twice. It is not derived from anything about you and it is never shown or published.",
+    "The numbers are published as numbers. Anything you wrote is read by a volunteer before it goes anywhere, and is published only if you ticked the box saying we may, with your name only if you gave one. Questions for the club are put to them in writing.",
+    "Raw responses are not handed to the club. Nobody outside the volunteers running the consultation sees them, and they are deleted once the findings are published and the questions have been answered or abandoned.",
+  ]));
+
+  wrap.append(el(`<p class="note">Last updated 16 August 2026.</p>`));
   return wrap;
 }
 
@@ -3409,6 +3436,82 @@ function viewAdmin() {
     statCard.append(grid);
     statCard.append(el(`<p class="note">These are things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
   });
+
+  /* Nothing a supporter wrote reaches the public or the club until it has been
+     read here. Edit exists to trim an allegation out of an otherwise fair
+     question rather than lose the question. */
+  wrap.append(el(`<h2 class="section-title">Consultation</h2>`));
+  const consultCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+  wrap.append(consultCard);
+
+  const paintConsult = () => {
+    db.consultationQueue().then((rows) => {
+      consultCard.replaceChildren();
+      const items = [];
+      rows.forEach((r) => {
+        if (r.question) items.push({ row: r, field: "question", status: r.question_status, text: r.question, kind: "Question for the club" });
+        [["positive_note", "What is going well"], ["concern_note", "Concern"]].forEach(([f, kind]) => {
+          if (r[f]) items.push({ row: r, field: f, status: r.note_status, text: r[f], kind });
+        });
+      });
+      const waiting = items.filter((i) => i.status === "pending");
+      if (!items.length) {
+        consultCard.append(el(`<p class="note" style="margin:0">Nothing written in yet.</p>`));
+        return;
+      }
+      consultCard.append(el(`<p class="note" style="margin:0 0 10px">${waiting.length} waiting,
+        ${items.length - waiting.length} dealt with. Nothing appears publicly until you approve it.</p>`));
+      [...waiting, ...items.filter((i) => i.status !== "pending")].forEach((it) => {
+        const statusCol = it.field === "question" ? "question_status" : "note_status";
+        const card = el(`
+          <div class="suggestion${it.status === "pending" ? "" : " is-done"}">
+            <div class="suggestion__meta">
+              <span class="pill">${esc(it.kind)}</span>
+              ${it.row.publish_ok ? `<span class="pill pill--gold">May publish${it.row.attribution ? `, as ${esc(it.row.attribution)}` : ""}</span>` : `<span class="pill pill--muted">Not for publication</span>`}
+              ${it.status !== "pending" ? `<span class="pill pill--muted">${esc(it.status)}</span>` : ""}
+            </div>
+            <p class="suggestion__text">${esc(it.text)}</p>
+          </div>`);
+        if (it.status === "pending") {
+          const row = el(`<div class="btn-row" style="margin-top:8px"></div>`);
+          const act = (label, patch, cls = "btn--sm btn--ghost") => {
+            const b = el(`<button class="btn ${cls}">${label}</button>`);
+            b.addEventListener("click", async () => {
+              await db.setConsultationStatus(it.row.id, patch);
+              toast("Saved.");
+              paintConsult();
+              renderNav();
+            });
+            return b;
+          };
+          row.append(act("Approve", { [statusCol]: "approved" }, "btn--sm"));
+          const edit = el(`<button class="btn btn--sm btn--ghost">Edit</button>`);
+          edit.addEventListener("click", () => {
+            const ta = el(`<textarea rows="4" style="width:100%">${esc(it.text)}</textarea>`);
+            const m = modal("Edit before publishing", ta);
+            const save = el(`<button class="btn btn--full" style="margin-top:10px">Save and approve</button>`);
+            save.addEventListener("click", async () => {
+              await db.setConsultationStatus(it.row.id, { [it.field]: ta.value.trim(), [statusCol]: "approved" });
+              m.close();
+              toast("Saved and approved.");
+              paintConsult();
+              renderNav();
+            });
+            ta.after(save);
+          });
+          row.append(edit);
+          row.append(act("Reject", { [statusCol]: "rejected" }));
+          card.append(row);
+        }
+        consultCard.append(card);
+      });
+    }).catch(() => {
+      consultCard.replaceChildren();
+      consultCard.append(el(`<p class="note" style="margin:0">The consultation is not set up in the
+        database yet.</p>`));
+    });
+  };
+  paintConsult();
 
   /* The offers were readable by volunteers in policy and shown nowhere, which
      is the same as not collecting them. Names are here because somebody has to
@@ -4839,7 +4942,7 @@ function viewAccount() {
     const panel = el(`
       <div class="card">
         <p class="note" style="margin:0 0 12px">Activity across the site, and the people using it.</p>
-        <button class="btn btn--full" data-nav="admin">Open the admin panel</button>
+        <button class="btn btn--full" data-nav="admin">Open the admin panel${pendingCount() ? `<span class="nav-badge">${pendingCount()}</span>` : ""}</button>
       </div>`);
     wrap.append(panel);
   }
@@ -5644,6 +5747,481 @@ function archiveOfferPanel() {
 
 /* The form speaks camelCase and the row speaks snake_case, as everywhere else. */
 const keyToColumn = (k) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+
+/* ========================================================== fan consultation
+
+   A time-limited survey on how the club is being run, Monday 17 to Friday 21
+   August 2026, with the results published on the Saturday.
+
+   Two things shape the whole of this. The numbers are public and the words are
+   not: nothing anybody writes appears here or goes to the club until a
+   volunteer has read it. And nothing on this page asserts anything. It asks
+   about what a supporter can see for themselves, it measures how well people
+   feel represented rather than telling them, and where it asks about action it
+   reports what supporters would support and recommends none of it.        */
+
+const CONSULT_OPENS = "2026-08-17";
+const CONSULT_CLOSES = "2026-08-21";
+
+const consultState = () => {
+  const today = londonToday();
+  if (today < CONSULT_OPENS) return "before";
+  if (today > CONSULT_CLOSES) return "after";
+  return "open";
+};
+
+/* Who supporters might feel represented by. Roles, not names. */
+const CONSULT_BODIES = [
+  ["board", "The club board"],
+  ["trust", "The Supporters' Trust"],
+  ["president", "The club president"],
+  ["secretary", "The club secretary"],
+  ["ktfcsa", "KTFCSA (us)"],
+];
+/* Short heads because the column is 38px on a phone: "Adequately" wrapped over
+   three lines and read as nonsense. The full wording is in the legend under
+   the grid and in the label each radio carries for a screen reader. */
+const VERDICTS = [
+  ["well", "Well", "Well"],
+  ["ok", "OK", "Adequately"],
+  ["poorly", "Poor", "Poorly"],
+  ["unsure", "Unsure", "Don't know"],
+];
+
+/* Things a supporter can actually observe. Nothing here asks anyone to repeat
+   a rumour, and there is deliberately no option about anybody's honesty. */
+const CONSULT_POSITIVES = [
+  ["team", "The team on the pitch"],
+  ["manager", "The manager and coaching"],
+  ["ground", "Latimer Park itself"],
+  ["matchday", "The matchday experience"],
+  ["community", "Work in the community"],
+  ["ambition", "Ambition for the club"],
+];
+const CONSULT_CONCERNS = [
+  ["volunteers", "Volunteers leaving"],
+  ["communication", "Communication from the club"],
+  ["transparency", "How decisions are explained"],
+  ["matchday", "How matchdays are run"],
+  ["sponsors", "How the club and its partners conduct themselves publicly"],
+  ["ground", "The ground and facilities"],
+  ["finance", "Financial sustainability"],
+];
+/* Alphabetical, and "nothing at all" is a real answer sitting among the rest.
+   We are asking, not proposing. */
+const CONSULT_ACTIONS = [
+  ["banners", "Banners at a game"],
+  ["boycott", "Boycotting a fixture"],
+  ["applause", "Coordinated applause in a chosen minute"],
+  ["letter", "An open letter"],
+  ["meeting", "Asking for a public meeting"],
+  ["shop", "Withholding spend in the club shop and bar"],
+  ["stay", "Staying behind at full time"],
+  ["none", "Nothing. I would rather things were settled quietly"],
+];
+
+function viewConsult() {
+  const wrap = el(`
+    <div>
+      <div class="page-head">
+        <h1>Have your say</h1>
+        <p>An independent consultation by the Kettering Town FC Supporters' Association on how
+           the club is being run. Open to every Poppies supporter, account or not.</p>
+      </div>
+    </div>`);
+
+  const phase = consultState();
+
+  if (phase === "before") {
+    wrap.append(el(`
+      <div class="soon">
+        <span class="soon__tag">Opens Monday morning</span>
+        <p>From Monday 17 to Friday 21 August we are asking supporters what they make of the way
+        the club is being run. The results go up here on Saturday, and every question supporters
+        ask will be put to the club in writing.</p>
+      </div>`));
+    wrap.append(consultAbout());
+    return wrap;
+  }
+
+  if (phase === "after") {
+    wrap.append(consultResults());
+    return wrap;
+  }
+
+  if (db.hasAnswered()) {
+    wrap.append(el(`
+      <div class="soon">
+        <span class="soon__tag">Thank you</span>
+        <p>Your answers are in. Results go up here on Saturday 22 August, and the questions
+        supporters have asked will be put to the club in writing. Closes Friday at midnight.</p>
+      </div>`));
+    wrap.append(consultAbout());
+    return wrap;
+  }
+
+  wrap.append(consultAbout());
+  wrap.append(consultForm());
+  return wrap;
+}
+
+/** What this is, who is running it and what happens to an answer. */
+function consultAbout() {
+  return el(`
+    <div class="card">
+      <p class="club-overview"><b>Who is asking.</b> The Supporters' Association is independent of
+      the club. It is not funded by the club and speaks only for the supporters who answer.</p>
+      <p class="club-overview" style="margin-top:12px"><b>What happens to your answer.</b> The
+      numbers are published as numbers. Anything you write is read by a volunteer first, and is
+      published only if you tick the box saying we may. Questions for the club are collected,
+      tidied up and sent in writing. If a question goes unanswered we will say so, and say for
+      how long.</p>
+      <p class="club-overview" style="margin-top:12px"><b>What we are not doing.</b> We are not
+      repeating rumours and we are not asking you to. The questions below are about what you can
+      see for yourself. Where we ask about action, we are asking what supporters would support.
+      We are not proposing any of it.</p>
+    </div>`);
+}
+
+/** The form. Only the first two questions are required. */
+function consultForm() {
+  const box = el(`<div></div>`);
+
+  const tickList = (name, items) => `
+    <div class="offer-list">
+      ${items.map(([k, label]) => `
+        <label class="offer">
+          <input type="checkbox" data-${name}="${k}">
+          <span><b>${esc(label)}</b></span>
+        </label>`).join("")}
+    </div>`;
+
+  const form = el(`
+    <div class="card">
+      <h3 class="consult__q">1. How confident are you in the way Kettering Town is being run?</h3>
+      <p class="hint">1 is no confidence at all, 10 is complete confidence.</p>
+      <div class="scale" id="c-conf">
+        ${[...Array(10)].map((_, i) => `<button type="button" data-conf="${i + 1}">${i + 1}</button>`).join("")}
+      </div>
+
+      <h3 class="consult__q">2. Is the club heading in the right direction?</h3>
+      <div class="offer-list" id="c-dir">
+        ${[["right", "Yes, the right direction"], ["wrong", "No, the wrong direction"], ["unsure", "I am not sure"]]
+          .map(([k, l]) => `
+            <label class="offer">
+              <input type="radio" name="c-direction" value="${k}">
+              <span><b>${esc(l)}</b></span>
+            </label>`).join("")}
+      </div>
+
+      <h3 class="consult__q">3. How well has each of these represented supporters in recent months?</h3>
+      <p class="hint">Answer for the ones you have a view on. "Don't know" is a real answer.</p>
+      <div class="rep" id="c-rep">
+        <div class="rep__head"><span></span>${VERDICTS.map(([, short]) => `<span>${esc(short)}</span>`).join("")}</div>
+        ${CONSULT_BODIES.map(([key, label]) => `
+          <div class="rep__row">
+            <span class="rep__body">${esc(label)}</span>
+            ${VERDICTS.map(([v, , full]) => `
+              <label class="rep__cell">
+                <input type="radio" name="rep-${key}" value="${v}">
+                <span class="sr-only">${esc(label)}: ${esc(full)}</span>
+              </label>`).join("")}
+          </div>`).join("")}
+        <p class="hint" style="margin-top:8px">Well · OK means adequately · Poor · Unsure means
+        you would rather not say either way.</p>
+      </div>
+
+      <h3 class="consult__q">4. What is going well? Tick anything you would defend.</h3>
+      ${tickList("pos", CONSULT_POSITIVES)}
+      <div class="field" style="margin-top:12px">
+        <label for="c-posnote">Anything else that is going well (optional)</label>
+        <textarea id="c-posnote" rows="3" maxlength="600"></textarea>
+      </div>
+
+      <h3 class="consult__q">5. What concerns you, if anything?</h3>
+      ${tickList("con", CONSULT_CONCERNS)}
+      <div class="field" style="margin-top:12px">
+        <label for="c-connote">In your own words (optional)</label>
+        <textarea id="c-connote" rows="4" maxlength="600"
+          placeholder="What have you seen or been told? Please stick to what you know rather than what you have heard second hand."></textarea>
+        <div class="hint">Read by a volunteer before anything is published. Please do not accuse
+        anybody of anything you cannot stand behind, for your sake as much as ours.</div>
+      </div>
+
+      <h3 class="consult__q">6. One question you want the club to answer</h3>
+      <div class="field">
+        <textarea id="c-question" rows="3" maxlength="400"
+          placeholder="For example: the club said three board members stepped down voluntarily. Can it say how many volunteers have left since June, and why?"></textarea>
+        <div class="hint">Every question is collected, tidied up and put to the club in writing.
+        A clear question is much harder to duck than an accusation.</div>
+      </div>
+
+      <h3 class="consult__q">7. If supporters did want to make their feelings known, what would you support?</h3>
+      <p class="hint">We are asking, not proposing. Nothing here is planned and nothing is being
+      organised. This is a question about what supporters would be behind.</p>
+      ${tickList("act", CONSULT_ACTIONS)}
+
+      <h3 class="consult__q">8. Would you come to the first meeting of the Association?</h3>
+      <p class="hint">Nothing is booked. We are working out whether there is enough interest to
+      arrange one, and whether it needs to be in a room, online, or both.</p>
+      <div class="offer-list" id="c-meet">
+        ${[["in-person", "Yes, in person in Kettering"],
+           ["online", "Yes, but online"],
+           ["either", "Yes, either would suit me"],
+           ["updates", "I could not come, but keep me posted"],
+           ["no", "No"]]
+          .map(([k, l]) => `
+            <label class="offer">
+              <input type="radio" name="c-meeting" value="${k}">
+              <span><b>${esc(l)}</b></span>
+            </label>`).join("")}
+      </div>
+
+      <h3 class="consult__q">9. Your name, if you want it used</h3>
+      <div class="field">
+        <label for="c-name">Name (optional)</label>
+        <input id="c-name" maxlength="60" placeholder="Leave blank to stay anonymous">
+      </div>
+      <label class="offer" style="margin-top:8px">
+        <input type="checkbox" id="c-publish">
+        <span><b>You may publish what I have written, with my name if I gave one</b>
+        <span class="hint">Leave this unticked and your words still count towards the findings,
+        they are just never quoted.</span></span>
+      </label>
+
+      <button class="btn btn--full" id="c-send" style="margin-top:18px">Send my answers</button>
+      <p class="hint" style="margin-top:10px">One response per device. You cannot change it
+      afterwards, so have a read back before you send.</p>
+    </div>`);
+
+  /* Confidence, as a row of buttons rather than a slider: a slider on a phone
+     gives you a number you did not mean. */
+  let confidence = null;
+  form.querySelectorAll("[data-conf]").forEach((b) =>
+    b.addEventListener("click", () => {
+      confidence = Number(b.dataset.conf);
+      form.querySelectorAll("[data-conf]").forEach((o) =>
+        o.classList.toggle("is-on", Number(o.dataset.conf) === confidence));
+    }));
+
+  form.querySelector("#c-send").addEventListener("click", async () => {
+    const direction = form.querySelector('input[name="c-direction"]:checked')?.value;
+    if (!confidence) return toast("Please answer question 1.");
+    if (!direction) return toast("Please answer question 2.");
+
+    const picks = (attr) => [...form.querySelectorAll(`[data-${attr}]`)]
+      .filter((i) => i.checked).map((i) => i.dataset[attr]);
+    const representation = {};
+    CONSULT_BODIES.forEach(([key]) => {
+      const v = form.querySelector(`input[name="rep-${key}"]:checked`)?.value;
+      if (v) representation[key] = v;
+    });
+
+    const text = (id) => form.querySelector(id).value.trim();
+    const answer = {
+      confidence, direction, representation,
+      positives: picks("pos"), concerns: picks("con"), actions: picks("act"),
+      positiveNote: text("#c-posnote") || null,
+      concernNote: text("#c-connote") || null,
+      question: text("#c-question") || null,
+      attribution: text("#c-name") || null,
+      meeting: form.querySelector('input[name="c-meeting"]:checked')?.value || null,
+      publishOk: form.querySelector("#c-publish").checked,
+    };
+
+    /* The same filter every other written thing on the site goes through. */
+    for (const [label, value] of [["comment", answer.concernNote], ["comment", answer.positiveNote], ["question", answer.question]]) {
+      if (!value) continue;
+      const check = db.checkPost(value, { maxLength: 600, minLength: 3 });
+      if (!check.ok) return toast(`Your ${label}: ${check.reason}`);
+    }
+
+    const btn = form.querySelector("#c-send");
+    btn.disabled = true;
+    try {
+      await db.submitConsultation(answer);
+      toast("Thank you. Your answers are in.");
+      render();
+    } catch (err) {
+      btn.disabled = false;
+      toast(err.message || "That did not send. Please try again.");
+    }
+  });
+
+  box.append(form);
+  return box;
+}
+
+/** The findings. Numbers first, then supporters in their own words. */
+function consultResults() {
+  const box = el(`<div><div class="skeleton" style="height:320px"></div></div>`);
+
+  db.consultationResults().then((r) => {
+    box.replaceChildren();
+    if (!r?.summary || !r.summary.responses) {
+      box.append(el(`<div class="empty"><b>Nothing to show yet</b>The results go up once the
+        consultation has closed.</div>`));
+      return;
+    }
+    const s = r.summary;
+    const pct = (n) => Math.round((n / s.responses) * 100);
+
+    box.append(el(`
+      <div class="card">
+        <div class="info-grid info-grid--4">
+          <div class="info"><div class="info__label">Responses</div><div class="info__value" style="color:var(--gold-400)">${s.responses}</div></div>
+          <div class="info"><div class="info__label">Confidence</div><div class="info__value">${s.confidence_avg}<span style="font-size:14px;color:var(--text-3)">/10</span></div></div>
+          <div class="info"><div class="info__label">Wrong direction</div><div class="info__value">${pct(s.direction_wrong)}%</div></div>
+          <div class="info"><div class="info__label">From members</div><div class="info__value">${s.from_members}</div></div>
+        </div>
+        <p class="hint">${s.responses} supporters answered, ${s.from_members} of them signed in to
+        a KTFCSA account. Anyone could take part, which is why both numbers are shown.</p>
+      </div>`));
+
+    /* The spread behind the average, so the headline can be checked rather than
+       taken on trust. The May report did this and was stronger for it. */
+    const maxConf = Math.max(...r.confidence.map((c) => c.people), 1);
+    box.append(el(`<h2 class="section-title">Confidence, one to ten</h2>`));
+    box.append(el(`
+      <div class="card">
+        ${[...Array(10)].map((_, i) => {
+          const row = r.confidence.find((c) => c.score === i + 1);
+          const n = row?.people || 0;
+          return `<div class="dist">
+            <span class="dist__key">${i + 1}</span>
+            <span class="dist__bar"><span class="dist__fill" style="width:${Math.round((n / maxConf) * 100)}%"></span></span>
+            <span class="dist__n">${n}</span>
+          </div>`;
+        }).join("")}
+        <p class="hint">Every score, not just the average.</p>
+      </div>`));
+
+    /* Who supporters feel represented by. Nobody is accused of anything here:
+       this is the fanbase answering for itself. */
+    box.append(el(`<h2 class="section-title">Who supporters feel represented by</h2>`));
+    const repCard = el(`<div class="card"></div>`);
+    CONSULT_BODIES.forEach(([key, label]) => {
+      const rows = r.representation.filter((x) => x.body === key);
+      const total = rows.reduce((a, x) => a + x.people, 0);
+      if (!total) return;
+      const share = (v) => Math.round(((rows.find((x) => x.verdict === v)?.people || 0) / total) * 100);
+      repCard.append(el(`
+        <div class="rep-result">
+          <div class="rep-result__name">${esc(label)}</div>
+          <div class="rep-result__bar">
+            <span class="seg seg--well" style="width:${share("well")}%"></span>
+            <span class="seg seg--ok" style="width:${share("ok")}%"></span>
+            <span class="seg seg--poor" style="width:${share("poorly")}%"></span>
+            <span class="seg seg--unsure" style="width:${share("unsure")}%"></span>
+          </div>
+          <div class="rep-result__key">${share("well")}% well · ${share("ok")}% adequately ·
+            <b>${share("poorly")}% poorly</b> · ${share("unsure")}% don't know</div>
+        </div>`));
+    });
+    repCard.append(el(`<p class="hint">Well, adequately, poorly, don't know. Supporters were asked
+      about roles, not people.</p>`));
+    box.append(repCard);
+
+    const chart = (kind, heading, labels) => {
+      const rows = r.choices.filter((c) => c.kind === kind).sort((a, b) => b.people - a.people);
+      if (!rows.length) return;
+      const top = Math.max(...rows.map((x) => x.people), 1);
+      box.append(el(`<h2 class="section-title">${heading}</h2>`));
+      box.append(el(`
+        <div class="card">
+          ${rows.map((x) => `
+            <div class="dist">
+              <span class="dist__key dist__key--wide">${esc(labels[x.choice] || x.choice)}</span>
+              <span class="dist__bar"><span class="dist__fill" style="width:${Math.round((x.people / top) * 100)}%"></span></span>
+              <span class="dist__n">${pct(x.people)}%</span>
+            </div>`).join("")}
+        </div>`));
+    };
+    const asMap = (list) => Object.fromEntries(list);
+    chart("concern", "What concerns supporters", asMap(CONSULT_CONCERNS));
+    chart("positive", "What supporters would defend", asMap(CONSULT_POSITIVES));
+    chart("action", "What supporters would support", asMap(CONSULT_ACTIONS));
+    box.append(el(`<p class="hint" style="margin-top:-6px">The Association is reporting what
+      supporters told us they would be behind. It is not calling for any of it.</p>`));
+
+    /* The one constructive number in the whole exercise. Put near the top of
+       the findings on purpose: a mood is a mood, a room full of people is a
+       supporters' association. */
+    if (s.meeting_any) {
+      box.append(el(`<h2 class="section-title">The first meeting</h2>`));
+      box.append(el(`
+        <div class="card">
+          <div class="info-grid info-grid--3">
+            <div class="info"><div class="info__label">Would come</div><div class="info__value" style="color:var(--gold-400)">${s.meeting_any}</div></div>
+            <div class="info"><div class="info__label">In a room</div><div class="info__value">${s.meeting_in_person}</div></div>
+            <div class="info"><div class="info__label">Online</div><div class="info__value">${s.meeting_online}</div></div>
+          </div>
+          <div class="hint">${s.meeting_updates} more asked to be kept posted without being able to
+          come. Nothing is booked yet; this is what we asked supporters in order to work out
+          whether to arrange one, and whether it needs to be in a room, online, or both.</div>
+        </div>`));
+    }
+
+    /* The questions, numbered, with how long each has gone unanswered. That
+       last column is the point of the exercise. */
+    const questions = r.published.filter((p) => p.question);
+    if (questions.length) {
+      box.append(el(`<h2 class="section-title">Questions put to the club</h2>`));
+      const qc = el(`<div class="card"></div>`);
+      questions.forEach((q, i) => {
+        const days = q.asked_at && !q.answered_at
+          ? Math.floor((Date.now() - new Date(q.asked_at).getTime()) / 86400000) : null;
+        qc.append(el(`
+          <div class="qitem">
+            <span class="qitem__n">${i + 1}</span>
+            <div>
+              <p>${esc(q.question)}</p>
+              <p class="hint">${q.attribution ? `Asked by ${esc(q.attribution)}. ` : ""}${
+                q.answered_at ? "Answered." :
+                days !== null ? `<b>Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.</b>` :
+                "To be sent to the club."}</p>
+            </div>
+          </div>`));
+      });
+      box.append(qc);
+    }
+
+    const notes = r.published.filter((p) => p.concern_note || p.positive_note);
+    if (notes.length) {
+      box.append(el(`<h2 class="section-title">In supporters' own words</h2>`));
+      const nc = el(`<div class="card"></div>`);
+      notes.forEach((n) => {
+        [n.positive_note, n.concern_note].filter(Boolean).forEach((t) => {
+          nc.append(el(`<blockquote class="quote">${esc(t)}
+            ${n.attribution ? `<cite>${esc(n.attribution)}</cite>` : ""}</blockquote>`));
+        });
+      });
+      nc.append(el(`<p class="hint">Published with permission. Comments are read by a volunteer
+        before they appear, and most responses were not written for publication.</p>`));
+      box.append(nc);
+    }
+  }).catch(() => {
+    box.replaceChildren();
+    box.append(el(`<div class="empty"><b>Results unavailable</b>Please try again shortly.</div>`));
+  });
+
+  return box;
+}
+
+/** The nudge on the fixtures page, for the five days it is open. */
+function consultPromo() {
+  if (consultState() !== "open") return null;
+  const done = db.hasAnswered();
+  return el(`
+    <button class="daily-promo daily-promo--urgent" data-nav="consult">
+      <span class="daily-promo__icon">📣</span>
+      <span class="daily-promo__text">
+        <strong>Have your say on how the club is run</strong>
+        <span>${done ? "Thank you. Results here on Saturday." : "Independent consultation, closes Friday. No account needed."}</span>
+      </span>
+      <span class="daily-promo__go">${done ? "Done" : "Open"}</span>
+    </button>`);
+}
 
 async function readJSON(path) {
   for (const init of [undefined, { cache: "no-store" }]) {

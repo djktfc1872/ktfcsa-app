@@ -1239,3 +1239,216 @@ comment on view archive_offer_list is
 
 alter view archive_offer_list set (security_invoker = true);
 grant select on archive_offer_list to authenticated;
+
+-- ===========================================================================
+-- Fan consultation, 17 to 21 August 2026
+--
+-- A time-limited survey on how the club is being run: confidence, direction,
+-- who supporters feel represented by, what worries them, a question to put to
+-- the club, and what action they would support.
+--
+-- Two rules run through this table.
+--
+-- The numbers are public and the words are not. Aggregates come from views
+-- that run as owner so a signed-out visitor can see the totals; the rows
+-- underneath are readable by volunteers alone. Nothing anybody wrote reaches
+-- the public or the club until a volunteer has read it and approved it, which
+-- is why every free-text field carries its own status.
+--
+-- And anyone can answer, not just account holders, because a mandate that
+-- covers only the ninety-odd people with logins is not a mandate. Signed-in
+-- responses are marked so the report can say how many came from members.
+-- ===========================================================================
+
+create table if not exists consultation_responses (
+  id uuid primary key default gen_random_uuid(),
+  -- Null when nobody was signed in. Not required, deliberately.
+  profile_id uuid references profiles on delete set null,
+  -- A random string from the device, so somebody can amend their answer.
+  -- Not an identifier, not derived from anything, and never shown.
+  device_key text not null check (char_length(device_key) between 8 and 64),
+
+  -- The structured part. Safe to publish as numbers, and the only required bit.
+  confidence     int  not null check (confidence between 1 and 10),
+  direction      text not null check (direction in ('right','wrong','unsure')),
+  representation jsonb not null default '{}'::jsonb,
+  positives      text[] not null default '{}',
+  concerns       text[] not null default '{}',
+  actions        text[] not null default '{}',
+
+  -- The words. Published only once a volunteer has approved them.
+  positive_note text check (positive_note is null or char_length(positive_note) <= 600),
+  concern_note  text check (concern_note  is null or char_length(concern_note)  <= 600),
+  question      text check (question      is null or char_length(question)      <= 400),
+  attribution   text check (attribution   is null or char_length(attribution)   <= 60),
+  -- Unticked by default, like email consent. Silence is not permission.
+  publish_ok    boolean not null default false,
+
+  -- Would they come to the first meeting of the association, and how. The
+  -- point of asking all this is to organise, not only to record a mood.
+  meeting text check (meeting in ('in-person','online','either','updates','no')),
+
+  note_status     text not null default 'pending'
+    check (note_status in ('pending','approved','rejected')),
+  question_status text not null default 'pending'
+    check (question_status in ('pending','approved','rejected')),
+  -- Filled in when a question has been put to the club, so the results page
+  -- can show how long it has gone unanswered.
+  asked_at   timestamptz,
+  answered_at timestamptz,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table consultation_responses is
+  'Fan consultation, August 2026. Rows are private to volunteers; the public sees the two views below.';
+
+create unique index if not exists consultation_one_per_device
+  on consultation_responses (device_key);
+create index if not exists consultation_pending_idx
+  on consultation_responses (created_at desc)
+  where note_status = 'pending' or question_status = 'pending';
+
+-- The window. A date rather than a weekday rule, because this is one
+-- consultation and not a recurring thing. Stable, not immutable, for the same
+-- reason london_today() is, so the rule lives in the policy and not a check.
+create or replace function consultation_open()
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select london_today() between date '2026-08-17' and date '2026-08-21';
+$$;
+
+alter table consultation_responses enable row level security;
+
+-- Anyone may answer, signed in or not, but only while it is open and only
+-- under their own account if they have one.
+drop policy if exists "answer the consultation" on consultation_responses;
+create policy "answer the consultation" on consultation_responses
+  for insert with check (
+    consultation_open()
+    and (profile_id is null or profile_id = auth.uid())
+  );
+
+-- Amending your own answer, if you were signed in when you gave it.
+--
+-- There is no anonymous amendment, and there cannot be. The device key lives
+-- in the supporter's browser and the database has no way to check a claim to
+-- hold it, so a policy that allowed an update on the strength of it would let
+-- anybody rewrite everybody's answers. One response per device, unique index
+-- above, and the form is replaced by a thank-you once it has been given.
+drop policy if exists "amend your own answer" on consultation_responses;
+create policy "amend your own answer" on consultation_responses
+  for update using (
+    is_admin() or (consultation_open() and profile_id is not null and profile_id = auth.uid())
+  )
+  with check (
+    is_admin() or (consultation_open() and profile_id is not null and profile_id = auth.uid())
+  );
+
+-- Nobody reads the raw responses but volunteers. Not even the person who
+-- wrote one: they have their own copy on their device.
+drop policy if exists "volunteers read the responses" on consultation_responses;
+create policy "volunteers read the responses" on consultation_responses
+  for select using (is_admin());
+
+drop policy if exists "volunteers remove a response" on consultation_responses;
+create policy "volunteers remove a response" on consultation_responses
+  for delete using (is_admin());
+
+-- The headline numbers. Counts and averages only.
+create or replace view consultation_summary as
+select
+  count(*)::int                                                   as responses,
+  count(*) filter (where profile_id is not null)::int             as from_members,
+  round(avg(confidence)::numeric, 1)                              as confidence_avg,
+  count(*) filter (where direction = 'right')::int                as direction_right,
+  count(*) filter (where direction = 'wrong')::int                as direction_wrong,
+  count(*) filter (where direction = 'unsure')::int               as direction_unsure,
+  count(*) filter (where question is not null and question <> '')::int as questions_asked,
+  count(*) filter (where meeting in ('in-person','either'))::int  as meeting_in_person,
+  count(*) filter (where meeting in ('online','either'))::int     as meeting_online,
+  count(*) filter (where meeting = 'updates')::int                as meeting_updates,
+  count(*) filter (where meeting is not null and meeting <> 'no')::int as meeting_any,
+  min(created_at)                                                 as opened,
+  max(created_at)                                                 as latest
+from consultation_responses;
+
+-- The distribution behind the average, so the headline can be checked rather
+-- than taken on trust. The May report published this and was stronger for it.
+create or replace view consultation_confidence as
+select confidence as score, count(*)::int as people
+from consultation_responses group by confidence;
+
+-- How often each option was picked, across the three multi-select questions.
+create or replace view consultation_choices as
+select 'positive' as kind, unnest(positives) as choice, count(*)::int as people
+from consultation_responses group by 1, 2
+union all
+select 'concern', unnest(concerns), count(*)::int
+from consultation_responses group by 1, 2
+union all
+select 'action', unnest(actions), count(*)::int
+from consultation_responses group by 1, 2;
+
+-- Who supporters feel represented by. One row per body per verdict.
+create or replace view consultation_representation as
+select
+  key                          as body,
+  value #>> '{}'               as verdict,
+  count(*)::int                as people
+from consultation_responses, jsonb_each(representation)
+group by 1, 2;
+
+-- Only what a volunteer has approved, and a name only where it was offered.
+create or replace view consultation_published as
+select
+  id,
+  case when note_status = 'approved' then positive_note end as positive_note,
+  case when note_status = 'approved' then concern_note  end as concern_note,
+  case when question_status = 'approved' then question  end as question,
+  case when publish_ok then attribution end                 as attribution,
+  asked_at,
+  answered_at,
+  created_at
+from consultation_responses
+where note_status = 'approved' or question_status = 'approved';
+
+comment on view consultation_published is
+  'Approved comments and questions only. A name appears only where the supporter ticked the box.';
+
+-- NOTE: these five run as owner, not invoker, and that is deliberate for the
+-- same reason archive_offer_counts does. The rows underneath are volunteers-
+-- only, so an invoker view would return nothing to the public and the whole
+-- point is that the public can see the findings. It is safe because none of
+-- them exposes an identifying column: no profile_id, no device_key, and a name
+-- only where somebody asked for their name to be used. Check that again before
+-- adding a column to any of them.
+alter view consultation_summary        set (security_invoker = false);
+alter view consultation_confidence     set (security_invoker = false);
+alter view consultation_choices        set (security_invoker = false);
+alter view consultation_representation set (security_invoker = false);
+alter view consultation_published      set (security_invoker = false);
+
+grant select on consultation_summary, consultation_confidence, consultation_choices,
+                consultation_representation, consultation_published
+  to anon, authenticated;
+grant execute on function consultation_open() to anon, authenticated;
+
+-- Everything waiting on a volunteer, for the badge in the navigation.
+create or replace view pending_actions as
+select * from (
+select
+  (select count(*) from consultation_responses
+    where (note_status = 'pending' and (positive_note is not null or concern_note is not null))
+       or (question_status = 'pending' and question is not null))::int as consultation,
+  (select count(*) from polls where status = 'pending')::int           as polls,
+  (select count(*) from feedback where handled = false)::int           as feedback
+) c
+where is_admin();
+
+alter view pending_actions set (security_invoker = true);
+grant select on pending_actions to authenticated;

@@ -516,6 +516,40 @@ export function quizStreak(today) {
 
 export const quizLeague = () => (backend ? backend.quizLeague() : Promise.resolve([]));
 
+/* ------------------------------------------------------------- consultation */
+
+/* A random string, kept on the device so somebody is not asked twice. It is
+   not derived from anything about them and is never shown or published. */
+export function consultDeviceKey() {
+  let k = read("consult:key", null);
+  if (!k) {
+    k = (crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)).replace(/-/g, "");
+    write("consult:key", k);
+  }
+  return k;
+}
+
+export const hasAnswered = () => Boolean(read("consult:done", null));
+
+export async function submitConsultation(answer) {
+  if (!backend) throw new Error("The consultation is not available offline.");
+  await backend.submitConsultation({ ...answer, deviceKey: consultDeviceKey() });
+  /* Remembered locally as well as in the database, because an anonymous
+     supporter has no other way of being recognised on their next visit. */
+  write("consult:done", new Date().toISOString());
+  onChange();
+}
+
+export const consultationResults = () => (backend ? backend.consultationResults() : Promise.resolve(null));
+export const consultationQueue = () => (backend ? backend.consultationQueue() : Promise.resolve([]));
+export const pendingActions = () => (backend ? backend.pendingActions() : Promise.resolve(null));
+
+export async function setConsultationStatus(id, patch) {
+  if (!backend) return;
+  await backend.setConsultationStatus(id, patch);
+  onChange();
+}
+
 /* ------------------------------------------------------- archive project */
 
 /* Nothing here is cached in `live`: the page is visited rarely and an offer is

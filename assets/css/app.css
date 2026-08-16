@@ -866,7 +866,7 @@ table.league {
 
 table.league th {
   text-align: right;
-  font-size: 9.5px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.9px;
   color: var(--text-3);
@@ -1009,7 +1009,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .info__label {
-  font-size: 9.5px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-3);
@@ -4500,3 +4500,121 @@ button,
   border-color: var(--gold-400);
   background: color-mix(in srgb, var(--gold-400) 7%, transparent);
 }
+
+/* ========================================================= fan consultation */
+
+.consult__q {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+  margin: 24px 0 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}
+.consult__q:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* One to ten, as buttons. A slider on a phone gives you a number you did not
+   mean, and this answer is the headline figure. */
+.scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 4px; }
+.scale button {
+  padding: 11px 0;
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.scale button:hover { border-color: var(--gold-400); }
+.scale button.is-on {
+  background: var(--gold-400);
+  border-color: var(--gold-400);
+  color: #16161a;
+  font-weight: 700;
+}
+
+/* The representation grid. Labels above, radios below, so it survives 375px. */
+.rep { font-size: 12px; }
+.rep__head, .rep__row {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, 44px);
+  gap: 4px;
+  align-items: center;
+}
+.rep__head {
+  color: var(--text-3);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 6px;
+}
+.rep__head span { text-align: center; line-height: 1.2; }
+.rep__head span:first-child { text-align: left; }
+.rep__row { padding: 7px 0; border-top: 1px solid var(--line-soft); }
+.rep__body { font-size: 13px; overflow-wrap: anywhere; }
+.rep__cell { display: flex; justify-content: center; cursor: pointer; }
+.rep__cell input { width: 18px; height: 18px; accent-color: var(--gold-400); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* A distribution row: label, bar, number. Used for confidence and for every
+   multi-select result, rather than adding a chart library for four screens. */
+.dist { display: grid; grid-template-columns: 22px 1fr 44px; gap: 9px; align-items: center; padding: 3px 0; }
+.dist__key { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.dist__key--wide { grid-column: 1 / 2; }
+.dist { grid-template-columns: 22px 1fr 44px; }
+.dist:has(.dist__key--wide) { grid-template-columns: 1fr 90px 44px; }
+.dist__key--wide { font-size: 12.5px; color: var(--text-2); }
+.dist__bar { background: var(--surface-2); border-radius: 4px; height: 15px; overflow: hidden; }
+.dist__fill { display: block; height: 100%; background: var(--gold-400); border-radius: 4px; transition: width 0.5s ease; }
+.dist__n { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+
+/* One stacked bar per body. Colour carries meaning, so the figures are printed
+   underneath as well and never left to the colour alone. */
+.rep-result { padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.rep-result:first-child { border-top: 0; }
+.rep-result__name { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+.rep-result__bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--surface-2); }
+.rep-result__bar .seg { display: block; height: 100%; }
+.seg--well { background: var(--ok); }
+.seg--ok { background: var(--gold-400); }
+.seg--poor { background: var(--red-400); }
+.seg--unsure { background: var(--line); }
+.rep-result__key { margin-top: 5px; font-size: 11.5px; color: var(--text-3); }
+
+.qitem { display: flex; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+.qitem:first-child { border-top: 0; }
+.qitem__n {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface-2); color: var(--gold-400);
+  font-size: 11px; font-weight: 700; display: grid; place-items: center;
+}
+.qitem p { font-size: 13.5px; line-height: 1.5; }
+
+.quote {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--gold-400);
+  border-radius: 0 var(--r) var(--r) 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.quote cite { display: block; margin-top: 7px; font-size: 12px; font-style: normal; color: var(--text-3); }
+
+/* Louder than the daily nudge, because it is on for five days and then gone. */
+.daily-promo--urgent { border-left-color: var(--red-400); }
+.daily-promo--urgent .daily-promo__go { color: var(--red-400); }
+
+/* Anything waiting on a volunteer. Admin only, hidden at zero. */
+.nav-badge {
+  display: inline-grid; place-items: center;
+  min-width: 17px; height: 17px; padding: 0 4px; margin-left: 5px;
+  border-radius: 9px; background: var(--red-400); color: #fff;
+  font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.tabbar .nav-badge { position: absolute; top: 4px; margin: 0; transform: translateX(13px); }
