@@ -20,9 +20,16 @@ const COMPETITION_ID = "69d0bdbab616bafb97331d40"; // SFL - Premier Central
 const TEAM_ID = "6a0adf9eda5d0d0847a023f0"; // Kettering Town first team
 const SEASON_FROM = "2026-07-01";
 const SEASON_TO = "2027-06-30";
+/* The feed goes back to August 2018 and the request below already returns all
+   of it, so the archive costs nothing extra. Coverage is uneven — the club was
+   outside this league between 2019 and 2023 — which is fine, because nothing
+   reads it as a complete record. */
+const ARCHIVE_FROM = "2018-07-01";
 const LOGO_BASE = "https://www.southern-football-league.co.uk/img";
 
-const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "data", "league.json");
+const DATA_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "data");
+const OUT = resolve(DATA_DIR, "league.json");
+const ARCHIVE_OUT = resolve(DATA_DIR, "archive.json");
 
 async function get(path) {
   const res = await fetch(BASE + path, {
@@ -259,6 +266,116 @@ function readStatus(raw) {
   return "upcoming";
 }
 
+/**
+ * Is this Kettering's home game? Match on the team id: some records store the
+ * team name as "P", so testing the name gets the wrong side.
+ */
+const weAreHome = (m) =>
+  (m.homeTeam?.id || "") === TEAM_ID || /kettering/i.test(m.homeTeam?.fullName || m.homeTeamName || "");
+
+/** One match from the feed, in the shape the app reads. */
+function toFixture(m) {
+  const homeName = m.homeTeam?.fullName || m.homeTeamName || "";
+  const awayName = m.awayTeam?.fullName || m.awayTeamName || "";
+  const isHome = weAreHome(m);
+  const status = readStatus(m.status);
+  const score = m.score?.current || {};
+  return {
+    id: m.id || m._id,
+    date: m.date,
+    kickoff: m.time || "",
+    venue: isHome ? "Home" : "Away",
+    opponent: isHome ? awayName : homeName,
+    opponentCrest: crestFor(null, isHome ? awayName : homeName, isHome ? m.awayTeam?.logo : m.homeTeam?.logo),
+    competition: m.competition?.shortName || m.competition?.name || "",
+    competitionType: m.competition?.type || "",
+    ground: m.stadium?.name || "",
+    status,
+    rawStatus: m.status || "",
+    homeScore: status === "played" || status === "live" ? score.home ?? null : null,
+    awayScore: status === "played" || status === "live" ? score.away ?? null : null,
+    attendance: m.attendance || null,
+    /* Who played, where the league recorded it. Coverage is patchy: two
+       full seasons of lineups, then 2025/26 stopped in September. The app
+       shows the squad and ratings only when there is something here. */
+    lineup: lineupFor(m, isHome),
+    events: eventsFor(m, isHome),
+  };
+}
+
+/**
+ * Was this actually played? The status alone is not enough looking backwards:
+ * the league never updated 43 past matches off "NotKickedOff", which silently
+ * cost the archive 37 of last season's 50 games.
+ *
+ * So a score plus something to corroborate it — an attendance or a team sheet —
+ * counts too. That pairing matters: five records carry a score and nothing
+ * else, and one of them is 999-999. A placeholder like that reaching the
+ * question bank would be the most memorable bug this app ever shipped.
+ */
+function reallyPlayed(m) {
+  const score = m.score?.current || {};
+  const sane = (v) => typeof v === "number" && v >= 0 && v <= 20;
+  if (!sane(score.home) || !sane(score.away)) return false;
+  if (readStatus(m.status) === "played") return true;
+  return Boolean(m.attendance) || Boolean((m.homeLineup || []).length || (m.awayLineup || []).length);
+}
+
+/** Which season a date falls in, as supporters write it: "2024/25". */
+function seasonOf(date) {
+  const y = Number(date.slice(0, 4));
+  const m = Number(date.slice(5, 7));
+  const start = m >= 7 ? y : y - 1;
+  return `${start}/${String(start + 1).slice(2)}`;
+}
+
+/**
+ * A past match, kept small. This feeds the Poppies Daily question bank and the
+ * player archive, both of which want every season at once, so every byte here
+ * is paid for 250 times over.
+ *
+ * Deliberately absent: goalscorer names. The feed records every historical
+ * scorer as the literal string "N/A" — all 99 of Kettering's goals across
+ * 2023/24 and 2024/25 — so there is nothing to store and nothing to build on.
+ * Minutes are real. Names arrive only from 2026/27, through the season list
+ * above. Please do not wire "N/A" in here to fill the gap.
+ */
+function toArchiveMatch(m, intern) {
+  const isHome = weAreHome(m);
+  const score = m.score?.current || {};
+  const ours = isHome ? score.home : score.away;
+  const theirs = isHome ? score.away : score.home;
+  const side = isHome ? "home" : "away";
+
+  const cards = (m[`${side}Cards`] || []);
+  return {
+    id: m.id || m._id,
+    date: m.date,
+    season: seasonOf(m.date),
+    venue: isHome ? "Home" : "Away",
+    opponent: (isHome ? m.awayTeam?.fullName || m.awayTeamName : m.homeTeam?.fullName || m.homeTeamName) || "",
+    competition: m.competition?.shortName || m.competition?.name || "",
+    /* Kettering first, always, so nothing downstream has to redo the flip. */
+    us: typeof ours === "number" ? ours : null,
+    them: typeof theirs === "number" ? theirs : null,
+    att: m.attendance || null,
+    lineup: (m[`${side}Lineup`] || [])
+      .filter((p) => p.personName)
+      .map((p) => [intern(p.personName), p.number ?? null, p.hasStartedMatch ? 1 : 0]),
+    /* Incomplete: in a quarter of the matches that have any goal records at
+       all, there are fewer minutes here than we scored. Fine for "when did we
+       score", useless for counting. Count goals from `us`, never from this. */
+    goalMins: (m[`${side}Goals`] || [])
+      .map((g) => (typeof g.minute === "number" ? g.minute : null))
+      .filter((x) => x !== null)
+      .sort((a, b) => a - b),
+    cards: {
+      y: cards.filter((c) => String(c.type || "").toLowerCase() !== "red").length,
+      r: cards.filter((c) => String(c.type || "").toLowerCase() === "red").length,
+    },
+  };
+}
+
 async function main() {
   const [tableRes, matchRes] = await Promise.all([
     get(`/competitions/league-table?competitionId=${COMPETITION_ID}`),
@@ -294,36 +411,7 @@ async function main() {
 
   const fixtures = (matchRes.items || [])
     .filter((m) => m.date >= SEASON_FROM && m.date <= SEASON_TO)
-    .map((m) => {
-      const homeName = m.homeTeam?.fullName || m.homeTeamName || "";
-      const awayName = m.awayTeam?.fullName || m.awayTeamName || "";
-      /* Match on the team id. Some records store the team name as "P", so
-         testing the name gets the wrong side. */
-      const isHome = (m.homeTeam?.id || "") === TEAM_ID || /kettering/i.test(homeName);
-      const status = readStatus(m.status);
-      const score = m.score?.current || {};
-      return {
-        id: m.id || m._id,
-        date: m.date,
-        kickoff: m.time || "",
-        venue: isHome ? "Home" : "Away",
-        opponent: isHome ? awayName : homeName,
-        opponentCrest: crestFor(null, isHome ? awayName : homeName, isHome ? m.awayTeam?.logo : m.homeTeam?.logo),
-        competition: m.competition?.shortName || m.competition?.name || "",
-        competitionType: m.competition?.type || "",
-        ground: m.stadium?.name || "",
-        status,
-        rawStatus: m.status || "",
-        homeScore: status === "played" || status === "live" ? score.home ?? null : null,
-        awayScore: status === "played" || status === "live" ? score.away ?? null : null,
-        attendance: m.attendance || null,
-        /* Who played, where the league recorded it. Coverage is patchy: two
-           full seasons of lineups, then 2025/26 stopped in September. The app
-           shows the squad and ratings only when there is something here. */
-        lineup: lineupFor(m, isHome),
-        events: eventsFor(m, isHome),
-      };
-    })
+    .map(toFixture)
     .sort((a, b) => (a.date + a.kickoff).localeCompare(b.date + b.kickoff));
 
   const payload = {
@@ -339,7 +427,50 @@ async function main() {
   await writeFile(OUT, JSON.stringify(payload, null, 2) + "\n", "utf8");
   console.log(`Wrote ${OUT}: ${table.length} clubs, ${fixtures.length} fixtures.`);
 
+  await writeArchive(matchRes.items || []);
   await pushToSupabase(fixtures);
+}
+
+/**
+ * Every played match before this season, from the same response the fixtures
+ * came out of. No extra requests: the API has no way to ask for one season, so
+ * a club's whole history arrives whether we want it or not, and until now it
+ * was filtered away and forgotten.
+ */
+async function writeArchive(items) {
+  const players = [];
+  const index = new Map();
+  const intern = (name) => {
+    const clean = String(name).trim();
+    if (!index.has(clean)) {
+      index.set(clean, players.length);
+      players.push(clean);
+    }
+    return index.get(clean);
+  };
+
+  const matches = items
+    .filter((m) => m.date >= ARCHIVE_FROM && m.date < SEASON_FROM)
+    .filter(reallyPlayed)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((m) => toArchiveMatch(m, intern));
+
+  const payload = {
+    built: new Date().toISOString(),
+    source: "Southern League (southern-football-league.co.uk)",
+    note: "Goalscorer names are the string 'N/A' in the feed for every season before 2026/27, so no scorer is recorded here. The minutes are real.",
+    players,
+    matches,
+  };
+
+  /* Unpretty, unlike league.json next door. Nobody reads this one by hand and
+     indenting it costs about 60KB on every visit that opens the archive. */
+  await writeFile(ARCHIVE_OUT, JSON.stringify(payload) + "\n", "utf8");
+  const seasons = new Set(matches.map((m) => m.season));
+  console.log(
+    `Wrote ${ARCHIVE_OUT}: ${matches.length} matches, ${players.length} players, ` +
+    `${seasons.size} seasons (${[...seasons].sort()[0]} to ${[...seasons].sort().at(-1)}).`
+  );
 }
 
 /* --------------------------------------------------------------- Supabase */
