@@ -147,6 +147,33 @@ function canonicalName(name, number) {
 }
 
 /** The Kettering names on a team sheet, starters first then substitutes. */
+/**
+ * The feed uses the literal string "N/A" where it has no name — for every
+ * historical goalscorer, and for 521 places in old team sheets. It is not a
+ * player. This season's sheets are clean, but a rating or a quiz question
+ * against "N/A" is the sort of thing that only shows up once it is live.
+ */
+const isRealName = (s) => {
+  const n = String(s || "").trim();
+  return n.length > 1 && !/^(n\/a|tbc|unknown|-+)$/i.test(n);
+};
+
+/**
+ * The 2023/24 records are shouted or whispered rather than written: "BEN WATTS",
+ * "dan willis", "JAMES LE MEASIEUR". Left alone, a lower-case name sitting
+ * among three properly cased ones in a quiz answers the question by itself.
+ *
+ * Only names that are entirely upper or entirely lower case are touched.
+ * Anything already mixed is left exactly as it is, because that is where
+ * "Lawson D'Ath", "McDonald" and "O'Brien" live and a naive title-case would
+ * break every one of them.
+ */
+function tidyName(raw) {
+  const n = String(raw || "").trim().replace(/\s+/g, " ");
+  if (n !== n.toUpperCase() && n !== n.toLowerCase()) return n;
+  return n.toLowerCase().replace(/(^|[\s'\-])([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase());
+}
+
 function lineupFor(match, isHome) {
   const starters = (isHome ? match.homeLineup : match.awayLineup) || [];
   const subs = (isHome ? match.homeSubs : match.awaySubs) || [];
@@ -169,7 +196,7 @@ function lineupFor(match, isHome) {
     })
     .filter((p) => {
       const key = p.name.toLowerCase();
-      if (!p.name || seen.has(key)) return false;
+      if (!isRealName(p.name) || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
@@ -321,6 +348,12 @@ function reallyPlayed(m) {
   return Boolean(m.attendance) || Boolean((m.homeLineup || []).length || (m.awayLineup || []).length);
 }
 
+/** A club name we can actually show, or "" if the feed only gave a placeholder. */
+const namedClub = (s) => {
+  const n = String(s || "").trim();
+  return n.length > 3 ? n : "";
+};
+
 /** Which season a date falls in, as supporters write it: "2024/25". */
 function seasonOf(date) {
   const y = Number(date.slice(0, 4));
@@ -353,14 +386,19 @@ function toArchiveMatch(m, intern) {
     date: m.date,
     season: seasonOf(m.date),
     venue: isHome ? "Home" : "Away",
-    opponent: (isHome ? m.awayTeam?.fullName || m.awayTeamName : m.homeTeam?.fullName || m.homeTeamName) || "",
+    /* Seven old records store the other club's name as the single letter "P".
+       Empty here rather than a placeholder, so anything that names an opponent
+       can skip the match instead of asking who "P" were. */
+    opponent: namedClub(isHome ? m.awayTeam?.fullName || m.awayTeamName : m.homeTeam?.fullName || m.homeTeamName),
     competition: m.competition?.shortName || m.competition?.name || "",
     /* Kettering first, always, so nothing downstream has to redo the flip. */
     us: typeof ours === "number" ? ours : null,
     them: typeof theirs === "number" ? theirs : null,
     att: m.attendance || null,
     lineup: (m[`${side}Lineup`] || [])
-      .filter((p) => p.personName)
+      /* A surname on its own ("LEWER", one appearance) is a half-written
+         record, not somebody anyone could be asked to identify. */
+      .filter((p) => isRealName(p.personName) && tidyName(p.personName).includes(" "))
       .map((p) => [intern(p.personName), p.number ?? null, p.hasStartedMatch ? 1 : 0]),
     /* Incomplete: in a quarter of the matches that have any goal records at
        all, there are fewer minutes here than we scored. Fine for "when did we
@@ -441,7 +479,7 @@ async function writeArchive(items) {
   const players = [];
   const index = new Map();
   const intern = (name) => {
-    const clean = String(name).trim();
+    const clean = tidyName(name);
     if (!index.has(clean)) {
       index.set(clean, players.length);
       players.push(clean);

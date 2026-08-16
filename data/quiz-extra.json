@@ -1,0 +1,24 @@
+{
+  "note": "Hand-written Poppies Daily questions, for anything the match data cannot reach. Edit this file and the next build picks them up. Four options each; 'c' is the index of the right one, counting from 0. Keep them fair, keep them Kettering, and check the answer twice - once a question has been asked it is frozen and cannot be corrected.",
+  "questions": [
+    {
+      "type": "fact",
+      "q": "Which club did goalkeeper Paul White join Kettering Town from in 2016?",
+      "a": ["Corby Town", "Accrington Stanley", "Brackley Town", "Nuneaton Borough"],
+      "c": 1,
+      "note": "White signed from Accrington Stanley and has since passed 150 appearances for the Poppies."
+    },
+    {
+      "type": "fact",
+      "q": "Kettering Town were the first club in England to do what, in January 1976?",
+      "a": [
+        "Play a match under floodlights",
+        "Wear a sponsor's name on their shirts",
+        "Use a substitute goalkeeper",
+        "Sell tickets by telephone"
+      ],
+      "c": 1,
+      "note": "Kettering Tyres appeared on the shirts against Bath City on 24 January 1976, a first in English football."
+    }
+  ]
+}

@@ -52,6 +52,13 @@ jobs:
       # Only a handful of clubs publish prices where a script can read them, but
       # every one we could read was wrong when this was first run. Sundays only:
       # the prices do not move week to week and the clubs' sites deserve the rest.
+      # Rebuilds the Poppies Daily bank from the archive the league fetch just
+      # wrote. Days already played are frozen, so this only ever adds to the
+      # far end of the calendar. Never allowed to block a result going out.
+      - name: Build the Poppies Daily questions
+        continue-on-error: true
+        run: node scripts/build-quiz.mjs
+
       - name: Check published ticket prices
         continue-on-error: true # a club site being down must never block results
         run: |
