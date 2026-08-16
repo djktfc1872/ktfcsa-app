@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-16T15:14:28+00:00",
+  "checked": "2026-08-16T15:41:24+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -48,6 +48,20 @@
       }
     },
     {
+      "club": "real-bedford",
+      "name": "Real Bedford",
+      "source": "https://www.realbedford.com/tickets/e/w-2026-08-23-fulham",
+      "found": {
+        "adultPrice": 6
+      },
+      "differences": {
+        "adultPrice": {
+          "site": 6,
+          "ours": 14
+        }
+      }
+    },
+    {
       "club": "rushall-olympic",
       "name": "Rushall Olympic",
       "source": "https://www.rofc.co.uk/club-info/online-tickets",
@@ -66,7 +80,22 @@
       }
     }
   ],
-  "drift": [],
+  "drift": [
+    {
+      "club": "real-bedford",
+      "name": "Real Bedford",
+      "source": "https://www.realbedford.com/tickets/e/w-2026-08-23-fulham",
+      "found": {
+        "adultPrice": 6
+      },
+      "differences": {
+        "adultPrice": {
+          "site": 6,
+          "ours": 14
+        }
+      }
+    }
+  ],
   "unreadable": [
     "alvechurch",
     "anstey-nomads",
@@ -77,7 +106,6 @@
     "leiston",
     "needham-market",
     "racing-club-warwick",
-    "real-bedford",
     "redditch-united",
     "stamford",
     "stourbridge",
