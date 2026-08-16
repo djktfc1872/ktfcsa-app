@@ -269,12 +269,14 @@ const ROUTES = {
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
   predict: { label: "Prediction League", short: "Predict", icon: "🎯", nav: "tab", group: "Matchday", render: viewPredict },
   players: { label: "Players & Stats", icon: "⭐", nav: "more", group: "Matchday", render: viewPlayers },
+  archive: { label: "Player Archive", icon: "📚", nav: "more", group: "Matchday", render: viewArchive },
 
   travel: { label: "Travel", icon: "🚌", nav: "more", group: "Away days", render: viewTravel },
   clubs: { label: "Away Guide", icon: "📖", nav: "more", group: "Away days", render: viewClubs },
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
 
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
+  daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
   videos: { label: "Club Videos", icon: "📺", nav: "more", group: "Supporters", render: viewVideos },
   poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", group: "Supporters", render: viewPoppies },
@@ -290,8 +292,6 @@ const ROUTES = {
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   admin: { label: "Admin", icon: "🛠️", nav: "hidden", render: viewAdmin },
   match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
-  daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
-  archive: { label: "Player Archive", icon: "📚", nav: "more", group: "Matchday", render: viewArchive },
 };
 
 function go(view, params = {}) {

@@ -155,8 +155,37 @@ function canonicalName(name, number) {
  */
 const isRealName = (s) => {
   const n = String(s || "").trim();
-  return n.length > 1 && !/^(n\/a|tbc|unknown|-+)$/i.test(n);
+  return n.length > 1 && !/^(n\/a|not found|tbc|unknown|-+)$/i.test(n);
 };
+
+/**
+ * The players, out of a team sheet that is not only players.
+ *
+ * An old sheet is two blocks stuck together: the matchday squad numbered from
+ * one, then the match officials and staff, whose numbering starts again. That
+ * is how Malcolm Lewer, Michael Hunter, Tom Cherry, the Frys, Andrew Leese,
+ * Richard King, Rachel Birks and Marcus Law - a manager, referees and
+ * assistants - ended up in the player archive with eighty-odd appearances.
+ *
+ * The boundary cannot be found from the numbers: 2018's sheets run 1, 2, 5, 6,
+ * 5, 10 and are not sorted at all. What does hold is that the squad comes
+ * first, is never more than sixteen, and that the officials are separated from
+ * it by placeholder rows. So: stop at the first placeholder, and never take
+ * more than a matchday squad.
+ *
+ * Checked against every name Danny listed - all ten disappear - and against
+ * Richard Lavery, who wore 14 in a clean 1-16 sheet and stays.
+ */
+const SQUAD_MAX = 16;
+function squadOnly(entries) {
+  const out = [];
+  for (const p of entries) {
+    if (!isRealName(p.personName)) break;
+    out.push(p);
+    if (out.length >= SQUAD_MAX) break;
+  }
+  return out;
+}
 
 /**
  * The 2023/24 records are shouted or whispered rather than written: "BEN WATTS",
@@ -168,10 +197,22 @@ const isRealName = (s) => {
  * "Lawson D'Ath", "McDonald" and "O'Brien" live and a naive title-case would
  * break every one of them.
  */
+/**
+ * One person recorded two ways. Spelled out rather than matched by similarity,
+ * because Devon and Dion Kelly-Evans are twin brothers who both played, and
+ * any threshold loose enough to catch "Alxander" merges them into one player.
+ */
+const NAME_FIXES = {
+  "jason alxander": "Jason Alexander",
+};
+
 function tidyName(raw) {
-  const n = String(raw || "").trim().replace(/\s+/g, " ");
-  if (n !== n.toUpperCase() && n !== n.toLowerCase()) return n;
-  return n.toLowerCase().replace(/(^|[\s'\-])([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase());
+  let n = String(raw || "").trim().replace(/\s+/g, " ");
+  /* "Lathaniel Rowe -Turner" and "Lathaniel Rowe-Turner" are the same man. */
+  n = n.replace(/\s*-\s*/g, "-");
+  if (n !== n.toUpperCase() && n !== n.toLowerCase()) return NAME_FIXES[n.toLowerCase()] || n;
+  n = n.toLowerCase().replace(/(^|[\s'\-])([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase());
+  return NAME_FIXES[n.toLowerCase()] || n;
 }
 
 function lineupFor(match, isHome) {
@@ -402,10 +443,10 @@ function toArchiveMatch(m, intern) {
        appearance is honest, a start would not be.
        (`homeSubs` is no help either: it holds substitution events, with the
        player coming off recorded as "N/A".) */
-    lineup: (m[`${side}Lineup`] || [])
+    lineup: squadOnly(m[`${side}Lineup`] || [])
       /* A surname on its own ("LEWER", one appearance) is a half-written
          record, not somebody anyone could be asked to identify. */
-      .filter((p) => isRealName(p.personName) && tidyName(p.personName).includes(" "))
+      .filter((p) => tidyName(p.personName).includes(" "))
       .map((p) => [intern(p.personName), p.number ?? null])
       /* The same player twice in one sheet happens; keep the first. */
       .filter((row, i, all) => all.findIndex((o) => o[0] === row[0]) === i),
