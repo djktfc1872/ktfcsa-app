@@ -968,3 +968,132 @@ select count(*)::int as pending from polls where status = 'pending';
 
 alter view poll_queue_count set (security_invoker = true);
 grant select on poll_queue_count to authenticated;
+
+-- ===========================================================================
+-- Poppies Daily
+--
+-- Five questions a day, the same five for everyone, built ahead of time by
+-- scripts/build-quiz.mjs and shipped in data/quiz-bank.json. The questions are
+-- not stored here: that file is the record of what was asked, and a row below
+-- only says how somebody got on.
+-- ===========================================================================
+
+-- The date in Kettering, whatever the supporter's phone thinks. Somebody
+-- watching from Spain rolls over when the ground does.
+--
+-- Stable rather than immutable, because it reads now(). That is exactly why
+-- the no-future-dates rule lives in the policy below and not in a check
+-- constraint on the table: Postgres will not have a check that moves.
+create or replace function london_today()
+returns date
+language sql
+stable
+set search_path = public
+as $$
+  select (now() at time zone 'Europe/London')::date;
+$$;
+
+create table if not exists quiz_results (
+  profile_id uuid not null references profiles on delete cascade,
+  quiz_date  date not null,
+  score      int  not null check (score between 0 and 5),
+  -- One character per question in order, 1 right and 0 wrong. This is what the
+  -- shareable grid is drawn from, so it has to survive the round trip.
+  marks      text not null check (marks ~ '^[01]{5}$'),
+  created_at timestamptz not null default now(),
+  primary key (profile_id, quiz_date)
+);
+
+comment on table quiz_results is
+  'One Poppies Daily per supporter per day. Streaks are worked out in the view below, never stored.';
+
+create index if not exists quiz_results_date_idx on quiz_results (quiz_date desc);
+
+alter table quiz_results enable row level security;
+
+-- Readable by anyone, like the prediction league. A score out of five and a
+-- date says no more than the leaderboard it feeds.
+drop policy if exists "quiz results are public" on quiz_results;
+create policy "quiz results are public" on quiz_results
+  for select using (true);
+
+drop policy if exists "record your own day" on quiz_results;
+create policy "record your own day" on quiz_results
+  for insert with check (
+    auth.uid() = profile_id
+    and quiz_date <= london_today()
+    -- Sixty days back is the window the guest carry-over needs and nothing
+    -- more. It is deliberately shorter than the question cooldown, so nobody
+    -- can invent a long streak after the fact without inventing every day of it.
+    and quiz_date >= london_today() - 60
+  );
+
+-- Only today's can be changed, and only by the person who set it. Yesterday is
+-- finished, which is rather the point of a daily.
+drop policy if exists "correct today's answer" on quiz_results;
+create policy "correct today's answer" on quiz_results
+  for update using (auth.uid() = profile_id and quiz_date = london_today())
+  with check (auth.uid() = profile_id and quiz_date = london_today());
+
+drop policy if exists "forget your own days" on quiz_results;
+create policy "forget your own days" on quiz_results
+  for delete using (auth.uid() = profile_id or is_admin());
+
+-- The daily table. A streak is a run of consecutive days ending today or
+-- yesterday: somebody who has not played yet this morning has not lost it.
+--
+-- The trick is that quiz_date minus a row number stays constant across a run
+-- of consecutive dates, so grouping on it finds the runs without a loop.
+create or replace view poppies_daily_league as
+with runs as (
+  select
+    profile_id,
+    quiz_date,
+    score,
+    quiz_date - (row_number() over (partition by profile_id order by quiz_date))::int as run
+  from quiz_results
+),
+grouped as (
+  select profile_id, run, count(*)::int as len, max(quiz_date) as last_day
+  from runs
+  group by profile_id, run
+),
+current_run as (
+  select profile_id, max(len) as streak
+  from grouped
+  where last_day >= london_today() - 1
+  group by profile_id
+),
+best_run as (
+  select profile_id, max(len) as best from grouped group by profile_id
+),
+totals as (
+  select
+    profile_id,
+    count(*)::int                                                   as played,
+    sum(score)::int                                                 as points,
+    count(*) filter (where score = 5)::int                          as perfect,
+    coalesce(sum(score) filter (where quiz_date > london_today() - 30), 0)::int as points_30
+  from quiz_results
+  group by profile_id
+)
+select
+  pr.id as profile_id,
+  pr.display_name,
+  t.played,
+  t.points,
+  t.perfect,
+  t.points_30,
+  coalesce(c.streak, 0)::int as streak,
+  coalesce(b.best, 0)::int   as best_streak
+from totals t
+join profiles pr        on pr.id = t.profile_id
+left join current_run c on c.profile_id = t.profile_id
+left join best_run b    on b.profile_id = t.profile_id;
+
+comment on view poppies_daily_league is
+  'Poppies Daily table. points_30 is there so somebody who starts in March is not permanently behind.';
+
+alter view poppies_daily_league set (security_invoker = true);
+grant select on poppies_daily_league to anon, authenticated;
+grant execute on function london_today() to anon, authenticated;
