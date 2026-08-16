@@ -208,10 +208,21 @@ const NAME_FIXES = {
 
 function tidyName(raw) {
   let n = String(raw || "").trim().replace(/\s+/g, " ");
+  /* The feed stores apostrophes HTML-escaped, so "Kai O&#39;keeffe" was
+     reaching the page with the entity showing. Decoded here rather than in the
+     app, or every consumer has to remember to do it. */
+  n = n
+    .replace(/&#0*39;|&#x0*27;|&apos;|&rsquo;|&#8217;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&");
   /* "Lathaniel Rowe -Turner" and "Lathaniel Rowe-Turner" are the same man. */
   n = n.replace(/\s*-\s*/g, "-");
-  if (n !== n.toUpperCase() && n !== n.toLowerCase()) return NAME_FIXES[n.toLowerCase()] || n;
-  n = n.toLowerCase().replace(/(^|[\s'\-])([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase());
+  if (n === n.toUpperCase() || n === n.toLowerCase()) {
+    n = n.toLowerCase().replace(/(^|[\s'\-])([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase());
+  }
+  /* O'keeffe and O'connor, both in the records. A lower-case letter straight
+     after an apostrophe in a surname is a typing slip every time. */
+  n = n.replace(/\b([A-Z])'([a-z])/g, (_, a, b) => `${a}'${b.toUpperCase()}`);
   return NAME_FIXES[n.toLowerCase()] || n;
 }
 

@@ -5315,7 +5315,14 @@ function viewArchive() {
     <div>
       <div class="page-head">
         <h1>Player Archive</h1>
-        <p>Everyone who has pulled on a Kettering shirt since 2018, from the league's own team sheets.</p>
+        <p>Everyone who has pulled on a Kettering shirt since 2018.</p>
+      </div>
+      <div class="otd" style="align-items:flex-start">
+        <span class="otd__year" aria-hidden="true">!</span>
+        <span>Put together from the league's old team sheets, so treat it as a good guide
+        rather than the last word. Names are sometimes misspelt at source and the odd
+        appearance will be missing. Spotted something wrong?
+        <a data-nav="feedback">Tell us</a> and we will fix it.</span>
       </div>
     </div>`);
   const box = el(`<div><div class="skeleton" style="height:300px"></div></div>`);
@@ -5354,8 +5361,8 @@ function viewArchive() {
     });
     box.append(search, list);
     box.append(el(`<p class="hint" style="margin-top:12px">
-      The league's records name no goalscorers before this season, so there are no goal
-      counts here. ${all.length} players, ${state.archive.matches.length} matches.</p>`));
+      ${all.length} players across ${state.archive.matches.length} matches. The league's
+      records name no goalscorers before this season, so there are no goal counts here.</p>`));
   }).catch(() => {
     box.innerHTML = "";
     box.append(el(`<div class="empty"><b>Archive unavailable</b>Please try again shortly.</div>`));
