@@ -402,6 +402,53 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
+  /* --------------------------------------------------------- poppies daily */
+
+  /* Added well after the first release, so a database without the table has to
+     fail quietly rather than take the app down with it. Same reason loadPrices
+     below returns an empty list: a supporter who cannot see the leaderboard
+     should still be able to read the fixtures.
+
+     These read and write raw snake_case rather than going through toRow and
+     fromRow. Predictions, attendance and ratings all do the same - that mapper
+     only covers the four generic boards. */
+
+  async loadQuizResults() {
+    if (!this.profile) return {};
+    const { data, error } = await this.sb
+      .from("quiz_results")
+      .select("quiz_date, score, marks")
+      .eq("profile_id", this.profile.id);
+    if (error) return {};
+    return Object.fromEntries((data || []).map((r) => [r.quiz_date, { score: r.score, marks: r.marks }]));
+  }
+
+  /**
+   * Records a day. keepExisting is for the guest carry-over, where a result
+   * already on the account must win over one brought across from a device.
+   */
+  async saveQuizResult(quizDate, score, marks, { keepExisting = false } = {}) {
+    if (!this.profile) throw new Error("You need to be signed in for that.");
+    const { error } = await this.sb
+      .from("quiz_results")
+      .upsert(
+        { profile_id: this.profile.id, quiz_date: quizDate, score, marks },
+        { onConflict: "profile_id,quiz_date", ignoreDuplicates: keepExisting }
+      );
+    if (error) throw new Error(friendly(error));
+  }
+
+  async quizLeague() {
+    const { data, error } = await this.sb
+      .from("poppies_daily_league")
+      .select("*")
+      .order("streak", { ascending: false })
+      .order("points", { ascending: false })
+      .order("played", { ascending: false });
+    if (error) return [];
+    return data || [];
+  }
+
   /* -------------------------------------------------------- ticket prices */
 
   /* Added after the first release, so a database without the table must not

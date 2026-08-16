@@ -4,6 +4,7 @@
 import { TEAMS, KTFC } from "./data.js";
 import { CONFIG } from "./config.js";
 import * as db from "./store.js";
+import { QUIZ_EPOCH, londonToday, dayNumber } from "./quiz.js";
 
 /* ================================================================= helpers */
 
@@ -221,6 +222,14 @@ const state = {
   facts: null,    // researched club history, from data/club-facts.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
+  quiz: null,     // the Poppies Daily bank, fetched only when the game is opened
+  quizById: null, // the same questions, keyed by id
+  quizPromise: null,
+  archive: null,      // past seasons, from data/archive.json
+  archiveIndex: null, // that archive reduced to one row per player
+  archivePromise: null,
+  dailyTab: "play",
+  dailyAnswers: [],   // right/wrong so far in today's run
 };
 
 /** Background on a club: founding year, a fuller description, official site. */
@@ -281,6 +290,8 @@ const ROUTES = {
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   admin: { label: "Admin", icon: "🛠️", nav: "hidden", render: viewAdmin },
   match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
+  daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
+  archive: { label: "Player Archive", icon: "📚", nav: "more", group: "Matchday", render: viewArchive },
 };
 
 function go(view, params = {}) {
@@ -477,6 +488,8 @@ function viewFixtures() {
     </div>
 
     <div class="live-slot"></div>
+    <div class="daily-slot"></div>
+    <div class="otd-slot"></div>
     <div class="season-strip" data-nav="players" role="button" tabindex="0"></div>
     <div class="quick-links">
       <button class="ql" data-nav="predict">
@@ -615,6 +628,12 @@ function viewFixtures() {
     })
   );
   if (liveNow) $(".live-slot", wrap).append(liveNow);
+  /* Fixtures is where every session starts, so this is where the daily habit
+     is worth nudging. The tabs stay as they are - the comment above ROUTES is
+     right that four of them is muscle memory. */
+  const promo = dailyPromo();
+  if (promo) $(".daily-slot", wrap).append(promo);
+  $(".otd-slot", wrap).append(onThisDayCard());
 
   wrap.append(bar);
 
@@ -3659,11 +3678,36 @@ function viewPlayer({ id }) {
   }
 
   if (!rec.games.length) {
-    wrap.append(el(`
-      <div class="empty">
-        <b>Nothing to show yet</b>
-        ${esc(name)} has not appeared in a team sheet this season. The record fills in once they play.
-      </div>`));
+    /* Nothing this season does not mean nothing at all. Somebody arriving from
+       the archive has a career here even if they have not played since 2019,
+       so fill it in rather than telling them there is nothing to see. */
+    const box = el(`<div></div>`);
+    wrap.append(box);
+    ensureArchive().then(() => {
+      const past = state.archiveIndex?.get(name);
+      if (!past) {
+        box.append(el(`
+          <div class="empty">
+            <b>Nothing to show yet</b>
+            ${esc(name)} has not appeared in a team sheet this season. The record fills in once they play.
+          </div>`));
+        return;
+      }
+      const seasons = [...past.seasons].sort();
+      box.append(el(`<h2 class="section-title">At Kettering</h2>`));
+      box.append(el(`
+        <div class="card">
+          <div class="info-grid info-grid--3">
+            <div class="info"><div class="info__label">Appearances</div><div class="info__value" style="color:var(--gold-400)">${past.apps}</div></div>
+            <div class="info"><div class="info__label">Seasons</div><div class="info__value">${seasons.length}</div></div>
+            <div class="info"><div class="info__label">Shirt</div><div class="info__value">${[...past.shirts].sort((a, b) => a - b).join(", ") || "—"}</div></div>
+          </div>
+          <div class="hint">${esc(seasons.join(", "))}. First seen ${esc(fmtDate(past.first))}, last ${esc(fmtDate(past.last))}.
+          The league's records name no goalscorers before this season, so there are no goals here.</div>
+        </div>`));
+    }).catch(() => {
+      box.append(el(`<div class="empty"><b>Nothing to show yet</b>${esc(name)} has not appeared in a team sheet this season.</div>`));
+    });
     return wrap;
   }
 
@@ -4918,6 +4962,407 @@ async function loadSquad() {
  * hold that for a minute. One retry past the cache turns a blank page into a
  * brief pause.
  */
+/* ============================================================ poppies daily
+
+   Five questions a day, the same five for everyone, from data/quiz-bank.json.
+   Play without an account and the days live on the device; sign in and they
+   follow you and reach the leaderboard.
+
+   The bank is around 30KB gzipped, so it is fetched the first time somebody
+   opens the game and never on the fixtures page. The archive is a separate
+   load for the same reason.                                                */
+
+/** Fetches the question bank once, and remembers the promise, not the result. */
+function ensureQuiz() {
+  if (!state.quizPromise) {
+    state.quizPromise = readJSON("data/quiz-bank.json").then((bank) => {
+      if (bank) {
+        state.quiz = bank;
+        state.quizById = Object.fromEntries((bank.questions || []).map((q) => [q.id, q]));
+      }
+      return bank;
+    });
+  }
+  return state.quizPromise;
+}
+
+/** The archive of past matches, for On This Day and the player pages. */
+function ensureArchive() {
+  if (!state.archivePromise) {
+    state.archivePromise = readJSON("data/archive.json").then((a) => {
+      if (a) {
+        state.archive = a;
+        state.archiveIndex = buildArchiveIndex(a);
+      }
+      return a;
+    });
+  }
+  return state.archivePromise;
+}
+
+/** Everyone who has played since 2018, reduced once rather than per render. */
+function buildArchiveIndex(a) {
+  const out = new Map();
+  for (const m of a.matches) {
+    for (const [pi, shirt] of m.lineup) {
+      const name = a.players[pi];
+      if (!out.has(name)) out.set(name, { name, apps: 0, seasons: new Set(), shirts: new Set(), first: m.date, last: m.date });
+      const r = out.get(name);
+      r.apps += 1;
+      r.seasons.add(m.season);
+      if (shirt != null) r.shirts.add(shirt);
+      if (m.date < r.first) r.first = m.date;
+      if (m.date > r.last) r.last = m.date;
+    }
+  }
+  return out;
+}
+
+/** The five for today, or null when the game has not started or has run out. */
+const todaysQuiz = () => {
+  const ids = state.quiz?.schedule?.[londonToday()];
+  if (!ids) return null;
+  const qs = ids.map((id) => state.quizById?.[id]).filter(Boolean);
+  return qs.length === ids.length ? qs : null;
+};
+
+const quizGrid = (marks) => [...marks].map((m) => (m === "1" ? "🟩" : "⬜")).join("");
+
+/** What gets pasted into the Facebook group. Spoiler-free, so no questions. */
+function shareText(date, marks) {
+  const streak = db.quizStreak(date);
+  const score = [...marks].filter((m) => m === "1").length;
+  return [
+    `Poppies Daily #${dayNumber(date)}  ${score}/5`,
+    quizGrid(marks),
+    streak > 1 ? `🔥 ${streak} day streak` : "",
+    "fans.ktfcsa.com",
+  ].filter(Boolean).join("\n");
+}
+
+/**
+ * Three goes at the clipboard, in order of how modern they are. All of it runs
+ * inside the click handler so the user gesture is still live, which the first
+ * one insists on.
+ */
+async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* refused, or an older iOS that has the object but not the permission */
+  }
+  try {
+    /* Still the only thing that works in some in-app browsers, which is exactly
+       where a link from the Facebook group lands people. */
+    const box = document.createElement("textarea");
+    box.value = text;
+    box.setAttribute("readonly", "");
+    box.style.cssText = "position:fixed;top:-1000px;opacity:0";
+    document.body.append(box);
+    box.select();
+    box.setSelectionRange(0, text.length); /* iOS ignores select() on its own */
+    const ok = document.execCommand("copy");
+    box.remove();
+    if (ok) return true;
+  } catch {
+    /* fall through and show it instead */
+  }
+  return false;
+}
+
+function shareResult(date, marks) {
+  const text = shareText(date, marks);
+  copyText(text).then((ok) => {
+    if (ok) return toast("Copied. Paste it into the group.");
+    /* Never claim it copied when it did not - show it so they can take it. */
+    modal("Your result", el(`
+      <div>
+        <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
+        <textarea readonly rows="5" style="width:100%">${esc(text)}</textarea>
+      </div>`));
+  });
+}
+
+function viewDaily() {
+  const wrap = el(`
+    <div>
+      <div class="page-head">
+        <h1>Poppies Daily</h1>
+        <p>Five questions about Kettering Town, the same five for everybody. Back tomorrow.</p>
+      </div>
+    </div>`);
+
+  const tabs = [["play", "Today"], ["board", "Leaderboard"]];
+  const tab = state.dailyTab || "play";
+  const bar = el(`
+    <div class="segmented" style="margin-bottom:16px" role="group" aria-label="Poppies Daily">
+      ${tabs.map(([k, l]) => `<button data-dtab="${k}" class="${tab === k ? "is-active" : ""}">${l}</button>`).join("")}
+    </div>`);
+  bar.querySelectorAll("[data-dtab]").forEach((b) =>
+    b.addEventListener("click", () => { state.dailyTab = b.dataset.dtab; render(); }));
+  wrap.append(bar);
+
+  if (tab === "board") {
+    wrap.append(quizBoard());
+    return wrap;
+  }
+
+  const box = el(`<div><div class="skeleton" style="height:260px"></div></div>`);
+  wrap.append(box);
+  ensureQuiz().then(() => {
+    box.innerHTML = "";
+    box.append(quizBody());
+  }).catch(() => {
+    box.innerHTML = "";
+    box.append(el(`<div class="empty">Today's questions could not be loaded. Try again in a moment.</div>`));
+  });
+  return wrap;
+}
+
+function quizBody() {
+  const today = londonToday();
+  const n = dayNumber(today);
+
+  if (n < 1) {
+    const days = 1 - n;
+    return el(`<div class="card"><div class="empty">
+      Poppies Daily starts on Saturday 22 August, at home to Peterborough Sports.
+      ${days === 1 ? "That is tomorrow." : `That is ${days} days away.`}
+    </div></div>`);
+  }
+
+  const questions = todaysQuiz();
+  if (!questions) {
+    return el(`<div class="card"><div class="empty">
+      No questions set for today. That is our fault, not yours - it will be back tomorrow.
+    </div></div>`);
+  }
+
+  const done = db.quizResultFor(today);
+  if (done) return quizResult(today, done, questions);
+
+  const answers = state.dailyAnswers || [];
+  const i = answers.length;
+  const q = questions[i];
+
+  const card = el(`
+    <div class="card">
+      <div class="quiz__head">
+        <span class="quiz__num">Poppies Daily #${n}</span>
+        <span class="quiz__dots">${questions.map((_, k) =>
+          `<i class="${k < i ? (answers[k] ? "is-right" : "is-wrong") : k === i ? "is-now" : ""}"></i>`).join("")}</span>
+      </div>
+      <p class="quiz__q">${esc(q.q)}</p>
+      <div class="quiz__opts"></div>
+    </div>`);
+
+  const opts = card.querySelector(".quiz__opts");
+  q.a.forEach((option, k) => {
+    const btn = el(`<button class="quiz__opt">${esc(option)}</button>`);
+    btn.addEventListener("click", () => {
+      if (btn.closest(".quiz__opts").classList.contains("is-locked")) return;
+      opts.classList.add("is-locked");
+      const right = k === q.c;
+      opts.querySelectorAll(".quiz__opt")[q.c].classList.add("is-right");
+      if (!right) btn.classList.add("is-wrong");
+      if (q.note) card.append(el(`<p class="quiz__note">${esc(q.note)}</p>`));
+
+      const next = el(`<button class="btn btn--full" style="margin-top:12px">${
+        i === questions.length - 1 ? "See how you did" : "Next question"}</button>`);
+      next.addEventListener("click", () => {
+        state.dailyAnswers = [...answers, right];
+        if (state.dailyAnswers.length === questions.length) {
+          const marks = state.dailyAnswers.map((a) => (a ? "1" : "0")).join("");
+          db.saveQuizResult(today, state.dailyAnswers.filter(Boolean).length, marks);
+          state.dailyAnswers = [];
+        }
+        render();
+      });
+      card.append(next);
+    });
+    opts.append(btn);
+  });
+  return card;
+}
+
+function quizResult(date, result, questions) {
+  const streak = db.quizStreak(date);
+  const wrap = el(`
+    <div class="card">
+      <div class="quiz__score">${result.score}<span>/5</span></div>
+      <div class="quiz__grid">${quizGrid(result.marks)}</div>
+      ${streak > 1 ? `<p class="quiz__streak">🔥 ${streak} day streak</p>` : ""}
+      <p class="hint" style="margin-top:10px">Next five at midnight.</p>
+    </div>`);
+
+  const row = el(`<div class="btn-row" style="margin-top:14px"></div>`);
+  const copy = el(`<button class="btn btn--sm">Copy result</button>`);
+  copy.addEventListener("click", () => shareResult(date, result.marks));
+  row.append(copy);
+  if (navigator.share) {
+    const s = el(`<button class="btn btn--sm btn--ghost">Share…</button>`);
+    s.addEventListener("click", () => {
+      navigator.share({ text: shareText(date, result.marks) }).catch((e) => {
+        if (e?.name !== "AbortError") toast("Could not open the share sheet.");
+      });
+    });
+    row.append(s);
+  }
+  wrap.append(row);
+
+  /* The answers, once they can no longer be used to score better. */
+  if (questions) {
+    const list = el(`<div style="margin-top:18px"></div>`);
+    questions.forEach((q, k) => {
+      list.append(el(`
+        <div class="quiz__review">
+          <span class="quiz__review-mark">${result.marks[k] === "1" ? "🟩" : "⬜"}</span>
+          <div><p>${esc(q.q)}</p><p class="hint">${esc(q.a[q.c])}${q.note ? ` — ${esc(q.note)}` : ""}</p></div>
+        </div>`));
+    });
+    wrap.append(list);
+  }
+
+  if (!db.currentUser()) {
+    wrap.append(joinPrompt({
+      title: "Keep your streak",
+      body: "Signing in saves your run across devices and puts you on the leaderboard.",
+    }));
+  }
+  return wrap;
+}
+
+function quizBoard() {
+  const box = el(`<div><div class="skeleton" style="height:200px"></div></div>`);
+  db.quizLeague().then((rows) => {
+    box.innerHTML = "";
+    if (!rows.length) {
+      box.append(el(`<div class="empty"><b>Nobody has played yet</b>Be the first.</div>`));
+      return;
+    }
+    const me = db.currentUser()?.id;
+    box.append(el(`
+      <div class="table-wrap">
+        <table class="league">
+          <thead><tr><th>#</th><th>Supporter</th><th>🔥</th><th>P</th><th>Pts</th></tr></thead>
+          <tbody>
+            ${rows.map((r, i) => `
+              <tr class="${r.profile_id === me ? "is-ktfc" : ""}">
+                <td>${i + 1}</td>
+                <td><div class="club-cell"><span>${esc(r.display_name || "A supporter")}</span></div></td>
+                <td>${r.streak}</td>
+                <td>${r.played}</td>
+                <td class="pts">${r.points}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`));
+  }).catch(() => {
+    box.innerHTML = "";
+    box.append(el(`<div class="empty"><b>Table unavailable</b>Please try again shortly.</div>`));
+  });
+  return box;
+}
+
+/** The nudge on the fixtures page. This is what makes it a daily habit. */
+function dailyPromo() {
+  const today = londonToday();
+  if (dayNumber(today) < 1) return null;
+  const done = db.quizResultFor(today);
+  const streak = db.quizStreak(today);
+  const card = el(`
+    <button class="daily-promo" data-nav="daily">
+      <span class="daily-promo__icon">🌺</span>
+      <span class="daily-promo__text">
+        <strong>Poppies Daily #${dayNumber(today)}</strong>
+        <span>${done
+          ? `${quizGrid(done.marks)} ${done.score}/5 today`
+          : "Five questions. Same five for everyone."}${streak > 1 ? ` · 🔥 ${streak}` : ""}</span>
+      </span>
+      <span class="daily-promo__go">${done ? "Result" : "Play"}</span>
+    </button>`);
+  return card;
+}
+
+/** "On this day in 2019…". Renders nothing at all when there is no match. */
+function onThisDayCard() {
+  const box = el(`<div></div>`);
+  ensureArchive().then(() => {
+    if (!state.archive) return;
+    const mmdd = londonToday().slice(5);
+    const hits = state.archive.matches
+      .filter((m) => m.date.slice(5) === mmdd && m.opponent)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    if (!hits.length) return;
+    const m = hits[0];
+    const res = m.us > m.them ? "beat" : m.us < m.them ? "lost to" : "drew with";
+    box.append(el(`
+      <div class="otd">
+        <span class="otd__year">${m.date.slice(0, 4)}</span>
+        <span>On this day, Kettering ${res} ${esc(m.opponent)} ${m.us}-${m.them}${
+          m.venue === "Home" ? " at Latimer Park" : ` away`}${m.att ? `, watched by ${m.att.toLocaleString("en-GB")}` : ""}.
+          ${hits.length > 1 ? `<a data-nav="archive">and ${hits.length - 1} more</a>` : ""}</span>
+      </div>`));
+  }).catch(() => { /* a nicety, never an error */ });
+  return box;
+}
+
+function viewArchive() {
+  const wrap = el(`
+    <div>
+      <div class="page-head">
+        <h1>Player Archive</h1>
+        <p>Everyone who has pulled on a Kettering shirt since 2018, from the league's own team sheets.</p>
+      </div>
+    </div>`);
+  const box = el(`<div><div class="skeleton" style="height:300px"></div></div>`);
+  wrap.append(box);
+
+  ensureArchive().then(() => {
+    box.innerHTML = "";
+    if (!state.archiveIndex?.size) {
+      box.append(el(`<div class="empty"><b>Archive unavailable</b>Please try again shortly.</div>`));
+      return;
+    }
+    const all = [...state.archiveIndex.values()].sort((a, b) => b.apps - a.apps);
+    const search = el(`<div class="field" style="margin-bottom:12px">
+      <input id="arch-q" placeholder="Search for a player" aria-label="Search the archive"></div>`);
+    const list = el(`<div></div>`);
+    const draw = (rows) => {
+      list.innerHTML = rows.length ? `
+        <div class="table-wrap">
+          <table class="league">
+            <thead><tr><th>Player</th><th>Apps</th><th>Seasons</th></tr></thead>
+            <tbody>
+              ${rows.map((r) => `
+                <tr data-player="${esc(r.name)}" style="cursor:pointer">
+                  <td><div class="club-cell"><span>${esc(r.name)}</span></div></td>
+                  <td>${r.apps}</td>
+                  <td class="hint">${[...r.seasons].sort().join(", ")}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>` : `<div class="empty"><b>Nobody by that name</b>Try a surname.</div>`;
+    };
+    draw(all);
+    search.querySelector("input").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      draw(q ? all.filter((r) => r.name.toLowerCase().includes(q)) : all);
+    });
+    box.append(search, list);
+    box.append(el(`<p class="hint" style="margin-top:12px">
+      The league's records name no goalscorers before this season, so there are no goal
+      counts here. ${all.length} players, ${state.archive.matches.length} matches.</p>`));
+  }).catch(() => {
+    box.innerHTML = "";
+    box.append(el(`<div class="empty"><b>Archive unavailable</b>Please try again shortly.</div>`));
+  });
+  return wrap;
+}
+
 async function readJSON(path) {
   for (const init of [undefined, { cache: "no-store" }]) {
     try {

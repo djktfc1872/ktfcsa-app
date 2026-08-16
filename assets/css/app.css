@@ -4300,3 +4300,142 @@ button,
 .talk-btn__text b { font-size: 15px; font-weight: 650; }
 .talk-btn__text span { font-size: 12.5px; font-weight: 400; color: var(--text-3); }
 .talk-btn__go { flex: none; font-size: 20px; color: var(--gold-400); }
+
+/* =========================================================== poppies daily */
+
+/* The nudge on the fixtures page. Sized to sit between the live banner and the
+   season strip without competing with either. */
+.daily-promo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 13px 14px;
+  margin-bottom: var(--gap);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold-400);
+  border-radius: var(--r);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.daily-promo:hover { border-color: var(--gold-400); }
+.daily-promo__icon { font-size: 20px; line-height: 1; }
+.daily-promo__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.daily-promo__text strong { font-size: 13.5px; }
+.daily-promo__text span { font-size: 12px; color: var(--text-2); }
+.daily-promo__go {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-400);
+  white-space: nowrap;
+}
+
+/* On this day. Quiet by design: it is a nicety, not news. */
+.otd {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  margin-bottom: var(--gap);
+  font-size: 12.5px;
+  color: var(--text-2);
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+}
+
+.otd__year { font-weight: 700; color: var(--gold-400); font-size: 13px; }
+.otd a { color: var(--gold-400); cursor: pointer; }
+
+/* The game itself. */
+.quiz__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.quiz__num {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.quiz__dots { display: flex; gap: 5px; }
+.quiz__dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+  display: block;
+}
+.quiz__dots i.is-right { background: var(--ok); }
+.quiz__dots i.is-wrong { background: var(--text-3); }
+.quiz__dots i.is-now { background: var(--gold-400); transform: scale(1.3); }
+
+.quiz__q { font-size: 15.5px; line-height: 1.45; margin-bottom: 16px; }
+
+.quiz__opts { display: flex; flex-direction: column; gap: 8px; }
+
+.quiz__opt {
+  width: 100%;
+  text-align: left;
+  padding: 13px 15px;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  cursor: pointer;
+}
+
+.quiz__opt:hover { border-color: var(--gold-400); }
+.quiz__opts.is-locked .quiz__opt { cursor: default; }
+.quiz__opts.is-locked .quiz__opt:hover { border-color: var(--line); }
+
+/* Colour is not the only signal: the right answer is also the bold one, so it
+   still reads for anyone who cannot separate the two greens. */
+.quiz__opt.is-right {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+  font-weight: 600;
+}
+
+.quiz__opt.is-wrong {
+  border-color: var(--red-400);
+  background: color-mix(in srgb, var(--red-400) 12%, transparent);
+  text-decoration: line-through;
+}
+
+.quiz__note {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.quiz__score {
+  text-align: center;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold-400);
+}
+.quiz__score span { font-size: 20px; color: var(--text-3); }
+.quiz__grid { text-align: center; font-size: 24px; letter-spacing: 3px; margin-top: 10px; }
+.quiz__streak { text-align: center; margin-top: 8px; font-size: 13px; color: var(--text-2); }
+
+.quiz__review {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+.quiz__review-mark { flex: none; }
+.quiz__review p { line-height: 1.45; }

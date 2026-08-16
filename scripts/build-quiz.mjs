@@ -118,11 +118,10 @@ const bySeason = new Map();
 for (const m of QUIZZABLE) {
   if (!bySeason.has(m.season)) bySeason.set(m.season, new Map());
   const s = bySeason.get(m.season);
-  for (const [pi, shirt, started] of m.lineup) {
-    if (!s.has(pi)) s.set(pi, { apps: 0, starts: 0, shirts: new Map() });
+  for (const [pi, shirt] of m.lineup) {
+    if (!s.has(pi)) s.set(pi, { apps: 0, shirts: new Map() });
     const r = s.get(pi);
     r.apps += 1;
-    r.starts += started;
     if (shirt != null) r.shirts.set(shirt, (r.shirts.get(shirt) || 0) + 1);
   }
 }

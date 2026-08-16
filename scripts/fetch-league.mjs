@@ -395,11 +395,20 @@ function toArchiveMatch(m, intern) {
     us: typeof ours === "number" ? ours : null,
     them: typeof theirs === "number" ? theirs : null,
     att: m.attendance || null,
+    /* The whole matchday squad, not just the eleven: these old lineups run to
+       25 names. Note there is no starter flag stored, because the feed's one
+       cannot be trusted this far back - hasStartedMatch is true for all but 15
+       of 3,943 entries, which cannot be right for squads that size. An
+       appearance is honest, a start would not be.
+       (`homeSubs` is no help either: it holds substitution events, with the
+       player coming off recorded as "N/A".) */
     lineup: (m[`${side}Lineup`] || [])
       /* A surname on its own ("LEWER", one appearance) is a half-written
          record, not somebody anyone could be asked to identify. */
       .filter((p) => isRealName(p.personName) && tidyName(p.personName).includes(" "))
-      .map((p) => [intern(p.personName), p.number ?? null, p.hasStartedMatch ? 1 : 0]),
+      .map((p) => [intern(p.personName), p.number ?? null])
+      /* The same player twice in one sheet happens; keep the first. */
+      .filter((row, i, all) => all.findIndex((o) => o[0] === row[0]) === i),
     /* Incomplete: in a quarter of the matches that have any goal records at
        all, there are fewer minutes here than we scored. Fine for "when did we
        score", useless for counting. Count goals from `us`, never from this. */

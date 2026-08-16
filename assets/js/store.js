@@ -69,6 +69,7 @@ const live = {
   optIn: {},                // profileId -> whether they agreed to emails
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
+  quiz: {},                 // "2026-08-22" -> {score, marks} for the signed-in supporter
 };
 
 export const isOnline = () => Boolean(backend);
@@ -185,6 +186,12 @@ export async function refresh() {
     } catch (err) {
       console.warn("Player ratings are not set up in the database yet:", err?.message || err);
     }
+    /* Later again than the ratings, and the same rule applies. */
+    try {
+      live.quiz = await backend.loadQuizResults();
+    } catch (err) {
+      console.warn("Poppies Daily is not set up in the database yet:", err?.message || err);
+    }
     onChange();
   } catch (err) {
     console.warn("Refresh failed:", err);
@@ -206,6 +213,7 @@ export async function signUp(email, password, displayName, options = {}) {
   if (!backend) return signInLocal(name);
   const profile = await backend.signUp(email.trim(), password, name);
   await adoptGuestPredictions();
+  await adoptGuestQuiz();
   await refresh();
   return profile;
 }
@@ -214,6 +222,7 @@ export async function signIn(email, password) {
   if (!backend) return signInLocal(email);
   const profile = await backend.signIn(String(email).trim(), password);
   await adoptGuestPredictions();
+  await adoptGuestQuiz();
   await refresh();
   return profile;
 }
@@ -460,6 +469,75 @@ async function adoptGuestPredictions() {
 }
 
 export const predictionLeague = () => (backend ? backend.loadLeague() : Promise.resolve([]));
+
+/* ----------------------------------------------------------- poppies daily */
+
+/* Same bargain as the predictions above: play first, join later. The one
+   difference is that a day is written to the device even when signed in.
+   People finish the quiz on a train with one bar of signal, and a result that
+   failed to send is worth keeping until the next refresh can retry it. */
+
+const guestQuiz = () => read("guest:quiz", {});
+
+/** Every day this device or account knows about, the server winning ties. */
+export function quizHistory() {
+  return { ...guestQuiz(), ...(currentUser() ? live.quiz : {}) };
+}
+
+export const quizResultFor = (date) => quizHistory()[date] || null;
+
+export function saveQuizResult(date, score, marks) {
+  write("guest:quiz", { ...guestQuiz(), [date]: { score, marks } });
+  if (backend && currentUser()) {
+    live.quiz = { ...live.quiz, [date]: { score, marks } };
+    attempt(backend.saveQuizResult(date, score, marks), "Your Poppies Daily did not save.");
+  }
+  onChange();
+}
+
+/**
+ * Consecutive days ending today or yesterday. Yesterday still counts: somebody
+ * who has not played yet this morning has not lost their streak. Mirrors the
+ * poppies_daily_league view so the number on the page and the number on the
+ * leaderboard agree.
+ */
+export function quizStreak(today) {
+  const days = quizHistory();
+  const step = (iso, back) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d - back)).toISOString().slice(0, 10);
+  };
+  let from = days[today] ? today : step(today, 1);
+  if (!days[from]) return 0;
+  let n = 0;
+  while (days[from]) { n += 1; from = step(from, 1); }
+  return n;
+}
+
+export const quizLeague = () => (backend ? backend.quizLeague() : Promise.resolve([]));
+
+/**
+ * Moves days played before joining onto the new account. The database refuses
+ * anything older than its sixty-day window, which is what we want, so failures
+ * here are ignored rather than shown. A day the account already has wins.
+ */
+async function adoptGuestQuiz() {
+  if (!backend?.profile) return;
+  const days = Object.entries(guestQuiz());
+  if (!days.length) return;
+
+  let moved = 0;
+  for (const [date, r] of days) {
+    try {
+      await backend.saveQuizResult(date, r.score, r.marks, { keepExisting: true });
+      moved += 1;
+    } catch {
+      /* outside the window, or already recorded on the account */
+    }
+  }
+  remove("guest:quiz");
+  if (moved) onError(`Brought ${moved} day${moved === 1 ? "" : "s"} of Poppies Daily across to your account.`);
+}
 
 /* -------------------------------------------------------------- attendance */
 
