@@ -654,6 +654,7 @@ export function setEmailOptIn(on) {
 
 export const adminOverview = () => (backend ? backend.adminOverview() : Promise.resolve(null));
 export const adminPeople = () => (backend ? backend.adminPeople() : Promise.resolve([]));
+export const archiveOfferList = () => (backend ? backend.archiveOfferList() : Promise.resolve([]));
 
 export function setTag(profileId, tag) {
   if (!backend) return Promise.reject(new Error("Not connected."));

@@ -1169,3 +1169,73 @@ comment on view archive_offer_counts is
 -- If a column is ever added here, check that line again first.
 alter view archive_offer_counts set (security_invoker = false);
 grant select on archive_offer_counts to anon, authenticated;
+
+-- ===========================================================================
+-- Admin panel, brought up to date
+--
+-- The panel was built before Poppies Daily and the archive project existed, so
+-- it counted neither. Worse, the offers to help were readable by volunteers in
+-- policy and shown nowhere at all, which is the same as not collecting them.
+-- ===========================================================================
+
+-- Replaces the definition further up this file, and has to live down here
+-- rather than being edited in place: it now counts quiz_results, archive_offers
+-- and london_today(), none of which exist yet at that point in the file, so a
+-- fresh database would fail on the way past. Postgres only lets a replacement
+-- add columns at the end, which is why the original twelve keep their order.
+--
+-- Same all-or-nothing rule as before: a volunteer sees every number, or nobody
+-- sees any, rather than most of them with one quietly missing.
+create or replace view admin_overview as
+select * from (
+select
+  (select count(*) from profiles)                                  as supporters,
+  (select count(*) from profiles where created_at > now() - interval '7 days') as supporters_this_week,
+  (select count(*) from wall_posts where hidden = false)           as posts,
+  (select count(*) from wall_posts where reply_to is not null and hidden = false) as replies,
+  (select count(*) from player_ratings)                            as ratings,
+  (select count(*) from predictions)                               as predictions,
+  (select count(*) from attendance)                                as attendances,
+  (select count(*) from ground_reports where hidden = false)       as ground_reports,
+  (select count(*) from access_reports where hidden = false)       as access_reports,
+  (select count(*) from price_reports where hidden = false)        as price_reports,
+  (select count(*) from pubs where hidden = false)                 as pubs,
+  (select count(*) from feedback where handled = false)            as feedback_waiting,
+  -- Poppies Daily
+  (select count(*) from quiz_results)                              as quiz_plays,
+  (select count(distinct profile_id) from quiz_results)            as quiz_players,
+  (select count(*) from quiz_results where quiz_date = london_today()) as quiz_today,
+  (select coalesce(max(streak), 0) from poppies_daily_league)      as quiz_best_streak,
+  -- The archive project
+  (select count(*) from archive_offers)                            as archive_offers,
+  (select count(*) from archive_offers where can_scan)             as archive_scanners,
+  -- Waiting on a volunteer
+  (select count(*) from polls where status = 'pending')            as polls_waiting
+) counts
+where is_admin();
+
+alter view admin_overview set (security_invoker = true);
+grant select on admin_overview to authenticated;
+
+-- Who has offered to help with the archive, for the volunteers who have to act
+-- on it. Same all-or-nothing gate: not a volunteer, not a single row.
+create or replace view archive_offer_list as
+select
+  o.profile_id,
+  p.display_name,
+  o.can_scan,
+  o.has_media,
+  o.can_catalogue,
+  o.can_store,
+  o.note,
+  o.created_at,
+  o.updated_at
+from archive_offers o
+join profiles p on p.id = o.profile_id
+where is_admin();
+
+comment on view archive_offer_list is
+  'The archive offers with names attached, for volunteers only. The public sees archive_offer_counts instead.';
+
+alter view archive_offer_list set (security_invoker = true);
+grant select on archive_offer_list to authenticated;

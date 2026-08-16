@@ -388,6 +388,17 @@ class Backend {
   }
 
   /** Everyone with an account, newest first, for the people page. */
+  /* Who has offered to help with the archive. Volunteers only, enforced in the
+     view rather than here: a hidden button is not a control. */
+  async archiveOfferList() {
+    const { data, error } = await this.sb
+      .from("archive_offer_list")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return data || [];
+  }
+
   async adminPeople() {
     const { data, error } = await this.sb
       .from("profiles")

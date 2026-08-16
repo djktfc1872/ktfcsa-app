@@ -3323,6 +3323,13 @@ function viewAdmin() {
     ["attendances", "Games marked"], ["ground_reports", "Ground reports"],
     ["access_reports", "Access reports"], ["price_reports", "Price reports"],
     ["pubs", "Pubs"], ["feedback_waiting", "Feedback waiting"],
+    /* Added after the panel was first built. Anything the database has not got
+       yet is skipped rather than shown as a blank, so an un-migrated project
+       still gets a working panel. */
+    ["quiz_plays", "Daily played"], ["quiz_players", "Daily players"],
+    ["quiz_today", "Played today"], ["quiz_best_streak", "Best streak"],
+    ["archive_offers", "Archive offers"], ["archive_scanners", "Offered to scan"],
+    ["polls_waiting", "Polls waiting"],
   ];
 
   wrap.append(el(`<h2 class="section-title">Activity</h2>`));
@@ -3347,6 +3354,41 @@ function viewAdmin() {
     });
     statCard.append(grid);
     statCard.append(el(`<p class="note">These are things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
+  });
+
+  /* The offers were readable by volunteers in policy and shown nowhere, which
+     is the same as not collecting them. Names are here because somebody has to
+     ring these people; the public page shows counts and nothing else. */
+  wrap.append(el(`<h2 class="section-title">Archive project offers</h2>`));
+  const offersCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+  wrap.append(offersCard);
+
+  db.archiveOfferList().then((rows) => {
+    offersCard.replaceChildren();
+    if (!rows.length) {
+      offersCard.append(el(`<p class="note" style="margin:0">Nobody has offered yet. The page is at
+        <b>More, Supporters, Archive Project</b>.</p>`));
+      return;
+    }
+    const WHAT = [["can_scan", "Scanning"], ["has_media", "Has material"],
+                  ["can_catalogue", "Cataloguing"], ["can_store", "Kit or storage"]];
+    rows.forEach((r) => {
+      const offers = WHAT.filter(([k]) => r[k]).map(([, l]) => l);
+      offersCard.append(el(`
+        <div class="crew">
+          <span class="crew__who">${esc(r.display_name || "A supporter")}
+            <span class="crew__note">${esc(offers.join(" \u00B7 ") || "no boxes ticked")}${
+              r.note ? `<br>${esc(r.note)}` : ""}</span>
+          </span>
+          <span class="crew__when">${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
+        </div>`));
+    });
+    offersCard.append(el(`<p class="note">Offers are private. Only volunteers see this list, and
+      the public page shows totals with no names.</p>`));
+  }).catch(() => {
+    offersCard.replaceChildren();
+    offersCard.append(el(`<p class="note" style="margin:0">Offers are not switched on in the
+      database yet.</p>`));
   });
 
   wrap.append(el(`<h2 class="section-title">People</h2>`));
