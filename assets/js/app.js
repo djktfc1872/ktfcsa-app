@@ -277,6 +277,7 @@ const ROUTES = {
 
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
   daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
+  heritage: { label: "Archive Project", icon: "📼", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
   videos: { label: "Club Videos", icon: "📺", nav: "more", group: "Supporters", render: viewVideos },
   poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", group: "Supporters", render: viewPoppies },
@@ -5228,8 +5229,13 @@ function quizResult(date, result, questions) {
 
   if (!db.currentUser()) {
     wrap.append(joinPrompt({
-      title: "Keep your streak",
-      body: "Signing in saves your run across devices and puts you on the leaderboard.",
+      heading: "Keep your streak",
+      blurb: "Your run is on this device only. Signing in saves it, carries it to your phone and puts you on the leaderboard.",
+      points: [
+        "Your streak follows you between devices",
+        "Your name on the Poppies Daily table",
+        "Nothing lost — today counts either way",
+      ],
     }));
   }
   return wrap;
@@ -5369,6 +5375,175 @@ function viewArchive() {
   });
   return wrap;
 }
+
+/* ========================================================= archive project
+
+   A teaser, honestly labelled as one. Nothing is built, no dates are promised,
+   and the only thing the page actually does is let somebody put their hand up.
+   The scanning is the part that will sink it if nobody helps, so that is the
+   offer asked for first.                                                    */
+
+const ARCHIVE_HELP = [
+  ["canScan", "I could help with the scanning",
+   "The big one. Feeding programmes through a scanner, page by page, and naming the files."],
+  ["hasMedia", "I have material to lend",
+   "Programmes, tapes, photos, tickets, handbooks, anything Kettering."],
+  ["canCatalogue", "I could help catalogue",
+   "Typing in dates, opponents and scorers so the collection can be searched."],
+  ["canStore", "I could help with kit or storage",
+   "A scanner, a VHS deck, somewhere dry to keep things while they are worked on."],
+];
+
+function viewHeritage() {
+  const wrap = el(`
+    <div>
+      <div class="page-head">
+        <h1>The Poppies Archive</h1>
+        <p>A plan to get the club's history off the shelf and onto a screen, before any more of
+           it is lost. Early days, and we could use a hand.</p>
+      </div>
+
+      <div class="soon">
+        <span class="soon__tag">An idea, not a promise</span>
+        <p>Nothing is built yet and there is no date. This page is here to see whether enough
+           people fancy it to make it worth starting. If that turns out to be no, it stays an idea,
+           and you will not hear about it again.</p>
+      </div>
+
+      <h2 class="section-title">What we would like to do</h2>
+      <div class="card">
+        <p class="club-overview">Kettering Town have been going since 1872, and a great deal of
+        that history is sitting in lofts and garages around the town. Matchday programmes, video
+        tapes of games nobody has seen in thirty years, photographs, ticket stubs, handbooks,
+        newspaper cuttings. Not in a museum. In boxes.</p>
+        <p class="club-overview" style="margin-top:12px">The idea is to scan and record the lot,
+        properly, and put it somewhere every Poppies supporter can reach for nothing. You would
+        keep whatever you lend us. We would take a copy, hand it straight back, and the digital
+        version would carry your name as the source if you wanted it to.</p>
+      </div>
+
+      <h2 class="section-title">Why bother now</h2>
+      <div class="card">
+        <p class="club-overview">Because it is going. VHS does not last, and the tapes from the
+        eighties are already past the age where playing them is a gamble. Newsprint yellows and
+        goes brittle. Programmes get thrown out in house clearances by people who had no idea
+        anybody wanted them. Every year that passes, a bit more of it goes in a skip.</p>
+        <p class="club-overview" style="margin-top:12px">There is a personal side to it as well.
+        There are hundreds of programmes here going back to the sixties, and it seems daft to
+        have them sat in a cupboard when they could be shared.</p>
+      </div>
+
+      <h2 class="section-title">Where the work is</h2>
+      <div class="card">
+        <p class="club-overview">Almost all of it is legwork. Scanning is not difficult, it is
+        just slow, and a programme is twenty-odd pages. One person doing it alone would still be
+        going in ten years. A dozen people doing an hour here and there would get somewhere.</p>
+        <p class="club-overview" style="margin-top:12px">So this is not a request for money or for
+        anybody clever. It is a request for patience and a free evening now and then.</p>
+      </div>
+    </div>`);
+
+  wrap.append(el(`<h2 class="section-title">Could you help?</h2>`));
+  wrap.append(archiveOfferPanel());
+
+  wrap.append(el(`
+    <p class="hint" style="margin-top:16px">
+      Questions, or something you would rather say privately?
+      Email <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a>.
+      Anything you lend stays yours, and nothing would be published without the owner's say-so.
+    </p>`));
+  return wrap;
+}
+
+/** The offer form, or a reason to join, plus the running totals. */
+function archiveOfferPanel() {
+  const box = el(`<div><div class="skeleton" style="height:220px"></div></div>`);
+
+  const counts = el(`<div></div>`);
+  db.archiveCounts().then((c) => {
+    if (!c || !c.offers) return;
+    counts.append(el(`
+      <div class="otd" style="margin-top:14px">
+        <span class="otd__year">${c.offers}</span>
+        <span>${c.offers === 1 ? "supporter has" : "supporters have"} offered to help so far,
+        ${c.scanners} of them with the scanning${c.with_media ? `, and ${c.with_media} have material to lend` : ""}.</span>
+      </div>`));
+  }).catch(() => { /* counts are a nicety */ });
+
+  if (db.isOnline() && !db.currentUser()) {
+    box.innerHTML = "";
+    box.append(joinPrompt({
+      heading: "Put your hand up",
+      blurb: "Offers come through an account so we can get back to you, and so nobody can volunteer somebody else.",
+      points: [
+        "Say what you could help with, change it whenever you like",
+        "Nobody sees your offer except the volunteers running it",
+        "Saying yes now commits you to nothing",
+      ],
+      footer: `Would rather not sign up? Email <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a> and it reaches the same people.`,
+    }));
+    box.append(counts);
+    return box;
+  }
+
+  db.archiveOffer().then((existing) => {
+    box.innerHTML = "";
+    const has = Boolean(existing);
+    const form = el(`
+      <div class="card">
+        ${has ? `<p class="hint" style="margin-bottom:12px">You have already offered. Thank you.
+          Change it below whenever you like.</p>` : ""}
+        <div class="offer-list"></div>
+        <div class="field" style="margin-top:14px">
+          <label for="ar-note">Anything else worth knowing (optional)</label>
+          <textarea id="ar-note" rows="4" maxlength="600"
+            placeholder="I have about 200 programmes from 1974 onwards, and a working VHS player."></textarea>
+        </div>
+        <button class="btn btn--full" id="ar-save">${has ? "Update my offer" : "Count me in"}</button>
+      </div>`);
+
+    const list = $(".offer-list", form);
+    ARCHIVE_HELP.forEach(([key, label, blurb]) => {
+      const row = el(`
+        <label class="offer">
+          <input type="checkbox" data-help="${key}"${existing?.[keyToColumn(key)] ? " checked" : ""}>
+          <span><b>${esc(label)}</b><span class="hint">${esc(blurb)}</span></span>
+        </label>`);
+      list.append(row);
+    });
+    $("#ar-note", form).value = existing?.note || "";
+
+    $("#ar-save", form).addEventListener("click", async () => {
+      const offer = Object.fromEntries(
+        ARCHIVE_HELP.map(([key]) => [key, $(`[data-help="${key}"]`, form).checked])
+      );
+      offer.note = $("#ar-note", form).value.trim();
+      if (!Object.values(offer).some(Boolean)) {
+        toast("Tick at least one thing, or send an email instead.");
+        return;
+      }
+      try {
+        await db.saveArchiveOffer(offer);
+        toast(has ? "Offer updated. Thank you." : "Thank you. We will be in touch when there is something to do.");
+        render();
+      } catch (err) {
+        toast(err.message || "That did not save.");
+      }
+    });
+
+    box.append(form);
+    box.append(counts);
+  }).catch(() => {
+    box.innerHTML = "";
+    box.append(el(`<div class="empty"><b>Not ready yet</b>Offers are not switched on. Email
+      <a href="mailto:danny@ktfcsa.com">danny@ktfcsa.com</a> in the meantime.</div>`));
+  });
+
+  return box;
+}
+
+/* The form speaks camelCase and the row speaks snake_case, as everywhere else. */
+const keyToColumn = (k) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 
 async function readJSON(path) {
   for (const init of [undefined, { cache: "no-store" }]) {

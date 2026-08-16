@@ -1097,3 +1097,75 @@ comment on view poppies_daily_league is
 alter view poppies_daily_league set (security_invoker = true);
 grant select on poppies_daily_league to anon, authenticated;
 grant execute on function london_today() to anon, authenticated;
+
+-- ===========================================================================
+-- The Poppies Archive
+--
+-- A supporter-led effort to digitise programmes, tapes, photographs and
+-- anything else Kettering Town before it rots in a loft. Nothing is built yet:
+-- this table only records who has offered to help and what they can offer, so
+-- the idea can be sized before anybody promises anything.
+--
+-- One row per supporter, editable, because an offer is a standing thing rather
+-- than a message.
+-- ===========================================================================
+
+create table if not exists archive_offers (
+  profile_id    uuid primary key references profiles on delete cascade,
+  -- The scanning is the real work, so it is asked about first.
+  can_scan      boolean not null default false,
+  has_media     boolean not null default false,
+  can_catalogue boolean not null default false,
+  can_store     boolean not null default false,
+  note          text check (note is null or char_length(note) <= 600),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+comment on table archive_offers is
+  'Who has offered to help with the archive project, and how. One row per supporter.';
+
+alter table archive_offers enable row level security;
+
+-- Deliberately not public. Somebody saying they have a loft full of programmes
+-- has told us something about their house, so only they and the volunteers
+-- running the project can read it. The counts below are what everyone sees.
+drop policy if exists "read your own offer" on archive_offers;
+create policy "read your own offer" on archive_offers
+  for select using (auth.uid() = profile_id or is_admin());
+
+drop policy if exists "offer to help" on archive_offers;
+create policy "offer to help" on archive_offers
+  for insert with check (auth.uid() = profile_id);
+
+drop policy if exists "change your own offer" on archive_offers;
+create policy "change your own offer" on archive_offers
+  for update using (auth.uid() = profile_id)
+  with check (auth.uid() = profile_id);
+
+drop policy if exists "withdraw your own offer" on archive_offers;
+create policy "withdraw your own offer" on archive_offers
+  for delete using (auth.uid() = profile_id or is_admin());
+
+-- Totals only, never who. Enough to show the project is worth starting.
+create or replace view archive_offer_counts as
+select
+  count(*)::int                                  as offers,
+  count(*) filter (where can_scan)::int          as scanners,
+  count(*) filter (where has_media)::int         as with_media,
+  count(*) filter (where can_catalogue)::int     as cataloguers,
+  count(*) filter (where can_store)::int         as storers
+from archive_offers;
+
+comment on view archive_offer_counts is
+  'Headline numbers for the archive project page. No names, by design.';
+
+-- NOTE: security_invoker = false, which is the opposite of every other view in
+-- this file, and deliberate. The rows underneath are private, so a view that
+-- ran as the caller would return zero to everybody except the person counting
+-- themselves. Running as owner is what lets a signed-out supporter see that
+-- eleven people have offered to help, while still seeing none of them.
+-- It is safe only because this view exposes counts and no identifying column.
+-- If a column is ever added here, check that line again first.
+alter view archive_offer_counts set (security_invoker = false);
+grant select on archive_offer_counts to anon, authenticated;

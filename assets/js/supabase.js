@@ -449,6 +449,51 @@ class Backend {
     return data || [];
   }
 
+  /* -------------------------------------------------- the archive project */
+
+  /* Offers are private: only the supporter and the volunteers running the
+     project can read a row. Everyone sees the counts, which come from a view
+     that runs as its owner for exactly that reason. */
+
+  async loadArchiveOffer() {
+    if (!this.profile) return null;
+    const { data, error } = await this.sb
+      .from("archive_offers")
+      .select("*")
+      .eq("profile_id", this.profile.id)
+      .maybeSingle();
+    if (error) return null;
+    return data;
+  }
+
+  async saveArchiveOffer(offer) {
+    if (!this.profile) throw new Error("You need to be signed in for that.");
+    const { error } = await this.sb.from("archive_offers").upsert(
+      {
+        profile_id: this.profile.id,
+        can_scan: Boolean(offer.canScan),
+        has_media: Boolean(offer.hasMedia),
+        can_catalogue: Boolean(offer.canCatalogue),
+        can_store: Boolean(offer.canStore),
+        note: offer.note ? String(offer.note).slice(0, 600) : null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "profile_id" }
+    );
+    if (error) throw new Error(friendly(error));
+  }
+
+  async withdrawArchiveOffer() {
+    if (!this.profile) return;
+    await this.sb.from("archive_offers").delete().eq("profile_id", this.profile.id);
+  }
+
+  async archiveCounts() {
+    const { data, error } = await this.sb.from("archive_offer_counts").select("*").maybeSingle();
+    if (error) return null;
+    return data;
+  }
+
   /* -------------------------------------------------------- ticket prices */
 
   /* Added after the first release, so a database without the table must not

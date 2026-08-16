@@ -4439,3 +4439,64 @@ button,
 }
 .quiz__review-mark { flex: none; }
 .quiz__review p { line-height: 1.45; }
+
+/* ======================================================== archive project */
+
+/* The "not a promise" banner. Gold enough to notice, quiet enough that it does
+   not read as an announcement of something that exists. */
+.soon {
+  padding: 14px 16px;
+  margin-bottom: var(--gap);
+  background: color-mix(in srgb, var(--gold-400) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold-400) 30%, transparent);
+  border-radius: var(--r);
+}
+
+.soon__tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gold-400);
+  margin-bottom: 7px;
+}
+
+.soon p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+/* One thing somebody could help with. The whole row is the target, because a
+   bare checkbox on a phone is a small thing to hit. */
+.offer {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  cursor: pointer;
+}
+
+.offer + .offer { margin-top: 8px; }
+.offer:hover { border-color: var(--gold-400); }
+
+.offer input {
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  flex: none;
+  accent-color: var(--gold-400);
+}
+
+.offer > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.offer b { font-size: 13.5px; font-weight: 600; }
+.offer .hint { font-size: 12px; line-height: 1.45; }
+
+/* Ticked rows stand out, so a glance shows what you have already said yes to. */
+.offer:has(input:checked) {
+  border-color: var(--gold-400);
+  background: color-mix(in srgb, var(--gold-400) 7%, transparent);
+}

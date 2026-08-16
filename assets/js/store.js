@@ -516,6 +516,26 @@ export function quizStreak(today) {
 
 export const quizLeague = () => (backend ? backend.quizLeague() : Promise.resolve([]));
 
+/* ------------------------------------------------------- archive project */
+
+/* Nothing here is cached in `live`: the page is visited rarely and an offer is
+   changed even more rarely, so it is fetched when the page opens. */
+
+export const archiveOffer = () => (backend?.profile ? backend.loadArchiveOffer() : Promise.resolve(null));
+export const archiveCounts = () => (backend ? backend.archiveCounts() : Promise.resolve(null));
+
+export async function saveArchiveOffer(offer) {
+  if (!backend?.profile) throw new Error("You need to be signed in for that.");
+  await backend.saveArchiveOffer(offer);
+  onChange();
+}
+
+export async function withdrawArchiveOffer() {
+  if (!backend?.profile) return;
+  await backend.withdrawArchiveOffer();
+  onChange();
+}
+
 /**
  * Moves days played before joining onto the new account. The database refuses
  * anything older than its sixty-day window, which is what we want, so failures
