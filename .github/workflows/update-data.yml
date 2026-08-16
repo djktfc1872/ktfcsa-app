@@ -1,8 +1,9 @@
-name: Update league and podcast data
+name: Update site data
 
-# Keeps data/league.json and data/podcast.json in step with the Southern League
-# API and The Poppycast feed. Nobody needs to touch this: if a fixture moves or
-# a result comes in, the next run picks it up and the site updates itself.
+# Keeps everything in data/ in step with its source: the Southern League API,
+# The Poppycast feed, the club's YouTube channel and the clubs' own ticket
+# pages. Nobody needs to touch this: if a fixture moves or a result comes in,
+# the next run picks it up and the site updates itself.
 on:
   schedule:
     # Every 20 minutes between 14:00 and 22:00 UTC, every day. Saturday and
@@ -44,13 +45,13 @@ jobs:
         continue-on-error: true # a podcast hiccup must not block fixture updates
         run: node scripts/fetch-podcast.mjs
 
-      # Only a couple of clubs publish prices where a script can read them, but
-      # both were wrong in our data when this was first run. Sundays only: the
-      # prices do not move week to week and the clubs' sites deserve the rest.
       - name: Fetch club videos
         continue-on-error: true # YouTube being slow must never block results
         run: node scripts/fetch-youtube.mjs
 
+      # Only a handful of clubs publish prices where a script can read them, but
+      # every one we could read was wrong when this was first run. Sundays only:
+      # the prices do not move week to week and the clubs' sites deserve the rest.
       - name: Check published ticket prices
         continue-on-error: true # a club site being down must never block results
         run: |
@@ -64,10 +65,15 @@ jobs:
         run: |
           git config user.name "KTFCSA data bot"
           git config user.email "actions@github.com"
-          git add data/league.json data/podcast.json
+          # The whole directory, not a list of files. This used to name
+          # league.json and podcast.json only, so every video and price the
+          # steps above fetched was rewritten each run and then thrown away —
+          # the videos page only ever moved when somebody committed by hand.
+          # A list has to be remembered; a directory does not.
+          git add data/
           if git diff --staged --quiet; then
             echo "Nothing changed."
           else
-            git commit -m "Update league and podcast data"
+            git commit -m "Update data"
             git push
           fi
