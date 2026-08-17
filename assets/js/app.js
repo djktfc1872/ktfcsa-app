@@ -5895,12 +5895,16 @@ const consultState = () => {
 };
 
 /* Who supporters might feel represented by. Roles, not names. */
+/* Bodies, not roles, and never names.
+   Listing the president or the secretary looks neutral and is not: at a club
+   this size each of those is one identifiable person, so rating the role is
+   rating them, and a finding about a named individual is a different and much
+   riskier thing to publish than a finding about a board. */
 const CONSULT_BODIES = [
+  ["ownership", "The club's ownership"],
   ["board", "The club board"],
   ["trust", "The Supporters' Trust"],
-  ["president", "The club president"],
-  ["secretary", "The club secretary"],
-  ["sponsors", "The club's partners and sponsors"],
+  ["sponsors", "The club's commercial partners"],
 ];
 /* Five points from very poor to very good, with "don't know" set apart below,
    so nobody has to park a real opinion in the same row as no opinion. Laid out
@@ -6072,7 +6076,8 @@ function consultForm() {
       </div>
 
       <h3 class="consult__q">3. How well has each of these represented supporters in recent months?</h3>
-      <p class="hint">Answer for the ones you have a view on. "Don't know" is a real answer.</p>
+      <p class="hint">Answer for the ones you have a view on. "Don't know" is a real answer.
+      We are asking about the bodies that run the club, not about any individual.</p>
       <div class="rep" id="c-rep">
         ${CONSULT_BODIES.map(([key, label]) => `
           <fieldset class="rep__row">
@@ -6285,7 +6290,8 @@ function consultResults() {
         </div>`));
     });
     repCard.append(el(`<p class="hint">Very poor through to very good, with don't know counted
-      separately. Supporters were asked about roles, not about people.</p>`));
+      separately. Supporters were asked about the bodies that run the club, never about an
+      individual.</p>`));
     box.append(repCard);
 
     const chart = (kind, heading, labels) => {
