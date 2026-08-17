@@ -312,6 +312,8 @@ function go(view, params = {}) {
 
 function readHash() {
   const [, view, id, from] = (location.hash || "#/fixtures").split("/");
+  /* #/consult/preview shows the findings early to whoever has been given
+     sight of them. Anybody else is simply shown the survey. */
   state.view = ROUTES[view] ? view : "fixtures";
   state.params = id
     ? { id: decodeURIComponent(id), from: from ? decodeURIComponent(from) : "" }
@@ -3932,9 +3934,31 @@ function viewAdmin() {
             <div class="person">
               <div class="person__who">
                 <span class="person__name">${esc(r.display_name)}</span>
-                <span class="person__meta">${r.is_admin ? "Admin \u00B7 " : ""}joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
+                <span class="person__meta">${r.is_admin ? "Admin \u00B7 " : ""}${
+                  db.isResultsViewer(r.id) ? "Sees results early \u00B7 " : ""}joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
               </div>
             </div>`);
+
+          /* Early sight of the consultation findings, before they go public.
+             Read-only: it gives them the same summary everybody gets later and
+             never anybody's raw response. Admins already have it. */
+          if (!r.is_admin) {
+            const seeing = db.isResultsViewer(r.id);
+            const eye = el(`<button class="tag-btn${seeing ? " is-on" : ""}" type="button" style="margin-bottom:6px">${
+              seeing ? "\u2713 Sees results early" : "Give early sight of results"}</button>`);
+            eye.addEventListener("click", async () => {
+              eye.disabled = true;
+              try {
+                await db.setResultsViewer(r.id, !seeing);
+                toast(seeing ? `${r.display_name} can no longer see them early.` : `${r.display_name} can see the results early.`);
+                paintPeople();
+              } catch (err) {
+                eye.disabled = false;
+                toast(err.message || "That did not save.");
+              }
+            });
+            row.append(eye);
+          }
           const picker = el(`<div class="person__tags"></div>`);
           [["", "None"], ...Object.entries(TAG_LABEL)].forEach(([key, label]) => {
             const on = (r.tag || "") === key;
@@ -3976,7 +4000,8 @@ function viewAdmin() {
 const TAG_LABEL = {
   contributor: "Contributor",
   "top-contributor": "Top Contributor",
-  volunteer: "Volunteer",
+  "ktfcsa-volunteer": "KTFCSA Volunteer",
+  "club-volunteer": "Club Volunteer",
   reporter: "Reporter",
   photographer: "Photographer",
   commentator: "Commentator",
@@ -3988,7 +4013,8 @@ const TAG_LABEL = {
 const TAG_WHY = {
   contributor: "Has added information other supporters rely on",
   "top-contributor": "Has put a great deal into this site",
-  volunteer: "Helps run the association",
+  "ktfcsa-volunteer": "Helps run the Supporters\u2019 Association",
+  "club-volunteer": "Gives their time to Kettering Town itself",
   reporter: "Writes for the site",
   photographer: "Takes the photographs",
   commentator: "Calls the games",
@@ -5292,6 +5318,26 @@ function viewAccount() {
       </div>`));
   }
 
+  /* Somebody given early sight of the consultation findings. Read-only, and it
+     lives on their own account page rather than behind the admin panel, which
+     they cannot open. */
+  if (!user.isAdmin && db.canViewResults()) {
+    wrap.append(el(`<h2 class="section-title">Consultation results</h2>`));
+    const card = el(`
+      <div class="card">
+        <p class="club-overview">You have been given early sight of the fan consultation
+        findings, before they go public at ${CLOSES_WORDS}. It is the same summary everybody
+        sees afterwards: numbers, themes and the approved comments. Individual responses are not
+        shown to anyone outside the volunteers running it.</p>
+        <p class="hint" style="margin-top:10px">Please do not share the figures until they are
+        published. They are still moving.</p>
+      </div>`);
+    const open = el(`<button class="btn btn--full" style="margin-top:12px">Open the results</button>`);
+    open.addEventListener("click", () => { location.hash = "#/consult/preview"; });
+    card.append(open);
+    wrap.append(card);
+  }
+
   if (user.isAdmin) {
     wrap.append(el(`<h2 class="section-title">Running the site</h2>`));
     const panel = el(`
@@ -6314,6 +6360,21 @@ function viewConsult() {
   }
 
   if (phase === "after") {
+    wrap.append(consultResults());
+    return wrap;
+  }
+
+  /* Before Saturday, a named few can see the findings so they can prepare.
+     Read-only and clearly marked as not public: it is the same aggregate data
+     everybody gets later, never anybody's raw response. */
+  if (state.params?.id === "preview" && db.canViewResults()) {
+    wrap.append(el(`
+      <div class="soon">
+        <span class="soon__tag">Not public yet</span>
+        <p>An early look, because you have been given one. These are the findings as they stand
+        and they go up for everybody once the consultation closes at ${CLOSES_WORDS}. Please do
+        not share the numbers before then, and note they will move: it is still running.</p>
+      </div>`));
     wrap.append(consultResults());
     return wrap;
   }

@@ -797,8 +797,22 @@ create trigger wall_reply_depth
 -- had filed nothing.
 -- ===========================================================================
 
-alter table profiles add column if not exists tag text
-  check (tag is null or tag in ('contributor', 'top-contributor', 'volunteer', 'reporter', 'photographer',
+alter table profiles add column if not exists tag text;
+
+-- Volunteering at the club and volunteering for the Association are two
+-- different things and people do one, the other, or both. One label for both
+-- flattened that, and the distinction matters most right now.
+--
+-- The constraint is dropped and rebuilt by name rather than declared inline,
+-- because "add column if not exists" does nothing at all on a database that
+-- already has the column, so an inline list would never be updated on the one
+-- database that counts.
+update profiles set tag = 'ktfcsa-volunteer' where tag = 'volunteer';
+
+alter table profiles drop constraint if exists profiles_tag_check;
+alter table profiles add constraint profiles_tag_check
+  check (tag is null or tag in ('contributor', 'top-contributor', 'ktfcsa-volunteer',
+                    'club-volunteer', 'reporter', 'photographer',
                     'commentator', 'historian', 'groundhopper', 'legend'));
 
 /* Setting a tag is separated out rather than done through a policy that lets
@@ -1459,3 +1473,41 @@ where is_admin();
 
 alter view pending_actions set (security_invoker = true);
 grant select on pending_actions to authenticated;
+
+-- ===========================================================================
+-- Early sight of the consultation results
+--
+-- The findings go public on the Saturday. Before that a named few need to see
+-- them to prepare, without being able to moderate, approve, or read anybody's
+-- raw response. This is a view-only pass and nothing more.
+-- ===========================================================================
+
+alter table profiles add column if not exists results_viewer boolean not null default false;
+
+comment on column profiles.results_viewer is
+  'Early, read-only sight of the consultation results. Not a moderator: grants no access to raw responses.';
+
+-- Set by a volunteer, through a function rather than an update policy for the
+-- same reason set_user_tag is: it lets an admin hand out this one pass without
+-- also handing out the ability to make somebody an admin.
+create or replace function set_results_viewer(target uuid, allowed boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can do that.';
+  end if;
+  update profiles set results_viewer = allowed where id = target;
+end;
+$$;
+
+revoke all on function set_results_viewer(uuid, boolean) from public;
+grant execute on function set_results_viewer(uuid, boolean) to authenticated;
+
+-- The pass itself grants nothing extra in the database: the results come from
+-- the aggregate views, which are already public. What it buys is sight of them
+-- before the Saturday, which is a decision the app makes. Said out loud here so
+-- nobody hunts for a policy that does not exist.

@@ -107,11 +107,11 @@ class Backend {
      one already fails soft. */
   async loadAvatars() {
     const { data, error } = await this.sb
-      .from("profiles").select("id, avatar, is_admin, tag, email_opt_in");
+      .from("profiles").select("id, avatar, is_admin, tag, email_opt_in, results_viewer");
     if (error) {
       /* Older database without the consent column: ask again without it. */
       const retry = await this.sb.from("profiles").select("id, avatar, is_admin, tag");
-      if (retry.error) return { avatars: {}, admins: [], tags: {}, optIn: {} };
+      if (retry.error) return { avatars: {}, admins: [], tags: {}, optIn: {}, resultsViewers: [] };
       return this.shapePeople(retry.data || []);
     }
     return this.shapePeople(data || []);
@@ -123,6 +123,7 @@ class Backend {
       admins: rows.filter((r) => r.is_admin).map((r) => r.id),
       tags: Object.fromEntries(rows.filter((r) => r.tag).map((r) => [r.id, r.tag])),
       optIn: Object.fromEntries(rows.map((r) => [r.id, !!r.email_opt_in])),
+      resultsViewers: rows.filter((r) => r.results_viewer).map((r) => r.id),
     };
   }
 
@@ -412,6 +413,12 @@ class Backend {
   /** Everyone with an account, newest first, for the people page. */
   /* Who has offered to help with the archive. Volunteers only, enforced in the
      view rather than here: a hidden button is not a control. */
+  /** Early sight of the results for one supporter. Volunteers only, in the SQL. */
+  async setResultsViewer(profileId, allowed) {
+    const { error } = await this.sb.rpc("set_results_viewer", { target: profileId, allowed });
+    if (error) throw new Error(friendly(error));
+  }
+
   async archiveOfferList() {
     const { data, error } = await this.sb
       .from("archive_offer_list")

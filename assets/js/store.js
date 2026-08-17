@@ -69,6 +69,7 @@ const live = {
   optIn: {},                // profileId -> whether they agreed to emails
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
+  resultsViewers: new Set(),  // early, read-only sight of the consultation results
   quiz: {},                 // "2026-08-22" -> {score, marks} for the signed-in supporter
 };
 
@@ -180,6 +181,7 @@ export async function refresh() {
     live.admins = new Set(people.admins);
     live.tags = people.tags || {};
     live.optIn = people.optIn || {};
+    live.resultsViewers = new Set(people.resultsViewers || []);
     live.supporters = await backend.supporterCount();
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
@@ -688,6 +690,20 @@ export function setEmailOptIn(on) {
 
 export const adminOverview = () => (backend ? backend.adminOverview() : Promise.resolve(null));
 export const adminPeople = () => (backend ? backend.adminPeople() : Promise.resolve([]));
+
+/* Early sight of the consultation results, before they go public. Read-only:
+   it grants nothing over the raw responses, which stay volunteers-only. */
+export const canViewResults = () => {
+  const u = currentUser();
+  return Boolean(u && (u.isAdmin || live.resultsViewers.has(u.id)));
+};
+export const isResultsViewer = (id) => live.resultsViewers.has(id);
+
+export async function setResultsViewer(profileId, allowed) {
+  if (!backend) return;
+  await backend.setResultsViewer(profileId, allowed);
+  await refresh();
+}
 export const archiveOfferList = () => (backend ? backend.archiveOfferList() : Promise.resolve([]));
 
 export function setTag(profileId, tag) {
