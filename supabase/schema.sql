@@ -842,6 +842,14 @@ grant execute on function set_user_tag(uuid, text) to authenticated;
 
 -- What the people running the site can see at a glance. Counts only, no
 -- reading of anybody's messages.
+-- Dropped first, not replaced. "create or replace view" cannot remove or
+-- reorder columns, and this file defines admin_overview twice: a small version
+-- here, and a fuller one at the end once the tables it counts exist. On a
+-- database that already has the fuller one, replacing it with this shorter one
+-- would be dropping seven columns, which Postgres refuses with 42P16. Dropping
+-- makes re-running the file safe, which is the whole point of this file.
+drop view if exists admin_overview;
+
 create or replace view admin_overview as
 select * from (
 select
@@ -1200,6 +1208,8 @@ grant select on archive_offer_counts to anon, authenticated;
 --
 -- Same all-or-nothing rule as before: a volunteer sees every number, or nobody
 -- sees any, rather than most of them with one quietly missing.
+drop view if exists admin_overview;
+
 create or replace view admin_overview as
 select * from (
 select
