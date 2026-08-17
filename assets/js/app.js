@@ -3530,6 +3530,23 @@ function viewAdmin() {
           row.append(edit);
           row.append(act("Reject", { [statusCol]: "rejected" }));
           card.append(row);
+        } else {
+          /* Anything already dealt with can be pulled back. Approving is the
+             one action here that cannot be undone by waiting, so it needs to
+             be undoable by clicking. */
+          const row = el(`<div class="btn-row" style="margin-top:8px"></div>`);
+          const back = el(`<button class="btn btn--sm btn--ghost">${
+            it.status === "approved" ? "Unpublish" : "Put back in the queue"}</button>`);
+          back.addEventListener("click", async () => {
+            await db.setConsultationStatus(it.row.id, { [statusCol]: "pending" });
+            toast(it.status === "approved"
+              ? "Unpublished. It is out of the public results."
+              : "Back in the queue.");
+            paintConsult();
+            renderNav();
+          });
+          row.append(back);
+          card.append(row);
         }
         consultCard.append(card);
       });
@@ -5989,6 +6006,18 @@ function consultAbout() {
       worried about, what they think is going well, and what they want the club to answer. The
       more people who fill it in, the harder it is to wave away, and the more it speaks for the
       terrace rather than for whoever shouts loudest online.</p>
+      <p class="club-overview" style="margin-top:12px"><b class="subhead">This is not a one-off</b>
+      ${(() => {
+        /* The real number when we have it, a rounded one when the count has not
+           loaded yet. Never a made-up figure. */
+        const n = db.supporterCount();
+        return n
+          ? `Around ${Math.round(n / 10) * 10} supporters have signed up here already`
+          : "Around a hundred supporters have signed up here already";
+      })()}, and the survey we ran in May drew 189 responses. Plenty of you said then that you
+      would turn out for meetings, in a room and online both, which is why there is a question
+      about that further down. The aim is something that keeps going, not a survey that gets
+      posted once and forgotten.</p>
       <p class="club-overview" style="margin-top:12px"><b class="subhead">Being straight with you</b> The
       Supporters' Association is not fully off the ground yet. There is no committee, no
       constitution and no membership list, and in an ideal world all of that would have come
