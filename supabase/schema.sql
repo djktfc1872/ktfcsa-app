@@ -829,11 +829,17 @@ begin
   if not is_admin() then
     raise exception 'Only a volunteer can set a tag';
   end if;
-  if new_tag is not null and new_tag not in ('contributor', 'top-contributor', 'volunteer', 'reporter', 'photographer',
-                    'commentator', 'historian', 'groundhopper', 'legend') then
-    raise exception 'Unknown tag';
-  end if;
-  update profiles set tag = new_tag where id = target;
+  /* Checked against the table's own constraint rather than a list kept here.
+     There were two lists, they drifted the moment the volunteer tag was split
+     in two, and the function went on rejecting the new values with "Unknown
+     tag" while the table would happily have taken them. One source of truth:
+     if the column accepts it, so does this. */
+  begin
+    update profiles set tag = new_tag where id = target;
+  exception when check_violation then
+    raise exception 'Unknown tag: %', new_tag;
+  end;
+  return;
 end;
 $$;
 
