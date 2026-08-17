@@ -4933,3 +4933,25 @@ button,
 .cloud__w { color: var(--text-2); cursor: default; }
 .cloud__w:nth-child(3n) { color: var(--gold-400); }
 .cloud__w:nth-child(5n) { color: var(--text); }
+
+/* Each waiting job is a button to where the work is. It was a line of text
+   with a number on it, which told a volunteer what to do and then made them
+   go and find it. */
+.todo__jobs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+
+.todo__job {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--gold-400) 34%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.todo__job:hover { border-color: var(--gold-400); background: color-mix(in srgb, var(--gold-400) 12%, transparent); }
+.todo__job span { color: var(--gold-400); }

@@ -3523,27 +3523,37 @@ function viewAdmin() {
   wrap.append(abar);
 
   /* Whatever is waiting on a volunteer, first, on every tab. Everything else
-     here is information; this is the only part that is a job. */
+     here is information; this is the only part that is a job, so each line is
+     a button that goes to where the work actually is rather than telling you a
+     number and leaving you to find it. */
   const todo = el(`<div></div>`);
   db.pendingActions().then((pa) => {
     if (!pa) return;
     /* Each carries its own plural. Bolting an "s" on the end turned two pieces
        of feedback into "2 piece of feedbacks". */
     const jobs = [
-      [pa.consultation, "consultation comment", "consultation comments"],
-      [pa.polls, "poll suggestion", "poll suggestions"],
-      [pa.feedback, "piece of feedback", "pieces of feedback"],
+      [pa.consultation, "consultation comment", "consultation comments", () => { state.adminTab = "consult"; render({ toTop: true }); }],
+      [pa.polls, "poll suggestion", "poll suggestions", () => go("wall")],
+      [pa.feedback, "piece of feedback", "pieces of feedback", () => go("feedback")],
     ].filter(([n]) => n > 0);
+
     if (!jobs.length) {
       todo.append(el(`<div class="todo todo--clear"><b>Nothing waiting</b>All caught up.</div>`));
       return;
     }
-    todo.append(el(`
+    const card = el(`
       <div class="todo">
         <b>${jobs.reduce((a, [n]) => a + n, 0)} waiting on you</b>
-        ${jobs.map(([n, one, many]) => `${n} ${esc(n === 1 ? one : many)}`).join(" · ")}
-      </div>`));
-  }).catch(() => {});
+        <div class="todo__jobs"></div>
+      </div>`);
+    const list = $(".todo__jobs", card);
+    jobs.forEach(([n, one, many, goThere]) => {
+      const b = el(`<button class="todo__job">${n} ${esc(n === 1 ? one : many)} <span aria-hidden="true">›</span></button>`);
+      b.addEventListener("click", goThere);
+      list.append(b);
+    });
+    todo.append(card);
+  }).catch((err) => console.warn("Could not read what is waiting:", err));
   wrap.append(todo);
 
   /* Grouped, because nineteen tiles in one grid is a wall of numbers and
