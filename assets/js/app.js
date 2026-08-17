@@ -228,6 +228,7 @@ const state = {
   archive: null,      // past seasons, from data/archive.json
   archiveIndex: null, // that archive reduced to one row per player
   archivePromise: null,
+  adminTab: "overview",  // which part of the admin panel is showing
   dailyTab: "play",
   dailyAnswers: [],   // right/wrong so far in today's run
 };
@@ -3409,51 +3410,103 @@ function viewAdmin() {
     return wrap;
   }
 
-  const STATS = [
-    ["supporters", "Supporters"], ["supporters_this_week", "Joined this week"],
-    ["posts", "Wall posts"], ["replies", "Replies"],
-    ["ratings", "Player ratings"], ["predictions", "Predictions"],
-    ["attendances", "Games marked"], ["ground_reports", "Ground reports"],
-    ["access_reports", "Access reports"], ["price_reports", "Price reports"],
-    ["pubs", "Pubs"], ["feedback_waiting", "Feedback waiting"],
-    /* Added after the panel was first built. Anything the database has not got
-       yet is skipped rather than shown as a blank, so an un-migrated project
-       still gets a working panel. */
-    ["quiz_plays", "Daily played"], ["quiz_players", "Daily players"],
-    ["quiz_today", "Played today"], ["quiz_best_streak", "Best streak"],
-    ["archive_offers", "Archive offers"], ["archive_scanners", "Offered to scan"],
-    ["polls_waiting", "Polls waiting"],
-  ];
+  /* Four tabs rather than one long stack of cards. The panel had grown to
+     thirteen sections in a row and nothing was findable. */
+  const ATABS = [["overview", "Overview"], ["consult", "Consultation"],
+                 ["archive", "Archive"], ["people", "People"]];
+  const atab = state.adminTab || "overview";
+  const abar = el(`
+    <div class="segmented" style="margin-bottom:18px" role="group" aria-label="Admin sections">
+      ${ATABS.map(([k, l]) => `<button data-atab="${k}" class="${atab === k ? "is-active" : ""}">${l}</button>`).join("")}
+    </div>`);
+  abar.querySelectorAll("[data-atab]").forEach((b) =>
+    b.addEventListener("click", () => { state.adminTab = b.dataset.atab; render(); }));
+  wrap.append(abar);
 
-  wrap.append(el(`<h2 class="section-title">Activity</h2>`));
-  const statCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-  wrap.append(statCard);
-
-  db.adminOverview().then((o) => {
-    statCard.replaceChildren();
-    if (!o) {
-      statCard.append(el(`<p class="note" style="margin:0">Counts are not available. The newer part of the schema may not have been run yet.</p>`));
+  /* Whatever is waiting on a volunteer, first, on every tab. Everything else
+     here is information; this is the only part that is a job. */
+  const todo = el(`<div></div>`);
+  db.pendingActions().then((pa) => {
+    if (!pa) return;
+    /* Each carries its own plural. Bolting an "s" on the end turned two pieces
+       of feedback into "2 piece of feedbacks". */
+    const jobs = [
+      [pa.consultation, "consultation comment", "consultation comments"],
+      [pa.polls, "poll suggestion", "poll suggestions"],
+      [pa.feedback, "piece of feedback", "pieces of feedback"],
+    ].filter(([n]) => n > 0);
+    if (!jobs.length) {
+      todo.append(el(`<div class="todo todo--clear"><b>Nothing waiting</b>All caught up.</div>`));
       return;
     }
-    const grid = el(`<div class="info-grid info-grid--4"></div>`);
-    STATS.forEach(([key, label]) => {
-      if (o[key] === undefined || o[key] === null) return;
-      const urgent = key === "feedback_waiting" && o[key] > 0;
-      grid.append(el(`
-        <div class="info">
-          <div class="info__label">${esc(label)}</div>
-          <div class="info__value"${urgent ? ` style="color:var(--gold-400)"` : ""}>${Number(o[key]).toLocaleString("en-GB")}</div>
-        </div>`));
+    todo.append(el(`
+      <div class="todo">
+        <b>${jobs.reduce((a, [n]) => a + n, 0)} waiting on you</b>
+        ${jobs.map(([n, one, many]) => `${n} ${esc(n === 1 ? one : many)}`).join(" · ")}
+      </div>`));
+  }).catch(() => {});
+  wrap.append(todo);
+
+  /* Grouped, because nineteen tiles in one grid is a wall of numbers and
+     nobody reads the eleventh. Anything the database has not got yet is
+     skipped, so an un-migrated project still gets a working panel. */
+  const STAT_GROUPS = [
+    ["Supporters", [
+      ["supporters", "Accounts"], ["supporters_this_week", "Joined this week"],
+    ]],
+    ["Taking part", [
+      ["predictions", "Predictions"], ["ratings", "Player ratings"],
+      ["attendances", "Games marked"], ["posts", "Wall posts"], ["replies", "Replies"],
+    ]],
+    ["Poppies Daily", [
+      ["quiz_players", "Players"], ["quiz_plays", "Days played"],
+      ["quiz_today", "Played today"], ["quiz_best_streak", "Best streak"],
+    ]],
+    ["What fans have reported", [
+      ["ground_reports", "Ground"], ["access_reports", "Access"],
+      ["price_reports", "Prices"], ["pubs", "Pubs"],
+    ]],
+    ["Waiting on a volunteer", [
+      ["feedback_waiting", "Feedback"], ["polls_waiting", "Polls"],
+      ["archive_offers", "Archive offers"], ["archive_scanners", "Offered to scan"],
+    ]],
+  ];
+
+  if (atab === "overview") {
+    wrap.append(el(`<h2 class="section-title">Activity</h2>`));
+    const statCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+    wrap.append(statCard);
+
+    db.adminOverview().then((o) => {
+      statCard.replaceChildren();
+      if (!o) {
+        statCard.append(el(`<p class="note" style="margin:0">Counts are not available. The newer part of the schema may not have been run yet.</p>`));
+        return;
+      }
+      STAT_GROUPS.forEach(([heading, keys]) => {
+        const have = keys.filter(([k]) => o[k] !== undefined && o[k] !== null);
+        if (!have.length) return;
+        statCard.append(el(`<div class="stat-group__head">${esc(heading)}</div>`));
+        const grid = el(`<div class="info-grid info-grid--4"></div>`);
+        have.forEach(([key, label]) => {
+          const urgent = /waiting/.test(key) && o[key] > 0;
+          grid.append(el(`
+            <div class="info">
+              <div class="info__label">${esc(label)}</div>
+              <div class="info__value"${urgent ? ` style="color:var(--gold-400)"` : ""}>${Number(o[key]).toLocaleString("en-GB")}</div>
+            </div>`));
+        });
+        statCard.append(grid);
+      });
+      statCard.append(el(`<p class="note">Things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
     });
-    statCard.append(grid);
-    statCard.append(el(`<p class="note">These are things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
-  });
+  }
 
   /* The findings as they stand, for volunteers, before the public page opens on
      the Saturday. Same renderer as the public one so there is no second version
      of the maths to keep in step, with the comparison against May on top -
      which is the number this whole exercise turns on. */
-  if (consultState() !== "before") {
+  if (atab === "consult" && consultState() !== "before") {
     wrap.append(el(`<h2 class="section-title">Consultation, live</h2>`));
     const liveNote = el(`
       <div class="soon" style="margin-bottom:14px">
@@ -3494,9 +3547,11 @@ function viewAdmin() {
   /* Nothing a supporter wrote reaches the public or the club until it has been
      read here. Edit exists to trim an allegation out of an otherwise fair
      question rather than lose the question. */
-  wrap.append(el(`<h2 class="section-title">Consultation</h2>`));
   const consultCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-  wrap.append(consultCard);
+  if (atab === "consult") {
+    wrap.append(el(`<h2 class="section-title">Waiting to be read</h2>`));
+    wrap.append(consultCard);
+  }
 
   const paintConsult = () => {
     db.consultationQueue().then((rows) => {
@@ -3680,9 +3735,11 @@ function viewAdmin() {
   /* The offers were readable by volunteers in policy and shown nowhere, which
      is the same as not collecting them. Names are here because somebody has to
      ring these people; the public page shows counts and nothing else. */
-  wrap.append(el(`<h2 class="section-title">Archive project offers</h2>`));
   const offersCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-  wrap.append(offersCard);
+  if (atab === "archive") {
+    wrap.append(el(`<h2 class="section-title">Archive project offers</h2>`));
+    wrap.append(offersCard);
+  }
 
   db.archiveOfferList().then((rows) => {
     offersCard.replaceChildren();
@@ -3712,9 +3769,11 @@ function viewAdmin() {
       database yet.</p>`));
   });
 
-  wrap.append(el(`<h2 class="section-title">People</h2>`));
   const peopleCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-  wrap.append(peopleCard);
+  if (atab === "people") {
+    wrap.append(el(`<h2 class="section-title">People</h2>`));
+    wrap.append(peopleCard);
+  }
 
   const paintPeople = () => {
     db.adminPeople().then((rows) => {

@@ -4869,3 +4869,40 @@ button,
 .pick { display: inline-flex; align-items: center; margin-right: 2px; cursor: pointer; }
 .pick input { width: 18px; height: 18px; padding: 0; margin: 0; border: 0; background: none;
               flex: none; accent-color: var(--gold-400); box-sizing: border-box; }
+
+/* ============================================================ admin panel */
+
+/* The one part of the panel that is a job rather than information, so it sits
+   above the tabs and stays there whichever one is open. */
+.todo {
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--gold-400) 40%, transparent);
+  background: color-mix(in srgb, var(--gold-400) 9%, transparent);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.todo b { display: block; margin-bottom: 3px; font-size: 14px; color: var(--gold-400); }
+
+.todo--clear {
+  border-color: color-mix(in srgb, var(--ok) 35%, transparent);
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+.todo--clear b { color: var(--ok); }
+
+/* A heading inside the stats card, so nineteen numbers read as five groups. */
+.stat-group__head {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 18px 0 9px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.stat-group__head:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
