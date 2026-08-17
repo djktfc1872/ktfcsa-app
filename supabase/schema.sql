@@ -1310,16 +1310,23 @@ create index if not exists consultation_pending_idx
   on consultation_responses (created_at desc)
   where note_status = 'pending' or question_status = 'pending';
 
--- The window. A date rather than a weekday rule, because this is one
--- consultation and not a recurring thing. Stable, not immutable, for the same
--- reason london_today() is, so the rule lives in the policy and not a check.
+-- The window: Monday 17 August, to midday on Friday 21 August, at the ground.
+--
+-- A timestamp rather than a date, because the closing time is midday and not
+-- midnight, and Europe/London rather than UTC because in August those are an
+-- hour apart. The page shows the same deadline, but this is the one that
+-- decides: a closing time a browser can argue with is not a closing time.
+--
+-- Stable, not immutable, for the same reason london_today() is, so the rule
+-- lives in the policy rather than a check constraint.
 create or replace function consultation_open()
 returns boolean
 language sql
 stable
 set search_path = public
 as $$
-  select london_today() between date '2026-08-17' and date '2026-08-21';
+  select (now() at time zone 'Europe/London') >= timestamp '2026-08-17 00:00'
+     and (now() at time zone 'Europe/London') <  timestamp '2026-08-21 12:00';
 $$;
 
 alter table consultation_responses enable row level security;

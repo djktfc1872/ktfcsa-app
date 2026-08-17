@@ -4,7 +4,7 @@
 import { TEAMS, KTFC } from "./data.js";
 import { CONFIG } from "./config.js";
 import * as db from "./store.js";
-import { QUIZ_EPOCH, londonToday, dayNumber } from "./quiz.js";
+import { QUIZ_EPOCH, londonToday, londonStamp, dayNumber } from "./quiz.js";
 
 /* ================================================================= helpers */
 
@@ -265,6 +265,10 @@ const nextFixture = () => {
 /* Grouped by what a supporter is actually trying to do, not by the order these
    were built. The four tabs stay put: they are muscle memory on a phone. */
 const ROUTES = {
+  /* Declared first so it opens its own group at the top of the sidebar and the
+     More screen, rather than sitting fifth under Supporters. It is on for five
+     days and then the route stops advertising itself entirely. */
+  consult: { label: "Have Your Say", short: "Say", icon: "📣", nav: "more", group: "Happening now", render: viewConsult },
   fixtures: { label: "Fixtures", icon: "⚽", nav: "tab", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
   predict: { label: "Prediction League", short: "Predict", icon: "🎯", nav: "tab", group: "Matchday", render: viewPredict },
@@ -276,7 +280,6 @@ const ROUTES = {
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
 
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
-  consult: { label: "Have Your Say", short: "Say", icon: "📣", nav: "more", group: "Supporters", render: viewConsult },
   daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
   heritage: { label: "Archive Project", icon: "📼", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
@@ -337,9 +340,11 @@ function renderNav() {
       const heading = r.group && r.group !== lastGroup ? `<div class="sidebar__group">${r.group}</div>` : "";
       lastGroup = r.group;
       const waiting = key === "admin" ? pendingCount() : 0;
+      const urgent = key === "consult" && consultState() === "open";
       return `${heading}
-      <button class="sidebar__link ${state.view === key ? "is-active" : ""}" data-nav="${key}">
+      <button class="sidebar__link ${state.view === key ? "is-active" : ""}${urgent ? " is-urgent" : ""}" data-nav="${key}">
         <span class="ic" aria-hidden="true">${r.icon}</span>${r.label}${
+          urgent ? `<span class="live-dot" aria-hidden="true"></span>` : ""}${
           waiting ? `<span class="nav-badge">${waiting}</span>` : ""}
       </button>`;
     })
@@ -378,9 +383,11 @@ function viewMore() {
       seen = r.group;
     }
     wrap.append(el(`
-      <button class="club-row" data-nav="${key}">
+      <button class="club-row${key === "consult" && consultState() === "open" ? " club-row--urgent" : ""}" data-nav="${key}">
         <span style="font-size:19px;width:26px;text-align:center" aria-hidden="true">${r.icon}</span>
-        <div style="flex:1;min-width:0"><div class="club-row__name">${r.label}</div></div>
+        <div style="flex:1;min-width:0"><div class="club-row__name">${r.label}${
+          key === "consult" && consultState() === "open"
+            ? `<span class="club-row__sub">Closes ${CLOSES_WORDS}</span>` : ""}</div></div>
         ${key === "admin" && pendingCount() ? `<span class="nav-badge">${pendingCount()}</span>` : ""}
         <span style="color:var(--text-3)">›</span>
       </button>`));
@@ -486,6 +493,7 @@ function viewFixtures() {
   const liveNow = liveBanner();
 
   const wrap = el(`<div>
+    <div class="ticker-slot"></div>
     <div class="page-head">
       <h1>Fixtures</h1>
       <p>Kettering Town FC, ${esc(state.league?.season || "2026/27")}. Every game, cup ties included, kept up to date on its own.</p>
@@ -650,8 +658,8 @@ function viewFixtures() {
   /* Fixtures is where every session starts, so this is where the daily habit
      is worth nudging. The tabs stay as they are - the comment above ROUTES is
      right that four of them is muscle memory. */
-  const say = consultPromo();
-  if (say) $(".daily-slot", wrap).append(say);
+  const tick = consultTicker();
+  if (tick) $(".ticker-slot", wrap).append(tick);
   const promo = dailyPromo();
   if (promo) $(".daily-slot", wrap).append(promo);
   $(".otd-slot", wrap).append(onThisDayCard());
@@ -5760,13 +5768,17 @@ const keyToColumn = (k) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
    feel represented rather than telling them, and where it asks about action it
    reports what supporters would support and recommends none of it.        */
 
-const CONSULT_OPENS = "2026-08-17";
-const CONSULT_CLOSES = "2026-08-21";
+const CONSULT_OPENS  = "2026-08-17T00:00";
+/* Midday Friday, at the ground, not on the device. The database enforces the
+   same instant through consultation_open(), because a closing time a browser
+   can argue with is not a closing time. */
+const CONSULT_CLOSES = "2026-08-21T12:00";
+const CLOSES_WORDS = "midday on Friday 21 August";
 
 const consultState = () => {
-  const today = londonToday();
-  if (today < CONSULT_OPENS) return "before";
-  if (today > CONSULT_CLOSES) return "after";
+  const now = londonStamp();
+  if (now < CONSULT_OPENS) return "before";
+  if (now >= CONSULT_CLOSES) return "after";
   return "open";
 };
 
@@ -5776,17 +5788,20 @@ const CONSULT_BODIES = [
   ["trust", "The Supporters' Trust"],
   ["president", "The club president"],
   ["secretary", "The club secretary"],
-  ["ktfcsa", "KTFCSA (us)"],
+  ["sponsors", "The club's partners and sponsors"],
 ];
-/* Short heads because the column is 38px on a phone: "Adequately" wrapped over
-   three lines and read as nonsense. The full wording is in the legend under
-   the grid and in the label each radio carries for a screen reader. */
+/* Five points from very poor to very good, with "don't know" set apart below,
+   so nobody has to park a real opinion in the same row as no opinion. Laid out
+   as a block per body rather than a table: five columns and a label do not fit
+   across a phone, and a cramped grid is the opposite of a clear question. */
 const VERDICTS = [
-  ["well", "Well", "Well"],
-  ["ok", "OK", "Adequately"],
-  ["poorly", "Poor", "Poorly"],
-  ["unsure", "Unsure", "Don't know"],
+  ["very-poor", "Very poor"],
+  ["poor", "Poor"],
+  ["ok", "Neither"],
+  ["good", "Good"],
+  ["very-good", "Very good"],
 ];
+const VERDICT_UNSURE = ["unsure", "Don't know"];
 
 /* Things a supporter can actually observe. Nothing here asks anyone to repeat
    a rumour, and there is deliberately no option about anybody's honesty. */
@@ -5836,9 +5851,9 @@ function viewConsult() {
     wrap.append(el(`
       <div class="soon">
         <span class="soon__tag">Opens Monday morning</span>
-        <p>From Monday 17 to Friday 21 August we are asking supporters what they make of the way
-        the club is being run. The results go up here on Saturday, and every question supporters
-        ask will be put to the club in writing.</p>
+        <p>From Monday 17 August until ${CLOSES_WORDS} we are asking supporters what they make of
+        the way the club is being run. The results go up here on Saturday, and every question
+        supporters ask will be put to the club in writing.</p>
       </div>`));
     wrap.append(consultAbout());
     return wrap;
@@ -5853,8 +5868,8 @@ function viewConsult() {
     wrap.append(el(`
       <div class="soon">
         <span class="soon__tag">Thank you</span>
-        <p>Your answers are in. Results go up here on Saturday 22 August, and the questions
-        supporters have asked will be put to the club in writing. Closes Friday at midnight.</p>
+        <p>Your answers are in. It closes at ${CLOSES_WORDS} and the results go up here on
+        Saturday 22 August, with every question supporters asked put to the club in writing.</p>
       </div>`));
     wrap.append(consultAbout());
     return wrap;
@@ -5869,8 +5884,26 @@ function viewConsult() {
 function consultAbout() {
   return el(`
     <div class="card">
-      <p class="club-overview"><b>Who is asking.</b> The Supporters' Association is independent of
-      the club. It is not funded by the club and speaks only for the supporters who answer.</p>
+      <p class="club-overview">It is no secret that there is a lot of news and rumour going round
+      social media at the moment. Some of it is worth taking seriously, some of it is not, and
+      almost none of it is anywhere you could point at. We wanted to try and capture all of it in
+      one useful place, in a form we can actually put to the club, rather than leave it scattered
+      across comment threads where it does nobody any good.</p>
+      <p class="club-overview" style="margin-top:12px">So this is not a petition and it is not a
+      campaign. It is a straight set of questions about what supporters are seeing, what they are
+      worried about, what they think is going well, and what they want the club to answer. The
+      more people who fill it in, the harder it is to wave away, and the more it speaks for the
+      terrace rather than for whoever shouts loudest online.</p>
+      <p class="club-overview" style="margin-top:12px"><b>Being straight with you.</b> The
+      Supporters' Association is not fully off the ground yet. There is no committee, no
+      constitution and no membership list, and in an ideal world all of that would have come
+      first. Given what is going on around the club we thought it mattered more to get this
+      gathered properly now than to wait until the paperwork was tidy. If enough people take part,
+      this becomes the thing a proper fan group is built on rather than a survey that sat in a
+      drawer.</p>
+      <p class="club-overview" style="margin-top:12px"><b>Who is asking.</b> The Supporters'
+      Association is independent of the club. It is not funded by the club and speaks only for the
+      supporters who answer.</p>
       <p class="club-overview" style="margin-top:12px"><b>What happens to your answer.</b> The
       numbers are published as numbers. Anything you write is read by a volunteer first, and is
       published only if you tick the box saying we may. Questions for the club are collected,
@@ -5917,18 +5950,23 @@ function consultForm() {
       <h3 class="consult__q">3. How well has each of these represented supporters in recent months?</h3>
       <p class="hint">Answer for the ones you have a view on. "Don't know" is a real answer.</p>
       <div class="rep" id="c-rep">
-        <div class="rep__head"><span></span>${VERDICTS.map(([, short]) => `<span>${esc(short)}</span>`).join("")}</div>
         ${CONSULT_BODIES.map(([key, label]) => `
-          <div class="rep__row">
-            <span class="rep__body">${esc(label)}</span>
-            ${VERDICTS.map(([v, , full]) => `
-              <label class="rep__cell">
-                <input type="radio" name="rep-${key}" value="${v}">
-                <span class="sr-only">${esc(label)}: ${esc(full)}</span>
-              </label>`).join("")}
-          </div>`).join("")}
-        <p class="hint" style="margin-top:8px">Well · OK means adequately · Poor · Unsure means
-        you would rather not say either way.</p>
+          <fieldset class="rep__row">
+            <legend class="rep__body">${esc(label)}</legend>
+            <div class="rep__scale">
+              ${VERDICTS.map(([v, word]) => `
+                <label class="rep__cell">
+                  <input type="radio" name="rep-${key}" value="${v}">
+                  <span class="rep__word">${esc(word)}</span>
+                  <span class="sr-only">${esc(label)}: ${esc(word)}</span>
+                </label>`).join("")}
+              <label class="rep__cell rep__cell--apart">
+                <input type="radio" name="rep-${key}" value="${VERDICT_UNSURE[0]}">
+                <span class="rep__word">${esc(VERDICT_UNSURE[1])}</span>
+                <span class="sr-only">${esc(label)}: ${esc(VERDICT_UNSURE[1])}</span>
+              </label>
+            </div>
+          </fieldset>`).join("")}
       </div>
 
       <h3 class="consult__q">4. What is going well? Tick anything you would defend.</h3>
@@ -5990,8 +6028,8 @@ function consultForm() {
       </label>
 
       <button class="btn btn--full" id="c-send" style="margin-top:18px">Send my answers</button>
-      <p class="hint" style="margin-top:10px">One response per device. You cannot change it
-      afterwards, so have a read back before you send.</p>
+      <p class="hint" style="margin-top:10px">Closes at ${CLOSES_WORDS}. One response per device,
+      and you cannot change it afterwards, so have a read back before you send.</p>
     </div>`);
 
   /* Confidence, as a row of buttons rather than a slider: a slider on a phone
@@ -6105,21 +6143,25 @@ function consultResults() {
       const total = rows.reduce((a, x) => a + x.people, 0);
       if (!total) return;
       const share = (v) => Math.round(((rows.find((x) => x.verdict === v)?.people || 0) / total) * 100);
+      const bad = share("very-poor") + share("poor");
+      const good = share("good") + share("very-good");
       repCard.append(el(`
         <div class="rep-result">
           <div class="rep-result__name">${esc(label)}</div>
           <div class="rep-result__bar">
-            <span class="seg seg--well" style="width:${share("well")}%"></span>
-            <span class="seg seg--ok" style="width:${share("ok")}%"></span>
-            <span class="seg seg--poor" style="width:${share("poorly")}%"></span>
+            <span class="seg seg--vpoor" style="width:${share("very-poor")}%"></span>
+            <span class="seg seg--poor" style="width:${share("poor")}%"></span>
+            <span class="seg seg--mid" style="width:${share("ok")}%"></span>
+            <span class="seg seg--good" style="width:${share("good")}%"></span>
+            <span class="seg seg--vgood" style="width:${share("very-good")}%"></span>
             <span class="seg seg--unsure" style="width:${share("unsure")}%"></span>
           </div>
-          <div class="rep-result__key">${share("well")}% well · ${share("ok")}% adequately ·
-            <b>${share("poorly")}% poorly</b> · ${share("unsure")}% don't know</div>
+          <div class="rep-result__key"><b>${bad}% poor or very poor</b> · ${share("ok")}% neither ·
+            ${good}% good or very good · ${share("unsure")}% don't know</div>
         </div>`));
     });
-    repCard.append(el(`<p class="hint">Well, adequately, poorly, don't know. Supporters were asked
-      about roles, not people.</p>`));
+    repCard.append(el(`<p class="hint">Very poor through to very good, with don't know counted
+      separately. Supporters were asked about roles, not about people.</p>`));
     box.append(repCard);
 
     const chart = (kind, heading, labels) => {
@@ -6208,20 +6250,25 @@ function consultResults() {
   return box;
 }
 
-/** The nudge on the fixtures page, for the five days it is open. */
-function consultPromo() {
+/**
+ * A ticker across the top of the landing page, for the five days it runs.
+ *
+ * Deliberately the only thing on the site that moves. It reads once and stops
+ * rather than scrolling for ever, because a permanent crawl is an advert and
+ * this is a deadline. Honours prefers-reduced-motion by simply sitting still.
+ */
+function consultTicker() {
   if (consultState() !== "open") return null;
-  const done = db.hasAnswered();
+  if (db.hasAnswered()) return null;
+  const line = `Independent fan consultation on how the club is being run · Open to every supporter, no account needed · Closes ${CLOSES_WORDS} · Have your say`;
   return el(`
-    <button class="daily-promo daily-promo--urgent" data-nav="consult">
-      <span class="daily-promo__icon">📣</span>
-      <span class="daily-promo__text">
-        <strong>Have your say on how the club is run</strong>
-        <span>${done ? "Thank you. Results here on Saturday." : "Independent consultation, closes Friday. No account needed."}</span>
-      </span>
-      <span class="daily-promo__go">${done ? "Done" : "Open"}</span>
+    <button class="ticker" data-nav="consult" aria-label="Fan consultation. ${esc(line)}">
+      <span class="ticker__tag">Now on</span>
+      <span class="ticker__track"><span class="ticker__line">${esc(line)}</span></span>
+      <span class="ticker__go" aria-hidden="true">›</span>
     </button>`);
 }
+
 
 async function readJSON(path) {
   for (const init of [undefined, { cache: "no-store" }]) {

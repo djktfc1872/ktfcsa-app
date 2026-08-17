@@ -41,6 +41,22 @@ export function londonToday(d = new Date()) {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
+/**
+ * The date and time in Kettering, as "2026-08-21T12:00". Sortable as a string,
+ * which is all any caller needs it for. Same reasoning as londonToday: a
+ * deadline of midday has to mean midday at the ground, not on the device.
+ */
+export function londonStamp(d = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London", hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).formatToParts(d).filter((p) => p.type !== "literal");
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+  /* Intl gives midnight as "24" in some engines. */
+  const hh = p.hour === "24" ? "00" : p.hour;
+  return `${p.year}-${p.month}-${p.day}T${hh}:${p.minute}`;
+}
+
 /** An ISO date to a UTC midnight, used only for counting whole days apart. */
 const utcNoonless = (iso) => {
   const [y, m, d] = iso.split("-").map(Number);
