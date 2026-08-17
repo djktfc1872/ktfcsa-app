@@ -295,7 +295,7 @@ const ROUTES = {
   privacy: { label: "Your data", icon: "🔒", nav: "hidden", render: viewPrivacy },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
-  admin: { label: "Admin", icon: "🛠️", nav: "hidden", render: viewAdmin },
+  admin: { label: "Admin", icon: "🛠️", nav: "more", group: "You", adminOnly: true, render: viewAdmin },
   match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
 };
 
@@ -331,7 +331,11 @@ function refreshPending() {
   }).catch(() => { /* not migrated yet */ });
 }
 
-const routesWhere = (...kinds) => Object.entries(ROUTES).filter(([, r]) => kinds.includes(r.nav));
+/* Routes for a nav surface. adminOnly entries are dropped for everybody else,
+   here rather than at each call site, so a new nav surface cannot forget. The
+   page itself still checks: hiding a button is not a control. */
+const routesWhere = (...kinds) =>
+  Object.entries(ROUTES).filter(([, r]) => kinds.includes(r.nav) && (!r.adminOnly || db.isAdmin()));
 
 function renderNav() {
   let lastGroup = null;
@@ -3445,6 +3449,48 @@ function viewAdmin() {
     statCard.append(el(`<p class="note">These are things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
   });
 
+  /* The findings as they stand, for volunteers, before the public page opens on
+     the Saturday. Same renderer as the public one so there is no second version
+     of the maths to keep in step, with the comparison against May on top -
+     which is the number this whole exercise turns on. */
+  if (consultState() !== "before") {
+    wrap.append(el(`<h2 class="section-title">Consultation, live</h2>`));
+    const liveNote = el(`
+      <div class="soon" style="margin-bottom:14px">
+        <span class="soon__tag">${consultState() === "open" ? "Still open" : "Closed"}</span>
+        <p>${consultState() === "open"
+          ? `Running until ${CLOSES_WORDS}. These are the numbers so far and only you can see them. The public page opens on Saturday.`
+          : "Closed. This is what the public page is showing."}</p>
+      </div>`);
+    wrap.append(liveNote);
+
+    const compare = el(`<div></div>`);
+    db.consultationResults().then((r) => {
+      const n = r?.summary?.responses || 0;
+      if (!n) return;
+      const now = Number(r.summary.confidence_avg);
+      /* May 2026: 189 responses, 8.1 out of 10 on the incoming consortium. The
+         movement is the story, so it is worked out here rather than left for
+         somebody to do in their head on a podcast. */
+      const was = 8.1;
+      const delta = (now - was).toFixed(1);
+      compare.append(el(`
+        <div class="card" style="margin-bottom:14px">
+          <div class="info-grid info-grid--3">
+            <div class="info"><div class="info__label">Now</div><div class="info__value" style="color:var(--gold-400)">${now}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
+            <div class="info"><div class="info__label">May survey</div><div class="info__value">${was}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
+            <div class="info"><div class="info__label">Change</div><div class="info__value" style="color:${now < was ? "var(--red-400)" : "var(--ok)"}">${delta > 0 ? "+" : ""}${delta}</div></div>
+          </div>
+          <div class="hint">May asked about confidence in the incoming consortium and drew 189
+          responses; this asks about how the club is being run now. Not the same question, so say
+          so if you quote it, but it is the closest thing to a like-for-like reading we have.
+          ${n} response${n === 1 ? "" : "s"} so far.</div>
+        </div>`));
+    }).catch(() => {});
+    wrap.append(compare);
+    wrap.append(consultResults());
+  }
+
   /* Nothing a supporter wrote reaches the public or the club until it has been
      read here. Edit exists to trim an allegation out of an otherwise fair
      question rather than lose the question. */
@@ -3469,11 +3515,84 @@ function viewAdmin() {
       }
       consultCard.append(el(`<p class="note" style="margin:0 0 10px">${waiting.length} waiting,
         ${items.length - waiting.length} dealt with. Nothing appears publicly until you approve it.</p>`));
+
+      /* Working through fifty of these one at a time is how a volunteer stops
+         reading them properly, so there is a bulk path. It still goes through
+         the same warning, counting how many of the selection look like they
+         name somebody, because that is the whole reason for the confirm. */
+      if (waiting.length > 1) {
+        const bar = el(`
+          <div class="bulk">
+            <label class="bulk__all"><input type="checkbox" id="bulk-all"><span>Select all ${waiting.length} waiting</span></label>
+            <div class="btn-row">
+              <button class="btn btn--sm" id="bulk-approve" disabled>Approve selected</button>
+              <button class="btn btn--sm btn--ghost" id="bulk-reject" disabled>Reject selected</button>
+            </div>
+          </div>`);
+        consultCard.append(bar);
+
+        const picked = () => [...consultCard.querySelectorAll("[data-pick]:checked")]
+          .map((c) => waiting.find((w) => `${w.row.id}:${w.field}` === c.dataset.pick))
+          .filter(Boolean);
+        const sync = () => {
+          const n = picked().length;
+          $("#bulk-approve", bar).disabled = !n;
+          $("#bulk-reject", bar).disabled = !n;
+          $("#bulk-approve", bar).textContent = n ? `Approve ${n}` : "Approve selected";
+          $("#bulk-reject", bar).textContent = n ? `Reject ${n}` : "Reject selected";
+        };
+        consultCard.addEventListener("change", (e) => {
+          if (e.target.matches("[data-pick]")) sync();
+        });
+        $("#bulk-all", bar).addEventListener("change", (e) => {
+          consultCard.querySelectorAll("[data-pick]").forEach((c) => { c.checked = e.target.checked; });
+          sync();
+        });
+
+        const runBulk = async (status) => {
+          const chosen = picked();
+          for (const it of chosen) {
+            const col = it.field === "question" ? "question_status" : "note_status";
+            await db.setConsultationStatus(it.row.id, { [col]: status });
+          }
+          toast(`${chosen.length} ${status === "approved" ? "published" : "rejected"}.`);
+          paintConsult();
+          renderNav();
+        };
+
+        $("#bulk-approve", bar).addEventListener("click", () => {
+          const chosen = picked();
+          const named = chosen.filter((it) => looksLikeItNames(it.text).length);
+          const { node, close } = modal(`
+            <h3 style="margin-bottom:10px">Publish ${chosen.length} item${chosen.length === 1 ? "" : "s"}?</h3>
+            <p class="hint" style="margin-bottom:10px">They go on the public results page, and any
+              questions among them are sent to the club in writing.</p>
+            ${named.length ? `
+              <div class="warn">
+                <b>${named.length === 1
+                  ? "One of them looks like it names someone"
+                  : `${named.length} of them look like they name someone`}</b>
+                ${esc(named.map((it) => looksLikeItNames(it.text).join(", ")).join(" · "))}.
+                Approving in bulk skips reading them one at a time, which is exactly when a name
+                gets published by accident. Go back and do those individually if you are not sure.
+              </div>` : `<p class="hint">None of them appear to name anybody.</p>`}
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn btn--sm" data-yes>Yes, publish ${chosen.length}</button>
+              <button class="btn btn--sm btn--ghost" data-no>Cancel</button>
+            </div>`);
+          node.querySelector("[data-yes]").addEventListener("click", () => { close(); runBulk("approved"); });
+          node.querySelector("[data-no]").addEventListener("click", close);
+        });
+        $("#bulk-reject", bar).addEventListener("click", () => runBulk("rejected"));
+      }
       [...waiting, ...items.filter((i) => i.status !== "pending")].forEach((it) => {
         const statusCol = it.field === "question" ? "question_status" : "note_status";
         const card = el(`
           <div class="suggestion${it.status === "pending" ? "" : " is-done"}">
             <div class="suggestion__meta">
+              ${it.status === "pending"
+                ? `<label class="pick"><input type="checkbox" data-pick="${esc(it.row.id)}:${esc(it.field)}"><span class="sr-only">Select this one</span></label>`
+                : ""}
               <span class="pill">${esc(it.kind)}</span>
               ${it.row.publish_ok ? `<span class="pill pill--gold">May publish${it.row.attribution ? `, as ${esc(it.row.attribution)}` : ""}</span>` : `<span class="pill pill--muted">Not for publication</span>`}
               ${it.status !== "pending" ? `<span class="pill pill--muted">${esc(it.status)}</span>` : ""}
@@ -5951,6 +6070,32 @@ const CONSULT_ACTIONS = [
   ["none", "Nothing. I would rather things were settled quietly"],
 ];
 
+
+/**
+ * How many have answered so far, live. Public, because the number is the best
+ * argument for adding to it: a supporter who can see that two hundred people
+ * have already bothered is far more likely to bother themselves.
+ *
+ * Reads the aggregate view, which is counts only and exposes nobody.
+ */
+function consultCount({ compact = false } = {}) {
+  const box = el(`<div></div>`);
+  db.consultationResults().then((r) => {
+    const n = r?.summary?.responses || 0;
+    if (!n) return;
+    const members = r.summary.from_members || 0;
+    box.append(el(compact
+      ? `<span class="tally">${n} answered so far</span>`
+      : `<div class="otd" style="margin-bottom:var(--gap)">
+           <span class="otd__year">${n}</span>
+           <span>${n === 1 ? "supporter has" : "supporters have"} answered so far${
+             members ? `, ${members} of them signed in to an account` : ""}.
+             ${consultState() === "open" ? `Closes ${CLOSES_WORDS}.` : ""}</span>
+         </div>`));
+  }).catch(() => { /* a count is a nicety, never an error */ });
+  return box;
+}
+
 function viewConsult() {
   const wrap = el(`
     <div>
@@ -5962,6 +6107,8 @@ function viewConsult() {
     </div>`);
 
   const phase = consultState();
+
+  wrap.append(consultCount());
 
   if (phase === "before") {
     wrap.append(el(`
@@ -6391,12 +6538,23 @@ function consultTicker() {
   if (consultState() !== "open") return null;
   if (db.hasAnswered()) return null;
   const line = `Independent fan consultation on how the club is being run · Open to every supporter, no account needed · Closes ${CLOSES_WORDS} · Have your say`;
-  return el(`
+  /* The running total is appended once it arrives rather than held for, so the
+     ticker paints immediately and nobody waits on a network call to read it. */
+  const withCount = (node) => {
+    db.consultationResults().then((r) => {
+      const n = r?.summary?.responses || 0;
+      if (!n) return;
+      const l = node.querySelector(".ticker__line");
+      if (l) l.textContent = `${n} supporters have already had their say · ${line}`;
+    }).catch(() => {});
+    return node;
+  };
+  return withCount(el(`
     <button class="ticker" data-nav="consult" aria-label="Fan consultation. ${esc(line)}">
       <span class="ticker__tag">Now on</span>
       <span class="ticker__track"><span class="ticker__line">${esc(line)}</span></span>
       <span class="ticker__go" aria-hidden="true">›</span>
-    </button>`);
+    </button>`));
 }
 
 
