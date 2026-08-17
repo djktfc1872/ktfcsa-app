@@ -2287,6 +2287,15 @@ function viewPoppies() {
         (${esc(people.source.replace(/^Kettering Town FC official website, /, ""))})${
           people.checked ? `, checked ${esc(fmtDate(people.checked))}` : ""}.
         ${esc(people.note || "")}</p>`));
+      /* Straight to the page this came from, so anybody can check it against
+         the source rather than take our word for a list that will go stale. */
+      if (people.sourceUrl) {
+        wrap.append(el(`
+          <div class="btn-row" style="margin-top:12px">
+            <a class="btn btn--sm btn--ghost" href="${esc(people.sourceUrl)}"
+               target="_blank" rel="noopener">${ICON.globe} See it on the club's site</a>
+          </div>`));
+      }
     }
     return wrap;
   }
