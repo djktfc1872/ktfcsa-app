@@ -4906,3 +4906,30 @@ button,
 }
 
 .stat-group__head:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* Denser tiles for the admin panel. Three across on a phone rather than two,
+   and six on a desktop, because a volunteer reading twenty numbers wants them
+   on one screen and does not need each one the size of a scoreline. */
+.info-grid--dense { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.info-grid--dense .info { padding: 9px 6px; }
+.info-grid--dense .info__label { font-size: 8.5px; letter-spacing: 0.04em; }
+.info-grid--dense .info__value { font-size: 19px; }
+
+@media (min-width: 620px) {
+  .info-grid--dense { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+/* The words supporters used, sized by how often. */
+.cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px 11px;
+  padding: 6px 2px 2px;
+  line-height: 1.25;
+}
+
+.cloud__w { color: var(--text-2); cursor: default; }
+.cloud__w:nth-child(3n) { color: var(--gold-400); }
+.cloud__w:nth-child(5n) { color: var(--text); }

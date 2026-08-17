@@ -4,7 +4,7 @@
 import { TEAMS, KTFC } from "./data.js";
 import { CONFIG } from "./config.js";
 import * as db from "./store.js";
-import { QUIZ_EPOCH, londonToday, londonStamp, dayNumber } from "./quiz.js";
+import { QUIZ_EPOCH, londonToday, londonStamp, dayNumber, rngFor, seededShuffle } from "./quiz.js";
 
 /* ================================================================= helpers */
 
@@ -3393,6 +3393,105 @@ function joinPrompt({ heading, blurb, points = [], footer = null }) {
    returns nothing to a non-admin and the tag function raises rather than
    writing. This page is a convenience, not the lock. */
 
+
+/* ------------------------------------------------ consultation, insights */
+
+/* Words too ordinary to tell you anything. Deliberately long: a cloud whose
+   biggest word is "the" is decoration, not information. */
+const CLOUD_STOP = new Set(`
+  a an the this that these those there here it its it's is are was were be been being am
+  i we you he she they them us me my our your their his her him himself themselves
+  and or but so if then than as at by for from in into of off on onto out over to under up
+  with without within about after before during since until while when where which who whom
+  what why how all any both each every few more most much no none not other same some such
+  very just only also again do does did done have has had having will would could should must
+  can may might shall get got go going went come came make made take taken put said say says
+  need needs needed want wants wanted think thought know known feel felt seem seems look looks
+  like really actually literally basically obviously clearly honestly frankly personally
+  club team fc kettering town poppies latimer park ktfcsa season game games match matches
+  one two three four five ten lot lots bit thing things way ways time times year years
+  people person fans fan supporter supporters everyone anyone somebody nobody
+  been over back down out again still even ever never always sometimes often
+  many much more less most least many's several various certain particular
+  january february march april june july august september october november december
+  monday tuesday wednesday thursday friday saturday sunday week weeks month months
+  going gone give given gets keep kept done doing being having something anything
+  because though although however therefore instead rather quite pretty fairly
+`.trim().split(/\s+/));
+
+/**
+ * The words supporters actually used, sized by how often.
+ *
+ * Built from the free text in the responses, which only a volunteer can read,
+ * so this lives in the admin panel and nowhere else. It is a way of seeing a
+ * hundred and forty comments at once without reading them one at a time, which
+ * is the thing that stops a volunteer reading any of them properly.
+ */
+function wordCloud(rows) {
+  const counts = new Map();
+  for (const r of rows) {
+    const text = [r.concern_note, r.positive_note, r.question].filter(Boolean).join(" ");
+    for (const raw of text.toLowerCase().split(/[^a-z'-]+/)) {
+      const w = raw.replace(/^['-]+|['-]+$/g, "");
+      if (w.length < 4 || CLOUD_STOP.has(w)) continue;
+      counts.set(w, (counts.get(w) || 0) + 1);
+    }
+  }
+  const top = [...counts.entries()].filter(([, n]) => n > 1)
+    .sort((a, b) => b[1] - a[1]).slice(0, 40);
+  if (top.length < 5) return null;
+
+  const most = top[0][1];
+  const card = el(`<div class="card"><div class="cloud"></div></div>`);
+  const cloud = $(".cloud", card);
+  /* Shuffled so the biggest words are not all bunched at the front, but seeded
+     off the data so it does not jump about on every render. */
+  const rnd = rngFor(`cloud:${rows.length}:${top[0][0]}`);
+  seededShuffle(top, rnd).forEach(([word, n]) => {
+    /* Square root, so a word used forty times is not forty times the size of
+       one used once and pushing everything else off the card. */
+    const size = 11 + Math.round(Math.sqrt(n / most) * 17);
+    const weight = n > most * 0.5 ? 700 : n > most * 0.25 ? 600 : 400;
+    cloud.append(el(`<span class="cloud__w" style="font-size:${size}px;font-weight:${weight}"
+      title="${esc(word)}: ${n} time${n === 1 ? "" : "s"}">${esc(word)}</span>`));
+  });
+  card.append(el(`<p class="hint">The ${top.length} words supporters used most, out of
+    ${rows.filter((r) => r.concern_note || r.positive_note || r.question).length} pieces of
+    writing. Ordinary words are stripped out. Hover for the count.</p>`));
+  return card;
+}
+
+/** Responses per day, so a volunteer can see whether it is still moving. */
+function responsesByDay(rows) {
+  if (!rows.length) return null;
+  const byDay = new Map();
+  rows.forEach((r) => {
+    const d = londonStamp(new Date(r.created_at)).slice(0, 10);
+    byDay.set(d, (byDay.get(d) || 0) + 1);
+  });
+  /* Every day of the window, including any with nothing, because a flat day is
+     itself worth seeing. */
+  const days = [];
+  for (let d = new Date(`${CONSULT_OPENS.slice(0, 10)}T12:00:00Z`);
+       londonStamp(d).slice(0, 10) <= CONSULT_CLOSES.slice(0, 10);
+       d = new Date(d.getTime() + 86400000)) {
+    const key = londonStamp(d).slice(0, 10);
+    days.push([key, byDay.get(key) || 0]);
+  }
+  const most = Math.max(...days.map(([, n]) => n), 1);
+  const today = londonToday();
+  return el(`
+    <div class="card">
+      ${days.map(([day, n]) => `
+        <div class="dist">
+          <span class="dist__key dist__key--wide">${esc(fmtDate(day, "short"))}${day === today ? " (today)" : ""}</span>
+          <span class="dist__bar"><span class="dist__fill" style="width:${Math.round((n / most) * 100)}%"></span></span>
+          <span class="dist__n">${n}</span>
+        </div>`).join("")}
+      <p class="hint">${rows.length} in total. Today is still running, so its bar will grow.</p>
+    </div>`);
+}
+
 function viewAdmin() {
   const wrap = el(`<div>
     <div class="page-head">
@@ -3487,7 +3586,7 @@ function viewAdmin() {
         const have = keys.filter(([k]) => o[k] !== undefined && o[k] !== null);
         if (!have.length) return;
         statCard.append(el(`<div class="stat-group__head">${esc(heading)}</div>`));
-        const grid = el(`<div class="info-grid info-grid--4"></div>`);
+        const grid = el(`<div class="info-grid info-grid--dense"></div>`);
         have.forEach(([key, label]) => {
           const urgent = /waiting/.test(key) && o[key] > 0;
           grid.append(el(`
@@ -3529,7 +3628,7 @@ function viewAdmin() {
       const delta = (now - was).toFixed(1);
       compare.append(el(`
         <div class="card" style="margin-bottom:14px">
-          <div class="info-grid info-grid--3">
+          <div class="info-grid info-grid--dense">
             <div class="info"><div class="info__label">Now</div><div class="info__value" style="color:var(--gold-400)">${now}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
             <div class="info"><div class="info__label">May survey</div><div class="info__value">${was}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
             <div class="info"><div class="info__label">Change</div><div class="info__value" style="color:${now < was ? "var(--red-400)" : "var(--ok)"}">${delta > 0 ? "+" : ""}${delta}</div></div>
@@ -3541,6 +3640,29 @@ function viewAdmin() {
         </div>`));
     }).catch(() => {});
     wrap.append(compare);
+
+    /* Both of these read the raw responses, which only a volunteer can see, so
+       they exist here and not on the public page. */
+    const insights = el(`<div></div>`);
+    db.consultationQueue().then((rows) => {
+      if (!rows.length) return;
+      const cloud = wordCloud(rows);
+      if (cloud) {
+        insights.append(el(`<h2 class="section-title">What supporters keep saying</h2>`));
+        insights.append(cloud);
+      }
+      const byDay = responsesByDay(rows);
+      if (byDay) {
+        insights.append(el(`<h2 class="section-title">Responses by day</h2>`));
+        insights.append(byDay);
+      }
+    }).catch((err) => {
+      /* This used to swallow everything, which hid a missing import for a good
+         while: the panel simply rendered without these two and said nothing. */
+      console.warn("Consultation insights could not be built:", err);
+    });
+    wrap.append(insights);
+
     wrap.append(consultResults());
   }
 
