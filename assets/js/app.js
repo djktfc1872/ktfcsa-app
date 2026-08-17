@@ -3492,20 +3492,40 @@ function viewAdmin() {
             });
             return b;
           };
-          row.append(act("Approve", { [statusCol]: "approved" }, "btn--sm"));
-          const edit = el(`<button class="btn btn--sm btn--ghost">Edit</button>`);
-          edit.addEventListener("click", () => {
-            const ta = el(`<textarea rows="4" style="width:100%">${esc(it.text)}</textarea>`);
-            const m = modal("Edit before publishing", ta);
-            const save = el(`<button class="btn btn--full" style="margin-top:10px">Save and approve</button>`);
-            save.addEventListener("click", async () => {
-              await db.setConsultationStatus(it.row.id, { [it.field]: ta.value.trim(), [statusCol]: "approved" });
-              m.close();
-              toast("Saved and approved.");
+          const approve = el(`<button class="btn btn--sm">Approve</button>`);
+          approve.addEventListener("click", () => confirmPublish({
+            text: it.text, kind: it.kind, attribution: it.row.publish_ok ? it.row.attribution : null,
+            onYes: async () => {
+              await db.setConsultationStatus(it.row.id, { [statusCol]: "approved" });
+              toast("Published.");
               paintConsult();
               renderNav();
+            },
+          }));
+          row.append(approve);
+          const edit = el(`<button class="btn btn--sm btn--ghost">Edit</button>`);
+          edit.addEventListener("click", () => {
+            const { node: en, close: eclose } = modal(`
+              <h3 style="margin-bottom:10px">Edit before publishing</h3>
+              <p class="hint" style="margin-bottom:10px">Trim anything you would not stand behind.
+                What is left is what goes out.</p>
+              <textarea rows="5" style="width:100%">${esc(it.text)}</textarea>
+              <button class="btn btn--full" style="margin-top:10px" data-save>Save and publish</button>`);
+            const ta = en.querySelector("textarea");
+            en.querySelector("[data-save]").addEventListener("click", () => {
+              const edited = ta.value.trim();
+              eclose();
+              confirmPublish({
+                text: edited, kind: it.kind,
+                attribution: it.row.publish_ok ? it.row.attribution : null,
+                onYes: async () => {
+                  await db.setConsultationStatus(it.row.id, { [it.field]: edited, [statusCol]: "approved" });
+                  toast("Saved and published.");
+                  paintConsult();
+                  renderNav();
+                },
+              });
             });
-            ta.after(save);
           });
           row.append(edit);
           row.append(act("Reject", { [statusCol]: "rejected" }));
@@ -5755,6 +5775,81 @@ function archiveOfferPanel() {
 
 /* The form speaks camelCase and the row speaks snake_case, as everywhere else. */
 const keyToColumn = (k) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+
+
+/* -------------------------------------------------- publishing safeguards */
+
+/* Common words that begin a sentence, or turn up capitalised for ordinary
+   reasons. Anything capitalised that is not in here gets flagged. The list
+   errs on the short side on purpose: over-flagging costs a second's reading,
+   under-flagging is how a name gets published. */
+const NOT_A_NAME = new Set(`
+  a an the this that these those there here it its it's he she they them their his her our my your
+  we you i us and but so or nor yet if when while since after before during given having being
+  all any both each every few many more most much no none not other same some such very just only
+  again also because how what when where which who whom why would could should must can will may
+  do does did done have has had am are is was were be been being get got go going went
+  at by for from in into of off on onto out over to under up with without within about
+  club team squad supporters fans fan players player manager board committee volunteers volunteer
+  kettering town poppies latimer park ktfcsa fc league southern premier central trust association
+  communication transparency matchday matchdays ground stadium season january february march april
+  may june july august september october november december monday tuesday wednesday thursday
+  friday saturday sunday everything something nothing anything nobody somebody everyone anyone
+  personally honestly frankly obviously clearly hopefully unfortunately
+`.trim().split(/\s+/));
+
+/**
+ * A rough guess at whether something names a person or a company.
+ *
+ * Any capitalised word that is not an ordinary one, wherever it sits. It used
+ * to skip the first word of each sentence, which is tidier and useless: the
+ * comment that went live during testing began "George has lied over and over
+ * again" and sailed straight through. Over-flagging is the right way to be
+ * wrong here, so common words are listed rather than positions guessed.
+ *
+ * A prompt to read carefully, not a filter. It will miss things.
+ */
+function looksLikeItNames(text) {
+  const hits = [];
+  for (const raw of String(text || "").split(/\s+/)) {
+    const w = raw.replace(/[^A-Za-z'-]/g, "");
+    if (w.length < 3) continue;
+    if (!/^[A-Z][a-z'-]+$/.test(w)) continue;
+    if (NOT_A_NAME.has(w.toLowerCase())) continue;
+    if (!hits.includes(w)) hits.push(w);
+  }
+  return hits;
+}
+
+/**
+ * Shows exactly what is about to become public, and asks. Approving used to be
+ * a single unconfirmed tap, which is how a comment naming somebody went live
+ * during testing within a minute of the first response arriving.
+ */
+function confirmPublish({ text, kind, attribution, onYes }) {
+  const names = looksLikeItNames(text);
+  const isQuestion = kind === "Question for the club";
+  const { node, close } = modal(`
+    <h3 style="margin-bottom:10px">Publish this?</h3>
+    <p class="hint" style="margin-bottom:10px">It will appear on the public results page${
+      isQuestion ? " and be sent to the club in writing" : ""}, exactly as written below${
+      attribution ? `, credited to ${esc(attribution)}` : ", with no name against it"}.</p>
+    <blockquote class="quote" style="margin-bottom:12px">${esc(text)}</blockquote>
+    ${names.length ? `
+      <div class="warn">
+        <b>This looks like it names someone: ${esc(names.join(", "))}</b>
+        Publishing a claim about a named person or company is the part that carries real risk,
+        and it is you doing the publishing. If it states something as fact rather than asking a
+        question, edit it or leave it pending. The response still counts towards every number
+        either way.
+      </div>` : ""}
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn--sm" data-yes>Yes, publish it</button>
+      <button class="btn btn--sm btn--ghost" data-no>Cancel</button>
+    </div>`);
+  node.querySelector("[data-yes]").addEventListener("click", () => { close(); onYes(); });
+  node.querySelector("[data-no]").addEventListener("click", close);
+}
 
 /* ========================================================== fan consultation
 

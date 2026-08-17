@@ -2931,7 +2931,11 @@ textarea:focus-visible {
     min-height: 46px;
   }
 
-  input,
+  /* Not tickboxes and radios. On a touch device this gave every one of them a
+     46px minimum, meant for boxes people type into, which left a single line
+     of label stranded near the top of a row built for something much taller.
+     Their touch target is the whole row: the label wraps the control. */
+  input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
     min-height: 46px;
@@ -4790,4 +4794,54 @@ button,
 @media (max-width: 600px) {
   .offer { align-items: flex-start; }
   .rep__cell { justify-content: flex-start; }
+}
+
+/* Shown when something about to be published looks like it names a person or a
+   company. Red because this is the one action on the site that cannot be taken
+   back once it is out. */
+.warn {
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--red-400) 50%, transparent);
+  background: color-mix(in srgb, var(--red-500) 12%, transparent);
+  border-radius: var(--r);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.warn b { display: block; margin-bottom: 4px; color: var(--text); }
+
+/* Tickboxes and radios are not text fields.
+   The base `input` rule above gives every input 10px of padding and a border,
+   for the boxes people type into. A checkbox inherited all of it, and because
+   the height set alongside it is content-box, a 19px control rendered 46px
+   tall. That is what was making the option rows deep and leaving one line of
+   text stranded near the top of a box built for something much bigger. */
+.offer input[type="checkbox"],
+.offer input[type="radio"],
+.rep__cell input[type="radio"] {
+  box-sizing: border-box;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  flex: none;
+  accent-color: var(--gold-400);
+}
+
+.rep__cell input[type="radio"] { width: 17px; height: 17px; }
+
+/* With the control back to its proper size, a single line of label sits on the
+   middle line with it. Rows that carry an explanation underneath are the ones
+   that run to three lines, and those still hang from the top so the tick stays
+   next to the thing it ticks. */
+.offer { align-items: center; }
+.offer:has(.hint) { align-items: flex-start; }
+
+@media (max-width: 600px) {
+  .offer { align-items: center; }
+  .offer:has(.hint) { align-items: flex-start; }
 }
