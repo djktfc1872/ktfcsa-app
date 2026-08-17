@@ -849,8 +849,7 @@ grant execute on function set_user_tag(uuid, text) to authenticated;
 -- would be dropping seven columns, which Postgres refuses with 42P16. Dropping
 -- makes re-running the file safe, which is the whole point of this file.
 drop view if exists admin_overview;
-
-create or replace view admin_overview as
+create view admin_overview as
 select * from (
 select
   (select count(*) from profiles)                                  as supporters,
@@ -1170,7 +1169,8 @@ create policy "withdraw your own offer" on archive_offers
   for delete using (auth.uid() = profile_id or is_admin());
 
 -- Totals only, never who. Enough to show the project is worth starting.
-create or replace view archive_offer_counts as
+drop view if exists archive_offer_counts cascade;
+create view archive_offer_counts as
 select
   count(*)::int                                  as offers,
   count(*) filter (where can_scan)::int          as scanners,
@@ -1209,8 +1209,7 @@ grant select on archive_offer_counts to anon, authenticated;
 -- Same all-or-nothing rule as before: a volunteer sees every number, or nobody
 -- sees any, rather than most of them with one quietly missing.
 drop view if exists admin_overview;
-
-create or replace view admin_overview as
+create view admin_overview as
 select * from (
 select
   (select count(*) from profiles)                                  as supporters,
@@ -1391,7 +1390,15 @@ create policy "volunteers remove a response" on consultation_responses
   for delete using (is_admin());
 
 -- The headline numbers. Counts and averages only.
-create or replace view consultation_summary as
+-- Dropped and recreated rather than replaced. "create or replace view" can only
+-- ever ADD columns at the end: it cannot insert one in the middle or reorder,
+-- and trying reports "cannot drop columns from view", which is a confusing way
+-- of saying the column in that position is not the one it expected. The
+-- meeting counts were added in the middle of this list and took the whole file
+-- down with them. Dropping first means the shape can change freely; nothing
+-- reads this view except the app, so there is nothing to cascade to.
+drop view if exists consultation_summary;
+create view consultation_summary as
 select
   count(*)::int                                                   as responses,
   count(*) filter (where profile_id is not null)::int             as from_members,
@@ -1410,12 +1417,14 @@ from consultation_responses;
 
 -- The distribution behind the average, so the headline can be checked rather
 -- than taken on trust. The May report published this and was stronger for it.
-create or replace view consultation_confidence as
+drop view if exists consultation_confidence cascade;
+create view consultation_confidence as
 select confidence as score, count(*)::int as people
 from consultation_responses group by confidence;
 
 -- How often each option was picked, across the three multi-select questions.
-create or replace view consultation_choices as
+drop view if exists consultation_choices cascade;
+create view consultation_choices as
 select 'positive' as kind, unnest(positives) as choice, count(*)::int as people
 from consultation_responses group by 1, 2
 union all
@@ -1426,7 +1435,8 @@ select 'action', unnest(actions), count(*)::int
 from consultation_responses group by 1, 2;
 
 -- Who supporters feel represented by. One row per body per verdict.
-create or replace view consultation_representation as
+drop view if exists consultation_representation cascade;
+create view consultation_representation as
 select
   key                          as body,
   value #>> '{}'               as verdict,
@@ -1435,7 +1445,8 @@ from consultation_responses, jsonb_each(representation)
 group by 1, 2;
 
 -- Only what a volunteer has approved, and a name only where it was offered.
-create or replace view consultation_published as
+drop view if exists consultation_published cascade;
+create view consultation_published as
 select
   id,
   case when note_status = 'approved' then positive_note end as positive_note,
@@ -1470,7 +1481,8 @@ grant select on consultation_summary, consultation_confidence, consultation_choi
 grant execute on function consultation_open() to anon, authenticated;
 
 -- Everything waiting on a volunteer, for the badge in the navigation.
-create or replace view pending_actions as
+drop view if exists pending_actions cascade;
+create view pending_actions as
 select * from (
 select
   (select count(*) from consultation_responses
