@@ -390,84 +390,127 @@
     "churn": "Eight of those fifty three have come since 2022. Whatever else the last few seasons have been, they have not been settled."
   },
   "officials": {
-    "staff": [
-      {
-        "role": "Manager",
-        "name": "Nick Green"
-      },
-      {
-        "role": "Assistant manager",
-        "name": "David Bridgewater"
-      },
-      {
-        "role": "First team coach",
-        "name": "David Bridgewater"
-      },
-      {
-        "role": "Goalkeeping coach",
-        "name": "Paul White"
-      },
-      {
-        "role": "Physiotherapist",
-        "name": "Michael Hunter"
-      },
-      {
-        "role": "Kit managers",
-        "name": "Malcolm Lewer, Dan Willis and Aaron Lewer"
-      },
-      {
-        "role": "Club doctor",
-        "name": "Dr Clive Shackleton"
-      },
-      {
-        "role": "Head of academy",
-        "name": "Josh McGoldrick"
-      }
-    ],
-    "staffNote": "Nick Green and David Bridgewater took interim charge after Liam McDonald stepped down on 6 August 2026, days before the season started.",
+    "source": "Kettering Town FC official website, ketteringtownfc.com/officials-community",
+    "checked": "2026-08-18",
+    "note": "One thing the club's own page has not caught up with: it still lists Liam McDonald as first team manager, and the club announced he stepped down on 6 August. Nick Green is shown here in the job he is actually doing. Everything else is as the club has it, including its spellings.",
     "board": [
       {
-        "role": "Chairman",
-        "name": "Nadim 'George' Akhtar"
+        "role": "Owner and chairman",
+        "name": "George Nadim Akhtar"
       },
       {
-        "role": "Director",
-        "name": "Nadiya Akhtar"
+        "role": "Chief operating officer",
+        "name": "Nadiya Akhtar-Shahzad"
       },
       {
-        "role": "Director",
+        "role": "Club president",
+        "name": "Ken Samuel"
+      },
+      {
+        "role": "Vice chairman and matchday operations",
+        "name": "Mick Coe"
+      },
+      {
+        "role": "Full associate director",
+        "name": "Gary Foreman"
+      },
+      {
+        "role": "Full associate director",
+        "name": "Bryony Gates"
+      },
+      {
+        "role": "Full associate director",
+        "name": "Paul Titcombe"
+      },
+      {
+        "role": "Full associate director",
+        "name": "Sue Samuel"
+      },
+      {
+        "role": "Club secretary",
+        "name": "Ian Hopewell"
+      },
+      {
+        "role": "General manager and bar manager",
+        "name": "Mark Hindwood"
+      },
+      {
+        "role": "Commercial manager",
         "name": "Naheed Shears"
       },
       {
-        "role": "Director",
-        "name": "Rob McGreavey"
+        "role": "Academy and trust director",
+        "name": "Phil Wade"
       },
       {
-        "role": "Director",
-        "name": "Tom Isaacs"
-      },
-      {
-        "role": "Director",
-        "name": "Paula Conde-Sharpe"
-      },
-      {
-        "role": "Director",
+        "role": "Funding and grants",
         "name": "Paul Bailey"
       },
       {
-        "role": "Director",
-        "name": "Ross Patrick"
+        "role": "Matchday boardroom hosts",
+        "name": "Sue Samuel and Bryony Gates"
       },
       {
-        "role": "Director",
-        "name": "Yousef Miah"
-      },
-      {
-        "role": "Director",
-        "name": "Fabian Forde"
+        "role": "Hospitality and events",
+        "name": "Paula Conde"
       }
     ],
-    "boardNote": "Ten of them, chaired by the owner. Two names here will be familiar from the club's YouTube channel: George Akhtar and Fabian Forde do most of the talking after a game."
+    "boardNote": "Fifteen roles across the boardroom and the day to day running of the club, chaired by the owner. Three board members stood down over the summer: Graham Starmer, Doug Brown and Rob McGreavey, which the club described as their own decision. Doug Brown still appears below on matchday media.",
+    "staff": [
+      {
+        "role": "Football director",
+        "name": "Fabian Forde"
+      },
+      {
+        "role": "First team manager",
+        "name": "Nick Green"
+      },
+      {
+        "role": "Assistant coach and analyst",
+        "name": "David Bridgwater"
+      },
+      {
+        "role": "Lead strength and conditioning coach",
+        "name": "Not yet appointed"
+      },
+      {
+        "role": "Sports rehabilitator",
+        "name": "Michael Hunter"
+      },
+      {
+        "role": "Welfare officer",
+        "name": "Michael McNally"
+      },
+      {
+        "role": "Board safeguarding champion",
+        "name": "Phil Wade"
+      },
+      {
+        "role": "Kitmen",
+        "name": "Malcolm Lewer, Aaron Lewer and Dan Willis"
+      },
+      {
+        "role": "Safety officer",
+        "name": "Mark Brace"
+      },
+      {
+        "role": "Club photographer",
+        "name": "Mark Hope"
+      },
+      {
+        "role": "Club videographer",
+        "name": "Joe Kemp"
+      },
+      {
+        "role": "Matchday media",
+        "name": "Doug Brown"
+      },
+      {
+        "role": "Programme editor",
+        "name": "Terry Brumpton"
+      }
+    ],
+    "staffNote": "The club's page still has Liam McDonald as first team manager and Nick Green as his assistant. The club announced McDonald had stepped down on 6 August 2026, days before the season started, so Nick Green is shown in the role he is actually doing."
   },
   "ground": {
     "name": "Latimer Park",

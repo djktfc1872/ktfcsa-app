@@ -2095,7 +2095,8 @@ function viewPoppies() {
 
   /* Built out with the club's history this page ran to nearly eight screens,
      which is the same complaint the ratings page had. Same fix. */
-  const PTABS = [["ground", "Ground"], ["story", "Story"], ["records", "Records"], ["fixtures", "Fixtures"]];
+  const PTABS = [["ground", "Ground"], ["story", "Story"], ["records", "Records"],
+                 ["people", "People"], ["fixtures", "Fixtures"]];
   const ptab = state.poppiesTab;
   const ptabBar = el(`
     <div class="segmented" style="margin-bottom:16px" role="group" aria-label="About Kettering Town">
@@ -2241,35 +2242,53 @@ function viewPoppies() {
       }
     }
 
+    wrap.append(el(`<p class="note">Club history from the Kettering Town Wikipedia article and the club's own site.</p>`));
+  }
+
+  if (facts && ptab === "people") {
     const people = facts.officials;
-    if (people?.board?.length || people?.staff?.length) {
-      wrap.append(el(`<h2 class="section-title">Who runs the club</h2>`));
-      const card = el(`<div class="card"></div>`);
-      const group = (heading, list) => {
-        if (!list?.length) return;
-        card.append(el(`<div class="events__head">${esc(heading)}</div>`));
-        list.forEach((o) => {
-          card.append(el(`
-            <div class="crew">
-              <span class="crew__who">${esc(o.name)}${
-                o.detail ? `<span class="crew__note">${esc(o.detail)}</span>` : ""
-              }</span>
-              <span class="crew__when">${esc(o.role)}</span>
-            </div>`));
-        });
-      };
-      group("Behind the team", people.staff);
-      if (people.staffNote) {
-        card.append(el(`<p class="note" style="margin:8px 0 14px">${esc(people.staffNote)}</p>`));
-      }
-      group("The boardroom", people.board);
-      if (people.boardNote) {
-        card.append(el(`<p class="note" style="margin:8px 0 0">${esc(people.boardNote)}</p>`));
-      }
-      wrap.append(card);
+    if (!people?.board?.length && !people?.staff?.length) {
+      wrap.append(el(`<div class="empty"><b>Nobody listed yet</b>The club has not published who
+        runs it.</div>`));
+      return wrap;
     }
 
-    wrap.append(el(`<p class="note">Club history from the Kettering Town Wikipedia article and the club's own site.</p>`));
+    wrap.append(el(`<h2 class="section-title">Who runs the club</h2>`));
+    const card = el(`<div class="card"></div>`);
+    const group = (heading, list) => {
+      if (!list?.length) return;
+      card.append(el(`<div class="events__head">${esc(heading)}</div>`));
+      list.forEach((o) => {
+        card.append(el(`
+          <div class="crew">
+            <span class="crew__who">${esc(o.name)}${
+              o.detail ? `<span class="crew__note">${esc(o.detail)}</span>` : ""
+            }</span>
+            <span class="crew__when">${esc(o.role)}</span>
+          </div>`));
+      });
+    };
+    group("Football staff", people.staff);
+    if (people.staffNote) {
+      card.append(el(`<p class="note" style="margin:8px 0 14px">${esc(people.staffNote)}</p>`));
+    }
+    group("The boardroom", people.board);
+    if (people.boardNote) {
+      card.append(el(`<p class="note" style="margin:8px 0 0">${esc(people.boardNote)}</p>`));
+    }
+    wrap.append(card);
+
+    /* Said out loud, with the date. A list of who runs a football club goes out
+       of date the week you publish it, and this one already has: the club's own
+       page still names a manager who left before the season started. */
+    if (people.source) {
+      wrap.append(el(`
+        <p class="note" style="margin-top:14px">Taken from the club's own website
+        (${esc(people.source.replace(/^Kettering Town FC official website, /, ""))})${
+          people.checked ? `, checked ${esc(fmtDate(people.checked))}` : ""}.
+        ${esc(people.note || "")}</p>`));
+    }
+    return wrap;
   }
 
   if (ptab !== "fixtures") return wrap;
@@ -6367,7 +6386,10 @@ function viewConsult() {
   /* Before Saturday, a named few can see the findings so they can prepare.
      Read-only and clearly marked as not public: it is the same aggregate data
      everybody gets later, never anybody's raw response. */
-  if (state.params?.id === "preview" && db.canViewResults()) {
+  /* The pass only means anything before the findings are public. After that
+     everybody sees them anyway, so it stops granting a thing whether or not
+     somebody remembers to clear the flag. */
+  if (state.params?.id === "preview" && consultState() !== "after" && db.canViewResults()) {
     wrap.append(el(`
       <div class="soon">
         <span class="soon__tag">Not public yet</span>
