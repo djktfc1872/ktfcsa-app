@@ -5838,7 +5838,7 @@ const CONSULT_ACTIONS = [
 function viewConsult() {
   const wrap = el(`
     <div>
-      <div class="page-head">
+      <div class="page-head page-head--airy">
         <h1>Have your say</h1>
         <p>An independent consultation by the Kettering Town FC Supporters' Association on how
            the club is being run. Open to every Poppies supporter, account or not.</p>
@@ -5894,22 +5894,22 @@ function consultAbout() {
       worried about, what they think is going well, and what they want the club to answer. The
       more people who fill it in, the harder it is to wave away, and the more it speaks for the
       terrace rather than for whoever shouts loudest online.</p>
-      <p class="club-overview" style="margin-top:12px"><b>Being straight with you.</b> The
+      <p class="club-overview" style="margin-top:12px"><b class="subhead">Being straight with you</b> The
       Supporters' Association is not fully off the ground yet. There is no committee, no
       constitution and no membership list, and in an ideal world all of that would have come
       first. Given what is going on around the club we thought it mattered more to get this
       gathered properly now than to wait until the paperwork was tidy. If enough people take part,
       this becomes the thing a proper fan group is built on rather than a survey that sat in a
       drawer.</p>
-      <p class="club-overview" style="margin-top:12px"><b>Who is asking.</b> The Supporters'
+      <p class="club-overview" style="margin-top:12px"><b class="subhead">Who is asking?</b> The Supporters'
       Association is independent of the club. It is not funded by the club and speaks only for the
       supporters who answer.</p>
-      <p class="club-overview" style="margin-top:12px"><b>What happens to your answer.</b> The
+      <p class="club-overview" style="margin-top:12px"><b class="subhead">What happens to your answer?</b> The
       numbers are published as numbers. Anything you write is read by a volunteer first, and is
       published only if you tick the box saying we may. Questions for the club are collected,
       tidied up and sent in writing. If a question goes unanswered we will say so, and say for
       how long.</p>
-      <p class="club-overview" style="margin-top:12px"><b>What we are not doing.</b> We are not
+      <p class="club-overview" style="margin-top:12px"><b class="subhead">What we are not doing</b> We are not
       repeating rumours and we are not asking you to. The questions below are about what you can
       see for yourself. Where we ask about action, we are asking what supporters would support.
       We are not proposing any of it.</p>

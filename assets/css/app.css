@@ -4760,3 +4760,34 @@ button,
   font-weight: 400;
   color: var(--red-400);
 }
+
+/* The consultation's lead-ins. Underlined so they read as subheaders inside a
+   paragraph, which is what they are, without breaking the flow of the prose
+   into a stack of headings. */
+.subhead {
+  /* On its own line. Left inline it ran straight into the sentence after it
+     with no punctuation, because a subheader does not take a full stop. */
+  display: block;
+  margin-bottom: 5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+/* A little air under the title, so the survey does not start on top of it. */
+.page-head--airy h1 { margin-bottom: 10px; }
+.page-head--airy { margin-bottom: 26px; }
+
+/* Boxes on the survey sit their text on the middle line, which reads properly
+   when the label is one line. On a phone the labels wrap to two and three, so
+   they go back to the top and line up with the tick instead of drifting away
+   from it. */
+.offer { align-items: center; }
+.rep__cell { justify-content: center; }
+
+@media (max-width: 600px) {
+  .offer { align-items: flex-start; }
+  .rep__cell { justify-content: flex-start; }
+}
