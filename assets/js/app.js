@@ -4069,7 +4069,9 @@ function viewAdmin() {
         });
         node.querySelector("[data-no]").addEventListener("click", close);
       });
-      row.append(b);
+      const prev = el(`<button class="btn btn--sm btn--ghost">Preview the report</button>`);
+      prev.addEventListener("click", () => { location.hash = "#/consult/preview"; });
+      row.append(b, prev);
       pub.append(card, row);
     }).catch(() => {});
     wrap.append(pub);
@@ -6941,13 +6943,17 @@ function viewConsult() {
   /* The pass only means anything before the findings are public. After that
      everybody sees them anyway, so it stops granting a thing whether or not
      somebody remembers to clear the flag. */
-  if (state.params?.id === "preview" && consultState() !== "after" && db.canViewResults()) {
+  if (state.params?.id === "preview" && consultState() !== "published" && db.canViewResults()) {
     wrap.append(el(`
       <div class="soon">
-        <span class="soon__tag">Not public yet</span>
-        <p>An early look, because you have been given one. These are the findings as they stand
-        and they go up for everybody once the consultation closes at ${CLOSES_WORDS}. Please do
-        not share the numbers before then, and note they will move: it is still running.</p>
+        <span class="soon__tag">Preview \u00b7 not public yet</span>
+        <p>This is the report itself, not a mock-up of it: the same page supporters get, drawn
+        from the same numbers, the moment it is published. What is missing is only what has not
+        been approved yet, so anything blank here will be blank on the night.
+        ${consultState() === "open"
+          ? `The consultation is still running, so the figures will move.`
+          : `The consultation has closed, so these are the final figures.`}
+        Please do not share them until it is out.</p>
       </div>`));
     wrap.append(consultResults());
     return wrap;
@@ -7312,6 +7318,7 @@ function consultResults() {
        the thing that is hard to leave alone. */
     const qbox = el(`<div></div>`);
     db.publishedQuestions().then((qs) => {
+      state.hasFinalGroups = qs.length > 0;
       if (!qs.length) return;
       qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
       const card = el(`<div class="card"></div>`);
@@ -7343,31 +7350,13 @@ function consultResults() {
     }).catch(() => {});
     box.append(qbox);
 
-    /* The first thing anybody attacks about a fan survey is the method, so it
-       is answered before it is asked. */
-    box.append(el(`<h2 class="section-title">How this was done</h2>`));
-    box.append(el(`
-      <div class="card">
-        <p class="club-overview">Supporters were asked nine questions between Monday 17 and midday
-        on Friday 21 August 2026, through the Supporters' Association app. Anyone could take part,
-        with or without an account, which is why the number who were signed in is published
-        alongside the total. One response per device.</p>
-        <p class="club-overview" style="margin-top:12px">The multiple choice answers are reported
-        exactly as given, including the full spread of confidence scores rather than only the
-        average. Everything anybody wrote was read by a volunteer before publication, and appears
-        only where the supporter ticked the box saying it could. Questions for the club were
-        merged where several people asked the same thing: a computer suggested the groupings, a
-        person decided them, and the wording of each merged question is the Association's, with
-        supporters' own wording shown underneath.</p>
-        <p class="club-overview" style="margin-top:12px">This is a survey of supporters who chose
-        to answer, not a poll of a representative sample, and we make no claim otherwise. Raw
-        responses are not published and were not shared with the club.</p>
-      </div>`));
-
     /* The questions, numbered, with how long each has gone unanswered. That
        last column is the point of the exercise. */
+    /* Individually approved questions, shown only until the merged list exists.
+       Once groups are final the block above says it better, and both together
+       would ask the club the same thing twice. */
     const questions = r.published.filter((p) => p.question);
-    if (questions.length) {
+    if (questions.length && !state.hasFinalGroups) {
       box.append(el(`<h2 class="section-title">Questions put to the club</h2>`));
       const qc = el(`<div class="card"></div>`);
       questions.forEach((q, i) => {
@@ -7402,6 +7391,28 @@ function consultResults() {
         before they appear, and most responses were not written for publication.</p>`));
       box.append(nc);
     }
+
+    /* The first thing anybody attacks about a fan survey is the method, so it
+       is answered before it is asked. */
+    box.append(el(`<h2 class="section-title">How this was done</h2>`));
+    box.append(el(`
+      <div class="card">
+        <p class="club-overview">Supporters were asked nine questions between Monday 17 and midday
+        on Friday 21 August 2026, through the Supporters' Association app. Anyone could take part,
+        with or without an account, which is why the number who were signed in is published
+        alongside the total. One response per device.</p>
+        <p class="club-overview" style="margin-top:12px">The multiple choice answers are reported
+        exactly as given, including the full spread of confidence scores rather than only the
+        average. Everything anybody wrote was read by a volunteer before publication, and appears
+        only where the supporter ticked the box saying it could. Questions for the club were
+        merged where several people asked the same thing: a computer suggested the groupings, a
+        person decided them, and the wording of each merged question is the Association's, with
+        supporters' own wording shown underneath.</p>
+        <p class="club-overview" style="margin-top:12px">This is a survey of supporters who chose
+        to answer, not a poll of a representative sample, and we make no claim otherwise. Raw
+        responses are not published and were not shared with the club.</p>
+      </div>`));
+
   }).catch(() => {
     box.replaceChildren();
     box.append(el(`<div class="empty"><b>Results unavailable</b>Please try again shortly.</div>`));
