@@ -543,6 +543,26 @@ export async function submitConsultation(answer) {
 }
 
 export const consultationResults = () => (backend ? backend.consultationResults() : Promise.resolve(null));
+export const consultationPublished = () =>
+  (backend ? backend.consultationPublished() : Promise.resolve({ results_public: false }));
+export const questionGroups = () => (backend ? backend.questionGroups() : Promise.resolve([]));
+export const publishedQuestions = () => (backend ? backend.publishedQuestions() : Promise.resolve([]));
+
+export async function setResultsPublic(on) {
+  if (!backend) return;
+  await backend.setResultsPublic(on);
+  onChange();
+}
+export async function saveQuestionGroups(groups) {
+  if (!backend) return;
+  await backend.saveQuestionGroups(groups);
+  onChange();
+}
+export async function stampQuestionsAsked() {
+  if (!backend) return;
+  await backend.stampQuestionsAsked();
+  onChange();
+}
 export const consultationQueue = () => (backend ? backend.consultationQueue() : Promise.resolve([]));
 export const pendingActions = () => (backend ? backend.pendingActions() : Promise.resolve(null));
 

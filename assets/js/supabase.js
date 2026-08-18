@@ -564,6 +564,61 @@ class Backend {
     }
   }
 
+  /* Whether the findings are on the public page. Read by everyone, because the
+     page has to know which of the two closed states to show. */
+  async consultationPublished() {
+    const { data, error } = await this.sb
+      .from("consultation_settings").select("results_public, published_at").maybeSingle();
+    if (error) return { results_public: false, published_at: null };
+    return data || { results_public: false, published_at: null };
+  }
+
+  async setResultsPublic(on) {
+    const { error } = await this.sb.rpc("publish_results", { on_now: Boolean(on) });
+    if (error) throw new Error(friendly(error));
+  }
+
+  /* Merged questions. Volunteers read the table; everybody else reads the view,
+     which only shows final groups once the findings are public. */
+  async questionGroups() {
+    const { data, error } = await this.sb
+      .from("consultation_question_groups").select("*").order("sort");
+    if (error) return [];
+    return data || [];
+  }
+
+  async publishedQuestions() {
+    const { data, error } = await this.sb
+      .from("consultation_questions_public").select("*").order("sort");
+    if (error) return [];
+    return data || [];
+  }
+
+  async saveQuestionGroups(groups) {
+    /* Replaced wholesale rather than diffed: the volunteer has just rebuilt the
+       whole list in front of them, and a half-applied merge is worse than a
+       rewrite. */
+    const del = await this.sb.from("consultation_question_groups").delete().neq("id",
+      "00000000-0000-0000-0000-000000000000");
+    if (del.error) throw new Error(friendly(del.error));
+    if (!groups.length) return;
+    const { error } = await this.sb.from("consultation_question_groups").insert(
+      groups.map((g, i) => ({
+        label: g.label, topic: g.topic || null, members: g.members || [],
+        sort: i, status: g.status || "draft",
+        asked_at: g.asked_at || null, answered_at: g.answered_at || null,
+      })));
+    if (error) throw new Error(friendly(error));
+  }
+
+  async stampQuestionsAsked() {
+    const { error } = await this.sb
+      .from("consultation_question_groups")
+      .update({ asked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("status", "final").is("asked_at", null);
+    if (error) throw new Error(friendly(error));
+  }
+
   async consultationResults() {
     const [summary, confidence, choices, representation, published] = await Promise.all([
       this.sb.from("consultation_summary").select("*").maybeSingle(),

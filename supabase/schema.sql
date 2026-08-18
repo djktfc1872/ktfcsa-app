@@ -1539,3 +1539,130 @@ grant execute on function set_results_viewer(uuid, boolean) to authenticated;
 -- the aggregate views, which are already public. What it buys is sight of them
 -- before the Saturday, which is a decision the app makes. Said out loud here so
 -- nobody hunts for a policy that does not exist.
+
+-- ===========================================================================
+-- Publishing the consultation, and the questions grouped
+--
+-- Closing and publishing are two different things. The consultation shuts at
+-- midday on the Friday; the findings go out that evening, when a volunteer
+-- presses the button. Left on a timer it would publish at midday with whatever
+-- had been read by lunchtime.
+-- ===========================================================================
+
+create table if not exists consultation_settings (
+  id             boolean primary key default true check (id),  -- exactly one row
+  results_public boolean not null default false,
+  published_at   timestamptz,
+  updated_at     timestamptz not null default now()
+);
+
+insert into consultation_settings (id) values (true) on conflict (id) do nothing;
+
+comment on table consultation_settings is
+  'One row. results_public is the switch that puts the findings on the public page.';
+
+alter table consultation_settings enable row level security;
+
+drop policy if exists "anyone can see whether it is published" on consultation_settings;
+create policy "anyone can see whether it is published" on consultation_settings
+  for select using (true);
+
+-- Through a function rather than an update policy, so the stamp cannot be
+-- forgotten and the same rule applies everywhere. Matches set_user_tag.
+create or replace function publish_results(on_now boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can publish the results.';
+  end if;
+  update consultation_settings
+     set results_public = on_now,
+         published_at   = case when on_now then coalesce(published_at, now()) else null end,
+         updated_at     = now()
+   where id;
+end;
+$$;
+
+revoke all on function publish_results(boolean) from public;
+grant execute on function publish_results(boolean) to authenticated;
+
+-- ------------------------------------------------------- grouped questions
+--
+-- Ninety-five questions from a hundred and seventy-eight supporters, and a
+-- great many of them are the same question written differently. A club sent
+-- ninety-five questions answers none of them.
+--
+-- The grouping is suggested by clustering in the browser and then done by a
+-- person: the label below is the wording a volunteer agreed, never a
+-- supporter's words picked automatically.
+
+create table if not exists consultation_question_groups (
+  id         uuid primary key default gen_random_uuid(),
+  label      text not null check (char_length(label) between 5 and 400),
+  topic      text,
+  members    uuid[] not null default '{}',
+  sort       int not null default 0,
+  status     text not null default 'draft' check (status in ('draft','final')),
+  asked_at   timestamptz,     -- stamped when the list goes to the club
+  answered_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table consultation_question_groups is
+  'Questions merged for the club. label is the volunteer-agreed wording; members are the responses it covers.';
+
+alter table consultation_question_groups enable row level security;
+
+-- Volunteers only. The public reads the view below, which is narrower.
+drop policy if exists "volunteers read question groups" on consultation_question_groups;
+create policy "volunteers read question groups" on consultation_question_groups
+  for select using (is_admin());
+
+drop policy if exists "volunteers write question groups" on consultation_question_groups;
+create policy "volunteers write question groups" on consultation_question_groups
+  for all using (is_admin()) with check (is_admin());
+
+-- What the public gets: final groups, only once published, with how many asked
+-- and up to three of the original phrasings.
+--
+-- Those samples come only from questions that were individually approved, so
+-- the grouping cannot carry anything into public view that would not have got
+-- there on its own. Worth keeping in mind if this view is ever widened.
+drop view if exists consultation_questions_public cascade;
+create view consultation_questions_public as
+select
+  g.id,
+  g.label,
+  g.topic,
+  g.sort,
+  cardinality(g.members)                      as asked_by,
+  coalesce(sample.wording, '{}')              as samples,
+  g.asked_at,
+  g.answered_at
+from consultation_question_groups g
+left join lateral (
+  select array_agg(r.question) as wording
+  from (
+    select r.question
+    from consultation_responses r
+    where r.id = any(g.members)
+      and r.question_status = 'approved'
+      and r.question is not null
+    limit 3
+  ) r
+) sample on true
+where g.status = 'final'
+  and (select results_public from consultation_settings where id);
+
+-- NOTE: owner, not invoker, for the same reason as consultation_summary. The
+-- rows underneath are volunteers-only and the whole point is that the public
+-- can read the findings. Safe because every column here is either the
+-- volunteer's own wording, a count, or a phrasing already approved for
+-- publication. Check that again before adding a column.
+alter view consultation_questions_public set (security_invoker = false);
+grant select on consultation_questions_public to anon, authenticated;

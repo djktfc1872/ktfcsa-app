@@ -232,6 +232,10 @@ const state = {
   archivePromise: null,
   adminTab: "overview",  // which part of the admin panel is showing
   dailyTab: "play",
+  resultsPublic: false,   // whether the consultation findings are on the public page
+  questionGroups: null,   // merged questions, once suggested
+  questionSplit: 0,       // how hard to split a theme into separate questions
+  publishedPromise: null,
   dailyAnswers: [],   // right/wrong so far in today's run
 };
 
@@ -3589,6 +3593,316 @@ function foldable(title, build, { open = false } = {}) {
   return box;
 }
 
+
+/* ------------------------------------------------ grouping the questions
+
+   Ninety-odd questions, a great many of them the same question written
+   differently. A club sent ninety-five questions answers none of them.
+
+   Two passes, both deliberately explainable, because the grouping may have to
+   be defended: topic from keyword sets, then near-duplicates within a topic by
+   word overlap. It suggests; a volunteer decides. Nothing is published in a
+   supporter's words without somebody agreeing them.                        */
+
+const Q_TOPICS = [
+  ["volunteers", "Volunteers and staff",
+   "volunteer steward resign resigned resigning departure sacked"],
+  ["money", "Money and accounts",
+   "account accounts financial finance finances debt solvent turnover audit creditor hmrc"],
+  ["comms", "Communication and transparency",
+   "communication communicate communicating told telling inform informed silence statement transparency transparent explain explanation honest"],
+  ["ownership", "Ownership and investment",
+   "owner ownership takeover consortium buyer sale invest investor investment shareholding akhtar"],
+  ["ground", "The ground and the lease",
+   "ground stadium lease latimer freehold tenancy pitch"],
+  ["sponsors", "Sponsors and partners",
+   "sponsor sponsorship partner commercial advertising"],
+  ["football", "The team and the manager",
+   "manager coach signing recruitment playing budget squad football"],
+  ["governance", "Board and governance",
+   "board director chairman committee governance agm minutes constitution"],
+  ["matchday", "Matchday, tickets and the bar",
+   "ticket admission price programme bar turnstile matchday queue"],
+];
+
+/* Words too ordinary to say anything. Deliberately long, and it includes the
+   words that appear in every question about this club: "club", "fans" and
+   "season" put a question in whichever topic listed them first. */
+const Q_STOP = new Set(`
+  a an the this that these those there here is are was were be been being am do does did done
+  have has had having will would could should can may might must shall i we you he she they it
+  us me my our your their his her its and or but so if then than as at by for from in into of
+  off on onto out over to under up with without within about after before during since until
+  while when where which who whom what why how all any both each every few more most much no
+  none not other same some such very just only again also because though although however
+  question questions ask asked asking answer answers please like want need know say said
+  get got give given make made take taken go going come came use used actually
+  club team fc kettering town poppies ktfcsa fan fans supporter supporters season year
+  currently now still ever never really thing things lot bit way please thanks
+`.trim().split(/\s+/));
+
+/** Light stem: enough to make "volunteers" and "volunteer" the same word. */
+const qStem = (w) => w
+  .replace(/(ies)$/, "y")
+  .replace(/(sses|shes|ches|xes)$/, (m) => m.slice(0, -2))
+  .replace(/([^s])s$/, "$1")
+  .replace(/(ing|ed)$/, "");
+
+/** A question reduced to the words that carry its meaning. */
+function qWords(text) {
+  const out = new Set();
+  for (const raw of String(text || "").toLowerCase().split(/[^a-z'-]+/)) {
+    /* Apostrophes stripped before stemming, or "sponsor's" never matches
+       "sponsor" and the question lands in "everything else". */
+    const w = qStem(raw.replace(/'/g, "").replace(/^-+|-+$/g, ""));
+    if (w.length < 3 || Q_STOP.has(w)) continue;
+    out.add(w);
+  }
+  return out;
+}
+
+/**
+ * Which theme a question is about.
+ *
+ * The theme is the grouping that matters. Trying to find exact near-duplicates
+ * first was the wrong idea: two people asking the same thing share about a
+ * quarter of their words, which is also what two unrelated questions share, so
+ * the threshold that merged the right ones merged the wrong ones too. A club
+ * wants a dozen questions covering what supporters asked about, not ninety-five
+ * near-misses.
+ */
+function qTopic(words) {
+  let best = "other";
+  let bestScore = 0;
+  for (const [key, , terms] of Q_TOPICS) {
+    const set = new Set(terms.split(" ").map(qStem));
+    let score = 0;
+    words.forEach((w) => { if (set.has(w)) score += 1; });
+    if (score > bestScore) { bestScore = score; best = key; }
+  }
+  return best;
+}
+
+const Q_TOPIC_LABEL = Object.fromEntries(
+  [...Q_TOPICS.map(([k, l]) => [k, l]), ["other", "Everything else"]]
+);
+
+/** Jaccard: shared words over total. Used to pick a group's wording, not to form it. */
+function qSimilar(a, b) {
+  if (!a.size || !b.size) return 0;
+  let shared = 0;
+  a.forEach((w) => { if (b.has(w)) shared += 1; });
+  return shared / (a.size + b.size - shared);
+}
+
+/**
+ * Groups questions by theme, splitting a theme only when it is plainly two
+ * conversations.
+ *
+ * `split` is the slider. At zero every theme is one group, which is usually
+ * what should go to the club. Raised, a theme breaks into tighter clusters, so
+ * a volunteer can pull "when are the accounts published" apart from "how much
+ * debt is there" if they want them asked separately.
+ *
+ * The suggested wording is the most central question in the group, the one with
+ * the highest mean similarity to the rest, so it reads like the thing the group
+ * is asking rather than whichever happened to be longest.
+ */
+function groupQuestions(items, split = 0) {
+  const prepped = items.map((it) => {
+    const words = qWords(it.text);
+    return { ...it, words, topic: qTopic(words) };
+  });
+
+  const byTopic = new Map();
+  prepped.forEach((q) => {
+    if (!byTopic.has(q.topic)) byTopic.set(q.topic, []);
+    byTopic.get(q.topic).push(q);
+  });
+
+  const centralLabel = (members) => {
+    if (members.length === 1) return members[0].text;
+    let label = members[0].text;
+    let bestMean = -1;
+    members.forEach((m) => {
+      const mean = members.reduce((a, o) => a + (o === m ? 0 : qSimilar(m.words, o.words)), 0) /
+        (members.length - 1);
+      if (mean > bestMean) { bestMean = mean; label = m.text; }
+    });
+    return label;
+  };
+
+  const groups = [];
+  byTopic.forEach((qs, topic) => {
+    /* One group per theme unless the volunteer has asked for them split. */
+    let clusters = [qs];
+    if (split > 0 && qs.length > 2) {
+      clusters = [];
+      const taken = new Set();
+      [...qs].sort((a, b) => b.words.size - a.words.size).forEach((seed) => {
+        if (taken.has(seed.id)) return;
+        taken.add(seed.id);
+        const members = [seed];
+        qs.forEach((other) => {
+          if (taken.has(other.id)) return;
+          if (qSimilar(seed.words, other.words) >= split) {
+            taken.add(other.id);
+            members.push(other);
+          }
+        });
+        clusters.push(members);
+      });
+    }
+    clusters.forEach((members) => {
+      groups.push({
+        label: centralLabel(members).trim(),
+        topic,
+        members: members.map((m) => m.id),
+        wording: members.map((m) => m.text),
+      });
+    });
+  });
+
+  return groups.sort((a, b) => b.members.length - a.members.length);
+}
+
+
+/**
+ * The grouping workbench. Suggests groups, then gets out of the way: every
+ * label is editable, every group can be dropped, and nothing is sent or
+ * published until a volunteer marks it final.
+ */
+function questionWorkbench(rows) {
+  const box = el(`<div class="card"></div>`);
+  const asked = rows
+    .filter((r) => r.question && r.question.trim())
+    .map((r) => ({ id: r.id, text: r.question.trim(), approved: r.question_status === "approved" }));
+
+  if (!asked.length) {
+    box.append(el(`<p class="note" style="margin:0">No questions yet.</p>`));
+    return box;
+  }
+
+  let groups = state.questionGroups;
+  let split = state.questionSplit ?? 0;
+
+  const draw = () => {
+    box.replaceChildren();
+    box.append(el(`
+      <p class="note" style="margin:0 0 10px">${asked.length} questions from supporters.
+      ${groups ? `Merged into <b>${groups.length}</b>.` : "Not grouped yet."}
+      Only the wording you agree below is sent or published.</p>`));
+
+    const tools = el(`
+      <div class="bulk">
+        <button class="btn btn--sm" data-act="suggest">${groups ? "Suggest again" : "Suggest groups"}</button>
+        <label class="split">Split themes
+          <input type="range" min="0" max="0.6" step="0.05" value="${split}">
+          <span>${split === 0 ? "off" : split.toFixed(2)}</span>
+        </label>
+      </div>`);
+    tools.querySelector('[data-act="suggest"]').addEventListener("click", () => {
+      groups = state.questionGroups = groupQuestions(asked, split);
+      draw();
+    });
+    const range = tools.querySelector("input");
+    range.addEventListener("input", () => {
+      split = state.questionSplit = Number(range.value);
+      tools.querySelector("span").textContent = split === 0 ? "off" : split.toFixed(2);
+    });
+    range.addEventListener("change", () => {
+      groups = state.questionGroups = groupQuestions(asked, split);
+      draw();
+    });
+    box.append(tools);
+
+    if (!groups) {
+      box.append(el(`<p class="hint">Suggest groups to start. Themes first: a club sent
+        ${asked.length} questions answers none of them, and most of these are the same handful of
+        questions asked in different words. Nudge the slider if a theme is really two.</p>`));
+      return;
+    }
+
+    groups.forEach((g, i) => {
+      const card = el(`
+        <div class="qgroup">
+          <div class="qgroup__meta">
+            <span class="pill pill--gold">${esc(Q_TOPIC_LABEL[g.topic] || g.topic)}</span>
+            <span class="pill">${g.members.length} asked</span>
+          </div>
+          <textarea class="qgroup__label" rows="2"
+            aria-label="Question ${i + 1}">${esc(g.label)}</textarea>
+          <details class="qgroup__src">
+            <summary>What supporters actually wrote (${g.wording.length})</summary>
+            <div>${g.wording.map((w) => `<p>${esc(w)}</p>`).join("")}</div>
+          </details>
+          <div class="btn-row">
+            <button class="btn btn--sm btn--ghost" data-act="up">Move up</button>
+            <button class="btn btn--sm btn--ghost" data-act="drop">Drop</button>
+          </div>
+        </div>`);
+      card.querySelector(".qgroup__label").addEventListener("input", (e) => { g.label = e.target.value; });
+      card.querySelector('[data-act="drop"]').addEventListener("click", () => {
+        groups.splice(i, 1); draw();
+      });
+      card.querySelector('[data-act="up"]').addEventListener("click", () => {
+        if (i === 0) return;
+        [groups[i - 1], groups[i]] = [groups[i], groups[i - 1]];
+        draw();
+      });
+      box.append(card);
+    });
+
+    const save = el(`
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn--sm" data-act="final">Save as the final list</button>
+        <button class="btn btn--sm btn--ghost" data-act="copy">Copy for the club</button>
+      </div>`);
+    save.querySelector('[data-act="final"]').addEventListener("click", async () => {
+      const clean = groups.filter((g) => g.label.trim().length >= 5);
+      if (!clean.length) return toast("Nothing to save.");
+      try {
+        await db.saveQuestionGroups(clean.map((g) => ({ ...g, status: "final" })));
+        toast(`${clean.length} questions saved as final.`);
+      } catch (err) {
+        toast(err.message || "That did not save.");
+      }
+    });
+    save.querySelector('[data-act="copy"]').addEventListener("click", async () => {
+      const total = (await db.consultationResults())?.summary?.responses || asked.length;
+      const text = [
+        `Kettering Town FC Supporters' Association`,
+        `Questions from supporters, ${fmtDate(londonToday())}`,
+        ``,
+        `${total} supporters took part in an independent consultation between 17 and 21 August.`,
+        `${asked.length} of them asked a question. Where the same question was asked more than`,
+        `once, we have merged it and said how many people asked.`,
+        ``,
+        ...groups.map((g, i) => `${i + 1}. ${g.label.trim()}  (asked by ${g.members.length})`),
+        ``,
+        `We will publish which of these have been answered, and how long any unanswered`,
+        `question has been outstanding.`,
+      ].join("\n");
+      const ok = await copyText(text);
+      if (ok) {
+        await db.stampQuestionsAsked();
+        toast("Copied, and the clock has started on each question.");
+      } else {
+        modal(`<h3 style="margin-bottom:10px">Questions for the club</h3>
+          <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
+          <textarea readonly rows="12" style="width:100%">${esc(text)}</textarea>`);
+      }
+    });
+    box.append(save);
+    box.append(el(`<p class="hint">Saving marks them final. Copying stamps the date each question
+      went to the club, which is what makes the public page count the days it has gone
+      unanswered.</p>`));
+  };
+
+  draw();
+  return box;
+}
+
 function viewAdmin() {
   const wrap = el(`<div>
     <div class="page-head">
@@ -3717,6 +4031,59 @@ function viewAdmin() {
      the dashboard is twenty thousand pixels tall, so "jump to the queue" meant
      a smooth scroll through the whole thing. The work belongs at the top. */
   if (atab === "consult") {
+    /* Publishing is a button, not a clock. On a timer the findings would go out
+       at midday on the Friday with whatever had been read by lunchtime. */
+    const pub = el(`<div></div>`);
+    db.consultationPublished().then((p) => {
+      const on = Boolean(p?.results_public);
+      state.resultsPublic = on;
+      const card = el(`
+        <div class="${on ? "todo todo--clear" : "todo"}">
+          <b>${on ? "The findings are public" : "The findings are not public yet"}</b>
+          ${on
+            ? `Published ${esc(fmtDate(String(p.published_at).slice(0, 10)))}. Supporters can see the
+               report on Have Your Say.`
+            : `The consultation closes at ${CLOSES_WORDS}. Until you publish, supporters see the
+               turnout and a note saying the results are coming.`}
+        </div>`);
+      const row = el(`<div class="btn-row" style="margin-top:-8px;margin-bottom:18px"></div>`);
+      const b = el(`<button class="btn btn--sm${on ? " btn--ghost" : ""}">${
+        on ? "Take the findings down" : "Publish the findings"}</button>`);
+      b.addEventListener("click", () => {
+        if (on) {
+          db.setResultsPublic(false).then(() => { toast("Taken down."); render(); });
+          return;
+        }
+        const { node, close } = modal(`
+          <h3 style="margin-bottom:10px">Publish the findings?</h3>
+          <p class="hint" style="margin-bottom:10px">They go on the public Have Your Say page
+            straight away, for anybody with the link. Check the preview below this first, and
+            that the questions have gone to the club.</p>
+          <div class="btn-row">
+            <button class="btn btn--sm" data-yes>Yes, publish</button>
+            <button class="btn btn--sm btn--ghost" data-no>Not yet</button>
+          </div>`);
+        node.querySelector("[data-yes]").addEventListener("click", () => {
+          close();
+          db.setResultsPublic(true).then(() => { toast("Published."); render(); });
+        });
+        node.querySelector("[data-no]").addEventListener("click", close);
+      });
+      row.append(b);
+      pub.append(card, row);
+    }).catch(() => {});
+    wrap.append(pub);
+
+    wrap.append(el(`<h2 class="section-title">Questions for the club</h2>`));
+    const qb = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+    wrap.append(qb);
+    db.consultationQueue().then((rows) => {
+      qb.replaceWith(questionWorkbench(rows));
+    }).catch(() => {
+      qb.replaceChildren();
+      qb.append(el(`<p class="note" style="margin:0">Not set up in the database yet.</p>`));
+    });
+
     wrap.append(el(`<h2 class="section-title">Waiting to be read</h2>`));
     wrap.append(el(`<div class="queue-slot"></div>`));
   }
@@ -6408,11 +6775,20 @@ const CONSULT_OPENS  = "2026-08-17T00:00";
 const CONSULT_CLOSES = "2026-08-21T12:00";
 const CLOSES_WORDS = "midday on Friday 21 August";
 
+/**
+ * Four states, not three. Closing and publishing are different things: the
+ * consultation shuts at midday on the Friday and the findings go out that
+ * evening, when a volunteer presses the button. On a timer it would publish at
+ * midday with whatever had been read by lunchtime.
+ *
+ * "closed" is the gap between the two, and it is worth having on its own: it
+ * shows the turnout at the hour interest peaks.
+ */
 const consultState = () => {
   const now = londonStamp();
   if (now < CONSULT_OPENS) return "before";
-  if (now >= CONSULT_CLOSES) return "after";
-  return "open";
+  if (now < CONSULT_CLOSES) return "open";
+  return state.resultsPublic ? "published" : "closed";
 };
 
 /* Who supporters might feel represented by. Roles, not names. */
@@ -6499,6 +6875,16 @@ function consultCount({ compact = false } = {}) {
 }
 
 function viewConsult() {
+  /* Asked once and remembered, so the page can tell "closed" from "published"
+     without a round trip on every render. */
+  if (!state.publishedPromise) {
+    state.publishedPromise = db.consultationPublished().then((p) => {
+      const on = Boolean(p?.results_public);
+      if (on !== state.resultsPublic) { state.resultsPublic = on; render(); }
+      return p;
+    }).catch(() => null);
+  }
+
   const wrap = el(`
     <div>
       <div class="page-head page-head--airy">
@@ -6524,8 +6910,28 @@ function viewConsult() {
     return wrap;
   }
 
-  if (phase === "after") {
+  if (phase === "published") {
     wrap.append(consultResults());
+    return wrap;
+  }
+
+  /* Closed, but not out yet. Says what the turnout was, because that is the
+     number worth having in front of people while they are waiting. */
+  if (phase === "closed") {
+    const box = el(`
+      <div class="soon">
+        <span class="soon__tag">Consultation closed</span>
+        <p>Thank you to everybody who took part. The findings, and every question supporters
+        asked, go up here this evening once they have been checked over.</p>
+      </div>`);
+    wrap.append(box);
+    db.consultationResults().then((r) => {
+      const n = r?.summary?.responses || 0;
+      if (!n) return;
+      box.append(el(`<p class="hint" style="margin-top:10px"><b>${n} supporters</b> answered in
+        five days, ${r.summary.from_members} of them signed in to an account.</p>`));
+    }).catch(() => {});
+    wrap.append(consultAbout());
     return wrap;
   }
 
@@ -6900,6 +7306,63 @@ function consultResults() {
           whether to arrange one, and whether it needs to be in a room, online, or both.</div>
         </div>`));
     }
+
+    /* The merged questions. Ninety-five raw questions would be a wall nobody
+       reads and a club answers none of; a dozen with a count against each is
+       the thing that is hard to leave alone. */
+    const qbox = el(`<div></div>`);
+    db.publishedQuestions().then((qs) => {
+      if (!qs.length) return;
+      qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
+      const card = el(`<div class="card"></div>`);
+      qs.forEach((q, i) => {
+        const days = q.asked_at && !q.answered_at
+          ? Math.floor((Date.now() - new Date(q.asked_at).getTime()) / 86400000) : null;
+        const item = el(`
+          <div class="qitem">
+            <span class="qitem__n">${i + 1}</span>
+            <div>
+              <p>${esc(q.label)}</p>
+              <p class="hint"><b>Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}</b>${
+                q.answered_at ? " · Answered." :
+                days !== null ? ` · <b>Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.</b>` :
+                " · To be sent to the club."}</p>
+              ${(q.samples || []).length ? `
+                <details class="qitem__src">
+                  <summary>See how supporters put it</summary>
+                  ${q.samples.map((w) => `<p>${esc(w)}</p>`).join("")}
+                </details>` : ""}
+            </div>
+          </div>`);
+        card.append(item);
+      });
+      card.append(el(`<p class="hint">Where several supporters asked the same thing in different
+        words, we merged it and said how many asked. The wording is ours; theirs is under each
+        one.</p>`));
+      qbox.append(card);
+    }).catch(() => {});
+    box.append(qbox);
+
+    /* The first thing anybody attacks about a fan survey is the method, so it
+       is answered before it is asked. */
+    box.append(el(`<h2 class="section-title">How this was done</h2>`));
+    box.append(el(`
+      <div class="card">
+        <p class="club-overview">Supporters were asked nine questions between Monday 17 and midday
+        on Friday 21 August 2026, through the Supporters' Association app. Anyone could take part,
+        with or without an account, which is why the number who were signed in is published
+        alongside the total. One response per device.</p>
+        <p class="club-overview" style="margin-top:12px">The multiple choice answers are reported
+        exactly as given, including the full spread of confidence scores rather than only the
+        average. Everything anybody wrote was read by a volunteer before publication, and appears
+        only where the supporter ticked the box saying it could. Questions for the club were
+        merged where several people asked the same thing: a computer suggested the groupings, a
+        person decided them, and the wording of each merged question is the Association's, with
+        supporters' own wording shown underneath.</p>
+        <p class="club-overview" style="margin-top:12px">This is a survey of supporters who chose
+        to answer, not a poll of a representative sample, and we make no claim otherwise. Raw
+        responses are not published and were not shared with the club.</p>
+      </div>`));
 
     /* The questions, numbered, with how long each has gone unanswered. That
        last column is the point of the exercise. */

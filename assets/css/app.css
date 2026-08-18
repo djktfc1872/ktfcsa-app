@@ -4997,3 +4997,28 @@ button,
 .fold__head::after { content: "\\203A"; color: var(--gold-400); font-size: 18px; transform: rotate(90deg); transition: transform 0.2s; }
 .fold[open] > .fold__head::after { transform: rotate(-90deg); }
 .fold__body { padding: 0 12px 12px; }
+
+/* The question grouping workbench. */
+.split { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
+.split input { flex: 1 1 90px; min-width: 90px; accent-color: var(--gold-400); }
+.split span { min-width: 26px; color: var(--gold-400); font-variant-numeric: tabular-nums; }
+
+.qgroup { padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.qgroup:first-of-type { border-top: 0; }
+.qgroup__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.qgroup__label { width: 100%; font-size: 13.5px; line-height: 1.45; }
+.qgroup__src, .qitem__src { margin-top: 8px; font-size: 12px; }
+.qgroup__src summary, .qitem__src summary { cursor: pointer; color: var(--gold-400); }
+.qgroup__src p, .qitem__src p {
+  margin-top: 7px; padding-left: 10px;
+  border-left: 2px solid var(--line); color: var(--text-3); line-height: 1.5;
+}
+
+/* Compact actions inside a group. The card action-row style makes every button
+   full width and 46px tall, which is right for a card and absurd for two
+   housekeeping links repeated a dozen times down a page. */
+.qgroup .btn-row { display: flex; flex-direction: row; gap: 8px; margin-top: 8px; }
+.qgroup .btn-row .btn {
+  width: auto; flex: 0 0 auto; min-height: 0;
+  padding: 6px 12px; font-size: 12px; font-weight: 500; border-radius: 999px;
+}
