@@ -1007,7 +1007,7 @@ function predictionTable() {
               ${rows.map((r, i) => `
                 <tr class="${r.profile_id === me ? "is-ktfc" : ""}">
                   <td>${i + 1}</td>
-                  <td><div class="club-cell"><span>${esc(r.display_name)}</span></div></td>
+                  <td><div class="club-cell">${namePlusTag(r.profile_id, r.display_name)}</div></td>
                   <td>${r.played}</td><td>${r.exact_scores}</td><td class="pts">${r.points}</td>
                 </tr>`).join("")}
             </tbody>
@@ -1111,7 +1111,7 @@ function viewSeason() {
               ${rows.map((r, i) => `
                 <tr class="${r.profile_id === me ? "is-ktfc" : ""}">
                   <td>${i + 1}</td>
-                  <td><div class="club-cell"><span>${esc(r.display_name)}</span></div></td>
+                  <td><div class="club-cell">${namePlusTag(r.profile_id, r.display_name)}</div></td>
                   <td>${r.games}</td><td>${r.away_games}</td>
                   <td class="pts">${r.miles.toLocaleString("en-GB")}</td>
                 </tr>`).join("")}
@@ -3606,7 +3606,8 @@ function viewAdmin() {
     /* Each carries its own plural. Bolting an "s" on the end turned two pieces
        of feedback into "2 piece of feedbacks". */
     const jobs = [
-      [pa.consultation, "consultation comment", "consultation comments", () => { state.adminTab = "consult"; render({ toTop: true }); }],
+      [pa.consultation, "consultation comment", "consultation comments",
+        () => { state.adminTab = "consult"; render({ toTop: true }); }],
       [pa.polls, "poll suggestion", "poll suggestions", () => go("wall")],
       [pa.feedback, "piece of feedback", "pieces of feedback", () => go("feedback")],
     ].filter(([n]) => n > 0);
@@ -3689,6 +3690,14 @@ function viewAdmin() {
      the Saturday. Same renderer as the public one so there is no second version
      of the maths to keep in step, with the comparison against May on top -
      which is the number this whole exercise turns on. */
+  /* The queue first. Scrolling to it was the other option and it was hopeless:
+     the dashboard is twenty thousand pixels tall, so "jump to the queue" meant
+     a smooth scroll through the whole thing. The work belongs at the top. */
+  if (atab === "consult") {
+    wrap.append(el(`<h2 class="section-title">Waiting to be read</h2>`));
+    wrap.append(el(`<div class="queue-slot"></div>`));
+  }
+
   if (atab === "consult" && consultState() !== "before") {
     wrap.append(el(`<h2 class="section-title">Consultation, live</h2>`));
     const liveNote = el(`
@@ -3753,11 +3762,9 @@ function viewAdmin() {
   /* Nothing a supporter wrote reaches the public or the club until it has been
      read here. Edit exists to trim an allegation out of an otherwise fair
      question rather than lose the question. */
+  /* Placed above, before the dashboard. See the slot near the top of the
+     consultation tab: this is the job, the numbers are reading material. */
   const consultCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-  if (atab === "consult") {
-    wrap.append(el(`<h2 class="section-title">Waiting to be read</h2>`));
-    wrap.append(consultCard);
-  }
 
   const paintConsult = () => {
     db.consultationQueue().then((rows) => {
@@ -3936,6 +3943,7 @@ function viewAdmin() {
         database yet.</p>`));
     });
   };
+  if (atab === "consult") $(".queue-slot", wrap).append(consultCard);
   paintConsult();
 
   /* The offers were readable by volunteers in policy and shown nowhere, which
@@ -3960,7 +3968,7 @@ function viewAdmin() {
       const offers = WHAT.filter(([k]) => r[k]).map(([, l]) => l);
       offersCard.append(el(`
         <div class="crew">
-          <span class="crew__who">${esc(r.display_name || "A supporter")}
+          <span class="crew__who">${namePlusTag(r.profile_id, r.display_name)}
             <span class="crew__note">${esc(offers.join(" \u00B7 ") || "no boxes ticked")}${
               r.note ? `<br>${esc(r.note)}` : ""}</span>
           </span>
@@ -4005,7 +4013,7 @@ function viewAdmin() {
           const row = el(`
             <div class="person">
               <div class="person__who">
-                <span class="person__name">${esc(r.display_name)}</span>
+                <span class="person__name">${namePlusTag(r.id, r.display_name)}</span>
                 <span class="person__meta">${r.is_admin ? "Admin \u00B7 " : ""}${
                   db.isResultsViewer(r.id) ? "Sees results early \u00B7 " : ""}joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
               </div>
@@ -4103,6 +4111,18 @@ const TAG_SPECIAL = new Set(["top-contributor", "legend"]);
  * worked out from the rows: Darren Young wrote every pen pic on the site and
  * had never filed a ground report, so nothing would have marked him.
  */
+/**
+ * A name with its tag beside it, for the places that only had a name: the
+ * leaderboards, the admin lists, the archive offers. A tag that only shows up
+ * on the fan wall is not much of a tag.
+ */
+function namePlusTag(profileId, name) {
+  const shown = esc(name || "A supporter");
+  const vol = profileId && db.isVolunteer(profileId)
+    ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : "";
+  return `<span class="named">${shown}${vol}${supporterTag(profileId)}</span>`;
+}
+
 function supporterTag(profileId) {
   if (!profileId || db.isVolunteer(profileId)) return "";
   const given = db.tagOf(profileId);
@@ -5262,7 +5282,16 @@ function viewAccount() {
         ${avatarHtml(user.name, user.id, "width:44px;height:44px;font-size:15px")}
         <div>
           <div class="post__who" style="font-size:16px">${esc(user.name)}</div>
-          <div class="hint" style="margin:0">${user.isAdmin ? "KTFCSA volunteer" : "Supporter"}</div>
+          <div class="hint" style="margin:0">${(() => {
+            /* Was hardcoded to "Supporter" for everybody who is not an admin,
+               so a tag a volunteer had handed out showed up on the fan wall and
+               nowhere on the person's own account page. */
+            const given = db.tagOf(user.id);
+            if (user.isAdmin) return "KTFCSA volunteer";
+            if (given) return esc(TAG_LABEL[given] || given);
+            if (db.isContributor(user.id)) return "Contributor";
+            return "Supporter";
+          })()}</div>
         </div>
       </div>
       <div class="emblem-pick">
@@ -5934,7 +5963,7 @@ function quizBoard() {
             ${rows.map((r, i) => `
               <tr class="${r.profile_id === me ? "is-ktfc" : ""}">
                 <td>${i + 1}</td>
-                <td><div class="club-cell"><span>${esc(r.display_name || "A supporter")}</span></div></td>
+                <td><div class="club-cell">${namePlusTag(r.profile_id, r.display_name)}</div></td>
                 <td>${r.streak}</td>
                 <td>${r.played}</td>
                 <td class="pts">${r.points}</td>

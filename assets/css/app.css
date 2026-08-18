@@ -4963,3 +4963,9 @@ button,
 /* A full-width shortcut, for the one that leads somewhere big. */
 .ql--wide { grid-column: 1 / -1; }
 .ql__go { margin-left: auto; color: var(--gold-400); font-size: 18px; line-height: 1; }
+
+/* A name with whatever it has earned sitting beside it. Used on the
+   leaderboards and the admin lists as well as the fan wall, so a tag somebody
+   was given shows up wherever their name does. */
+.named { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.named .pill { flex: none; }
