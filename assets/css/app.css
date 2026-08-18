@@ -4959,3 +4959,7 @@ button,
 
 .todo__job:hover { border-color: var(--gold-400); background: color-mix(in srgb, var(--gold-400) 12%, transparent); }
 .todo__job span { color: var(--gold-400); }
+
+/* A full-width shortcut, for the one that leads somewhere big. */
+.ql--wide { grid-column: 1 / -1; }
+.ql__go { margin-left: auto; color: var(--gold-400); font-size: 18px; line-height: 1; }

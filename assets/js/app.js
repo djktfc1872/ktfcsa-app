@@ -208,7 +208,7 @@ function modal(html) {
 /* =================================================================== state */
 
 const state = {
-  view: "fixtures",
+  view: "home",
   params: {},
   league: null,
   podcast: null,
@@ -222,6 +222,8 @@ const state = {
   facts: null,    // researched club history, from data/club-facts.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
+  priceSources: {},   // club id -> the page the checker read its prices from
+  priceSourcePromise: null,
   quiz: null,     // the Poppies Daily bank, fetched only when the game is opened
   quizById: null, // the same questions, keyed by id
   quizPromise: null,
@@ -270,7 +272,8 @@ const ROUTES = {
      More screen, rather than sitting fifth under Supporters. It is on for five
      days and then the route stops advertising itself entirely. */
   consult: { label: "Have Your Say", short: "Say", icon: "📣", nav: "more", group: "Happening now", render: viewConsult },
-  fixtures: { label: "Fixtures", icon: "⚽", nav: "tab", group: "Matchday", render: viewFixtures },
+  home: { label: "Home", short: "Home", icon: ICON.poppy, nav: "tab", group: "Matchday", render: viewHome },
+  fixtures: { label: "All Fixtures", short: "Fixtures", icon: "⚽", nav: "more", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
   predict: { label: "Prediction League", short: "Predict", icon: "🎯", nav: "tab", group: "Matchday", render: viewPredict },
   players: { label: "Players & Stats", icon: "⭐", nav: "more", group: "Matchday", render: viewPlayers },
@@ -311,10 +314,10 @@ function go(view, params = {}) {
 }
 
 function readHash() {
-  const [, view, id, from] = (location.hash || "#/fixtures").split("/");
+  const [, view, id, from] = (location.hash || "#/home").split("/");
   /* #/consult/preview shows the findings early to whoever has been given
      sight of them. Anybody else is simply shown the survey. */
-  state.view = ROUTES[view] ? view : "fixtures";
+  state.view = ROUTES[view] ? view : "home";
   state.params = id
     ? { id: decodeURIComponent(id), from: from ? decodeURIComponent(from) : "" }
     : {};
@@ -484,7 +487,7 @@ function countdown(f) {
     </div>`;
 }
 
-function viewFixtures() {
+function viewHome() {
   const all = fixtures();
   const today = todayISO();
   const next = nextFixture();
@@ -502,8 +505,9 @@ function viewFixtures() {
   const wrap = el(`<div>
     <div class="ticker-slot"></div>
     <div class="page-head">
-      <h1>Fixtures</h1>
-      <p>Kettering Town FC, ${esc(state.league?.season || "2026/27")}. Every game, cup ties included, kept up to date on its own.</p>
+      <h1>Kettering Town</h1>
+      <p>${esc(state.league?.season || "2026/27")}. Everything for following the Poppies, in one
+      place, put together by supporters.</p>
     </div>
 
     <!-- The first thing anyone sees was a heading and a date range, which said
@@ -522,6 +526,7 @@ function viewFixtures() {
     </div>
 
     <div class="live-slot"></div>
+    <div class="hero-slot"></div>
     <div class="daily-slot"></div>
     <div class="otd-slot"></div>
     <div class="season-strip" data-nav="players" role="button" tabindex="0"></div>
@@ -542,12 +547,6 @@ function viewFixtures() {
         <span class="ql__icon" aria-hidden="true">\u{1F4AC}</span>
         <span class="ql__text"><b>Fan wall</b>A thread for every match, before and after.</span>
       </button>
-    </div>
-    <div class="how-to">
-      <span class="how-to__row"><span class="pill pill--away">Away</span>
-        Tap any fixture for the match, and the away day guide with it: tickets, parking and a pub.</span>
-      <span class="how-to__row"><span class="pill pill--home">Home</span>
-        Tap for the match, team sheet and everything on the visitors to ${esc(KTFC.ground)}.</span>
     </div>
   </div>`);
 
@@ -617,9 +616,10 @@ function viewFixtures() {
     }
   }
 
+  const heroSlot = $(".hero-slot", wrap);
   if (next) {
     const t = next.team;
-    wrap.append(el(`
+    heroSlot.append(el(`
       <div class="hero">
         <div class="hero__label">Next fixture</div>
         <div class="hero__match">
@@ -643,8 +643,52 @@ function viewFixtures() {
 
     /* Predictions sit with the game they belong to rather than in a tab of
        their own. Anyone can have a go; the table needs an account. */
-    if (predictionsOpen(next)) wrap.append(predictionCard(next, { compact: true }));
+    if (predictionsOpen(next)) heroSlot.append(predictionCard(next, { compact: true }));
   }
+
+  /* The list itself is its own page now. Home says what is next and where to
+     go; it does not also try to be a forty-two row fixture list. */
+  if (liveNow) $(".live-slot", wrap).append(liveNow);
+  const tick = consultTicker();
+  if (tick) $(".ticker-slot", wrap).append(tick);
+  const promo = dailyPromo();
+  if (promo) $(".daily-slot", wrap).append(promo);
+  $(".otd-slot", wrap).append(onThisDayCard());
+
+  const more = el(`
+    <button class="ql ql--wide" data-nav="fixtures" style="margin-top:4px">
+      <span class="ql__icon" aria-hidden="true">\u{1F4C5}</span>
+      <span class="ql__text"><b>All fixtures and results</b>Every game this season, home and away.</span>
+      <span class="ql__go" aria-hidden="true">\u203A</span>
+    </button>`);
+  wrap.append(more);
+  return wrap;
+}
+
+function viewFixtures() {
+  const all = fixtures();
+  const today = todayISO();
+  const next = nextFixture();
+  const filter = state.fixtureFilter;
+  const shown = all.filter((f) => {
+    if (filter === "home") return f.venue === "Home";
+    if (filter === "away") return f.venue === "Away";
+    if (filter === "results") return f.status === "played";
+    return f.status !== "played" || f.date >= today;
+  });
+
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Fixtures</h1>
+      <p>Every game this season, cup ties included, kept up to date on its own.</p>
+    </div>
+    <div class="how-to">
+      <span class="how-to__row"><span class="pill pill--away">Away</span>
+        Tap any fixture for the match, and the away day guide with it: tickets, parking and a pub.</span>
+      <span class="how-to__row"><span class="pill pill--home">Home</span>
+        Tap for the match, team sheet and everything on the visitors to ${esc(KTFC.ground)}.</span>
+    </div>
+  </div>`);
 
   const bar = el(`
     <div class="toolbar" style="margin-top:18px">
@@ -661,16 +705,6 @@ function viewFixtures() {
       render();
     })
   );
-  if (liveNow) $(".live-slot", wrap).append(liveNow);
-  /* Fixtures is where every session starts, so this is where the daily habit
-     is worth nudging. The tabs stay as they are - the comment above ROUTES is
-     right that four of them is muscle memory. */
-  const tick = consultTicker();
-  if (tick) $(".ticker-slot", wrap).append(tick);
-  const promo = dailyPromo();
-  if (promo) $(".daily-slot", wrap).append(promo);
-  $(".otd-slot", wrap).append(onThisDayCard());
-
   wrap.append(bar);
 
   if (!shown.length) {
@@ -1170,6 +1204,12 @@ function concessionNote(t) {
 }
 
 function viewClub({ id, from }) {
+  /* Fetched once, then the page is redrawn so the price link can point at the
+     page the figures actually came from. */
+  if (!state.priceSourcePromise) {
+    ensurePriceSources().then(() => { if (state.view === "club") render(); });
+  }
+
   if (id === "kettering-town") return viewPoppies();
   const t = TEAMS.find((x) => x.id === id);
   if (!t) {
@@ -1296,11 +1336,15 @@ function viewClub({ id, from }) {
             ? `Checked against ${esc(t.priceSource || "the club's own site")} on ${esc(fmtDate(t.priceChecked, "short"))}.`
             : "Not independently checked. Most clubs at this level do not publish prices anywhere we can read, so treat this as a guide and have a little extra with you."
         }</div>
-        ${info?.website
-          ? `<div class="btn-row" style="margin-top:10px">
-               <a class="btn btn--sm btn--ghost" href="${esc(info.website)}" target="_blank" rel="noopener">${ICON.globe} Check on the ${esc(t.name)} site</a>
-             </div>`
-          : ""}
+        ${(() => {
+          const exact = state.priceSources?.[t.id];
+          const href = exact || info?.website;
+          if (!href) return "";
+          return `<div class="btn-row" style="margin-top:10px">
+               <a class="btn btn--sm btn--ghost" href="${esc(href)}" target="_blank" rel="noopener">${ICON.globe} ${
+                 exact ? "See their ticket prices" : `Check on the ${esc(t.name)} site`}</a>
+             </div>`;
+        })()}
       </div>`));
 
     /* What supporters say they actually paid, which beats anything published. */
@@ -6841,6 +6885,24 @@ function consultTicker() {
 }
 
 
+/**
+ * Where the price checker actually read each club's prices, so the link under
+ * them goes to the page the figures came from rather than the club's front
+ * door. Only a handful of clubs publish somewhere a script can read, so most
+ * still fall back to the website.
+ */
+function ensurePriceSources() {
+  if (!state.priceSourcePromise) {
+    state.priceSourcePromise = readJSON("data/price-check.json").then((d) => {
+      state.priceSources = Object.fromEntries(
+        (d?.readable || []).filter((r) => r.club && r.source).map((r) => [r.club, r.source])
+      );
+      return state.priceSources;
+    }).catch(() => ({}));
+  }
+  return state.priceSourcePromise;
+}
+
 async function readJSON(path) {
   for (const init of [undefined, { cache: "no-store" }]) {
     try {
@@ -7003,7 +7065,7 @@ async function boot() {
 
   /* keep the countdown honest without hammering the browser */
   setInterval(() => {
-    if (state.view === "fixtures") render();
+    if (state.view === "home") render();
   }, 60000);
 
   /* Registered from here rather than an inline tag, so the page can run under
