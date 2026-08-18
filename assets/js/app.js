@@ -3566,6 +3566,29 @@ function responsesByDay(rows) {
     </div>`);
 }
 
+/**
+ * A section that can be folded away. The consultation tab runs to twenty
+ * thousand pixels once the dashboard is on it, so everything below the queue
+ * is closed until somebody asks for it.
+ */
+function foldable(title, build, { open = false } = {}) {
+  const box = el(`
+    <details class="fold"${open ? " open" : ""}>
+      <summary class="fold__head">${esc(title)}</summary>
+      <div class="fold__body"></div>
+    </details>`);
+  let built = false;
+  const fill = () => {
+    if (built) return;
+    built = true;
+    const node = build();
+    if (node) $(".fold__body", box).append(node);
+  };
+  if (open) fill();
+  box.addEventListener("toggle", () => { if (box.open) fill(); });
+  return box;
+}
+
 function viewAdmin() {
   const wrap = el(`<div>
     <div class="page-head">
@@ -3754,9 +3777,9 @@ function viewAdmin() {
          while: the panel simply rendered without these two and said nothing. */
       console.warn("Consultation insights could not be built:", err);
     });
-    wrap.append(insights);
-
-    wrap.append(consultResults());
+    wrap.append(foldable("Themes and response rate", () => insights));
+    wrap.append(foldable("The full findings, as the public will see them",
+      () => consultResults()));
   }
 
   /* Nothing a supporter wrote reaches the public or the club until it has been
@@ -3776,13 +3799,54 @@ function viewAdmin() {
           if (r[f]) items.push({ row: r, field: f, status: r.note_status, text: r[f], kind });
         });
       });
-      const waiting = items.filter((i) => i.status === "pending");
       if (!items.length) {
         consultCard.append(el(`<p class="note" style="margin:0">Nothing written in yet.</p>`));
         return;
       }
-      consultCard.append(el(`<p class="note" style="margin:0 0 10px">${waiting.length} waiting,
-        ${items.length - waiting.length} dealt with. Nothing appears publicly until you approve it.</p>`));
+
+      /* A hundred and twenty items in one run is unreadable, and the three
+         kinds want different heads on: a question is going to the club, a
+         concern is going on a public page. Filtered by kind and by status,
+         with the counts on the chips so nothing is hidden by accident. */
+      const f = state.consultFilter || (state.consultFilter = { kind: "all", status: "pending" });
+      const KINDS = [
+        ["all", "Everything"],
+        ["Question for the club", "Questions"],
+        ["Concern", "Concerns"],
+        ["What is going well", "Going well"],
+      ];
+      const STATUSES = [["pending", "Waiting"], ["approved", "Published"], ["rejected", "Rejected"], ["all", "All"]];
+      const byKind = (i) => f.kind === "all" || i.kind === f.kind;
+      const byStatus = (i) => f.status === "all" || i.status === f.status;
+      const count = (test) => items.filter(test).length;
+
+      const chips = el(`
+        <div class="chips">
+          <div class="chips__row">
+            ${KINDS.map(([k, label]) => `
+              <button class="chip${f.kind === k ? " is-on" : ""}" data-kind="${esc(k)}">${esc(label)}
+                <span>${count((i) => (k === "all" || i.kind === k) && byStatus(i))}</span></button>`).join("")}
+          </div>
+          <div class="chips__row">
+            ${STATUSES.map(([k, label]) => `
+              <button class="chip chip--status${f.status === k ? " is-on" : ""}" data-status="${k}">${esc(label)}
+                <span>${count((i) => (k === "all" || i.status === k) && byKind(i))}</span></button>`).join("")}
+          </div>
+        </div>`);
+      chips.querySelectorAll("[data-kind]").forEach((b) =>
+        b.addEventListener("click", () => { f.kind = b.dataset.kind; paintConsult(); }));
+      chips.querySelectorAll("[data-status]").forEach((b) =>
+        b.addEventListener("click", () => { f.status = b.dataset.status; paintConsult(); }));
+      consultCard.append(chips);
+
+      const shown = items.filter((i) => byKind(i) && byStatus(i));
+      const waiting = shown.filter((i) => i.status === "pending");
+      consultCard.append(el(`<p class="note" style="margin:2px 0 10px">Showing ${shown.length} of
+        ${items.length}. Nothing appears publicly until you approve it.</p>`));
+      if (!shown.length) {
+        consultCard.append(el(`<p class="note" style="margin:0">Nothing matches that filter.</p>`));
+        return;
+      }
 
       /* Working through fifty of these one at a time is how a volunteer stops
          reading them properly, so there is a bulk path. It still goes through
@@ -3853,7 +3917,7 @@ function viewAdmin() {
         });
         $("#bulk-reject", bar).addEventListener("click", () => runBulk("rejected"));
       }
-      [...waiting, ...items.filter((i) => i.status !== "pending")].forEach((it) => {
+      [...waiting, ...shown.filter((i) => i.status !== "pending")].forEach((it) => {
         const statusCol = it.field === "question" ? "question_status" : "note_status";
         const card = el(`
           <div class="suggestion${it.status === "pending" ? "" : " is-done"}">

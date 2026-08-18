@@ -4969,3 +4969,31 @@ button,
    was given shows up wherever their name does. */
 .named { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
 .named .pill { flex: none; }
+
+/* Filter chips on the moderation queue, with their counts. */
+.chips { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.chips__row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer;
+  color: var(--text-2); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 999px;
+}
+.chip span { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.chip:hover { border-color: var(--gold-400); }
+.chip.is-on { border-color: var(--gold-400); background: color-mix(in srgb, var(--gold-400) 14%, transparent); color: var(--text); font-weight: 600; }
+.chip.is-on span { color: var(--gold-400); }
+.chip--status.is-on { border-color: var(--text-3); background: var(--surface-2); }
+
+/* A section that folds away, for everything below the job in hand. */
+.fold { border: 1px solid var(--line); border-radius: var(--r); margin-bottom: var(--gap); background: var(--surface-1, transparent); }
+.fold__head {
+  padding: 13px 15px; cursor: pointer; list-style: none;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.fold__head::-webkit-details-marker { display: none; }
+.fold__head::after { content: "\\203A"; color: var(--gold-400); font-size: 18px; transform: rotate(90deg); transition: transform 0.2s; }
+.fold[open] > .fold__head::after { transform: rotate(-90deg); }
+.fold__body { padding: 0 12px 12px; }
