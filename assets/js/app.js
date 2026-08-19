@@ -3784,6 +3784,67 @@ function groupQuestions(items, split = 0) {
  * label is editable, every group can be dropped, and nothing is sent or
  * published until a volunteer marks it final.
  */
+/**
+ * Who gets to see the findings before they are published. Read-only access to
+ * the same summary everybody gets later, never a raw response, and it stops
+ * meaning anything the moment the report goes public.
+ */
+function earlySightPicker() {
+  const { node, close } = modal(`
+    <h3 style="margin-bottom:6px">Who can see it early</h3>
+    <p class="hint" style="margin-bottom:12px">They get the report as supporters will see it,
+      before it is published. Not the raw responses, and nothing to moderate. Volunteers already
+      have it.</p>
+    <div class="field"><input id="es-q" type="search" placeholder="Search supporters"
+      aria-label="Search supporters"></div>
+    <div id="es-list"><p class="note">Loading.</p></div>
+    <p class="hint" style="margin-top:12px">Send them
+      <b>fans.ktfcsa.com/#/consult/preview</b>. They need to be signed in on that device.</p>`);
+
+  const list = node.querySelector("#es-list");
+  const draw = (rows, filter = "") => {
+    const want = filter.trim().toLowerCase();
+    const shown = rows
+      .filter((r) => !r.is_admin)
+      .filter((r) => !want || (r.display_name || "").toLowerCase().includes(want))
+      .sort((a, b) => Number(db.isResultsViewer(b.id)) - Number(db.isResultsViewer(a.id)));
+    list.replaceChildren();
+    if (!shown.length) {
+      list.append(el(`<p class="note">Nobody by that name.</p>`));
+      return;
+    }
+    shown.slice(0, 40).forEach((r) => {
+      const on = db.isResultsViewer(r.id);
+      const row = el(`
+        <label class="offer" style="margin-bottom:6px">
+          <input type="checkbox"${on ? " checked" : ""}>
+          <span><b>${esc(r.display_name)}</b></span>
+        </label>`);
+      row.querySelector("input").addEventListener("change", async (e) => {
+        const want2 = e.target.checked;
+        e.target.disabled = true;
+        try {
+          await db.setResultsViewer(r.id, want2);
+          toast(want2 ? `${r.display_name} can see it early.` : `${r.display_name} can no longer see it.`);
+        } catch (err) {
+          e.target.checked = !want2;
+          toast(err.message || "That did not save.");
+        }
+        e.target.disabled = false;
+      });
+      list.append(row);
+    });
+  };
+
+  db.adminPeople().then((rows) => {
+    draw(rows);
+    node.querySelector("#es-q").addEventListener("input", (e) => draw(rows, e.target.value));
+  }).catch(() => {
+    list.replaceChildren();
+    list.append(el(`<p class="note">Could not load the supporter list.</p>`));
+  });
+}
+
 function questionWorkbench(rows) {
   const box = el(`<div class="card"></div>`);
   const asked = rows
@@ -4083,7 +4144,13 @@ function viewAdmin() {
       });
       const prev = el(`<button class="btn btn--sm btn--ghost">Preview the report</button>`);
       prev.addEventListener("click", () => { location.hash = "#/consult/preview"; });
-      row.append(b, prev);
+
+      /* Granting early sight lived only in the People tab, which meant leaving
+         this page and searching for somebody by name. It belongs here, next to
+         the thing it is about. */
+      const share = el(`<button class="btn btn--sm btn--ghost">Who can see it early</button>`);
+      share.addEventListener("click", () => earlySightPicker());
+      row.append(b, prev, share);
       pub.append(card, row);
     }).catch(() => {});
     wrap.append(pub);
