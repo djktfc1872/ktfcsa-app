@@ -7622,15 +7622,21 @@ function viewMemorial() {
         Everyone is welcome, whether you want to play or just stand and watch.</div>
       </div>
 
-      <h2 class="section-title">Who Dylan was</h2>
+      <h2 class="section-title">Dylan</h2>
       <div class="card">
-        <p class="club-overview">Dylan Cecil was four years old when he drowned in 2012, after
-        falling from a jetty while his family were on holiday in Somerset. He would have turned
-        eighteen this year.</p>
-        <p class="club-overview" style="margin-top:12px">His dad John, who many supporters will
-        know from around the ground, put it best when he wrote about this year's match: the family
-        are left to wonder what Dylan would be doing now, and the one thing they are certain of is
-        that he would have been supporting the Poppies with all his heart.</p>
+        <p class="memorial__dates">Dylan Cecil &middot; 29 April 2008 &ndash; 19 August 2012</p>
+        <p class="club-overview">Dylan was four. He was on the jetty at Burnham-on-Sea with his
+        family in August 2012, playing in the shallow water, when he slipped in and did not come
+        back up. His mum and dad went in after him and were pulled out of the tide themselves.
+        Half of Somerset searched for him. He was found four days later.</p>
+        <p class="club-overview" style="margin-top:12px">He would have been eighteen this April.
+        His dad John, who a lot of supporters will know from around the ground, wrote before this
+        year's match that the family are left wondering what Dylan would be doing now, and that
+        the one thing they are sure of is that he would have been following the Poppies with all
+        his heart.</p>
+        <p class="club-overview" style="margin-top:12px">The fund tells Dylan's story properly, in
+        his family's own words, and it is worth reading:
+        <a href="${MEMORIAL.site}dylan" target="_blank" rel="noopener">Dylan's page</a>.</p>
       </div>
 
       <h2 class="section-title">What the fund does</h2>
