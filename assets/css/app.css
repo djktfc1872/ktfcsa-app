@@ -5023,19 +5023,25 @@ button,
   padding: 6px 12px; font-size: 12px; font-weight: 500; border-radius: 999px;
 }
 
-/* The Ko-fi note. Deliberately quiet, and the line saying nobody has to give is
-   the one that is emphasised: an app that is free and ad-free stops feeling
-   free the moment the ask is louder than the offer. */
+/* The Ko-fi note. One line across the width rather than a tall box, and the
+   line saying nobody has to give is the emphasised one: an app that is free and
+   ad-free stops feeling free the moment the ask is louder than the offer. */
 .kofi {
-  max-width: 34rem;
-  margin: 20px auto 4px;
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 18px 0 6px;
+  padding: 11px 16px;
   border: 1px dashed var(--line);
   border-radius: var(--r);
-  text-align: center;
+  text-align: left;
 }
 
-.kofi__no { font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
-.kofi__no b { color: var(--text); }
-.kofi__why { margin-top: 7px; font-size: 12px; line-height: 1.5; color: var(--text-3); }
-.kofi .btn { margin-top: 11px; }
+.kofi__text { flex: 1 1 auto; font-size: 12.5px; line-height: 1.5; color: var(--text-3); }
+.kofi__text b { color: var(--text); }
+.kofi__go { flex: 0 0 auto; white-space: nowrap; }
+
+/* Stacked and centred only when there is genuinely no room for a row. */
+@media (max-width: 520px) {
+  .kofi { flex-direction: column; gap: 10px; text-align: center; }
+}

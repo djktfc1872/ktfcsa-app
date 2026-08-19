@@ -144,15 +144,14 @@ function footer() {
 
       <!-- The refusal is the loud part on purpose. This app is free and has no
            adverts, and the moment a donation link starts to feel like a toll it
-           has cost more than it raised. Nobody is ever asked twice, there is no
-           popup, and it sits in the footer where somebody has to go looking. -->
+           has cost more than it raised. One line, across the page, in the
+           footer where somebody has to go looking. -->
       <div class="kofi">
-        <p class="kofi__no"><b>You do not have to give anything.</b> This will always be free,
-        with no adverts and nothing behind a paywall, whether anyone ever chips in or not.</p>
-        <p class="kofi__why">If you ever want to help with the running costs, there is a Ko-fi.
-        It pays for the domain and the hosting. That is all it is for.</p>
-        <a class="btn btn--sm btn--ghost" href="https://ko-fi.com/ktfcsa"
-           target="_blank" rel="noopener">Buy the site a coffee</a>
+        <p class="kofi__text"><b>You never have to give anything.</b> Free, no adverts, nothing
+        behind a paywall. If you want to chip in towards the domain and hosting, there is a
+        Ko-fi.</p>
+        <a class="btn btn--sm btn--ghost kofi__go" href="https://ko-fi.com/ktfcsa"
+           target="_blank" rel="noopener">Donate towards app fees</a>
       </div>
       <div class="site-footer__meta">
         <span>&copy; ${year} Danny Jordan / Kettering Town FC Supporters' Association</span>
