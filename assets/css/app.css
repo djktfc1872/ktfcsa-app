@@ -5133,3 +5133,52 @@ button,
   letter-spacing: 0.02em;
   color: var(--text-2);
 }
+
+/* The organisers' poster. Square artwork, so it is capped rather than let run
+   the full height of a phone screen. */
+.poster {
+  margin: 0 0 var(--gap);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--surface-2);
+  line-height: 0;
+}
+
+.poster img {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  height: auto;
+}
+
+/* The painted band was only ever a stand-in for the artwork, so it is hidden
+   whenever the poster is on the page. If the image fails, the figure removes
+   itself, this rule stops matching, and the band comes back. No flicker while
+   the poster loads, which a class added on load would have caused. */
+.poster + .derby { display: none; }
+
+/* Thumbnail in the fixture-list notice. */
+.charity__body { display: flex; gap: 12px; align-items: flex-start; width: 100%; }
+.charity__words { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.charity__poster {
+  flex: 0 0 auto;
+  width: 74px;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 400px) {
+  .charity__poster { width: 58px; height: 58px; }
+}
+
+/* Same idea on the home page card, in place of the heart. */
+.daily-promo__icon--poster { line-height: 0; }
+.daily-promo__icon--poster img {
+  width: 40px; height: 40px;
+  object-fit: cover; border-radius: 7px;
+  border: 1px solid var(--line);
+}

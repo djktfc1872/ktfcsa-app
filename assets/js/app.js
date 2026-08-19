@@ -7592,19 +7592,60 @@ const MEMORIAL = {
   kickoff: "14:30",
   charityNo: "1161669",
   site: "https://dylancecilmemorialfund.co.uk/",
+  /* The organisers' poster. Everything that shows it degrades to the painted
+     Angry Birds / Sonics band if the file is not there. */
+  poster: "assets/img/memorial-poster.jpg",
 };
+
+/**
+ * Wires up the poster images in a freshly built node.
+ *
+ * The app sends `script-src 'self'`, so inline onload/onerror attributes are
+ * blocked outright — the handlers have to be attached here. Every use of the
+ * poster degrades on its own: the hero drops back to the painted band, the
+ * fixture-list thumbnail disappears, and the home card returns to its heart.
+ * The page has to read properly whether or not the file is in the build.
+ */
+function wirePosters(node) {
+  node.querySelectorAll("img[data-poster]").forEach((img) => {
+    const kind = img.dataset.poster;
+    const gone = () => {
+      if (kind === "hero") img.closest(".poster")?.remove();
+      else if (kind === "icon") { const p = img.parentElement; if (p) p.textContent = "\u{1F499}"; }
+      else img.remove();
+    };
+    /* `complete` is true for an image that has not started loading at all,
+       which is every image here: el() builds nodes inside a template, and
+       nothing in that inert document fetches until it is put on the page. Only
+       an image already in the document can be trusted to have settled. */
+    if (document.contains(img) && img.complete) {
+      if (!img.naturalWidth) gone();
+      return;
+    }
+    img.addEventListener("error", gone, { once: true });
+  });
+  return node;
+}
 
 /** True until the end of the day the match is played on. */
 const memorialUpcoming = () => londonToday() <= MEMORIAL.date;
 
 function viewMemorial() {
-  const wrap = el(`
+  const wrap = wirePosters(el(`
     <div>
       <div class="page-head page-head--airy">
         <h1>A memorial match for Dylan Cecil</h1>
         <p>Angry Birds against the Sonics, at Latimer Park, with everything raised going to the
            Dylan Cecil Memorial Fund.</p>
       </div>
+
+      <!-- The organisers' own poster. The painted band below is the fallback:
+           if the file is missing the page still shows the fixture rather than a
+           broken image box. -->
+      <figure class="poster">
+        <img src="${MEMORIAL.poster}" data-poster="hero" alt="Poster for the memorial match for Dylan Cecil: Angry Birds v Sonics, Sunday 23rd August, kick-off 2.30pm, Latimer Park, Kettering NN15 5PS. All proceeds to the Dylan Cecil Memorial Fund."
+             loading="eager" decoding="async">
+      </figure>
 
       <div class="derby">
         <div class="derby__side derby__side--red"><span>Angry Birds</span></div>
@@ -7660,7 +7701,7 @@ function viewMemorial() {
         website. John Cecil is usually around the ground on a Saturday too, if you would rather
         hand something over in person.</p>
       </div>
-    </div>`);
+    </div>`));
 
   const links = el(`<div class="btn-row" style="margin-top:14px"></div>`);
   links.append(el(`
@@ -7688,16 +7729,22 @@ function viewMemorial() {
 function memorialNotice() {
   const today = londonToday();
   const when = today === MEMORIAL.date ? "Today" : fmtDate(MEMORIAL.date);
-  return el(`
+  return wirePosters(el(`
     <button class="charity" data-nav="memorial">
       <span class="charity__flag">Charity match · not a Kettering Town fixture</span>
-      <span class="charity__title">Angry Birds v Sonics</span>
-      <span class="charity__meta">${esc(when)} · 2.30pm · Latimer Park</span>
-      <span class="charity__why">A memorial match for Dylan Cecil. Everyone welcome, and
-        everything raised goes to his fund. No prediction, no ratings, nothing counted:
-        just a game worth turning up to.</span>
-      <span class="charity__go">Read about it ›</span>
-    </button>`);
+      <span class="charity__body">
+        <img class="charity__poster" src="${MEMORIAL.poster}" data-poster="thumb" alt=""
+             loading="lazy" decoding="async">
+        <span class="charity__words">
+          <span class="charity__title">Angry Birds v Sonics</span>
+          <span class="charity__meta">${esc(when)} · 2.30pm · Latimer Park</span>
+          <span class="charity__why">A memorial match for Dylan Cecil. Everyone welcome, and
+            everything raised goes to his fund. No prediction, no ratings, nothing counted:
+            just a game worth turning up to.</span>
+          <span class="charity__go">Read about it ›</span>
+        </span>
+      </span>
+    </button>`));
 }
 
 /** A card on the home page, for as long as the match is still to come. */
@@ -7705,15 +7752,17 @@ function memorialPromo() {
   if (!memorialUpcoming()) return null;
   const today = londonToday();
   const when = today === MEMORIAL.date ? "Today, 2.30pm" : `${fmtDate(MEMORIAL.date, "short")}, 2.30pm`;
-  return el(`
+  return wirePosters(el(`
     <button class="daily-promo daily-promo--memorial" data-nav="memorial">
-      <span class="daily-promo__icon">💙</span>
+      <span class="daily-promo__icon daily-promo__icon--poster">
+        <img src="${MEMORIAL.poster}" data-poster="icon" alt="" loading="lazy" decoding="async">
+      </span>
       <span class="daily-promo__text">
         <strong>A memorial match for Dylan Cecil</strong>
         <span>Angry Birds v Sonics at Latimer Park · ${esc(when)} · everyone welcome</span>
       </span>
       <span class="daily-promo__go">Details</span>
-    </button>`);
+    </button>`));
 }
 
 async function readJSON(path) {
