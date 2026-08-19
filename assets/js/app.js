@@ -129,8 +129,14 @@ const ICON = {
   car: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h.5a1.5 1.5 0 0 1 1.5 1.5V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4.5A1.5 1.5 0 0 1 4.5 11H5Zm2.1 0h9.8l-1-3H8.1l-1 3ZM6.5 15a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm11 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg>`,
 };
 
-/** Sits at the foot of every screen. Rendered by the shell, not by the views. */
-function footer() {
+/**
+ * Sits at the foot of every screen. Rendered by the shell, not by the views.
+ *
+ * `askForMoney` is off on the memorial page. Asking supporters to chip in for
+ * hosting on a page about a children's charity puts our tin next to theirs, and
+ * on that page there is only one thing worth giving to.
+ */
+function footer({ askForMoney = true } = {}) {
   const { name, email } = CONFIG.credit;
   const year = new Date().getFullYear();
 
@@ -146,13 +152,14 @@ function footer() {
            adverts, and the moment a donation link starts to feel like a toll it
            has cost more than it raised. One line, across the page, in the
            footer where somebody has to go looking. -->
+      ${askForMoney ? `
       <div class="kofi">
         <p class="kofi__text"><b>You never have to give anything.</b> Free, no adverts, nothing
         behind a paywall. If you want to chip in towards the domain and hosting, there is a
         Ko-fi.</p>
         <a class="btn btn--sm btn--ghost kofi__go" href="https://ko-fi.com/ktfcsa"
            target="_blank" rel="noopener">Donate towards app fees</a>
-      </div>
+      </div>` : ""}
       <div class="site-footer__meta">
         <span>&copy; ${year} Danny Jordan / Kettering Town FC Supporters' Association</span>
         <span class="site-footer__sep" aria-hidden="true">&middot;</span>
@@ -301,6 +308,7 @@ const ROUTES = {
 
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
   daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
+  memorial: { label: "Memorial Match", icon: "💙", nav: "more", group: "Supporters", render: viewMemorial },
   heritage: { label: "Archive Project", icon: "📼", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
   videos: { label: "Club Videos", icon: "📺", nav: "more", group: "Supporters", render: viewVideos },
@@ -429,7 +437,7 @@ function render({ toTop = false } = {}) {
   const node = ROUTES[state.view].render(state.params);
   node.classList.add("view");
   main.append(node);
-  main.append(footer()); /* every screen, without each one remembering to */
+  main.append(footer({ askForMoney: state.view !== "memorial" }));
   if (toTop) window.scrollTo(0, 0);
 }
 
@@ -667,6 +675,8 @@ function viewHome() {
   if (liveNow) $(".live-slot", wrap).append(liveNow);
   const tick = consultTicker();
   if (tick) $(".ticker-slot", wrap).append(tick);
+  const mem = memorialPromo();
+  if (mem) $(".daily-slot", wrap).append(mem);
   const promo = dailyPromo();
   if (promo) $(".daily-slot", wrap).append(promo);
   $(".otd-slot", wrap).append(onThisDayCard());
@@ -730,6 +740,21 @@ function viewFixtures() {
 
   const ordered = filter === "results" ? [...shown].reverse() : shown;
   let lastMonth = "";
+
+  /* The memorial match is a notice, not a fixture.
+     It is deliberately never turned into a fixture object and never goes near
+     league.json: predictions, match threads, player ratings and attendance all
+     work by walking real fixtures, so a charity game that is not one of those
+     cannot leak into any of them. It also means nobody can predict a score on
+     somebody's memorial match, which is the whole point. */
+  let memorialShown = memorialUpcoming() && filter !== "results" && filter !== "away";
+  const maybeMemorial = (beforeDate) => {
+    if (!memorialShown) return;
+    if (beforeDate && beforeDate <= MEMORIAL.date) return;
+    memorialShown = false;
+    wrap.append(memorialNotice());
+  };
+
   ordered.forEach((f) => {
     const d = parseDate(f.date);
     const key = d ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}` : "Date to be confirmed";
@@ -737,8 +762,10 @@ function viewFixtures() {
       lastMonth = key;
       wrap.append(el(`<div class="month">${esc(key)}</div>`));
     }
+    maybeMemorial(f.date);
     wrap.append(fixtureCard(f, { isNext: next && f.id === next.id }));
   });
+  maybeMemorial(null);
 
   wrap.append(sourceStamp());
   return wrap;
@@ -7547,6 +7574,142 @@ function ensurePriceSources() {
     }).catch(() => ({}));
   }
   return state.priceSourcePromise;
+}
+
+
+/* ========================================================== memorial match
+
+   The annual Sonics v Angry Birds match for the Dylan Cecil Memorial Fund,
+   hosted by the club at Latimer Park.
+
+   Written plainly and checked against the fund's own site and the trustees'
+   own words rather than embroidered. Dylan's family read things written about
+   him, and the least this page can do is get the facts right and stay out of
+   the way.                                                                  */
+
+const MEMORIAL = {
+  date: "2026-08-23",
+  kickoff: "14:30",
+  charityNo: "1161669",
+  site: "https://dylancecilmemorialfund.co.uk/",
+};
+
+/** True until the end of the day the match is played on. */
+const memorialUpcoming = () => londonToday() <= MEMORIAL.date;
+
+function viewMemorial() {
+  const wrap = el(`
+    <div>
+      <div class="page-head page-head--airy">
+        <h1>A memorial match for Dylan Cecil</h1>
+        <p>Angry Birds against the Sonics, at Latimer Park, with everything raised going to the
+           Dylan Cecil Memorial Fund.</p>
+      </div>
+
+      <div class="derby">
+        <div class="derby__side derby__side--red"><span>Angry Birds</span></div>
+        <div class="derby__vs">v</div>
+        <div class="derby__side derby__side--blue"><span>Sonics</span></div>
+      </div>
+
+      <div class="card">
+        <div class="info-grid info-grid--3">
+          <div class="info"><div class="info__label">When</div><div class="info__value" style="font-size:17px;color:var(--gold-400)">Sun 23 Aug</div></div>
+          <div class="info"><div class="info__label">Kick-off</div><div class="info__value" style="font-size:17px">2.30pm</div></div>
+          <div class="info"><div class="info__label">Where</div><div class="info__value" style="font-size:17px">Latimer Park</div></div>
+        </div>
+        <div class="hint">Latimer Park, Polwell Lane, Burton Latimer, Kettering NN15 5PS.
+        Everyone is welcome, whether you want to play or just stand and watch.</div>
+      </div>
+
+      <h2 class="section-title">Who Dylan was</h2>
+      <div class="card">
+        <p class="club-overview">Dylan Cecil was four years old when he drowned in 2012, after
+        falling from a jetty while his family were on holiday in Somerset. He would have turned
+        eighteen this year.</p>
+        <p class="club-overview" style="margin-top:12px">His dad John, who many supporters will
+        know from around the ground, put it best when he wrote about this year's match: the family
+        are left to wonder what Dylan would be doing now, and the one thing they are certain of is
+        that he would have been supporting the Poppies with all his heart.</p>
+      </div>
+
+      <h2 class="section-title">What the fund does</h2>
+      <div class="card">
+        <p class="club-overview">The Dylan Cecil Memorial Fund has been a registered charity since
+        2014. It pays for holidays for families with children who have life-limiting illnesses, and
+        for children who have been through the loss of someone close to them. Families are put
+        forward by other people and other charities, and the trustees choose who is helped.</p>
+        <p class="club-overview" style="margin-top:12px">It has arranged <b>32 holidays</b> so far.
+        Five families were helped in 2025 and another five are already paid for or arranged for
+        2026. This match is one of the main reasons the fund can keep doing it.</p>
+        <p class="club-overview" style="margin-top:12px">The charity's own words for what that
+        means are better than any of ours: <i>making memories that last forever</i>.</p>
+      </div>
+
+      <h2 class="section-title">How to help</h2>
+      <div class="card">
+        <p class="club-overview"><b>Come along on Sunday.</b> That is the main thing. It is a
+        friendly between friends, family and supporters, and the more people through the gate the
+        better it does.</p>
+        <p class="club-overview" style="margin-top:12px"><b>Give what you like, or nothing at
+        all.</b> There is a collection on the day, and the fund takes donations through its own
+        website. John Cecil is usually around the ground on a Saturday too, if you would rather
+        hand something over in person.</p>
+      </div>
+    </div>`);
+
+  const links = el(`<div class="btn-row" style="margin-top:14px"></div>`);
+  links.append(el(`
+    <a class="btn btn--sm" href="${esc(MEMORIAL.site)}" target="_blank" rel="noopener">
+      ${ICON.globe} The Dylan Cecil Memorial Fund</a>`));
+  links.append(el(`
+    <a class="btn btn--sm btn--ghost" href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/${esc(MEMORIAL.charityNo)}"
+       target="_blank" rel="noopener">Charity no. ${esc(MEMORIAL.charityNo)}</a>`));
+  wrap.append(links);
+
+  wrap.append(el(`
+    <p class="note" style="margin-top:16px">The fund is run by Dylan's family and by people from
+    the emergency services who searched for him. The trustees are John Cecil, Jon Dunham, founder
+    Ian Jefferies and Deborah Newton. The match is hosted by Kettering Town FC. Details here are
+    taken from the fund's own website and from the trustees, checked on
+    ${esc(fmtDate(londonToday()))}.</p>`));
+  return wrap;
+}
+
+/**
+ * The row that appears in the fixture list. Marked as plainly as it can be:
+ * it is not Kettering Town playing, it does not count towards anything, and
+ * there is nothing to predict or rate.
+ */
+function memorialNotice() {
+  const today = londonToday();
+  const when = today === MEMORIAL.date ? "Today" : fmtDate(MEMORIAL.date);
+  return el(`
+    <button class="charity" data-nav="memorial">
+      <span class="charity__flag">Charity match · not a Kettering Town fixture</span>
+      <span class="charity__title">Angry Birds v Sonics</span>
+      <span class="charity__meta">${esc(when)} · 2.30pm · Latimer Park</span>
+      <span class="charity__why">A memorial match for Dylan Cecil. Everyone welcome, and
+        everything raised goes to his fund. No prediction, no ratings, nothing counted:
+        just a game worth turning up to.</span>
+      <span class="charity__go">Read about it ›</span>
+    </button>`);
+}
+
+/** A card on the home page, for as long as the match is still to come. */
+function memorialPromo() {
+  if (!memorialUpcoming()) return null;
+  const today = londonToday();
+  const when = today === MEMORIAL.date ? "Today, 2.30pm" : `${fmtDate(MEMORIAL.date, "short")}, 2.30pm`;
+  return el(`
+    <button class="daily-promo daily-promo--memorial" data-nav="memorial">
+      <span class="daily-promo__icon">💙</span>
+      <span class="daily-promo__text">
+        <strong>A memorial match for Dylan Cecil</strong>
+        <span>Angry Birds v Sonics at Latimer Park · ${esc(when)} · everyone welcome</span>
+      </span>
+      <span class="daily-promo__go">Details</span>
+    </button>`);
 }
 
 async function readJSON(path) {
