@@ -7625,18 +7625,16 @@ function viewMemorial() {
       <h2 class="section-title">Dylan</h2>
       <div class="card">
         <p class="memorial__dates">Dylan Cecil &middot; 29 April 2008 &ndash; 19 August 2012</p>
-        <p class="club-overview">Dylan was four. He was on the jetty at Burnham-on-Sea with his
-        family in August 2012, playing in the shallow water, when he slipped in and did not come
-        back up. His mum and dad went in after him and were pulled out of the tide themselves.
-        Half of Somerset searched for him. He was found four days later.</p>
-        <p class="club-overview" style="margin-top:12px">He would have been eighteen this April.
-        His dad John, who a lot of supporters will know from around the ground, wrote before this
-        year's match that the family are left wondering what Dylan would be doing now, and that
-        the one thing they are sure of is that he would have been following the Poppies with all
-        his heart.</p>
-        <p class="club-overview" style="margin-top:12px">The fund tells Dylan's story properly, in
-        his family's own words, and it is worth reading:
-        <a href="${MEMORIAL.site}dylan" target="_blank" rel="noopener">Dylan's page</a>.</p>
+        <p class="club-overview">Dylan sadly passed away in August 2012. He was four years old,
+        and he would have been eighteen this April.</p>
+        <p class="club-overview" style="margin-top:12px">His grandad John and the Cecil family are
+        well known around the club, and a lot of supporters will know them from around the ground.
+        John wrote before this year's match that the family are left wondering what Dylan would be
+        doing now, and that the one thing they are sure of is that he would have been following
+        the Poppies with all his heart.</p>
+        <p class="club-overview" style="margin-top:12px">Dylan's story is his family's to tell,
+        and they tell it on the fund's own website:
+        <a href="${MEMORIAL.site}dylan" target="_blank" rel="noopener">read about Dylan</a>.</p>
       </div>
 
       <h2 class="section-title">What the fund does</h2>
@@ -7675,7 +7673,7 @@ function viewMemorial() {
 
   wrap.append(el(`
     <p class="note" style="margin-top:16px">The fund is run by Dylan's family and by people from
-    the emergency services who searched for him. The trustees are John Cecil, Jon Dunham, founder
+    the emergency services involved at the time. The trustees are John Cecil, Jon Dunham, founder
     Ian Jefferies and Deborah Newton. The match is hosted by Kettering Town FC. Details here are
     taken from the fund's own website and from the trustees, checked on
     ${esc(fmtDate(londonToday()))}.</p>`));
