@@ -4093,31 +4093,16 @@ function questionWorkbench(rows) {
     const row = el(`
       <div class="btn-row" style="margin-top:14px">
         <button class="btn btn--sm" data-act="final">Save as the final list</button>
-        <button class="btn btn--sm btn--ghost" data-act="copy">Copy for the club</button>
+        <button class="btn btn--sm btn--ghost" data-act="preview">Preview the email</button>
+        <button class="btn btn--sm btn--ghost" data-act="copy">Copy and send</button>
       </div>`);
 
     const ready = () => groups.filter((g) => g.label.trim().length >= 8);
 
-    row.querySelector('[data-act="final"]').addEventListener("click", async () => {
-      const clean = ready();
-      if (!clean.length) return toast("Write at least one question first.");
-      if (clean.length !== groups.length) {
-        return toast(`${groups.length - clean.length} question${
-          groups.length - clean.length === 1 ? " has" : "s have"} no wording yet.`);
-      }
-      try {
-        await db.saveQuestionGroups(clean.map((g, i) => ({
-          label: g.label.trim(), topic: g.topic, members: g.members, sort: i, status: "final",
-        })));
-        toast(`${clean.length} questions saved as final.`);
-      } catch (err) {
-        toast(err.message || "That did not save.");
-      }
-    });
-
-    row.querySelector('[data-act="copy"]').addEventListener("click", async () => {
-      const clean = ready();
-      if (!clean.length) return toast("Write at least one question first.");
+    /* One builder for the preview and the real thing. If they came from
+       separate code the preview would stop being a preview the first time one
+       of them was edited. */
+    const buildText = async (clean) => {
       const total = (await db.consultationResults())?.summary?.responses || asked.length;
       const lines = [
         `Kettering Town FC Supporters' Association`,
@@ -4150,16 +4135,82 @@ function questionWorkbench(rows) {
         `We will publish which of these have been answered, and how long any unanswered`,
         `question has been outstanding.`,
       );
-      const text = lines.join("\n");
-      const ok = await copyText(text);
-      if (ok) {
-        await db.stampQuestionsAsked();
-        toast("Copied, and the clock has started on each question.");
-      } else {
-        modal(`<h3 style="margin-bottom:10px">Questions for the club</h3>
-          <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
-          <textarea readonly rows="12" style="width:100%">${esc(text)}</textarea>`);
+      return lines.join("\n");
+    };
+
+    row.querySelector('[data-act="final"]').addEventListener("click", async () => {
+      const clean = ready();
+      if (!clean.length) return toast("Write at least one question first.");
+      if (clean.length !== groups.length) {
+        return toast(`${groups.length - clean.length} question${
+          groups.length - clean.length === 1 ? " has" : "s have"} no wording yet.`);
       }
+      try {
+        await db.saveQuestionGroups(clean.map((g, i) => ({
+          label: g.label.trim(), topic: g.topic, members: g.members, sort: i, status: "final",
+        })));
+        toast(`${clean.length} questions saved as final.`);
+      } catch (err) {
+        toast(err.message || "That did not save.");
+      }
+    });
+
+    /* Read it before it goes. Touches nothing: no clock, no clipboard. */
+    row.querySelector('[data-act="preview"]').addEventListener("click", async () => {
+      const clean = ready();
+      if (!clean.length) return toast("Write at least one question first.");
+      const text = await buildText(clean);
+      modal(`
+        <h3 style="margin-bottom:6px">Preview</h3>
+        <p class="hint" style="margin-bottom:10px">Exactly what "Copy and send" would put on the
+          clipboard. Nothing has been sent and no clock has started.</p>
+        <textarea readonly rows="16" style="width:100%">${esc(text)}</textarea>
+        <p class="hint" style="margin-top:8px">${clean.length} questions &middot;
+          ${loose.length} in the addendum &middot; ${held.length} held back and not included.</p>`);
+    });
+
+    row.querySelector('[data-act="copy"]').addEventListener("click", async () => {
+      const clean = ready();
+      if (!clean.length) return toast("Write at least one question first.");
+      const text = await buildText(clean);
+
+      /* Copying is the moment the public page starts counting days against the
+         club, and that cannot be quietly undone. It gets a confirmation. */
+      const { node, close } = modal(`
+        <h3 style="margin-bottom:6px">Send these to the club?</h3>
+        <p class="hint" style="margin-bottom:12px">This copies ${clean.length} questions and
+          ${loose.length} in the addendum, and starts the public clock counting the days each one
+          goes unanswered. Only do this when you are about to send the email.</p>
+        <div class="btn-row">
+          <button class="btn btn--sm" data-yes>Copy and start the clock</button>
+          <button class="btn btn--sm btn--ghost" data-no>Not yet</button>
+        </div>`);
+      node.querySelector("[data-no]").addEventListener("click", close);
+      node.querySelector("[data-yes]").addEventListener("click", async () => {
+        close();
+        const ok = await copyText(text);
+        if (ok) {
+          await db.stampQuestionsAsked();
+          return toast("Copied, and the clock has started on each question.");
+        }
+        /* Clipboard refused. Stamping anyway would start a clock on an email
+           that never went, so it waits for the copy to actually happen. */
+        const { node: n2, close: c2 } = modal(`
+          <h3 style="margin-bottom:6px">Questions for the club</h3>
+          <p class="hint" style="margin-bottom:10px">The clipboard was refused. Press and hold to
+            copy, then confirm below so the clock starts.</p>
+          <textarea readonly rows="14" style="width:100%">${esc(text)}</textarea>
+          <div class="btn-row" style="margin-top:10px">
+            <button class="btn btn--sm" data-sent>I have copied it</button>
+            <button class="btn btn--sm btn--ghost" data-cancel>Cancel</button>
+          </div>`);
+        n2.querySelector("[data-cancel]").addEventListener("click", c2);
+        n2.querySelector("[data-sent]").addEventListener("click", async () => {
+          c2();
+          await db.stampQuestionsAsked();
+          toast("The clock has started on each question.");
+        });
+      });
     });
 
     /* The addendum goes over in supporters' own words, and those words name
