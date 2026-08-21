@@ -1662,7 +1662,18 @@ left join lateral (
   ) r
 ) sample on true
 where g.status = 'final'
-  and (select results_public from consultation_settings where id);
+  -- Published to everyone once the switch is on. Before that, still visible to
+  -- volunteers and to anyone given early sight, because a preview that cannot
+  -- show the merged questions is a preview of the wrong page: it would fall
+  -- back to the individually approved list and look nothing like what goes out.
+  and (
+    (select results_public from consultation_settings where id)
+    or is_admin()
+    or exists (
+      select 1 from profiles p
+      where p.id = auth.uid() and p.results_viewer
+    )
+  );
 
 -- NOTE: owner, not invoker, for the same reason as consultation_summary. The
 -- rows underneath are volunteers-only and the whole point is that the public

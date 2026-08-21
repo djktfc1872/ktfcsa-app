@@ -4544,7 +4544,9 @@ function questionWorkbench(rows) {
     wrap2.append(by);
 
     wrap2.append(row);
-    wrap2.append(el(`<p class="hint">Saving marks them final and puts them on the public page.
+    wrap2.append(el(`<p class="hint">Saving marks them final. It does not publish anything: the
+      results page stays closed until you press Publish, and until then the questions are visible
+      only to volunteers and to anyone given early sight.
       Copying gives you the text to write your own email around; nothing is sent from here. Mark as
       sent once it has gone, which is what makes the public page count the days each question has
       gone unanswered. The addendum goes with them, so nothing a supporter asked is dropped.</p>`));
