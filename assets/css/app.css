@@ -5291,3 +5291,10 @@ button,
 /* Filed but not cleared for publication: it still counts, it just cannot be shown. */
 .q-unapproved { color: var(--text-3); }
 .q-unapproved em { font-style: normal; font-size: 11px; color: var(--red-400); }
+
+/* Held back on purpose: not sent, not published, still counted. */
+.chip--held.is-on {
+  border-color: var(--red-400);
+  background: color-mix(in srgb, var(--red-400) 16%, transparent);
+  color: var(--text);
+}

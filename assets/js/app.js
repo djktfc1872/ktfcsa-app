@@ -268,6 +268,8 @@ const state = {
   questionGroups: null,   // the questions being written, and what is filed under each
   qTab: "list",           // which half of the workbench is showing
   qUnfiled: true,         // the sweep hides what is already filed
+  qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
+  qRedact: "",            // names to take out of the addendum before it goes
   publishedPromise: null,
   dailyAnswers: [],   // right/wrong so far in today's run
 };
@@ -3864,6 +3866,11 @@ function questionWorkbench(rows) {
 
   state.questionGroups = state.questionGroups || [];
   let groups = state.questionGroups;
+  /* Held back on purpose. Unfiled means "goes to the club in the addendum", so
+     without this there is no way to drop something: an allegation nobody wants
+     to put their name to would ride along in the addendum unnoticed. Excluded
+     questions are still counted, so the arithmetic at the top stays honest. */
+  const excluded = new Set(state.qExcluded || []);
   let tab = state.qTab || "list";
   let onlyUnfiled = state.qUnfiled !== false;
 
@@ -3871,15 +3878,20 @@ function questionWorkbench(rows) {
   const draw = () => {
     box.replaceChildren();
     const filed = filedIds();
-    const loose = asked.filter((q) => !filed.has(q.id));
+    const loose = asked.filter((q) => !filed.has(q.id) && !excluded.has(q.id));
+    const held = asked.filter((q) => !filed.has(q.id) && excluded.has(q.id));
 
-    /* The promise, at the top, always. */
+    /* The arithmetic, at the top, always. */
     box.append(el(`
       <div class="sweep-count">
-        <b>${asked.length}</b> questions asked &middot;
+        <b>${asked.length}</b> asked &middot;
         <b>${filed.size}</b> filed under ${groups.length} question${groups.length === 1 ? "" : "s"} &middot;
-        <b>${loose.length}</b> going to the addendum &middot;
-        <span style="color:var(--gold-400)">none lost</span>
+        <b>${loose.length}</b> to the addendum &middot;
+        <b>${held.length}</b> held back &middot;
+        <span style="color:${filed.size + loose.length + held.length === asked.length
+          ? "var(--gold-400)" : "var(--red-400)"}">${
+          filed.size + loose.length + held.length === asked.length
+            ? "all accounted for" : "DOES NOT ADD UP"}</span>
       </div>`));
 
     /* Getting all of them out in one go: for a second pair of eyes, for a
@@ -3909,12 +3921,12 @@ function questionWorkbench(rows) {
     });
     box.append(tabs);
 
-    if (tab === "list") drawList(loose);
-    else drawSweep(loose);
+    if (tab === "list") drawList(loose, held);
+    else drawSweep(loose, held);
   };
 
   /* ------------------------------------------------------------ the list */
-  const drawList = (loose) => {
+  const drawList = (loose, held) => {
     if (!groups.length) {
       box.append(el(`
         <p class="hint">Write the questions you want answered, in your words. Ten is about right:
@@ -3995,17 +4007,17 @@ function questionWorkbench(rows) {
       box.append(el(`<p class="hint">${loose.length} still unfiled. They will go to the club as an
         addendum unless you file them under the Sweep tab.</p>`));
     }
-    box.append(saveRow(loose));
+    box.append(saveRow(loose, held));
   };
 
   /* ---------------------------------------------------------- the sweep */
-  const drawSweep = (loose) => {
+  const drawSweep = (loose, held) => {
     if (!groups.length) {
       box.append(el(`<p class="hint">Write at least one question on the list tab first.</p>`));
       return;
     }
     const filed = filedIds();
-    const shown = onlyUnfiled ? loose : asked;
+    const shown = onlyUnfiled ? [...loose, ...held] : asked;
 
     const filt = el(`
       <label class="offer" style="margin-bottom:10px">
@@ -4020,7 +4032,7 @@ function questionWorkbench(rows) {
     if (!shown.length) {
       box.append(el(`<div class="empty"><b>Everything is filed</b>Nothing is heading for the
         addendum.</div>`));
-      box.append(saveRow(loose));
+      box.append(saveRow(loose, held));
       return;
     }
 
@@ -4042,27 +4054,41 @@ function questionWorkbench(rows) {
             }</button>`);
         b.addEventListener("click", () => {
           groups.forEach((o) => { o.members = o.members.filter((x) => x !== q.id); });
+          excluded.delete(q.id);
+          state.qExcluded = [...excluded];
           if (!on) g.members.push(q.id);
           draw();
         });
         to.append(b);
       });
-      const none = el(`<button class="chip${here === -1 ? " is-on" : ""}">Addendum</button>`);
+      const isHeld = excluded.has(q.id);
+      const none = el(`<button class="chip${here === -1 && !isHeld ? " is-on" : ""}">Addendum</button>`);
       none.addEventListener("click", () => {
         groups.forEach((o) => { o.members = o.members.filter((x) => x !== q.id); });
+        excluded.delete(q.id);
+        state.qExcluded = [...excluded];
         draw();
       });
       to.append(none);
+
+      const drop = el(`<button class="chip chip--held${isHeld ? " is-on" : ""}">Hold back</button>`);
+      drop.addEventListener("click", () => {
+        groups.forEach((o) => { o.members = o.members.filter((x) => x !== q.id); });
+        isHeld ? excluded.delete(q.id) : excluded.add(q.id);
+        state.qExcluded = [...excluded];
+        draw();
+      });
+      to.append(drop);
       box.append(row);
     });
     if (shown.length > 60) {
       box.append(el(`<p class="hint">Showing 60 of ${shown.length}. File these and the rest follow.</p>`));
     }
-    box.append(saveRow(loose));
+    box.append(saveRow(loose, held));
   };
 
   /* --------------------------------------------------------- save / copy */
-  const saveRow = (loose) => {
+  const saveRow = (loose, held) => {
     const wrap2 = el(`<div></div>`);
     const row = el(`
       <div class="btn-row" style="margin-top:14px">
@@ -4104,13 +4130,19 @@ function questionWorkbench(rows) {
         ...clean.map((g, i) => `${i + 1}. ${g.label.trim()}  (asked by ${g.members.length})`),
       ];
       if (loose.length) {
+        /* Whole words only, so redacting "Brad" does not maul "Bradford". */
+        const names = (state.qRedact || "").split(",").map((n) => n.trim()).filter(Boolean);
+        const redact = (t) => names.reduce(
+          (acc, n) => acc.replace(new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "gi"),
+                                 "[name removed]"), t);
         lines.push(
           ``,
           `Addendum: ${loose.length} question${loose.length === 1 ? "" : "s"} that did not fall`,
-          `under any of the above. They are reproduced here so that nothing supporters asked is`,
-          `left out.`,
+          `under any of the above. They are reproduced here in supporters' own words so that`,
+          `nothing asked is left out.${names.length
+            ? ` Names of people not connected to the club's management have been removed.` : ""}`,
           ``,
-          ...loose.map((q, i) => `A${i + 1}. ${q.text}`),
+          ...loose.map((q, i) => `A${i + 1}. ${redact(q.text.replace(/\s+/g, " "))}`),
         );
       }
       lines.push(
@@ -4129,6 +4161,20 @@ function questionWorkbench(rows) {
           <textarea readonly rows="12" style="width:100%">${esc(text)}</textarea>`);
       }
     });
+
+    /* The addendum goes over in supporters' own words, and those words name
+       people who never asked to be named. One box, applied to the addendum
+       only: the ten questions are ours and do not name anybody. */
+    const red = el(`
+      <div class="field" style="margin-top:12px">
+        <label for="q-redact">Names to take out of the addendum</label>
+        <input id="q-redact" type="text" value="${esc(state.qRedact || "")}"
+          placeholder="Separate with commas">
+      </div>`);
+    red.querySelector("input").addEventListener("input", (e) => {
+      state.qRedact = e.target.value;
+    });
+    wrap2.append(red);
 
     wrap2.append(row);
     wrap2.append(el(`<p class="hint">Saving marks them final. Copying stamps the date each question
