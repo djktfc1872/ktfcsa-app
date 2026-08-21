@@ -5357,3 +5357,9 @@ button,
 
   @page { margin: 16mm 14mm; }
 }
+
+/* A question longer than the database will accept, said before saving fails. */
+.pill--warn {
+  border-color: var(--red-400);
+  color: var(--red-400);
+}

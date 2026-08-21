@@ -4231,6 +4231,8 @@ function questionWorkbench(rows) {
             <span class="pill">${esc(Q_TOPIC_LABEL[g.topic] || "Mixed")}</span>
             <span class="pill">${mine.length} asked</span>
             <span class="pill">${publishable} publishable</span>
+            <span class="pill${g.label.trim().length > 1200 ? " pill--warn" : ""}"
+              data-len>${g.label.trim().length}</span>
           </div>
           <textarea class="qgroup__label" rows="2" placeholder="Write the question in your words"
             aria-label="Question ${i + 1}">${esc(g.label)}</textarea>
@@ -4246,7 +4248,13 @@ function questionWorkbench(rows) {
             <button class="btn btn--sm btn--ghost" data-act="drop">Delete</button>
           </div>
         </div>`);
-      card.querySelector(".qgroup__label").addEventListener("input", (e) => { g.label = e.target.value; });
+      card.querySelector(".qgroup__label").addEventListener("input", (e) => {
+        g.label = e.target.value;
+        const n = g.label.trim().length;
+        const pill = card.querySelector("[data-len]");
+        pill.textContent = n;
+        pill.classList.toggle("pill--warn", n > 1200);
+      });
       card.querySelector('[data-act="up"]').addEventListener("click", () => {
         if (i === 0) return;
         [groups[i - 1], groups[i]] = [groups[i], groups[i - 1]];
@@ -4370,7 +4378,13 @@ function questionWorkbench(rows) {
         <button class="btn btn--sm btn--ghost" data-act="record">Download the full record</button>
       </div>`);
 
+    const Q_MAX = 1200;
     const ready = () => groups.filter((g) => g.label.trim().length >= 8);
+    /* The database enforces this too. Finding out from a raw constraint error
+       while trying to save the finished list is no way to be told. */
+    const tooLong = () => groups
+      .map((g, i) => ({ n: i + 1, len: g.label.trim().length }))
+      .filter((g) => g.len > Q_MAX);
 
     /* A fortnight is long enough that "we needed time" is not an answer, and
        short enough that the countdown means something. Nudged off a weekend,
@@ -4431,6 +4445,11 @@ function questionWorkbench(rows) {
       if (clean.length !== groups.length) {
         return toast(`${groups.length - clean.length} question${
           groups.length - clean.length === 1 ? " has" : "s have"} no wording yet.`);
+      }
+      const over = tooLong();
+      if (over.length) {
+        return toast(`Question ${over.map((o) => `${o.n} (${o.len})`).join(", ")} too long. `
+          + `The limit is ${Q_MAX} characters.`);
       }
       try {
         await db.saveQuestionGroups(clean.map((g, i) => ({

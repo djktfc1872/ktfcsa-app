@@ -1602,7 +1602,10 @@ grant execute on function publish_results(boolean) to authenticated;
 
 create table if not exists consultation_question_groups (
   id         uuid primary key default gen_random_uuid(),
-  label      text not null check (char_length(label) between 5 and 400),
+  -- 400 was the limit on a supporter's own question, borrowed here by mistake.
+  -- These are the Association's questions, put formally to the club, and they
+  -- carry several clauses each: dates, counts, and what to answer if not.
+  label      text not null check (char_length(label) between 5 and 1200),
   topic      text,
   members    uuid[] not null default '{}',
   sort       int not null default 0,
@@ -1615,6 +1618,13 @@ create table if not exists consultation_question_groups (
 
 comment on table consultation_question_groups is
   'Questions merged for the club. label is the volunteer-agreed wording; members are the responses it covers.';
+
+-- The table may already exist with the older, too-short limit.
+alter table consultation_question_groups
+  drop constraint if exists consultation_question_groups_label_check;
+alter table consultation_question_groups
+  add constraint consultation_question_groups_label_check
+  check (char_length(label) between 5 and 1200);
 
 alter table consultation_question_groups enable row level security;
 
