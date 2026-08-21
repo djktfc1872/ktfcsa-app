@@ -5489,7 +5489,7 @@ function viewPlayer({ id }) {
           <div class="info-grid info-grid--3">
             <div class="info"><div class="info__label">Appearances</div><div class="info__value" style="color:var(--gold-400)">${past.apps}</div></div>
             <div class="info"><div class="info__label">Seasons</div><div class="info__value">${seasons.length}</div></div>
-            <div class="info"><div class="info__label">Shirt</div><div class="info__value">${[...past.shirts].sort((a, b) => a - b).join(", ") || "—"}</div></div>
+            <div class="info"><div class="info__label">Shirt</div><div class="info__value">${[...past.shirts].sort((a, b) => a - b).join(", ") || "Not known"}</div></div>
           </div>
           <div class="hint">${esc(seasons.join(", "))}. First seen ${esc(fmtDate(past.first))}, last ${esc(fmtDate(past.last))}.
           The league's records name no goalscorers before this season, so there are no goals here.</div>
@@ -7038,7 +7038,7 @@ function quizResult(date, result, questions) {
       list.append(el(`
         <div class="quiz__review">
           <span class="quiz__review-mark">${result.marks[k] === "1" ? "🟩" : "⬜"}</span>
-          <div><p>${esc(q.q)}</p><p class="hint">${esc(q.a[q.c])}${q.note ? ` — ${esc(q.note)}` : ""}</p></div>
+          <div><p>${esc(q.q)}</p><p class="hint">${esc(q.a[q.c])}${q.note ? `. ${esc(q.note)}` : ""}</p></div>
         </div>`));
     });
     wrap.append(list);
@@ -7051,7 +7051,7 @@ function quizResult(date, result, questions) {
       points: [
         "Your streak follows you between devices",
         "Your name on the Poppies Daily table",
-        "Nothing lost — today counts either way",
+        "Nothing lost, today counts either way",
       ],
     }));
   }
@@ -8219,9 +8219,9 @@ function consultResults() {
         by the club and speaks only for the supporters who answered.</p>
         <p class="club-overview" style="margin-top:12px"><b class="subhead">When and how</b> It ran
         from Monday 17 August to midday on Friday 21 August 2026, five days, through this app.
-        Anyone could answer, with or without an account, one response per device. Nine questions:
-        seven of them multiple choice, two of them free text. Nobody was paid, prompted or selected
-        &mdash; supporters found it through the app, social media and word of mouth.</p>
+        Anyone could answer, with or without an account, one response per device. Nine questions,
+        seven of them multiple choice and two free text. Nobody was paid, prompted or selected.
+        Supporters found it through the app, social media and word of mouth.</p>
         <p class="club-overview" style="margin-top:12px"><b class="subhead">What is published</b>
         Every number below is the whole of what was collected, not a selection. Free-text answers
         are published only where the supporter ticked a box allowing it and a volunteer approved it,
@@ -8264,8 +8264,8 @@ function consultResults() {
 
         <p class="club-overview" style="margin-top:12px">Two findings cut against the general mood
         and are worth stating plainly. The team itself is the most praised thing about the club,
-        named by <b>${find("positive", "team")}</b> of ${s.responses} &mdash; supporters are drawing
-        a line between the side on the pitch and the way the club is run. And the Supporters' Trust,
+        named by <b>${find("positive", "team")}</b> of ${s.responses}. Supporters are drawing a line
+        between the side on the pitch and the way the club is run. And the Supporters' Trust,
         whose role several questions raised, is rated good or very good by more supporters than rate
         it poor or very poor.</p>
 

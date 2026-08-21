@@ -1467,7 +1467,19 @@ select
   answered_at,
   created_at
 from consultation_responses
-where note_status = 'approved' or question_status = 'approved';
+where (note_status = 'approved' or question_status = 'approved')
+  -- Approved means "a volunteer cleared this for publication", not "publish it
+  -- now". Without this the quotes were readable through the API while the page
+  -- still said the results were not out, which makes the embargo a matter of
+  -- the front end being polite rather than anything actually holding.
+  and (
+    (select results_public from consultation_settings where id)
+    or is_admin()
+    or exists (
+      select 1 from profiles p
+      where p.id = auth.uid() and p.results_viewer
+    )
+  );
 
 comment on view consultation_published is
   'Approved comments and questions only. A name appears only where the supporter ticked the box.';

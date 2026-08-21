@@ -349,7 +349,7 @@ for (const h of facts.honours || []) {
     if (new Set(others).size < 3) continue;
     const wrong = seededShuffle([...new Set(others)], rngFor(`hn:${h.competition}:${win}`)).slice(0, 3);
     const what = win.replace(/\s*\b(19|20)\d{2}(-\d{2})?\b\s*/g, " ").replace(/,\s*$/, "").trim();
-    push(finish("fact", `${h.competition} — when were Kettering ${what.toLowerCase()}?`, year, wrong));
+    push(finish("fact", `${h.competition}: when were Kettering ${what.toLowerCase()}?`, year, wrong));
   }
 }
 

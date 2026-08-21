@@ -5303,59 +5303,100 @@ button,
 
 /* ================================================================== print */
 
-/* The report is a document as much as a screen, and supporters and the club
-   both need to be able to keep a copy. Everything that is chrome, navigation
-   or a control comes off; what is left is the argument in order. */
+/* The report is a document as much as a screen: supporters keep a copy, and it
+   is what gets handed over. So it prints as a designed page rather than a
+   stripped one -- and the colour is not decoration, it is the data. The
+   representation bars mean nothing in grey. */
 @media print {
   :root {
-    --bg: #fff; --surface-1: #fff; --surface-2: #fff;
-    --text: #111; --text-2: #333; --text-3: #555;
-    --line: #ccc; --line-soft: #ddd; --gold-400: #8a6d1f;
+    --bg: #fff;
+    --surface-1: #fff;
+    --surface-2: #f4f2ee;
+    --text: #14120f;
+    --text-2: #3a352e;
+    --text-3: #6b645a;
+    --line: #d8d2c7;
+    --line-soft: #e8e3da;
+    --gold-400: #8a6d1f;
+    --gold-500: #8a6d1f;
+    --red-400: #9c1824;
   }
 
-  body { background: #fff !important; color: #111 !important; }
+  /* Without this most browsers drop every background and the charts go blank. */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  /* Chrome, and anything that only exists to be pressed. */
+  body { background: #fff !important; color: var(--text) !important; font-size: 10.5pt; }
+
   .topbar, .sidebar, .tabbar, .site-footer, .no-print,
   .btn, .btn-row, .link-btn, .ticker, .daily-promo, .chips, .chips__row,
-  .fold__head::after, .skeleton { display: none !important; }
+  .skeleton { display: none !important; }
 
-  /* The shell centres and constrains; a page does not need that. */
   .main, main, .view, .wrap { max-width: none !important; margin: 0 !important;
     padding: 0 !important; grid-column: 1 / -1 !important; }
 
-  .card {
-    border: 1px solid #ddd !important;
-    background: #fff !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
+  /* Masthead on the first page, so a printed copy says what it is. */
+  .page-head { border-bottom: 3px solid #910b0b; padding-bottom: 10px; }
+  .page-head h1 { color: #910b0b !important; }
+  .page-head::after {
+    content: "Kettering Town FC Supporters' Association \2014 fans.ktfcsa.com";
+    display: block; margin-top: 6px; font-size: 9pt; color: #6b645a;
   }
 
-  /* Keep a heading with what it introduces. */
-  h1, h2, h3, .section-title { break-after: avoid; page-break-after: avoid; color: #111 !important; }
-  .qitem, .bar, .crew, .value, .quote { break-inside: avoid; page-break-inside: avoid; }
+  .section-title {
+    color: #910b0b !important;
+    border-bottom: 1px solid #d8d2c7;
+    padding-bottom: 4px;
+    break-after: avoid; page-break-after: avoid;
+  }
 
-  /* Details are collapsed on screen to keep the page short. On paper there is
-     no tapping, so everything that was behind a fold is simply open. */
+  .card {
+    background: #fff !important;
+    border: 1px solid #d8d2c7 !important;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+
+  h1, h2, h3 { color: #14120f !important; break-after: avoid; page-break-after: avoid; }
+  .qitem, .crew, .value, .quote, .verdict, .dist, .bar {
+    break-inside: avoid; page-break-inside: avoid;
+  }
+
+  /* Anything folded away on screen is simply open on paper. */
   details { display: block !important; }
   details > summary { display: none !important; }
   details > *:not(summary) { display: block !important; }
   .fold, .qitem__src, .qgroup__src { border: 0 !important; }
 
-  /* A printed page has no idea where it came from unless it says so. */
-  .page-head::after {
-    content: "fans.ktfcsa.com — Kettering Town FC Supporters' Association";
-    display: block;
-    margin-top: 6px;
-    font-size: 10pt;
-    color: #666;
-  }
+  /* The charts, in their own colours. */
+  .dist__bar { background: #ece8e0 !important; }
+  .dist__fill { background: #a8873c !important; }
+  .bar__track { background: #ece8e0 !important; }
+  .bar__fill { background: #9a9186 !important; }
+  .bar--us .bar__fill { background: #a8873c !important; }
 
-  a { color: #111 !important; text-decoration: none !important; }
-  .bar__fill { background: #999 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .bar--us .bar__fill { background: #8a6d1f !important; }
+  .verdict__bar { background: #ece8e0 !important; }
+  .verdict__seg--vp, .verdict__dot--vp { background: #9c1824 !important; }
+  .verdict__seg--p,  .verdict__dot--p  { background: #c8323f !important; }
+  .verdict__seg--n,  .verdict__dot--n  { background: #8d8579 !important; }
+  .verdict__seg--g,  .verdict__dot--g  { background: #a8873c !important; }
+  .verdict__seg--vg, .verdict__dot--vg { background: #d3b877 !important; }
+  .verdict__seg--u,  .verdict__dot--u  { background: #ddd8ce !important; }
 
-  @page { margin: 16mm 14mm; }
+  /* Two columns on paper, which is wider than a phone. */
+  .pair { grid-template-columns: 1fr 1fr !important; }
+  .quotes { grid-template-columns: 1fr 1fr !important; }
+  .quotes .quote { background: #faf8f4 !important; border-color: #e2ddd3 !important; }
+  /* Outranks the neutral border set on .quotes .quote just above: same
+     importance, so it has to win on specificity or the accent is lost. */
+  .quotes .quote--good { border-left: 3px solid #a8873c !important; }
+  .quotes .quote--bad  { border-left: 3px solid #9c1824 !important; }
+  .quote__score { background: #ece8e0 !important; }
+
+  .info__value { color: #14120f !important; }
+  .info-grid { break-inside: avoid; }
+
+  a { color: #14120f !important; text-decoration: none !important; }
+
+  @page { margin: 15mm 13mm; }
 }
 
 /* A question longer than the database will accept, said before saving fails. */
