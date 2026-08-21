@@ -637,14 +637,13 @@ class Backend {
     };
   }
 
-  /* Volunteers only, gated in the policy rather than here. */
   /* Fire and forget. A failed count is not worth a retry, still less an error
      in front of somebody reading the page. */
   async recordView(route, isUnique) {
     try {
       await this.sb.rpc("record_view", { p_route: route, p_unique: Boolean(isUnique) });
     } catch { /* counting is never worth interrupting anybody for */ }
-  },
+  }
 
   async viewStats(days = 30) {
     const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
@@ -652,8 +651,9 @@ class Backend {
       .from("page_views").select("*").gte("day", from).order("day", { ascending: false });
     if (error) return [];
     return data || [];
-  },
+  }
 
+  /* Volunteers only, gated in the policy rather than here. */
   async consultationQueue() {
     const { data, error } = await this.sb
       .from("consultation_responses")
