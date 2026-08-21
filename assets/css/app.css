@@ -5363,3 +5363,86 @@ button,
   border-color: var(--red-400);
   color: var(--red-400);
 }
+
+/* ========================================================= the report */
+
+/* Concerns and positives side by side on anything wide enough. The contrast is
+   the finding, and stacked on a phone it still reads in the right order. */
+.pair { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
+.pair__side { margin-bottom: 0; }
+.pair__head {
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+}
+@media (min-width: 720px) { .pair { grid-template-columns: 1fr 1fr; } }
+
+/* One bar from very poor to very good. The split point is where the eye lands,
+   which is the whole reason for not printing a row of numbers instead. */
+.verdict { padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.verdict:first-child { border-top: 0; padding-top: 0; }
+.verdict__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px; font-size: 13.5px;
+}
+.verdict__head span { flex: 0 0 auto; font-size: 11.5px; color: var(--text-3); }
+.verdict__bar {
+  display: flex; height: 16px; border-radius: 4px; overflow: hidden;
+  background: var(--surface-2);
+}
+.verdict__seg { display: block; height: 100%; }
+.verdict__seg--vp { background: #9c1824; }
+.verdict__seg--p  { background: #c8323f; }
+.verdict__seg--n  { background: #5a5751; }
+.verdict__seg--g  { background: #a8873c; }
+.verdict__seg--vg { background: #cfa963; }
+.verdict__seg--u  { background: #2f2d2a; }
+
+.verdict__key { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 7px; }
+.verdict__tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); }
+.verdict__dot { width: 8px; height: 8px; border-radius: 2px; }
+.verdict__dot--vp { background: #9c1824; }
+.verdict__dot--p  { background: #c8323f; }
+.verdict__dot--n  { background: #5a5751; }
+.verdict__dot--g  { background: #a8873c; }
+.verdict__dot--vg { background: #cfa963; }
+.verdict__dot--u  { background: #2f2d2a; }
+
+/* Quotes as cards rather than one long column: a wall of criticism reads as a
+   pile-on, the same words in a grid read as a fanbase. */
+.quotes__head {
+  display: flex; align-items: center; gap: 8px;
+  margin: 18px 0 10px; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3);
+}
+.quotes__head span {
+  padding: 2px 7px; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--text-2); font-size: 11px;
+}
+.quotes { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 720px) { .quotes { grid-template-columns: 1fr 1fr; } }
+
+.quotes .quote {
+  margin: 0; padding: 14px 16px;
+  background: var(--surface-1, var(--surface-2));
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--r);
+  break-inside: avoid;
+}
+.quotes .quote p { margin: 0; font-size: 13.5px; line-height: 1.6; }
+.quote--good { border-left-color: var(--gold-400); }
+.quote--bad  { border-left-color: var(--red-400); }
+.quotes .quote footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 10px;
+}
+.quotes .quote cite {
+  font-style: normal; font-size: 11.5px; font-weight: 600; color: var(--text-3);
+}
+.quote__score {
+  flex: 0 0 auto; padding: 2px 7px; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--text-3);
+  font-size: 11px; font-variant-numeric: tabular-nums;
+}

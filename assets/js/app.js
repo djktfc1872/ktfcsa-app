@@ -8123,6 +8123,63 @@ function consultForm() {
 }
 
 /** The findings. Numbers first, then supporters in their own words. */
+/* The May 2026 survey, the only like-for-like number we have. */
+const MAY = { responses: 189, confidence: 8.1 };
+
+/** Ranked bars with a percentage, used wherever a set of choices is counted. */
+function rankedBars(rows, labels, total, { max } = {}) {
+  const box = el(`<div></div>`);
+  const top = max || Math.max(...rows.map((r) => r.people), 1);
+  rows.forEach((r) => {
+    box.append(el(`
+      <div class="dist">
+        <span class="dist__key dist__key--wide">${esc(labels[r.choice] || r.choice)}</span>
+        <span class="dist__bar"><span class="dist__fill" style="width:${
+          Math.round((r.people / top) * 100)}%"></span></span>
+        <span class="dist__n">${Math.round((r.people / total) * 100)}%</span>
+      </div>`));
+  });
+  return box;
+}
+
+/**
+ * How supporters rate a body, as one bar running from very poor to very good.
+ *
+ * A row of numbers makes the reader do the arithmetic and most will not. The
+ * shape of a single bar says it before the labels are read, and the split point
+ * between negative and positive is where the eye lands.
+ */
+function verdictBar(name, counts) {
+  const order = [
+    ["very-poor", "Very poor", "vp"], ["poor", "Poor", "p"], ["ok", "Neither", "n"],
+    ["good", "Good", "g"], ["very-good", "Very good", "vg"], ["unsure", "Not sure", "u"],
+  ];
+  const total = order.reduce((n, [k]) => n + (counts[k] || 0), 0) || 1;
+  const neg = (counts["very-poor"] || 0) + (counts.poor || 0);
+  const pos = (counts.good || 0) + (counts["very-good"] || 0);
+  const row = el(`
+    <div class="verdict">
+      <div class="verdict__head">
+        <b>${esc(name)}</b>
+        <span>${Math.round((neg / total) * 100)}% poor &middot; ${
+          Math.round((pos / total) * 100)}% good</span>
+      </div>
+      <div class="verdict__bar"></div>
+      <div class="verdict__key"></div>
+    </div>`);
+  const bar = row.querySelector(".verdict__bar");
+  const key = row.querySelector(".verdict__key");
+  order.forEach(([k, label, cls]) => {
+    const n = counts[k] || 0;
+    if (!n) return;
+    bar.append(el(`<span class="verdict__seg verdict__seg--${cls}"
+      style="width:${(n / total) * 100}%" title="${esc(label)}: ${n}"></span>`));
+    key.append(el(`<span class="verdict__tag"><i class="verdict__dot verdict__dot--${cls}"></i>${
+      esc(label)} ${n}</span>`));
+  });
+  return row;
+}
+
 function consultResults() {
   const box = el(`<div><div class="skeleton" style="height:320px"></div></div>`);
 
@@ -8135,106 +8192,169 @@ function consultResults() {
     }
     const s = r.summary;
     const pct = (n) => Math.round((n / s.responses) * 100);
+    const find = (kind, choice) =>
+      r.choices.find((c) => c.kind === kind && c.choice === choice)?.people || 0;
+    const conf = Object.fromEntries(r.confidence.map((c) => [c.score, c.people]));
+    const low = (conf[1] || 0) + (conf[2] || 0) + (conf[3] || 0);
+    const high = (conf[8] || 0) + (conf[9] || 0) + (conf[10] || 0);
 
-    /* Saving a copy. No library can do this under script-src 'self', and none
-       is needed: the browser's own print dialog offers Save as PDF on every
-       platform, including Share > Print on iOS. The print stylesheet does the
-       actual work of turning the page into a document. */
     const save = el(`
       <div class="btn-row btn-row--end no-print" style="margin-bottom:12px">
         <button class="btn btn--sm btn--ghost">Save as PDF</button>
       </div>`);
     save.querySelector("button").addEventListener("click", () => {
       const before = document.title;
-      /* The filename the browser suggests comes from the document title. */
       document.title = `KTFCSA fan consultation, August 2026`;
       window.addEventListener("afterprint", () => { document.title = before; }, { once: true });
       window.print();
     });
     box.append(save);
 
+    /* ------------------------------------------------ what this is, first */
+    box.append(el(`
+      <div class="card">
+        <p class="club-overview"><b class="subhead">What this is</b> An independent consultation
+        run by the Kettering Town FC Supporters' Association, asking supporters what they make of
+        the way the club is being run. It is not the club's survey. The Association is not funded
+        by the club and speaks only for the supporters who answered.</p>
+        <p class="club-overview" style="margin-top:12px"><b class="subhead">When and how</b> It ran
+        from Monday 17 August to midday on Friday 21 August 2026, five days, through this app.
+        Anyone could answer, with or without an account, one response per device. Nine questions:
+        seven of them multiple choice, two of them free text. Nobody was paid, prompted or selected
+        &mdash; supporters found it through the app, social media and word of mouth.</p>
+        <p class="club-overview" style="margin-top:12px"><b class="subhead">What is published</b>
+        Every number below is the whole of what was collected, not a selection. Free-text answers
+        are published only where the supporter ticked a box allowing it and a volunteer approved it,
+        which is why some questions show more people asking than wordings shown.</p>
+      </div>`));
+
+    /* ----------------------------------------------------- at a glance */
+    box.append(el(`<h2 class="section-title">At a glance</h2>`));
     box.append(el(`
       <div class="card">
         <div class="info-grid info-grid--4">
           <div class="info"><div class="info__label">Responses</div><div class="info__value" style="color:var(--gold-400)">${s.responses}</div></div>
           <div class="info"><div class="info__label">Confidence</div><div class="info__value">${s.confidence_avg}<span style="font-size:14px;color:var(--text-3)">/10</span></div></div>
           <div class="info"><div class="info__label">Wrong direction</div><div class="info__value">${pct(s.direction_wrong)}%</div></div>
-          <div class="info"><div class="info__label">From members</div><div class="info__value">${s.from_members}</div></div>
+          <div class="info"><div class="info__label">Would attend a meeting</div><div class="info__value">${s.meeting_any}</div></div>
         </div>
-        <p class="hint">${s.responses} supporters answered, ${s.from_members} of them signed in to
-        a KTFCSA account. Anyone could take part, which is why both numbers are shown.</p>
+        <p class="hint">In May 2026 the same confidence question drew <b>${MAY.confidence}/10</b>
+        from ${MAY.responses} supporters. It is now <b>${s.confidence_avg}/10</b> from
+        ${s.responses}. ${s.from_members} answered while signed in to an account.</p>
       </div>`));
 
-    /* The spread behind the average, so the headline can be checked rather than
-       taken on trust. The May report did this and was stronger for it. */
-    const maxConf = Math.max(...r.confidence.map((c) => c.people), 1);
-    box.append(el(`<h2 class="section-title">Confidence, one to ten</h2>`));
+    /* --------------------------------------------------- the overview */
+    box.append(el(`<h2 class="section-title">The overview</h2>`));
     box.append(el(`
       <div class="card">
-        ${[...Array(10)].map((_, i) => {
-          const row = r.confidence.find((c) => c.score === i + 1);
-          const n = row?.people || 0;
-          return `<div class="dist">
-            <span class="dist__key">${i + 1}</span>
-            <span class="dist__bar"><span class="dist__fill" style="width:${Math.round((n / maxConf) * 100)}%"></span></span>
-            <span class="dist__n">${n}</span>
-          </div>`;
-        }).join("")}
-        <p class="hint">Every score, not just the average.</p>
+        <p class="club-overview">${s.responses} supporters answered in five days. What they
+        describe is consistent rather than mixed: <b>${s.direction_wrong} of ${s.responses}</b> say
+        the club is heading in the wrong direction, and average confidence in how it is being run is
+        <b>${s.confidence_avg} out of ten</b> against ${MAY.confidence} when the same question was
+        asked in May. <b>${conf[1] || 0} people</b> gave the lowest score available, and
+        ${low} of ${s.responses} scored three or less.</p>
+
+        <p class="club-overview" style="margin-top:12px">The concerns are unusually concentrated.
+        Volunteers leaving is named by <b>${find("concern", "volunteers")}</b> of ${s.responses},
+        the club's finances by ${find("concern", "finance")} and communication by
+        ${find("concern", "communication")}. Those three sit clear of everything else, and they are
+        the same three that dominate what supporters asked the club: of ${s.questions_asked}
+        questions submitted, the largest groups concern the sale of the club, why so many volunteers
+        have left, and where the money has gone.</p>
+
+        <p class="club-overview" style="margin-top:12px">Two findings cut against the general mood
+        and are worth stating plainly. The team itself is the most praised thing about the club,
+        named by <b>${find("positive", "team")}</b> of ${s.responses} &mdash; supporters are drawing
+        a line between the side on the pitch and the way the club is run. And the Supporters' Trust,
+        whose role several questions raised, is rated good or very good by more supporters than rate
+        it poor or very poor.</p>
+
+        <p class="club-overview" style="margin-top:12px">On what supporters would support, nothing
+        commands a clear majority: banners lead on ${find("action", "banners")} of ${s.responses}, a
+        public letter ${find("action", "letter")}, a boycott ${find("action", "boycott")}, and
+        ${find("action", "none")} would support none of it. The strongest single mandate here is not
+        for protest but for organisation: <b>${s.meeting_any} of ${s.responses}</b> would come to a
+        first meeting of the Association, ${s.meeting_in_person} of them in person.</p>
+
+        <p class="note" style="margin-top:14px">This summary was written by an AI tool from the
+        figures on this page and the questions supporters submitted, and checked by a volunteer
+        before publication. It was given the numbers, not a steer. It does not draw on the
+        free-text comments, which are published below in supporters' own words.</p>
       </div>`));
 
-    /* Who supporters feel represented by. Nobody is accused of anything here:
-       this is the fanbase answering for itself. */
-    box.append(el(`<h2 class="section-title">Who supporters feel represented by</h2>`));
-    const repCard = el(`<div class="card"></div>`);
-    CONSULT_BODIES.forEach(([key, label]) => {
-      const rows = r.representation.filter((x) => x.body === key);
-      const total = rows.reduce((a, x) => a + x.people, 0);
-      if (!total) return;
-      const share = (v) => Math.round(((rows.find((x) => x.verdict === v)?.people || 0) / total) * 100);
-      const bad = share("very-poor") + share("poor");
-      const good = share("good") + share("very-good");
-      repCard.append(el(`
-        <div class="rep-result">
-          <div class="rep-result__name">${esc(label)}</div>
-          <div class="rep-result__bar">
-            <span class="seg seg--vpoor" style="width:${share("very-poor")}%"></span>
-            <span class="seg seg--poor" style="width:${share("poor")}%"></span>
-            <span class="seg seg--mid" style="width:${share("ok")}%"></span>
-            <span class="seg seg--good" style="width:${share("good")}%"></span>
-            <span class="seg seg--vgood" style="width:${share("very-good")}%"></span>
-            <span class="seg seg--unsure" style="width:${share("unsure")}%"></span>
-          </div>
-          <div class="rep-result__key"><b>${bad}% poor or very poor</b> · ${share("ok")}% neither ·
-            ${good}% good or very good · ${share("unsure")}% don't know</div>
-        </div>`));
-    });
-    repCard.append(el(`<p class="hint">Very poor through to very good, with don't know counted
-      separately. Supporters were asked about the bodies that run the club, never about an
-      individual.</p>`));
-    box.append(repCard);
+    /* --------------------------------------------------- confidence */
+    box.append(el(`<h2 class="section-title">Confidence in how the club is run</h2>`));
+    const cbox = el(`<div class="card"></div>`);
+    const maxConf = Math.max(...r.confidence.map((c) => c.people), 1);
+    cbox.append(el(`
+      <div>${Array.from({ length: 10 }, (_, i) => {
+        const n = conf[i + 1] || 0;
+        return `<div class="dist">
+          <span class="dist__key">${i + 1}</span>
+          <span class="dist__bar"><span class="dist__fill" style="width:${Math.round((n / maxConf) * 100)}%"></span></span>
+          <span class="dist__n">${n}</span>
+        </div>`;
+      }).join("")}</div>`));
+    cbox.append(el(`<p class="hint">The average is ${s.confidence_avg}, but the shape matters more
+      than the average: <b>${low} of ${s.responses}</b> scored three or less, and
+      <b>${high}</b> scored eight or more. This is not a fanbase split down the middle.</p>`));
+    box.append(cbox);
 
-    const chart = (kind, heading, labels) => {
-      const rows = r.choices.filter((c) => c.kind === kind).sort((a, b) => b.people - a.people);
-      if (!rows.length) return;
-      const top = Math.max(...rows.map((x) => x.people), 1);
-      box.append(el(`<h2 class="section-title">${heading}</h2>`));
-      box.append(el(`
-        <div class="card">
-          ${rows.map((x) => `
-            <div class="dist">
-              <span class="dist__key dist__key--wide">${esc(labels[x.choice] || x.choice)}</span>
-              <span class="dist__bar"><span class="dist__fill" style="width:${Math.round((x.people / top) * 100)}%"></span></span>
-              <span class="dist__n">${pct(x.people)}%</span>
-            </div>`).join("")}
-        </div>`));
+    /* --------------------------------------------------- direction */
+    box.append(el(`<h2 class="section-title">The direction of the club</h2>`));
+    const dbox = el(`<div class="card"></div>`);
+    dbox.append(verdictBar("Is the club heading in the right direction?", {
+      "very-poor": s.direction_wrong, ok: s.direction_unsure, "very-good": s.direction_right,
+    }));
+    dbox.append(el(`<p class="hint">${s.direction_wrong} say wrong direction,
+      ${s.direction_right} say right, ${s.direction_unsure} are not sure.</p>`));
+    box.append(dbox);
+
+    /* --------------------------------------------- representation */
+    box.append(el(`<h2 class="section-title">Who supporters feel represented by</h2>`));
+    const rbox = el(`<div class="card"></div>`);
+    const byBody = {};
+    r.representation.forEach((x) => {
+      (byBody[x.body] ||= {})[x.verdict] = x.people;
+    });
+    const bodyNames = {
+      ownership: "Club ownership", board: "The club board (president, directors, secretary)",
+      trust: "The Supporters' Trust", sponsors: "Club partners and sponsors",
     };
+    Object.entries(bodyNames).forEach(([k, name]) => {
+      if (byBody[k]) rbox.append(verdictBar(name, byBody[k]));
+    });
+    rbox.append(el(`<p class="hint">Supporters were asked how well each body represents them, on a
+      five-point scale with a separate "not sure". The Trust is the only one of the four rated more
+      positively than negatively.</p>`));
+    box.append(rbox);
+
+    /* Concerns and positives together rather than as two separate lists. The
+       contrast is the finding: supporters are hard on how the club is run and
+       warm about the club itself, and side by side that reads in one glance. */
     const asMap = (list) => Object.fromEntries(list);
-    chart("concern", "What concerns supporters", asMap(CONSULT_CONCERNS));
-    chart("positive", "What supporters would defend", asMap(CONSULT_POSITIVES));
-    chart("action", "What supporters would support", asMap(CONSULT_ACTIONS));
-    box.append(el(`<p class="hint" style="margin-top:-6px">The Association is reporting what
-      supporters told us they would be behind. It is not calling for any of it.</p>`));
+    const pickRows = (kind) =>
+      r.choices.filter((c) => c.kind === kind).sort((a, b) => b.people - a.people);
+
+    box.append(el(`<h2 class="section-title">What worries supporters, and what they would defend</h2>`));
+    const pair = el(`<div class="pair"></div>`);
+    const worry = el(`<div class="card pair__side"><div class="pair__head">Concerns</div></div>`);
+    worry.append(rankedBars(pickRows("concern"), asMap(CONSULT_CONCERNS), s.responses));
+    const like = el(`<div class="card pair__side"><div class="pair__head">Would defend</div></div>`);
+    like.append(rankedBars(pickRows("positive"), asMap(CONSULT_POSITIVES), s.responses));
+    pair.append(worry, like);
+    box.append(pair);
+    box.append(el(`<p class="hint" style="margin-top:-4px">Supporters could pick as many as applied
+      in each. The gap between the two columns is the point: the criticism is aimed at how the club
+      is run, not at the club.</p>`));
+
+    box.append(el(`<h2 class="section-title">What supporters would support</h2>`));
+    const abox = el(`<div class="card"></div>`);
+    abox.append(rankedBars(pickRows("action"), asMap(CONSULT_ACTIONS), s.responses));
+    abox.append(el(`<p class="hint">The Association is reporting what supporters told us they would
+      be behind. It is not calling for any of it, and nothing here was proposed by us: every option
+      came from what supporters were already saying before the consultation opened.</p>`));
+    box.append(abox);
 
     /* The one constructive number in the whole exercise. Put near the top of
        the findings on purpose: a mood is a mood, a room full of people is a
@@ -8327,19 +8447,47 @@ function consultResults() {
       box.append(qc);
     }
 
+    /* Supporters' own words. Split by what they are about rather than run as one
+       column, because a wall of criticism reads as a pile-on while the same
+       comments beside what people would defend read as a fanbase. Each carries
+       the confidence score it came with, which stops a quote being detachable
+       from the person's overall view. */
     const notes = r.published.filter((p) => p.concern_note || p.positive_note);
     if (notes.length) {
       box.append(el(`<h2 class="section-title">In supporters' own words</h2>`));
-      const nc = el(`<div class="card"></div>`);
-      notes.forEach((n) => {
-        [n.positive_note, n.concern_note].filter(Boolean).forEach((t) => {
-          nc.append(el(`<blockquote class="quote">${esc(t)}
-            ${n.attribution ? `<cite>${esc(n.attribution)}</cite>` : ""}</blockquote>`));
-        });
-      });
-      nc.append(el(`<p class="hint">Published with permission. Comments are read by a volunteer
-        before they appear, and most responses were not written for publication.</p>`));
-      box.append(nc);
+
+      const quoteCard = (text, kind, row) => el(`
+        <blockquote class="quote quote--${kind}">
+          <p>${esc(text)}</p>
+          <footer>
+            ${row.attribution ? `<cite>${esc(row.attribution)}</cite>` : `<cite>Anonymous</cite>`}
+            ${typeof row.confidence === "number"
+              ? `<span class="quote__score" title="Their confidence in how the club is run">${
+                  row.confidence}/10</span>` : ""}
+          </footer>
+        </blockquote>`);
+
+      const worries = notes.filter((n) => n.concern_note);
+      const likes = notes.filter((n) => n.positive_note);
+
+      if (likes.length) {
+        box.append(el(`<div class="quotes__head">What supporters would defend
+          <span>${likes.length}</span></div>`));
+        const g1 = el(`<div class="quotes"></div>`);
+        likes.forEach((n) => g1.append(quoteCard(n.positive_note, "good", n)));
+        box.append(g1);
+      }
+      if (worries.length) {
+        box.append(el(`<div class="quotes__head">What worries them
+          <span>${worries.length}</span></div>`));
+        const g2 = el(`<div class="quotes"></div>`);
+        worries.forEach((n) => g2.append(quoteCard(n.concern_note, "bad", n)));
+        box.append(g2);
+      }
+
+      box.append(el(`<p class="hint">Published with permission and read by a volunteer first. Most
+        supporters did not write for publication, so these are a fraction of what was said and are
+        not a sample of anything: they are the ones we were allowed to print.</p>`));
     }
 
     /* The first thing anybody attacks about a fan survey is the method, so it
@@ -8347,11 +8495,7 @@ function consultResults() {
     box.append(el(`<h2 class="section-title">How this was done</h2>`));
     box.append(el(`
       <div class="card">
-        <p class="club-overview">Supporters were asked nine questions between Monday 17 and midday
-        on Friday 21 August 2026, through the Supporters' Association app. Anyone could take part,
-        with or without an account, which is why the number who were signed in is published
-        alongside the total. One response per device.</p>
-        <p class="club-overview" style="margin-top:12px">The multiple choice answers are reported
+        <p class="club-overview">The multiple choice answers are reported
         exactly as given, including the full spread of confidence scores rather than only the
         average. Everything anybody wrote was read by a volunteer before publication, and appears
         only where the supporter ticked the box saying it could. Questions for the club were

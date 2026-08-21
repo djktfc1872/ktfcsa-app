@@ -1455,6 +1455,10 @@ drop view if exists consultation_published cascade;
 create view consultation_published as
 select
   id,
+  -- Published beside the quote so it cannot be lifted away from the view of the
+  -- person who wrote it. Already public in aggregate, and on its own a score
+  -- from one to ten identifies nobody.
+  confidence,
   case when note_status = 'approved' then positive_note end as positive_note,
   case when note_status = 'approved' then concern_note  end as concern_note,
   case when question_status = 'approved' then question  end as question,
