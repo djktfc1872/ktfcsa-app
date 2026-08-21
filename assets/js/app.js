@@ -355,6 +355,7 @@ function go(view, params = {}) {
     ? `#/${view}/${params.id}${params.from ? `/${params.from}` : ""}`
     : `#/${view}`;
   if (location.hash !== hash) history.pushState(null, "", hash);
+  countView();   /* pushState does not fire hashchange, so it is counted here */
   render({ toTop: true });
 }
 
@@ -448,6 +449,17 @@ function viewMore() {
       </button>`));
   });
   return wrap;
+}
+
+/* Counted once per route per session. render() runs again every time data
+   lands, and counting there would turn one visit into five. */
+const counted = new Set();
+function countView() {
+  const route = state.view === "consult" && state.params?.id === "preview"
+    ? "consult-preview" : state.view;
+  if (counted.has(route)) return;
+  counted.add(route);
+  db.recordView(route);
 }
 
 function render({ toTop = false } = {}) {
@@ -3448,9 +3460,15 @@ function viewPrivacy() {
   ]);
 
   section("What is held", [
-    `<b>If you have not made an account</b>, nothing about you personally. No tracking, no
-     advertising, no analytics following you around. Anything you tick or pick is kept on your own
-     phone and never leaves it.`,
+    `<b>If you have not made an account</b>, nothing about you personally. No advertising, and
+     nothing that follows you around this site or any other. Anything you tick or pick is kept on
+     your own phone and never leaves it.`,
+    `<b>Page counts.</b> We count how many times each page is opened, so we know whether anybody is
+     reading what we publish. That count holds no IP address, no device identifier, no account and
+     no cookie: a row records only that a page was opened on a given day, and how many times.
+     Whether a visit is your first that day is worked out by a date kept in your own browser and is
+     never sent to us, so there is nothing here that could be traced back to you, by us or by
+     anybody else.`,
     `<b>If you have made an account</b>: the name you chose, your email address, and whatever you
      have posted, predicted, rated or reported. Your email address is held by Supabase, who provide
      the sign-in, and is never shown to other supporters.`,
@@ -3493,7 +3511,7 @@ function viewPrivacy() {
     "Raw responses are not handed to the club. Nobody outside the volunteers running the consultation sees them, and they are deleted once the findings are published and the questions have been answered or abandoned.",
   ]));
 
-  wrap.append(el(`<p class="note">Last updated 16 August 2026.</p>`));
+  wrap.append(el(`<p class="note">Last updated 22 August 2026.</p>`));
   return wrap;
 }
 
@@ -4062,6 +4080,96 @@ function parsePreparedList(text, asked) {
   });
   out.filed = seen.size;
   return out;
+}
+
+/**
+ * Who is looking, and at what.
+ *
+ * Counters only. Nothing here can be traced to a person because nothing about
+ * a person was ever collected: see the note on page_views in the schema. The
+ * numbers are indicative rather than audited, which is said on the pane so
+ * nobody quotes them as though they were.
+ */
+function viewsPane() {
+  const box = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+
+  db.viewStats(30).then((rows) => {
+    box.replaceChildren();
+    if (!rows.length) {
+      box.append(el(`<div class="empty"><b>Nothing counted yet</b>Views start being counted from
+        the next time somebody opens the app.</div>`));
+      return;
+    }
+
+    const today = londonToday();
+    const byDay = new Map();
+    const byRoute = new Map();
+    rows.forEach((r) => {
+      const d = byDay.get(r.day) || { views: 0, uniques: 0 };
+      d.views += r.views; d.uniques += r.uniques;
+      byDay.set(r.day, d);
+      const t = byRoute.get(r.route) || { views: 0, uniques: 0 };
+      t.views += r.views; t.uniques += r.uniques;
+      byRoute.set(r.route, t);
+    });
+
+    const totals = [...byDay.values()].reduce(
+      (a, d) => ({ views: a.views + d.views, uniques: a.uniques + d.uniques }),
+      { views: 0, uniques: 0 });
+    const now = byDay.get(today) || { views: 0, uniques: 0 };
+
+    box.append(el(`
+      <div class="info-grid info-grid--4">
+        <div class="info"><div class="info__label">Today</div>
+          <div class="info__value" style="color:var(--gold-400)">${now.views}</div></div>
+        <div class="info"><div class="info__label">Today, first look</div>
+          <div class="info__value">${now.uniques}</div></div>
+        <div class="info"><div class="info__label">30 days</div>
+          <div class="info__value">${totals.views}</div></div>
+        <div class="info"><div class="info__label">30 days, first looks</div>
+          <div class="info__value">${totals.uniques}</div></div>
+      </div>`));
+
+    /* Day by day, most recent first, so a spike after a post is obvious. */
+    const days = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+    const topDay = Math.max(...days.map(([, d]) => d.views), 1);
+    box.append(el(`<div class="events__head" style="margin-top:14px">By day</div>`));
+    days.forEach(([day, d]) => {
+      box.append(el(`
+        <div class="dist">
+          <span class="dist__key dist__key--wide">${esc(fmtDate(day, "short"))}${
+            day === today ? " (so far)" : ""}</span>
+          <span class="dist__bar"><span class="dist__fill" style="width:${
+            Math.round((d.views / topDay) * 100)}%"></span></span>
+          <span class="dist__n">${d.views}<span style="color:var(--text-3)"> / ${d.uniques}</span></span>
+        </div>`));
+    });
+
+    const pages = [...byRoute.entries()].sort((a, b) => b[1].views - a[1].views).slice(0, 12);
+    const topPage = Math.max(...pages.map(([, t]) => t.views), 1);
+    box.append(el(`<div class="events__head" style="margin-top:14px">Most looked at</div>`));
+    pages.forEach(([route, t]) => {
+      const label = route === "consult-preview" ? "Report preview"
+        : ROUTES[route]?.label || route;
+      box.append(el(`
+        <div class="dist">
+          <span class="dist__key dist__key--wide">${esc(label)}</span>
+          <span class="dist__bar"><span class="dist__fill" style="width:${
+            Math.round((t.views / topPage) * 100)}%"></span></span>
+          <span class="dist__n">${t.views}</span>
+        </div>`));
+    });
+
+    box.append(el(`<p class="hint">Each figure is views, then the number of browsers whose first
+      look that day it was. Nothing about anybody is stored: "first look" is decided by a date kept
+      in the visitor's own browser and never sent here, so clearing storage or using a second
+      browser counts twice. Treat these as a floor, not a measurement.</p>`));
+  }).catch((err) => {
+    box.replaceChildren();
+    box.append(el(`<div class="empty"><b>Could not load</b>${esc(err.message || "Try again.")}</div>`));
+  });
+
+  return box;
 }
 
 function questionWorkbench(rows) {
@@ -4692,8 +4800,11 @@ function viewAdmin() {
         });
         statCard.append(grid);
       });
-      statCard.append(el(`<p class="note">Things people have done on the site, not page views. For visitor numbers, Cloudflare Web Analytics is free and needs no code change.</p>`));
+      statCard.append(el(`<p class="note">Things people have done on the site. Page views are counted separately, below.</p>`));
     });
+
+    wrap.append(el(`<h2 class="section-title">Who is looking</h2>`));
+    wrap.append(viewsPane());
   }
 
   /* The findings as they stand, for volunteers, before the public page opens on
@@ -8897,6 +9008,7 @@ function wireGlobalClicks() {
 async function boot() {
   document.documentElement.dataset.theme = db.read("theme", "dark");
   readHash();
+  countView();
   wireGlobalClicks();
 
   $("#account-btn").addEventListener("click", () => go("account"));
@@ -8904,6 +9016,7 @@ async function boot() {
      header. pushState in go() does not fire this, so there is no double paint. */
   window.addEventListener("hashchange", () => {
     readHash();
+    countView();
     render({ toTop: true });
   });
 

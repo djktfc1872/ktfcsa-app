@@ -1708,3 +1708,60 @@ where g.status = 'final'
 -- publication. Check that again before adding a column.
 alter view consultation_questions_public set (security_invoker = false);
 grant select on consultation_questions_public to anon, authenticated;
+
+-- ===========================================================================
+-- How many people are looking, and at what
+-- ===========================================================================
+--
+-- Counters, and nothing else. No IP address, no user agent, no device id, no
+-- account, no cookie, nothing that could be joined back to a person or to a
+-- consultation response. A row says "on this day, this route was opened this
+-- many times, by this many browsers that had not opened anything yet today".
+--
+-- "Unique" is decided in the browser, not here: it keeps a date in local
+-- storage and tells us whether this is its first look today. That means the
+-- identifier never leaves the device and there is nothing on the server to
+-- de-anonymise later, even by us. The trade is that clearing storage or using
+-- a second browser counts twice, so uniques are a floor rather than a truth.
+
+create table if not exists page_views (
+  day     date not null default london_today(),
+  route   text not null,
+  views   int  not null default 0,
+  uniques int  not null default 0,
+  primary key (day, route)
+);
+
+comment on table page_views is
+  'Daily counters per route. Contains no identifiers of any kind, by design.';
+
+alter table page_views enable row level security;
+
+-- Nobody reads this but volunteers. There is nothing sensitive in it, but a
+-- public view count is a thing people argue about, so it stays internal.
+drop policy if exists "volunteers read views" on page_views;
+create policy "volunteers read views" on page_views
+  for select using (is_admin());
+
+-- No insert or update policy: everything goes through the function below, so a
+-- caller can add one to a counter and cannot do anything else at all.
+
+create or replace function record_view(p_route text, p_unique boolean default false)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r text := left(coalesce(nullif(trim(p_route), ''), 'other'), 40);
+begin
+  insert into page_views (day, route, views, uniques)
+  values (london_today(), r, 1, case when p_unique then 1 else 0 end)
+  on conflict (day, route) do update
+    set views   = page_views.views + 1,
+        uniques = page_views.uniques + (case when p_unique then 1 else 0 end);
+end;
+$$;
+
+revoke all on function record_view(text, boolean) from public;
+grant execute on function record_view(text, boolean) to anon, authenticated;

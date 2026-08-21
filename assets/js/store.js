@@ -545,6 +545,29 @@ export async function submitConsultation(answer) {
 export const consultationResults = () => (backend ? backend.consultationResults() : Promise.resolve(null));
 export const consultationPublished = () =>
   (backend ? backend.consultationPublished() : Promise.resolve({ results_public: false }));
+/**
+ * Counts a page view.
+ *
+ * The only thing that decides "unique" is a date in this browser's own storage,
+ * so no identifier is ever sent and there is nothing on the server that could
+ * be traced back to anybody. Clearing storage or opening a second browser
+ * counts twice, which makes uniques a floor rather than a truth, and that is
+ * the right way round for a number nobody should be able to weaponise.
+ */
+const SEEN_KEY = "seen-day";
+export function recordView(route) {
+  if (!backend) return;
+  const today = new Date().toISOString().slice(0, 10);
+  let first = false;
+  try {
+    first = read(SEEN_KEY) !== today;
+    if (first) write(SEEN_KEY, today);
+  } catch { /* private mode, or storage full: it just counts as a return visit */ }
+  backend.recordView(route, first);
+}
+
+export const viewStats = (days) => (backend ? backend.viewStats(days) : Promise.resolve([]));
+
 export const questionGroups = () => (backend ? backend.questionGroups() : Promise.resolve([]));
 export const publishedQuestions = () => (backend ? backend.publishedQuestions() : Promise.resolve([]));
 
