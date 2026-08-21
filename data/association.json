@@ -1,0 +1,128 @@
+{
+  "established": 2026,
+  "strapline": "The independent voice of Poppies fans",
+  "email": "hello@ktfcsa.com",
+  "committeeEmail": "committee@ktfcsa.com",
+  "social": {
+    "x": "https://x.com/ktfcsa",
+    "facebook": "https://facebook.com/ktfcsa",
+    "instagram": "https://instagram.com/ktfcsa"
+  },
+  "intro": [
+    "The Kettering Town FC Supporters' Association is a group of supporters trying to give the fanbase a structured, independent voice: somewhere opinion gets gathered properly, put to the club in writing, and published either way.",
+    "It is free, it is not run by the club, and it is not finished. There is no committee and no constitution yet. What there is, is this app, a growing number of supporters using it, and a commitment to do the rest in the open."
+  ],
+  "values": [
+    {
+      "title": "Genuine representation",
+      "text": "Positions are decided by the supporters they speak for. Where we say what fans think, we can show the count behind it."
+    },
+    {
+      "title": "Straight communication",
+      "text": "Plain updates and published numbers. No jargon, and nothing decided privately and announced afterwards."
+    },
+    {
+      "title": "Independence",
+      "text": "Separate from the club's ownership and management, and not funded by the club. That independence is the only reason anything we publish is worth reading."
+    },
+    {
+      "title": "Something for the long run",
+      "text": "Away travel, ticket prices, and getting the club's history recorded before it is lost. Things that outlast whoever happens to own the club."
+    },
+    {
+      "title": "Free, permanently",
+      "text": "No membership fee, ever. Nobody's say counts for more because they paid, and nothing here sits behind a subscription."
+    }
+  ],
+  "group": [
+    {
+      "name": "Danny Jordan",
+      "role": "Founder",
+      "doing": "Builds and runs the app and the surveys.",
+      "fact": "Owns around 150 Kettering shirts and will try to buy yours if he hasn't got it. Home and away since before he had a choice.",
+      "url": "https://dannyjordan.uk"
+    },
+    {
+      "name": "Craig Parker",
+      "role": "Co-founder",
+      "doing": "Communication and fan feedback.",
+      "fact": "Following since the Graham Carr era in 94/95. Kettering runs in the family, and keeping it going for his kids is a big part of why he's here."
+    },
+    {
+      "name": "Kieran Morris",
+      "role": "Supporter backer",
+      "doing": "Design and community outreach.",
+      "fact": "First game was Stevenage at home in 1999, a 2-1 defeat. Twenty-odd years since."
+    },
+    {
+      "name": "Ashley Jordan",
+      "role": "Supporter backer",
+      "doing": "Long-term fan, and the reason any of this started.",
+      "fact": "Dragged Danny to his first match decades ago and gets a fair share of the blame for the stress since. Allowed nowhere near the technology."
+    },
+    {
+      "name": "Lisa McNally",
+      "role": "Supporter backer",
+      "doing": "Home and away regular, and a steady hand on getting this set up.",
+      "fact": "Forty years of home and away games."
+    }
+  ],
+  "faqs": [
+    {
+      "q": "Who are you?",
+      "a": [
+        "A small group of Kettering supporters, listed above, trying to make something useful for the fanbase. Nobody is paid and nobody speaks for the club.",
+        "The working group is not a committee. When there is a proper structure it will be because supporters voted for one."
+      ]
+    },
+    {
+      "q": "What are you actually trying to achieve?",
+      "a": [
+        "To find out what supporters think, in a way that stands up: real numbers, published in full, put to the club in writing and reported honestly whether they answer or not.",
+        "What it becomes after that is up to the fanbase. If there is no appetite for it, it does not go ahead."
+      ]
+    },
+    {
+      "q": "Is there a membership fee?",
+      "a": [
+        "No, and there never will be. This is a non-profit effort and nothing here is behind a paywall.",
+        "The app costs a small amount to run. There is a Ko-fi link in the footer if you want to chip in, and it makes no difference at all to your say if you don't."
+      ]
+    },
+    {
+      "q": "How is this different from the Supporters' Trust?",
+      "a": [
+        "The Trust has raised money for Kettering Town for years and has its own job to do. This is not an attempt to replace it.",
+        "What we do is a different thing: gathering what supporters actually think, at scale, and putting it to the club in public. The two can sit alongside each other."
+      ]
+    },
+    {
+      "q": "Is this affiliated with the club?",
+      "a": [
+        "No. We are independent of Kettering Town's ownership and management, and take no money from the club.",
+        "That is not hostility. It is the only way anything we publish can be taken seriously, by supporters or by the club."
+      ]
+    },
+    {
+      "q": "Why not just use social media?",
+      "a": [
+        "Social media is fine for a quick word, but it is a poor way to find out what a fanbase thinks. The loudest post wins, the algorithm buries the rest, and plenty of supporters do not use it at all.",
+        "A survey that everyone can answer, with the results published in full, tells you something a comment thread never will."
+      ]
+    },
+    {
+      "q": "What happens to what I submit?",
+      "a": [
+        "Numbers are published as numbers. Anything you write is read by a volunteer before it goes anywhere, and is only published if you ticked the box saying we may.",
+        "Questions for the club are collected, tidied up and sent in writing. If one goes unanswered we say so, and say for how long."
+      ]
+    },
+    {
+      "q": "Can I get involved?",
+      "a": [
+        "Yes, and it is the thing we need most. Whether that is helping run the app, scanning old programmes for the archive project, organising travel, or just being someone who reads things before they go out.",
+        "Email us and say what you are good at."
+      ]
+    }
+  ]
+}

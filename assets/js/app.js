@@ -146,6 +146,8 @@ function footer({ askForMoney = true } = {}) {
       <div class="site-footer__main">
         Website by ${esc(name)}. All rights reserved.
       </div>
+      <button class="link-btn site-footer__link" data-nav="association">About the Supporters&rsquo;
+        Association</button>
       <a class="site-footer__mail" href="mailto:${esc(email)}">${esc(email)}</a>
 
       <!-- The refusal is the loud part on purpose. This app is free and has no
@@ -239,6 +241,7 @@ const state = {
   overviews: {},  // our own club write-ups, from data/club-overviews.json
   videos: [],     // the club's YouTube uploads, from data/videos.json
   facts: null,    // researched club history, from data/club-facts.json
+  association: null,  // who we are and what we stand for, from data/association.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -306,6 +309,8 @@ const ROUTES = {
   clubs: { label: "Away Guide", icon: "📖", nav: "more", group: "Away days", render: viewClubs },
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
 
+  association: { label: "Supporters\u2019 Association", short: "Association", icon: "\u{1F91D}",
+    nav: "more", group: "Supporters", render: viewAssociation },
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
   daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
   memorial: { label: "Memorial Match", icon: "💙", nav: "more", group: "Supporters", render: viewMemorial },
@@ -6638,6 +6643,129 @@ const ARCHIVE_HELP = [
    "A scanner, a VHS deck, somewhere dry to keep things while they are worked on."],
 ];
 
+/* ================================================ supporters' association */
+
+/**
+ * Who the Association is, what it stands for, and the questions people keep
+ * asking. Carried over from the old ktfcsa.com pages so this app can be the
+ * one place, rather than the third place, supporters have to look.
+ *
+ * The content lives in data/association.json so the roster and the answers can
+ * be edited without going near this file.
+ */
+function viewAssociation() {
+  const wrap = el(`<div></div>`);
+  const a = state.association;
+
+  if (!a) {
+    wrap.append(el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`));
+    loadAssociation().then(() => { if (state.view === "association") render(); });
+    return wrap;
+  }
+
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <h1>Supporters' Association</h1>
+      <p>${esc(a.strapline)}</p>
+    </div>`));
+
+  const intro = el(`<div class="card"></div>`);
+  a.intro.forEach((para, i) => {
+    intro.append(el(`<p class="club-overview"${i ? ' style="margin-top:12px"' : ""}>${esc(para)}</p>`));
+  });
+  wrap.append(intro);
+
+  /* The consultation is the thing we most want somebody landing here to find,
+     so it goes above everything except the introduction, and only while it is
+     actually worth their time. */
+  const cs = consultState();
+  if (cs === "open" || cs === "closed" || cs === "published") {
+    const line = cs === "open"
+      ? `The fan consultation is open until ${CLOSES_WORDS}.`
+      : cs === "closed"
+        ? "The fan consultation has closed. The results are being checked."
+        : "The results of the fan consultation are published.";
+    const go = el(`
+      <button class="daily-promo" data-nav="consult">
+        <span class="daily-promo__icon">📣</span>
+        <span class="daily-promo__text">
+          <strong>Have Your Say</strong>
+          <span>${esc(line)}</span>
+        </span>
+        <span class="daily-promo__go">${cs === "open" ? "Take part" : "See it"}</span>
+      </button>`);
+    wrap.append(go);
+  }
+
+  wrap.append(el(`<h2 class="section-title">What we stand for</h2>`));
+  const vals = el(`<div class="card"></div>`);
+  a.values.forEach((v, i) => {
+    vals.append(el(`
+      <div class="value">
+        <span class="value__num">${i + 1}</span>
+        <span class="value__text">
+          <b class="value__title">${esc(v.title)}</b>
+          <span class="value__body">${esc(v.text)}</span>
+        </span>
+      </div>`));
+  });
+  wrap.append(vals);
+
+  wrap.append(el(`<h2 class="section-title">Who we are</h2>`));
+  const who = el(`<div class="card"></div>`);
+  a.group.forEach((m) => {
+    const name = m.url
+      ? `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.name)}</a>`
+      : esc(m.name);
+    who.append(el(`
+      <div class="crew">
+        <span class="crew__who">${name}<span class="crew__note">${esc(m.doing)}</span></span>
+        <span class="crew__when">${esc(m.role)}</span>
+      </div>
+      <p class="value__fact">${esc(m.fact)}</p>`));
+  });
+  who.append(el(`
+    <p class="note" style="margin:14px 0 0">This is a working group, not a committee. If you want
+    to be on it, <a href="mailto:${esc(a.committeeEmail)}">email us</a>.</p>`));
+  wrap.append(who);
+
+  wrap.append(el(`<h2 class="section-title">Questions people ask</h2>`));
+  const faqs = el(`<div></div>`);
+  a.faqs.forEach((f) => {
+    faqs.append(foldable(f.q, () => {
+      const box = el(`<div></div>`);
+      f.a.forEach((para, i) => {
+        box.append(el(`<p class="club-overview"${i ? ' style="margin-top:10px"' : ""}>${esc(para)}</p>`));
+      });
+      return box;
+    }));
+  });
+  wrap.append(faqs);
+
+  wrap.append(el(`<h2 class="section-title">Get in touch</h2>`));
+  const contact = el(`
+    <div class="card">
+      <p class="club-overview">Anything at all: a question, an offer of help, or something you
+      think we have got wrong.</p>
+    </div>`);
+  const row = el(`<div class="btn-row" style="margin-top:12px"></div>`);
+  row.append(el(`<a class="btn btn--sm" href="mailto:${esc(a.email)}">${esc(a.email)}</a>`));
+  Object.entries(a.social).forEach(([name, url]) => {
+    const label = name === "x" ? "X" : name[0].toUpperCase() + name.slice(1);
+    row.append(el(`
+      <a class="btn btn--sm btn--ghost" href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`));
+  });
+  contact.append(row);
+  wrap.append(contact);
+
+  wrap.append(el(`
+    <p class="note" style="margin-top:16px">Kettering Town FC Supporters' Association, established
+    ${esc(String(a.established))}. Independent of the club, free to take part in, and run by
+    supporters in their own time.</p>`));
+
+  return wrap;
+}
+
 function viewHeritage() {
   const wrap = el(`
     <div>
@@ -7785,6 +7913,12 @@ async function loadLeague(force = false) {
   } catch {
     state.league = null; /* the app falls back to the spreadsheet fixture list */
   }
+}
+
+async function loadAssociation() {
+  if (state.association) return state.association;
+  state.association = await readJSON("data/association.json");
+  return state.association;
 }
 
 async function loadPodcast() {
