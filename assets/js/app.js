@@ -7819,6 +7819,33 @@ function viewConsult() {
 
   wrap.append(consultCount());
 
+  /* Checked before the phase branches, not after. It used to sit below them,
+     so once the consultation closed the "closed" branch returned first and the
+     preview was unreachable for everybody including volunteers -- which is the
+     one moment it exists for.
+
+     Before Saturday, a named few can see the findings so they can prepare.
+     Read-only and clearly marked as not public: it is the same aggregate data
+     everybody gets later, never anybody's raw response. */
+  /* The pass only means anything before the findings are public. After that
+     everybody sees them anyway, so it stops granting a thing whether or not
+     somebody remembers to clear the flag. */
+  if (state.params?.id === "preview" && consultState() !== "published" && db.canViewResults()) {
+    wrap.append(el(`
+      <div class="soon">
+        <span class="soon__tag">Preview \u00b7 not public yet</span>
+        <p>This is the report itself, not a mock-up of it: the same page supporters get, drawn
+        from the same numbers, the moment it is published. What is missing is only what has not
+        been approved yet, so anything blank here will be blank on the night.
+        ${consultState() === "open"
+          ? `The consultation is still running, so the figures will move.`
+          : `The consultation has closed, so these are the final figures.`}
+        Please do not share them until it is out.</p>
+      </div>`));
+    wrap.append(consultResults());
+    return wrap;
+  }
+
   if (phase === "before") {
     wrap.append(el(`
       <div class="soon">
@@ -7853,28 +7880,6 @@ function viewConsult() {
         five days, ${r.summary.from_members} of them signed in to an account.</p>`));
     }).catch(() => {});
     wrap.append(consultAbout());
-    return wrap;
-  }
-
-  /* Before Saturday, a named few can see the findings so they can prepare.
-     Read-only and clearly marked as not public: it is the same aggregate data
-     everybody gets later, never anybody's raw response. */
-  /* The pass only means anything before the findings are public. After that
-     everybody sees them anyway, so it stops granting a thing whether or not
-     somebody remembers to clear the flag. */
-  if (state.params?.id === "preview" && consultState() !== "published" && db.canViewResults()) {
-    wrap.append(el(`
-      <div class="soon">
-        <span class="soon__tag">Preview \u00b7 not public yet</span>
-        <p>This is the report itself, not a mock-up of it: the same page supporters get, drawn
-        from the same numbers, the moment it is published. What is missing is only what has not
-        been approved yet, so anything blank here will be blank on the night.
-        ${consultState() === "open"
-          ? `The consultation is still running, so the figures will move.`
-          : `The consultation has closed, so these are the final figures.`}
-        Please do not share them until it is out.</p>
-      </div>`));
-    wrap.append(consultResults());
     return wrap;
   }
 
