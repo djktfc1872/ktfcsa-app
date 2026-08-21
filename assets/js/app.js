@@ -4093,8 +4093,9 @@ function questionWorkbench(rows) {
     const row = el(`
       <div class="btn-row" style="margin-top:14px">
         <button class="btn btn--sm" data-act="final">Save as the final list</button>
-        <button class="btn btn--sm btn--ghost" data-act="preview">Preview the email</button>
-        <button class="btn btn--sm btn--ghost" data-act="copy">Copy and send</button>
+        <button class="btn btn--sm btn--ghost" data-act="preview">Preview the questions</button>
+        <button class="btn btn--sm btn--ghost" data-act="copy">Copy the questions</button>
+        <button class="btn btn--sm btn--ghost" data-act="sent">Mark as sent</button>
       </div>`);
 
     const ready = () => groups.filter((g) => g.label.trim().length >= 8);
@@ -4162,54 +4163,50 @@ function questionWorkbench(rows) {
       const text = await buildText(clean);
       modal(`
         <h3 style="margin-bottom:6px">Preview</h3>
-        <p class="hint" style="margin-bottom:10px">Exactly what "Copy and send" would put on the
-          clipboard. Nothing has been sent and no clock has started.</p>
+        <p class="hint" style="margin-bottom:10px">Exactly what "Copy the questions" puts on the
+          clipboard, for you to write the email around. Nothing is sent from here.</p>
         <textarea readonly rows="16" style="width:100%">${esc(text)}</textarea>
         <p class="hint" style="margin-top:8px">${clean.length} questions &middot;
           ${loose.length} in the addendum &middot; ${held.length} held back and not included.</p>`);
     });
 
+    /* Copying is just copying. The app does not send anything: the email is
+       written by a person, so the clock starts when they say it went, not when
+       text reached a clipboard. */
     row.querySelector('[data-act="copy"]').addEventListener("click", async () => {
       const clean = ready();
       if (!clean.length) return toast("Write at least one question first.");
       const text = await buildText(clean);
+      const ok = await copyText(text);
+      if (ok) return toast("Copied. Write your email, then press Mark as sent.");
+      modal(`<h3 style="margin-bottom:6px">Questions for the club</h3>
+        <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
+        <textarea readonly rows="14" style="width:100%">${esc(text)}</textarea>`);
+    });
 
-      /* Copying is the moment the public page starts counting days against the
-         club, and that cannot be quietly undone. It gets a confirmation. */
+    /* The one act with a public consequence: the results page starts counting
+       days against the club from here, so it is deliberate and separate. */
+    row.querySelector('[data-act="sent"]').addEventListener("click", () => {
+      const clean = ready();
+      if (!clean.length) return toast("Write at least one question first.");
       const { node, close } = modal(`
-        <h3 style="margin-bottom:6px">Send these to the club?</h3>
-        <p class="hint" style="margin-bottom:12px">This copies ${clean.length} questions and
-          ${loose.length} in the addendum, and starts the public clock counting the days each one
-          goes unanswered. Only do this when you are about to send the email.</p>
+        <h3 style="margin-bottom:6px">Have the questions gone to the club?</h3>
+        <p class="hint" style="margin-bottom:12px">Only press this once your email has actually
+          been sent. It starts the public clock counting the days each of the ${clean.length}
+          questions goes unanswered, and that is shown to supporters.</p>
         <div class="btn-row">
-          <button class="btn btn--sm" data-yes>Copy and start the clock</button>
+          <button class="btn btn--sm" data-yes>Yes, it has been sent</button>
           <button class="btn btn--sm btn--ghost" data-no>Not yet</button>
         </div>`);
       node.querySelector("[data-no]").addEventListener("click", close);
       node.querySelector("[data-yes]").addEventListener("click", async () => {
         close();
-        const ok = await copyText(text);
-        if (ok) {
-          await db.stampQuestionsAsked();
-          return toast("Copied, and the clock has started on each question.");
-        }
-        /* Clipboard refused. Stamping anyway would start a clock on an email
-           that never went, so it waits for the copy to actually happen. */
-        const { node: n2, close: c2 } = modal(`
-          <h3 style="margin-bottom:6px">Questions for the club</h3>
-          <p class="hint" style="margin-bottom:10px">The clipboard was refused. Press and hold to
-            copy, then confirm below so the clock starts.</p>
-          <textarea readonly rows="14" style="width:100%">${esc(text)}</textarea>
-          <div class="btn-row" style="margin-top:10px">
-            <button class="btn btn--sm" data-sent>I have copied it</button>
-            <button class="btn btn--sm btn--ghost" data-cancel>Cancel</button>
-          </div>`);
-        n2.querySelector("[data-cancel]").addEventListener("click", c2);
-        n2.querySelector("[data-sent]").addEventListener("click", async () => {
-          c2();
+        try {
           await db.stampQuestionsAsked();
           toast("The clock has started on each question.");
-        });
+        } catch (err) {
+          toast(err.message || "That did not save.");
+        }
       });
     });
 
@@ -4228,9 +4225,10 @@ function questionWorkbench(rows) {
     wrap2.append(red);
 
     wrap2.append(row);
-    wrap2.append(el(`<p class="hint">Saving marks them final. Copying stamps the date each question
-      went to the club, which is what makes the public page count the days it has gone unanswered.
-      The addendum goes with them, so nothing a supporter asked is dropped.</p>`));
+    wrap2.append(el(`<p class="hint">Saving marks them final and puts them on the public page.
+      Copying gives you the text to write your own email around; nothing is sent from here. Mark as
+      sent once it has gone, which is what makes the public page count the days each question has
+      gone unanswered. The addendum goes with them, so nothing a supporter asked is dropped.</p>`));
     return wrap2;
   };
 
@@ -7792,6 +7790,23 @@ function consultResults() {
     }
     const s = r.summary;
     const pct = (n) => Math.round((n / s.responses) * 100);
+
+    /* Saving a copy. No library can do this under script-src 'self', and none
+       is needed: the browser's own print dialog offers Save as PDF on every
+       platform, including Share > Print on iOS. The print stylesheet does the
+       actual work of turning the page into a document. */
+    const save = el(`
+      <div class="btn-row btn-row--end no-print" style="margin-bottom:12px">
+        <button class="btn btn--sm btn--ghost">Save as PDF</button>
+      </div>`);
+    save.querySelector("button").addEventListener("click", () => {
+      const before = document.title;
+      /* The filename the browser suggests comes from the document title. */
+      document.title = `KTFCSA fan consultation, August 2026`;
+      window.addEventListener("afterprint", () => { document.title = before; }, { once: true });
+      window.print();
+    });
+    box.append(save);
 
     box.append(el(`
       <div class="card">

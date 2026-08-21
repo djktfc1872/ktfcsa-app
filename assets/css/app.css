@@ -5298,3 +5298,62 @@ button,
   background: color-mix(in srgb, var(--red-400) 16%, transparent);
   color: var(--text);
 }
+
+.btn-row--end { justify-content: flex-end; }
+
+/* ================================================================== print */
+
+/* The report is a document as much as a screen, and supporters and the club
+   both need to be able to keep a copy. Everything that is chrome, navigation
+   or a control comes off; what is left is the argument in order. */
+@media print {
+  :root {
+    --bg: #fff; --surface-1: #fff; --surface-2: #fff;
+    --text: #111; --text-2: #333; --text-3: #555;
+    --line: #ccc; --line-soft: #ddd; --gold-400: #8a6d1f;
+  }
+
+  body { background: #fff !important; color: #111 !important; }
+
+  /* Chrome, and anything that only exists to be pressed. */
+  .topbar, .sidebar, .tabbar, .site-footer, .no-print,
+  .btn, .btn-row, .link-btn, .ticker, .daily-promo, .chips, .chips__row,
+  .fold__head::after, .skeleton { display: none !important; }
+
+  /* The shell centres and constrains; a page does not need that. */
+  .main, main, .view, .wrap { max-width: none !important; margin: 0 !important;
+    padding: 0 !important; grid-column: 1 / -1 !important; }
+
+  .card {
+    border: 1px solid #ddd !important;
+    background: #fff !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Keep a heading with what it introduces. */
+  h1, h2, h3, .section-title { break-after: avoid; page-break-after: avoid; color: #111 !important; }
+  .qitem, .bar, .crew, .value, .quote { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Details are collapsed on screen to keep the page short. On paper there is
+     no tapping, so everything that was behind a fold is simply open. */
+  details { display: block !important; }
+  details > summary { display: none !important; }
+  details > *:not(summary) { display: block !important; }
+  .fold, .qitem__src, .qgroup__src { border: 0 !important; }
+
+  /* A printed page has no idea where it came from unless it says so. */
+  .page-head::after {
+    content: "fans.ktfcsa.com — Kettering Town FC Supporters' Association";
+    display: block;
+    margin-top: 6px;
+    font-size: 10pt;
+    color: #666;
+  }
+
+  a { color: #111 !important; text-decoration: none !important; }
+  .bar__fill { background: #999 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar--us .bar__fill { background: #8a6d1f !important; }
+
+  @page { margin: 16mm 14mm; }
+}
