@@ -3846,6 +3846,131 @@ function suggestFor(q, groups) {
  * it goes to the club as an addendum, in full. The counter at the top is the
  * promise: filed plus addendum always equals the number asked.
  */
+/**
+ * The complete internal record of the consultation.
+ *
+ * The public report and its PDF honour consent: anything a supporter did not
+ * tick the box for, and anything a volunteer held back, stays out. That is
+ * right for publication and wrong for a record, so this is the other half --
+ * everything, marked up with what was published and what was not.
+ *
+ * Two fields are deliberately absent. `device_key` identifies a browser and is
+ * never shown to anyone by design; exporting it into a file that might be
+ * forwarded would undo that in one step. `profile_id` would tie every answer to
+ * a named account, so only whether somebody was signed in is kept. People
+ * answered a survey, not a register.
+ */
+function internalExport(rows, groups, excludedIds) {
+  const L = [];
+  const held = new Set(excludedIds || []);
+  const filedIn = new Map();
+  (groups || []).forEach((g, i) => g.members.forEach((id) => filedIn.set(id, i + 1)));
+
+  const list = (a) => (a && a.length ? a.join(", ") : "-");
+  const yn = (b) => (b ? "yes" : "no");
+
+  L.push("KETTERING TOWN FC SUPPORTERS' ASSOCIATION");
+  L.push("Fan consultation, 17-21 August 2026 - COMPLETE INTERNAL RECORD");
+  L.push(`Generated ${fmtDate(londonToday())} at ${new Date().toLocaleTimeString("en-GB")}`);
+  L.push("");
+  L.push("CONFIDENTIAL. This contains free text that supporters did not agree to have");
+  L.push("published, and questions held back from the club. It is the record, not the");
+  L.push("report. Do not circulate it.");
+  L.push("");
+  L.push("Device keys and account identifiers are not included: whether somebody was");
+  L.push("signed in is recorded, who they were is not.");
+  L.push("");
+  L.push(`Responses: ${rows.length}`);
+
+  const withQ = rows.filter((r) => r.question && r.question.trim());
+  L.push(`Questions asked: ${withQ.length}`);
+  if (groups && groups.length) {
+    L.push(`Grouped into: ${groups.length}`);
+    L.push(`Held back: ${withQ.filter((r) => held.has(r.id)).length}`);
+    L.push(`To the addendum: ${withQ.filter((r) => !filedIn.has(r.id) && !held.has(r.id)).length}`);
+  }
+  L.push("");
+
+  if (groups && groups.length) {
+    L.push("=".repeat(70));
+    L.push("THE QUESTIONS PUT TO THE CLUB, AND WHAT WAS FILED UNDER EACH");
+    L.push("=".repeat(70));
+    groups.forEach((g, i) => {
+      L.push("");
+      L.push(`${i + 1}. ${g.label || "(no wording)"}   [asked by ${g.members.length}]`);
+      g.members.forEach((id) => {
+        const r = rows.find((x) => x.id === id);
+        if (!r) return;
+        L.push(`     - ${r.question.replace(/\s+/g, " ")}`);
+        L.push(`       (${r.question_status}${r.publish_ok ? "" : ", no consent to publish"}${
+          r.attribution ? `, from ${r.attribution}` : ""})`);
+      });
+    });
+    L.push("");
+    const add = withQ.filter((r) => !filedIn.has(r.id) && !held.has(r.id));
+    if (add.length) {
+      L.push("-".repeat(70));
+      L.push(`ADDENDUM - sent to the club in full (${add.length})`);
+      L.push("-".repeat(70));
+      add.forEach((r, i) => L.push(`A${i + 1}. ${r.question.replace(/\s+/g, " ")}`));
+      L.push("");
+    }
+    const back = withQ.filter((r) => held.has(r.id));
+    if (back.length) {
+      L.push("-".repeat(70));
+      L.push(`HELD BACK - not sent, not published (${back.length})`);
+      L.push("-".repeat(70));
+      back.forEach((r, i) => L.push(`H${i + 1}. ${r.question.replace(/\s+/g, " ")}`));
+      L.push("");
+    }
+  }
+
+  L.push("=".repeat(70));
+  L.push("EVERY RESPONSE IN FULL");
+  L.push("=".repeat(70));
+  [...rows].reverse().forEach((r, i) => {
+    L.push("");
+    L.push(`--- ${i + 1} of ${rows.length} --- ${new Date(r.created_at).toLocaleString("en-GB")}`);
+    L.push(`Signed in: ${yn(r.profile_id)}   Consent to publish: ${yn(r.publish_ok)}${
+      r.attribution ? `   Name given: ${r.attribution}` : ""}`);
+    L.push(`Confidence: ${r.confidence}/10   Direction: ${r.direction}   Meeting: ${r.meeting || "-"}`);
+    L.push(`Represented by: ${Object.entries(r.representation || {})
+      .map(([k, v]) => `${k}=${v}`).join(", ") || "-"}`);
+    L.push(`Positives: ${list(r.positives)}`);
+    L.push(`Concerns: ${list(r.concerns)}`);
+    L.push(`Would support: ${list(r.actions)}`);
+    if (r.positive_note) L.push(`What works [${r.note_status}]: ${r.positive_note.replace(/\s+/g, " ")}`);
+    if (r.concern_note)  L.push(`What worries [${r.note_status}]: ${r.concern_note.replace(/\s+/g, " ")}`);
+    if (r.question) {
+      const where = filedIn.has(r.id) ? `filed under Q${filedIn.get(r.id)}`
+        : held.has(r.id) ? "HELD BACK" : "addendum";
+      L.push(`Question [${r.question_status}, ${where}]: ${r.question.replace(/\s+/g, " ")}`);
+    }
+  });
+  L.push("");
+  L.push(`End of record. ${rows.length} responses.`);
+  return L.join("\n");
+}
+
+/** Hands a generated file to the browser, falling back to something copyable. */
+async function offerFile(name, text) {
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return true;
+  } catch {
+    /* Some browsers refuse a script-started download. Show it instead. */
+    modal(`<h3 style="margin-bottom:6px">${esc(name)}</h3>
+      <p class="hint" style="margin-bottom:10px">The download was refused. Press and hold to copy.</p>
+      <textarea readonly rows="16" style="width:100%">${esc(text)}</textarea>`);
+    return false;
+  }
+}
+
 function questionWorkbench(rows) {
   const box = el(`<div class="card"></div>`);
   const asked = rows
@@ -4096,6 +4221,7 @@ function questionWorkbench(rows) {
         <button class="btn btn--sm btn--ghost" data-act="preview">Preview the questions</button>
         <button class="btn btn--sm btn--ghost" data-act="copy">Copy the questions</button>
         <button class="btn btn--sm btn--ghost" data-act="sent">Mark as sent</button>
+        <button class="btn btn--sm btn--ghost" data-act="record">Download the full record</button>
       </div>`);
 
     const ready = () => groups.filter((g) => g.label.trim().length >= 8);
@@ -4207,6 +4333,29 @@ function questionWorkbench(rows) {
         } catch (err) {
           toast(err.message || "That did not save.");
         }
+      });
+    });
+
+    /* Everything, including what cannot be published. Confirmed, because a file
+       of unpublished comments about named people is not something to produce by
+       brushing a button. */
+    row.querySelector('[data-act="record"]').addEventListener("click", () => {
+      const { node, close } = modal(`
+        <h3 style="margin-bottom:6px">Download the full record?</h3>
+        <p class="hint" style="margin-bottom:12px">Every response in full, including free text
+          supporters did not agree to publish and the ${held.length} question${
+          held.length === 1 ? "" : "s"} held back. Device keys and account identifiers are left
+          out. It is for your records, not for circulation.</p>
+        <div class="btn-row">
+          <button class="btn btn--sm" data-yes>Download it</button>
+          <button class="btn btn--sm btn--ghost" data-no>Cancel</button>
+        </div>`);
+      node.querySelector("[data-no]").addEventListener("click", close);
+      node.querySelector("[data-yes]").addEventListener("click", async () => {
+        close();
+        const text = internalExport(rows, groups.filter((g) => g.label.trim()), [...excluded]);
+        const ok = await offerFile(`ktfcsa-consultation-record-${londonToday()}.txt`, text);
+        if (ok) toast("Downloaded. Keep it somewhere sensible.");
       });
     });
 
