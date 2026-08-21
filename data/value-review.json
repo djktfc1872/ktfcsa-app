@@ -1,0 +1,35 @@
+{
+  "season": "2026/27",
+  "homeMatches": 21,
+  "checked": "2026-08-21",
+  "sourceNote": "Season ticket prices are the club's own 2026/27 commercial announcement. Gate prices across the division are the ones this app checks and dates itself, club by club.",
+
+  "seasonTickets": [
+    { "band": "Adult", "detail": "Early bird, until 31 May", "price": 250 },
+    { "band": "Concession", "detail": "66+ and NUS", "price": 170 },
+    { "band": "Youth", "detail": "Secondary school up to 18", "price": 85 },
+    { "band": "Junior", "detail": "Pre-secondary", "price": 30 }
+  ],
+
+  "extras": [
+    { "id": "card", "label": "Physical season ticket card", "price": 5 },
+    { "id": "seat", "label": "Reserved seating", "price": 50 },
+    { "id": "alumasc", "label": "Alumasc parking pass", "price": 40 },
+    { "id": "clubhouse", "label": "Clubhouse car park pass", "price": 100 }
+  ],
+
+  "benefits": [
+    { "what": "Discount in the clubhouse or bar", "ktfc": false },
+    { "what": "Priority on cup tickets", "ktfc": false },
+    { "what": "Club shop discount", "ktfc": false },
+    { "what": "Bring-a-friend passes", "ktfc": false },
+    { "what": "Digital matchday programme", "ktfc": false }
+  ],
+  "benefitsNote": "An earlier Association review found each of these offered at Halesowen Town, Leamington or Stratford Town. That was a sample of three clubs rather than a survey of the division, so it is worth rechecking before anyone leans on it.",
+
+  "openQuestions": [
+    "The club has still not published 2026/27 admission prices anywhere. Its own ticket page is placeholder text, the Ticket Tailor store is empty and Fanbase sits behind a login.",
+    "Whether a season ticket covers cup ties, and what happens to it if a match is called off.",
+    "Whether any discount exists for a second or third family member."
+  ]
+}

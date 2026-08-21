@@ -64,6 +64,15 @@ const todayISO = () => {
 
 const money = (v) => (v === "Free" || v === 0 ? "Free" : typeof v === "number" ? `£${v}` : v || "To be confirmed");
 
+/* Pounds where the pence matter: an average, or a per-match figure. Whole
+   pounds stay whole, so £250 does not become £250.00. */
+const pounds = (n) => `£${Number(n) % 1 === 0 ? Number(n) : Number(n).toFixed(2)}`;
+const ordinal = (n) => {
+  const t = n % 100;
+  if (t >= 11 && t <= 13) return `${n}th`;
+  return `${n}${["th", "st", "nd", "rd"][n % 10] || "th"}`;
+};
+
 /* Getting somebody to the right place.
 
    Two things have already gone wrong here. A bare coordinate makes the mapping
@@ -242,6 +251,7 @@ const state = {
   videos: [],     // the club's YouTube uploads, from data/videos.json
   facts: null,    // researched club history, from data/club-facts.json
   association: null,  // who we are and what we stand for, from data/association.json
+  valueReview: null,  // season ticket and gate price review, from data/value-review.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -311,6 +321,8 @@ const ROUTES = {
 
   association: { label: "Supporters\u2019 Association", short: "Association", icon: "\u{1F91D}",
     nav: "more", group: "Supporters", render: viewAssociation },
+  value: { label: "What It Costs", short: "Costs", icon: "\u{1F4B7}",
+    nav: "more", group: "Supporters", render: viewValue },
   wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
   daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
   memorial: { label: "Memorial Match", icon: "💙", nav: "more", group: "Supporters", render: viewMemorial },
@@ -6643,6 +6655,178 @@ const ARCHIVE_HELP = [
    "A scanner, a VHS deck, somewhere dry to keep things while they are worked on."],
 ];
 
+/* ============================================================ what it costs */
+
+/**
+ * What following Kettering actually costs, and how that sits against the rest
+ * of the division. Carried over from the Association's season ticket review on
+ * the old site, but rebuilt on data this app can stand behind: the gate prices
+ * here are the ones we check and date ourselves, club by club.
+ *
+ * The old review led on a "£219 peer average" for season tickets. That is not
+ * repeated. Its own footnote said ten clubs, it showed five, those five average
+ * £229.60 rather than £219, and they were 2025/26 prices set against Kettering's
+ * 2026/27. A number that cannot be reconstructed is a number the club can
+ * dismiss, and one bad figure would be used to wave away the rest.
+ */
+function viewValue() {
+  const wrap = el(`<div></div>`);
+  const v = state.valueReview;
+
+  if (!v) {
+    wrap.append(el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`));
+    loadValueReview().then(() => { if (state.view === "value") render(); });
+    return wrap;
+  }
+
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <h1>What it costs</h1>
+      <p>Season tickets, what you pay on the gate, and how Kettering compares with
+         the ${TEAMS.length} other clubs in the division.</p>
+    </div>`));
+
+  /* ---------------------------------------------------------- the builder */
+  wrap.append(el(`<h2 class="section-title">Work out your season</h2>`));
+  const calc = el(`<div class="card"></div>`);
+  calc.append(el(`
+    <p class="club-overview" style="margin-bottom:12px">The advertised price is the start of it.
+    Pick your band and anything you would actually buy.</p>`));
+
+  const bands = el(`<div class="chips__row" style="margin-bottom:14px"></div>`);
+  let band = v.seasonTickets[0];
+  const chosen = new Set();
+
+  const total = el(`<div class="value-total"></div>`);
+  const paint = () => {
+    const extras = v.extras.filter((e) => chosen.has(e.id));
+    const sum = band.price + extras.reduce((n, e) => n + e.price, 0);
+    const per = sum / v.homeMatches;
+    total.replaceChildren(el(`
+      <div>
+        <div class="value-total__num">${pounds(sum)}</div>
+        <div class="value-total__sub">${esc(band.band)}${
+          extras.length ? ` plus ${extras.length} extra${extras.length > 1 ? "s" : ""}` : ""
+        } &middot; <b>${pounds(per)} a match</b> across ${v.homeMatches} home league games</div>
+      </div>`));
+  };
+
+  v.seasonTickets.forEach((b) => {
+    const chip = el(`
+      <button class="chip${b === band ? " is-on" : ""}">${esc(b.band)} <span>${money(b.price)}</span></button>`);
+    chip.addEventListener("click", () => {
+      band = b;
+      bands.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-on"));
+      chip.classList.add("is-on");
+      paint();
+    });
+    bands.append(chip);
+  });
+  calc.append(bands);
+
+  v.extras.forEach((e) => {
+    const row = el(`
+      <label class="offer" style="margin-bottom:6px">
+        <input type="checkbox">
+        <span><b>${esc(e.label)}</b> <span class="value-add">+${money(e.price)}</span></span>
+      </label>`);
+    row.querySelector("input").addEventListener("change", (ev) => {
+      ev.target.checked ? chosen.add(e.id) : chosen.delete(e.id);
+      paint();
+    });
+    calc.append(row);
+  });
+
+  calc.append(total);
+  paint();
+  calc.append(el(`
+    <p class="hint" style="margin-top:10px">Cup ties are not included in that ${v.homeMatches}, and
+    the club has not said whether a season ticket covers them.</p>`));
+  wrap.append(calc);
+
+  /* ------------------------------------------------- on the gate, compared */
+  const KT = KTFC.adultPrice;
+  const prices = TEAMS.map((t) => t.adultPrice).filter((n) => typeof n === "number");
+  const all = [...prices, KT].sort((a, b) => b - a);
+  const mean = all.reduce((n, x) => n + x, 0) / all.length;
+  const rank = all.indexOf(KT) + 1;
+  const joint = all.filter((x) => x === KT).length - 1;
+
+  wrap.append(el(`<h2 class="section-title">On the gate</h2>`));
+  const gate = el(`<div class="card"></div>`);
+  gate.append(el(`
+    <div class="info-grid info-grid--3">
+      <div class="info"><div class="info__label">Kettering, adult</div>
+        <div class="info__value" style="color:var(--gold-400)">${money(KT)}</div></div>
+      <div class="info"><div class="info__label">Division average</div>
+        <div class="info__value">${pounds(mean)}</div></div>
+      <div class="info"><div class="info__label">Dearest</div>
+        <div class="info__value">${rank}<span style="font-size:13px;color:var(--text-3)"> of ${all.length}</span></div></div>
+    </div>`));
+  gate.append(el(`
+    <p class="club-overview" style="margin-top:12px">Kettering is <b>${pounds(KT - mean)}
+    above the average</b> for the division and the ${ordinal(rank)} dearest of ${all.length}${
+      joint ? `, level with ${joint} other club${joint > 1 ? "s" : ""}` : ""
+    }. Concessions at ${money(KTFC.concessionPrice)} sit almost exactly on the average.</p>`));
+
+  /* Every club, so nobody has to take the average on trust. */
+  const chart = el(`<div class="bars" style="margin-top:14px"></div>`);
+  const rows = [...TEAMS.filter((t) => typeof t.adultPrice === "number")
+    .map((t) => ({ name: t.name, price: t.adultPrice, us: false })),
+    { name: "Kettering Town", price: KT, us: true }]
+    .sort((a, b) => b.price - a.price);
+  const top = rows[0].price;
+  rows.forEach((r) => {
+    chart.append(el(`
+      <div class="bar${r.us ? " bar--us" : ""}">
+        <span class="bar__name">${esc(r.name)}</span>
+        <span class="bar__track"><span class="bar__fill" style="width:${(r.price / top) * 100}%"></span></span>
+        <span class="bar__val">${money(r.price)}</span>
+      </div>`));
+  });
+  gate.append(chart);
+  gate.append(el(`
+    <p class="note" style="margin-top:12px">Each club's price is checked against its own site or
+    ticketing page and carries the date it was checked; open any club in the Away Guide to see
+    which. A few clubs have not published ${v.season} prices, and those are marked there as the
+    older season they came from.</p>`));
+  wrap.append(gate);
+
+  /* --------------------------------------------------- what it does not get */
+  wrap.append(el(`<h2 class="section-title">What a season ticket includes</h2>`));
+  const ben = el(`<div class="card"></div>`);
+  v.benefits.forEach((b) => {
+    ben.append(el(`
+      <div class="crew">
+        <span class="crew__who">${esc(b.what)}</span>
+        <span class="crew__when" style="color:${b.ktfc ? "var(--gold-400)" : "var(--text-3)"}">${
+          b.ktfc ? "Included" : "Not offered"
+        }</span>
+      </div>`));
+  });
+  ben.append(el(`<p class="note" style="margin:12px 0 0">${esc(v.benefitsNote)}</p>`));
+  wrap.append(ben);
+
+  /* ------------------------------------------------------ still unanswered */
+  wrap.append(el(`<h2 class="section-title">Still unanswered</h2>`));
+  const open = el(`<div class="card"></div>`);
+  v.openQuestions.forEach((q, i) => {
+    open.append(el(`
+      <div class="value">
+        <span class="value__num">${i + 1}</span>
+        <span class="value__text"><span class="value__body">${esc(q)}</span></span>
+      </div>`));
+  });
+  wrap.append(open);
+
+  wrap.append(el(`
+    <p class="note" style="margin-top:16px">${esc(v.sourceNote)} Checked
+    ${esc(fmtDate(v.checked))}. If you spot a price that is wrong,
+    <a href="mailto:${esc(CONFIG.credit.email)}">tell us</a> and we will fix it.</p>`));
+
+  return wrap;
+}
+
 /* ================================================ supporters' association */
 
 /**
@@ -7913,6 +8097,12 @@ async function loadLeague(force = false) {
   } catch {
     state.league = null; /* the app falls back to the spreadsheet fixture list */
   }
+}
+
+async function loadValueReview() {
+  if (state.valueReview) return state.valueReview;
+  state.valueReview = await readJSON("data/value-review.json");
+  return state.valueReview;
 }
 
 async function loadAssociation() {

@@ -5224,3 +5224,54 @@ button,
   line-height: 1.5;
   color: var(--text-3);
 }
+
+/* ============================================================ what it costs */
+
+.value-total {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.value-total__num {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--gold-400);
+  line-height: 1.05;
+}
+
+.value-total__sub { margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-2); }
+.value-add { color: var(--text-3); font-size: 12.5px; }
+
+/* Every club's gate price, so the average never has to be taken on trust. */
+.bars { display: flex; flex-direction: column; gap: 5px; }
+
+.bar { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.bar__name {
+  flex: 0 0 33%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.bar__track {
+  flex: 1 1 auto;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.bar__fill { display: block; height: 100%; background: var(--line); border-radius: 3px; }
+.bar__val { flex: 0 0 34px; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* Us, picked out. The point of the chart is where this bar sits. */
+.bar--us .bar__name { color: var(--text); font-weight: 700; }
+.bar--us .bar__fill { background: var(--gold-400); }
+.bar--us .bar__val { color: var(--gold-400); font-weight: 700; }
+
+@media (max-width: 380px) {
+  .bar__name { flex-basis: 40%; }
+}
