@@ -265,8 +265,9 @@ const state = {
   adminTab: "overview",  // which part of the admin panel is showing
   dailyTab: "play",
   resultsPublic: false,   // whether the consultation findings are on the public page
-  questionGroups: null,   // merged questions, once suggested
-  questionSplit: 0,       // how hard to split a theme into separate questions
+  questionGroups: null,   // the questions being written, and what is filed under each
+  qTab: "list",           // which half of the workbench is showing
+  qUnfiled: true,         // the sweep hides what is already filed
   publishedPromise: null,
   dailyAnswers: [],   // right/wrong so far in today's run
 };
@@ -3751,88 +3752,6 @@ function qSimilar(a, b) {
   return shared / (a.size + b.size - shared);
 }
 
-/**
- * Groups questions by theme, splitting a theme only when it is plainly two
- * conversations.
- *
- * `split` is the slider. At zero every theme is one group, which is usually
- * what should go to the club. Raised, a theme breaks into tighter clusters, so
- * a volunteer can pull "when are the accounts published" apart from "how much
- * debt is there" if they want them asked separately.
- *
- * The suggested wording is the most central question in the group, the one with
- * the highest mean similarity to the rest, so it reads like the thing the group
- * is asking rather than whichever happened to be longest.
- */
-function groupQuestions(items, split = 0) {
-  const prepped = items.map((it) => {
-    const words = qWords(it.text);
-    return { ...it, words, topic: qTopic(words) };
-  });
-
-  const byTopic = new Map();
-  prepped.forEach((q) => {
-    if (!byTopic.has(q.topic)) byTopic.set(q.topic, []);
-    byTopic.get(q.topic).push(q);
-  });
-
-  const centralLabel = (members) => {
-    if (members.length === 1) return members[0].text;
-    let label = members[0].text;
-    let bestMean = -1;
-    members.forEach((m) => {
-      const mean = members.reduce((a, o) => a + (o === m ? 0 : qSimilar(m.words, o.words)), 0) /
-        (members.length - 1);
-      if (mean > bestMean) { bestMean = mean; label = m.text; }
-    });
-    return label;
-  };
-
-  const groups = [];
-  byTopic.forEach((qs, topic) => {
-    /* One group per theme unless the volunteer has asked for them split. */
-    let clusters = [qs];
-    if (split > 0 && qs.length > 2) {
-      clusters = [];
-      const taken = new Set();
-      [...qs].sort((a, b) => b.words.size - a.words.size).forEach((seed) => {
-        if (taken.has(seed.id)) return;
-        taken.add(seed.id);
-        const members = [seed];
-        qs.forEach((other) => {
-          if (taken.has(other.id)) return;
-          if (qSimilar(seed.words, other.words) >= split) {
-            taken.add(other.id);
-            members.push(other);
-          }
-        });
-        clusters.push(members);
-      });
-    }
-    clusters.forEach((members) => {
-      groups.push({
-        label: centralLabel(members).trim(),
-        topic,
-        members: members.map((m) => m.id),
-        wording: members.map((m) => m.text),
-      });
-    });
-  });
-
-  return groups.sort((a, b) => b.members.length - a.members.length);
-}
-
-
-/**
- * The grouping workbench. Suggests groups, then gets out of the way: every
- * label is editable, every group can be dropped, and nothing is sent or
- * published until a volunteer marks it final.
- */
-/**
- * Who gets to see the findings before they are published. Read-only access to
- * the same summary everybody gets later, never a raw response, and it stops
- * meaning anything the moment the report goes public.
- */
 function earlySightPicker() {
   const { node, close } = modal(`
     <h3 style="margin-bottom:6px">Who can see it early</h3>
@@ -3889,117 +3808,300 @@ function earlySightPicker() {
   });
 }
 
+/**
+ * Suggests which of the agreed questions a supporter's question belongs under.
+ *
+ * Scored against the volunteer's own wording, the theme, and whatever is
+ * already filed there, so the suggestions sharpen as the sweep goes on. It only
+ * ever proposes: nothing is filed without somebody pressing something.
+ */
+function suggestFor(q, groups) {
+  let best = null;
+  let bestScore = 0;
+  groups.forEach((g, i) => {
+    const labelWords = qWords(g.label || "");
+    let score = qSimilar(q.words, labelWords) * 2;
+    if (g.topic && g.topic === q.topic) score += 0.5;
+    g.members.forEach((id) => {
+      const m = q.all?.get(id);
+      if (m) score = Math.max(score, qSimilar(q.words, m.words));
+    });
+    if (score > bestScore) { bestScore = score; best = i; }
+  });
+  return bestScore >= 0.12 ? best : null;
+}
+
+/**
+ * The question workbench.
+ *
+ * Built the other way up from the first attempt. That one clustered the
+ * submissions and then used the most central supporter's sentence as the
+ * question, which meant the wording sent to the club was somebody's raw text,
+ * typos and all, and no amount of tuning the threshold fixed it.
+ *
+ * So: the volunteer writes the questions, in the Association's own words. Every
+ * submission is then filed under one of them. Anything not filed is not lost --
+ * it goes to the club as an addendum, in full. The counter at the top is the
+ * promise: filed plus addendum always equals the number asked.
+ */
 function questionWorkbench(rows) {
   const box = el(`<div class="card"></div>`);
   const asked = rows
     .filter((r) => r.question && r.question.trim())
-    .map((r) => ({ id: r.id, text: r.question.trim(), approved: r.question_status === "approved" }));
+    .map((r) => {
+      const text = r.question.trim();
+      const words = qWords(text);
+      return { id: r.id, text, words, topic: qTopic(words),
+               approved: r.question_status === "approved" };
+    });
 
   if (!asked.length) {
     box.append(el(`<p class="note" style="margin:0">No questions yet.</p>`));
     return box;
   }
+  const byId = new Map(asked.map((q) => [q.id, q]));
+  asked.forEach((q) => { q.all = byId; });
 
+  state.questionGroups = state.questionGroups || [];
   let groups = state.questionGroups;
-  let split = state.questionSplit ?? 0;
+  let tab = state.qTab || "list";
+  let onlyUnfiled = state.qUnfiled !== false;
 
+  const filedIds = () => new Set(groups.flatMap((g) => g.members));
   const draw = () => {
     box.replaceChildren();
+    const filed = filedIds();
+    const loose = asked.filter((q) => !filed.has(q.id));
+
+    /* The promise, at the top, always. */
     box.append(el(`
-      <p class="note" style="margin:0 0 10px">${asked.length} questions from supporters.
-      ${groups ? `Merged into <b>${groups.length}</b>.` : "Not grouped yet."}
-      Only the wording you agree below is sent or published.</p>`));
+      <div class="sweep-count">
+        <b>${asked.length}</b> questions asked &middot;
+        <b>${filed.size}</b> filed under ${groups.length} question${groups.length === 1 ? "" : "s"} &middot;
+        <b>${loose.length}</b> going to the addendum &middot;
+        <span style="color:var(--gold-400)">none lost</span>
+      </div>`));
 
-    const tools = el(`
-      <div class="bulk">
-        <button class="btn btn--sm" data-act="suggest">${groups ? "Suggest again" : "Suggest groups"}</button>
-        <label class="split">Split themes
-          <input type="range" min="0" max="0.6" step="0.05" value="${split}">
-          <span>${split === 0 ? "off" : split.toFixed(2)}</span>
-        </label>
+    const tabs = el(`
+      <div class="chips__row" style="margin-bottom:12px">
+        <button class="chip${tab === "list" ? " is-on" : ""}" data-tab="list">The list <span>${groups.length}</span></button>
+        <button class="chip${tab === "sweep" ? " is-on" : ""}" data-tab="sweep">Sweep <span>${loose.length}</span></button>
       </div>`);
-    tools.querySelector('[data-act="suggest"]').addEventListener("click", () => {
-      groups = state.questionGroups = groupQuestions(asked, split);
-      draw();
+    tabs.querySelectorAll("[data-tab]").forEach((b) => {
+      b.addEventListener("click", () => { tab = state.qTab = b.dataset.tab; draw(); });
     });
-    const range = tools.querySelector("input");
-    range.addEventListener("input", () => {
-      split = state.questionSplit = Number(range.value);
-      tools.querySelector("span").textContent = split === 0 ? "off" : split.toFixed(2);
-    });
-    range.addEventListener("change", () => {
-      groups = state.questionGroups = groupQuestions(asked, split);
-      draw();
-    });
-    box.append(tools);
+    box.append(tabs);
 
-    if (!groups) {
-      box.append(el(`<p class="hint">Suggest groups to start. Themes first: a club sent
-        ${asked.length} questions answers none of them, and most of these are the same handful of
-        questions asked in different words. Nudge the slider if a theme is really two.</p>`));
+    if (tab === "list") drawList(loose);
+    else drawSweep(loose);
+  };
+
+  /* ------------------------------------------------------------ the list */
+  const drawList = (loose) => {
+    if (!groups.length) {
+      box.append(el(`
+        <p class="hint">Write the questions you want answered, in your words. Ten is about right:
+        a club sent ninety answers none. Then file every supporter's question under one of them, and
+        anything that does not fit goes to the club as an addendum rather than being dropped.</p>`));
+      const seedRow = el(`<div class="btn-row" style="margin-bottom:12px"></div>`);
+      const seed = el(`<button class="btn btn--sm">Start from the themes</button>`);
+      seed.addEventListener("click", () => {
+        const tally = new Map();
+        asked.forEach((q) => tally.set(q.topic, [...(tally.get(q.topic) || []), q.id]));
+        groups = state.questionGroups = [...tally.entries()]
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([topic, ids]) => ({ label: "", topic, members: ids, wording: [] }));
+        draw();
+      });
+      const blank = el(`<button class="btn btn--sm btn--ghost">Start from nothing</button>`);
+      blank.addEventListener("click", () => {
+        groups = state.questionGroups = [{ label: "", topic: "other", members: [], wording: [] }];
+        draw();
+      });
+      seedRow.append(seed, blank);
+      box.append(seedRow);
+      box.append(el(`<p class="hint" style="margin-top:0">Starting from the themes files every
+        question under its theme straight away, so you are writing wording rather than sorting.</p>`));
       return;
     }
 
     groups.forEach((g, i) => {
+      const mine = g.members.map((id) => byId.get(id)).filter(Boolean);
+      const publishable = mine.filter((m) => m.approved).length;
       const card = el(`
         <div class="qgroup">
           <div class="qgroup__meta">
-            <span class="pill pill--gold">${esc(Q_TOPIC_LABEL[g.topic] || g.topic)}</span>
-            <span class="pill">${g.members.length} asked</span>
+            <span class="pill pill--gold">${i + 1}</span>
+            <span class="pill">${esc(Q_TOPIC_LABEL[g.topic] || "Mixed")}</span>
+            <span class="pill">${mine.length} asked</span>
+            <span class="pill">${publishable} publishable</span>
           </div>
-          <textarea class="qgroup__label" rows="2"
+          <textarea class="qgroup__label" rows="2" placeholder="Write the question in your words"
             aria-label="Question ${i + 1}">${esc(g.label)}</textarea>
           <details class="qgroup__src">
-            <summary>What supporters actually wrote (${g.wording.length})</summary>
-            <div>${g.wording.map((w) => `<p>${esc(w)}</p>`).join("")}</div>
+            <summary>What supporters wrote (${mine.length})</summary>
+            <div>${mine.map((m) => `<p${m.approved ? "" : ' class="q-unapproved"'}>${esc(m.text)}${
+              m.approved ? "" : " <em>(not approved for publication)</em>"
+            }</p>`).join("") || "<p class=\"note\">Nothing filed here yet.</p>"}</div>
           </details>
           <div class="btn-row">
-            <button class="btn btn--sm btn--ghost" data-act="up">Move up</button>
-            <button class="btn btn--sm btn--ghost" data-act="drop">Drop</button>
+            <button class="btn btn--sm btn--ghost" data-act="up">Up</button>
+            <button class="btn btn--sm btn--ghost" data-act="empty">Unfile all</button>
+            <button class="btn btn--sm btn--ghost" data-act="drop">Delete</button>
           </div>
         </div>`);
       card.querySelector(".qgroup__label").addEventListener("input", (e) => { g.label = e.target.value; });
-      card.querySelector('[data-act="drop"]').addEventListener("click", () => {
-        groups.splice(i, 1); draw();
-      });
       card.querySelector('[data-act="up"]').addEventListener("click", () => {
         if (i === 0) return;
         [groups[i - 1], groups[i]] = [groups[i], groups[i - 1]];
         draw();
       });
+      card.querySelector('[data-act="empty"]').addEventListener("click", () => {
+        g.members = []; draw();
+      });
+      card.querySelector('[data-act="drop"]').addEventListener("click", () => {
+        /* Deleting a question must not delete what was filed under it: those
+           submissions fall back to the addendum, which is the whole point. */
+        groups.splice(i, 1); draw();
+      });
       box.append(card);
     });
 
-    const save = el(`
+    const add = el(`<button class="btn btn--sm btn--ghost" style="margin-bottom:12px">Add another question</button>`);
+    add.addEventListener("click", () => {
+      groups.push({ label: "", topic: "other", members: [], wording: [] });
+      draw();
+    });
+    box.append(add);
+
+    if (loose.length) {
+      box.append(el(`<p class="hint">${loose.length} still unfiled. They will go to the club as an
+        addendum unless you file them under the Sweep tab.</p>`));
+    }
+    box.append(saveRow(loose));
+  };
+
+  /* ---------------------------------------------------------- the sweep */
+  const drawSweep = (loose) => {
+    if (!groups.length) {
+      box.append(el(`<p class="hint">Write at least one question on the list tab first.</p>`));
+      return;
+    }
+    const filed = filedIds();
+    const shown = onlyUnfiled ? loose : asked;
+
+    const filt = el(`
+      <label class="offer" style="margin-bottom:10px">
+        <input type="checkbox"${onlyUnfiled ? " checked" : ""}>
+        <span>Only show what is still unfiled</span>
+      </label>`);
+    filt.querySelector("input").addEventListener("change", (e) => {
+      onlyUnfiled = state.qUnfiled = e.target.checked; draw();
+    });
+    box.append(filt);
+
+    if (!shown.length) {
+      box.append(el(`<div class="empty"><b>Everything is filed</b>Nothing is heading for the
+        addendum.</div>`));
+      box.append(saveRow(loose));
+      return;
+    }
+
+    shown.slice(0, 60).forEach((q) => {
+      const here = groups.findIndex((g) => g.members.includes(q.id));
+      const hint = here === -1 ? suggestFor(q, groups) : null;
+      const row = el(`
+        <div class="sweep">
+          <p class="sweep__text">${esc(q.text)}</p>
+          <div class="chips__row sweep__to"></div>
+        </div>`);
+      const to = row.querySelector(".sweep__to");
+      groups.forEach((g, i) => {
+        const on = here === i;
+        const b = el(`
+          <button class="chip${on ? " is-on" : ""}${hint === i ? " chip--hint" : ""}"
+            title="${esc(g.label || `Question ${i + 1}`)}">${i + 1}${
+              hint === i && !on ? " <span>likely</span>" : ""
+            }</button>`);
+        b.addEventListener("click", () => {
+          groups.forEach((o) => { o.members = o.members.filter((x) => x !== q.id); });
+          if (!on) g.members.push(q.id);
+          draw();
+        });
+        to.append(b);
+      });
+      const none = el(`<button class="chip${here === -1 ? " is-on" : ""}">Addendum</button>`);
+      none.addEventListener("click", () => {
+        groups.forEach((o) => { o.members = o.members.filter((x) => x !== q.id); });
+        draw();
+      });
+      to.append(none);
+      box.append(row);
+    });
+    if (shown.length > 60) {
+      box.append(el(`<p class="hint">Showing 60 of ${shown.length}. File these and the rest follow.</p>`));
+    }
+    box.append(saveRow(loose));
+  };
+
+  /* --------------------------------------------------------- save / copy */
+  const saveRow = (loose) => {
+    const wrap2 = el(`<div></div>`);
+    const row = el(`
       <div class="btn-row" style="margin-top:14px">
         <button class="btn btn--sm" data-act="final">Save as the final list</button>
         <button class="btn btn--sm btn--ghost" data-act="copy">Copy for the club</button>
       </div>`);
-    save.querySelector('[data-act="final"]').addEventListener("click", async () => {
-      const clean = groups.filter((g) => g.label.trim().length >= 5);
-      if (!clean.length) return toast("Nothing to save.");
+
+    const ready = () => groups.filter((g) => g.label.trim().length >= 8);
+
+    row.querySelector('[data-act="final"]').addEventListener("click", async () => {
+      const clean = ready();
+      if (!clean.length) return toast("Write at least one question first.");
+      if (clean.length !== groups.length) {
+        return toast(`${groups.length - clean.length} question${
+          groups.length - clean.length === 1 ? " has" : "s have"} no wording yet.`);
+      }
       try {
-        await db.saveQuestionGroups(clean.map((g) => ({ ...g, status: "final" })));
+        await db.saveQuestionGroups(clean.map((g, i) => ({
+          label: g.label.trim(), topic: g.topic, members: g.members, sort: i, status: "final",
+        })));
         toast(`${clean.length} questions saved as final.`);
       } catch (err) {
         toast(err.message || "That did not save.");
       }
     });
-    save.querySelector('[data-act="copy"]').addEventListener("click", async () => {
+
+    row.querySelector('[data-act="copy"]').addEventListener("click", async () => {
+      const clean = ready();
+      if (!clean.length) return toast("Write at least one question first.");
       const total = (await db.consultationResults())?.summary?.responses || asked.length;
-      const text = [
+      const lines = [
         `Kettering Town FC Supporters' Association`,
         `Questions from supporters, ${fmtDate(londonToday())}`,
         ``,
         `${total} supporters took part in an independent consultation between 17 and 21 August.`,
-        `${asked.length} of them asked a question. Where the same question was asked more than`,
-        `once, we have merged it and said how many people asked.`,
+        `${asked.length} of them asked a question. Those have been grouped into the ${clean.length}`,
+        `questions below, with the number of supporters who asked each one.`,
         ``,
-        ...groups.map((g, i) => `${i + 1}. ${g.label.trim()}  (asked by ${g.members.length})`),
+        ...clean.map((g, i) => `${i + 1}. ${g.label.trim()}  (asked by ${g.members.length})`),
+      ];
+      if (loose.length) {
+        lines.push(
+          ``,
+          `Addendum: ${loose.length} question${loose.length === 1 ? "" : "s"} that did not fall`,
+          `under any of the above. They are reproduced here so that nothing supporters asked is`,
+          `left out.`,
+          ``,
+          ...loose.map((q, i) => `A${i + 1}. ${q.text}`),
+        );
+      }
+      lines.push(
         ``,
         `We will publish which of these have been answered, and how long any unanswered`,
         `question has been outstanding.`,
-      ].join("\n");
+      );
+      const text = lines.join("\n");
       const ok = await copyText(text);
       if (ok) {
         await db.stampQuestionsAsked();
@@ -4010,10 +4112,12 @@ function questionWorkbench(rows) {
           <textarea readonly rows="12" style="width:100%">${esc(text)}</textarea>`);
       }
     });
-    box.append(save);
-    box.append(el(`<p class="hint">Saving marks them final. Copying stamps the date each question
-      went to the club, which is what makes the public page count the days it has gone
-      unanswered.</p>`));
+
+    wrap2.append(row);
+    wrap2.append(el(`<p class="hint">Saving marks them final. Copying stamps the date each question
+      went to the club, which is what makes the public page count the days it has gone unanswered.
+      The addendum goes with them, so nothing a supporter asked is dropped.</p>`));
+    return wrap2;
   };
 
   draw();
@@ -7699,9 +7803,18 @@ function consultResults() {
                 " · To be sent to the club."}</p>
               ${(q.samples || []).length ? `
                 <details class="qitem__src">
-                  <summary>See how supporters put it</summary>
+                  <summary>See how ${q.samples.length === 1 ? "one supporter" :
+                    `${q.samples.length} supporters`} put it${
+                    q.asked_by > q.samples.length ? `, of the ${q.asked_by} who asked` : ""
+                  }</summary>
                   ${q.samples.map((w) => `<p>${esc(w)}</p>`).join("")}
-                </details>` : ""}
+                  ${q.asked_by > q.samples.length ? `<p class="hint">The other ${
+                    q.asked_by - q.samples.length
+                  } who asked this did not tick the box saying we could publish their wording. They
+                  are still counted above, and their question still went to the club.</p>` : ""}
+                </details>` : `
+                <p class="hint">Nobody who asked this ticked the box saying we could publish their
+                wording, so only the count is shown.</p>`}
             </div>
           </div>`);
         card.append(item);

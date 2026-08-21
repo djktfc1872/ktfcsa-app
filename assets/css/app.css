@@ -5259,3 +5259,35 @@ button,
 @media (max-width: 380px) {
   .bar__name { flex-basis: 40%; }
 }
+
+/* ==================================================== the question workbench */
+
+/* The promise, kept in view: filed plus addendum always equals asked. */
+.sweep-count {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* One supporter's question, waiting to be filed. */
+.sweep {
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.sweep:first-of-type { border-top: 0; }
+.sweep__text { margin: 0 0 8px; font-size: 13px; line-height: 1.55; color: var(--text); }
+.sweep__to { gap: 5px; }
+.sweep__to .chip { padding: 5px 9px; min-width: 30px; justify-content: center; }
+
+/* What the suggester thinks, without deciding it. */
+.chip--hint { border-style: dashed; border-color: var(--gold-600); }
+.chip--hint span { color: var(--gold-400); }
+
+/* Filed but not cleared for publication: it still counts, it just cannot be shown. */
+.q-unapproved { color: var(--text-3); }
+.q-unapproved em { font-style: normal; font-size: 11px; color: var(--red-400); }

@@ -1642,18 +1642,23 @@ select
   g.sort,
   cardinality(g.members)                      as asked_by,
   coalesce(sample.wording, '{}')              as samples,
+  coalesce(sample.n, 0)                       as samples_total,
   g.asked_at,
   g.answered_at
 from consultation_question_groups g
+-- Every approved wording behind the question, not a token three: the promise on
+-- the public page is that you can see what is under each one. Anything a
+-- supporter did not clear for publication is still counted in asked_by and
+-- still went to the club, it simply cannot be shown, and the page says so.
 left join lateral (
-  select array_agg(r.question) as wording
+  select array_agg(r.question) as wording, count(*) as n
   from (
     select r.question
     from consultation_responses r
     where r.id = any(g.members)
       and r.question_status = 'approved'
       and r.question is not null
-    limit 3
+    limit 40
   ) r
 ) sample on true
 where g.status = 'final'
