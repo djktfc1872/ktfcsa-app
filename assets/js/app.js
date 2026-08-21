@@ -4005,6 +4005,65 @@ async function offerFile(name, text) {
   }
 }
 
+/**
+ * Reads a prepared list: the agreed wording for each question, which
+ * submissions belong under it, and which are held back.
+ *
+ * Typing ten long questions and filing a hundred submissions by hand on a
+ * phone is not a job anybody should be asked to do twice, and the filing is
+ * decided away from the screen anyway. Positions refer to the numbering in
+ * "Copy all questions", so the paste is checked against the total before it is
+ * allowed to touch anything: if a response arrived after that export every
+ * number would be off by one, and silently misfiling a hundred questions is
+ * far worse than refusing.
+ *
+ * Format, one per line:
+ *   TOTAL 109
+ *   Q1 | 1,2,4,12 | The agreed wording of the question
+ *   HOLD | 5,8,25
+ */
+function parsePreparedList(text, asked) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const out = { groups: [], hold: [], errors: [] };
+  let declared = null;
+
+  lines.forEach((line) => {
+    const total = line.match(/^TOTAL\s+(\d+)$/i);
+    if (total) { declared = Number(total[1]); return; }
+
+    const parts = line.split("|").map((x) => x.trim());
+    const head = (parts[0] || "").toUpperCase();
+
+    const nums = (parts[1] || "").split(/[,\s]+/).filter(Boolean).map(Number);
+    const bad = nums.filter((n) => !Number.isInteger(n) || n < 1 || n > asked.length);
+    if (bad.length) out.errors.push(`${head}: ${bad.join(", ")} out of range`);
+    const ids = nums.filter((n) => !bad.includes(n)).map((n) => asked[n - 1].id);
+
+    if (head === "HOLD") { out.hold.push(...ids); return; }
+    if (/^Q\d+$/.test(head)) {
+      const label = parts.slice(2).join(" | ").trim();
+      if (!label) out.errors.push(`${head} has no wording`);
+      out.groups.push({ label, topic: "other", members: ids, wording: [] });
+      return;
+    }
+    out.errors.push(`Could not read: ${line.slice(0, 40)}`);
+  });
+
+  if (declared === null) out.errors.push("No TOTAL line, so the numbering cannot be checked.");
+  else if (declared !== asked.length) {
+    out.errors.push(`TOTAL says ${declared} but there are ${asked.length} questions. `
+      + `The numbering would not line up, so nothing has been changed.`);
+  }
+
+  const seen = new Set();
+  [...out.groups.flatMap((g) => g.members), ...out.hold].forEach((id) => {
+    if (seen.has(id)) out.errors.push("The same question is filed twice.");
+    seen.add(id);
+  });
+  out.filed = seen.size;
+  return out;
+}
+
 function questionWorkbench(rows) {
   const box = el(`<div class="card"></div>`);
   const asked = rows
@@ -4084,6 +4143,51 @@ function questionWorkbench(rows) {
     else drawSweep(loose, held);
   };
 
+  /* Paste a list worked out away from the screen. */
+  const loadBtn = () => {
+    const b = el(`<button class="btn btn--sm btn--ghost">Load a prepared list</button>`);
+    b.addEventListener("click", () => {
+      const { node, close } = modal(`
+        <h3 style="margin-bottom:6px">Load a prepared list</h3>
+        <p class="hint" style="margin-bottom:10px">One line per question, numbers referring to
+          "Copy all questions". Anything not listed goes to the addendum.</p>
+        <textarea id="q-paste" rows="12" style="width:100%"
+          placeholder="TOTAL ${asked.length}&#10;Q1 | 1,2,4 | The wording of the question&#10;HOLD | 5,8"></textarea>
+        <div id="q-paste-msg"></div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn--sm" data-go>Check it</button>
+          <button class="btn btn--sm btn--ghost" data-cancel>Cancel</button>
+        </div>`);
+      node.querySelector("[data-cancel]").addEventListener("click", close);
+      node.querySelector("[data-go]").addEventListener("click", () => {
+        const msg = node.querySelector("#q-paste-msg");
+        const res = parsePreparedList(node.querySelector("#q-paste").value, asked);
+        msg.replaceChildren();
+        if (res.errors.length) {
+          msg.append(el(`<div class="empty" style="margin-top:10px"><b>Not loaded</b>${
+            res.errors.map((e) => esc(e)).join("<br>")}</div>`));
+          return;
+        }
+        const addendum = asked.length - res.filed;
+        msg.append(el(`<p class="hint" style="margin-top:10px"><b>${res.groups.length}</b> questions,
+          <b>${res.filed - res.hold.length}</b> filed, <b>${addendum}</b> to the addendum,
+          <b>${res.hold.length}</b> held back. This replaces whatever is here now.</p>`));
+        const go = el(`<button class="btn btn--sm" style="margin-top:8px">Apply it</button>`);
+        go.addEventListener("click", () => {
+          groups = state.questionGroups = res.groups;
+          excluded.clear();
+          res.hold.forEach((id) => excluded.add(id));
+          state.qExcluded = [...excluded];
+          close();
+          draw();
+          toast(`${res.groups.length} questions loaded.`);
+        });
+        msg.append(go);
+      });
+    });
+    return b;
+  };
+
   /* ------------------------------------------------------------ the list */
   const drawList = (loose, held) => {
     if (!groups.length) {
@@ -4108,7 +4212,7 @@ function questionWorkbench(rows) {
         groups = state.questionGroups = [{ label: "", topic: "other", members: [], wording: [] }];
         draw();
       });
-      seedRow.append(seed, blank);
+      seedRow.append(seed, blank, loadBtn());
       box.append(seedRow);
       box.append(el(`<p class="hint" style="margin-top:0">Starting from the themes files every
         question under its theme and puts a rough first line in each, so you are editing wording
@@ -4158,6 +4262,10 @@ function questionWorkbench(rows) {
       });
       box.append(card);
     });
+
+    const tools2 = el(`<div class="btn-row" style="margin-bottom:12px"></div>`);
+    tools2.append(loadBtn());
+    box.append(tools2);
 
     const add = el(`<button class="btn btn--sm btn--ghost" style="margin-bottom:12px">Add another question</button>`);
     add.addEventListener("click", () => {
