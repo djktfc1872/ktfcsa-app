@@ -3663,25 +3663,37 @@ function foldable(title, build, { open = false } = {}) {
    word overlap. It suggests; a volunteer decides. Nothing is published in a
    supporter's words without somebody agreeing them.                        */
 
+/* The words that put a question under a theme. Scored by how many hit, so a
+   term appearing in two lists is not a problem: the stronger match wins.
+   Widened after the August consultation, where 46 of 109 questions fell into
+   "everything else" because the lists were missing the words supporters
+   actually use -- "sell" was absent from ownership and "money" from money. */
 const Q_TOPICS = [
   ["volunteers", "Volunteers and staff",
-   "volunteer steward resign resigned resigning departure sacked"],
+   "volunteer steward resign departure sacked staff personnel stalwart leaving "
+   + "left walked walking stepping stepped quit interview interviewed reinterview "
+   + "replaced replacement pushed exited departed"],
   ["money", "Money and accounts",
-   "account accounts financial finance finances debt solvent turnover audit creditor hmrc"],
+   "account financial finance debt solvent turnover audit creditor hmrc money "
+   + "fund funding cash spent spend paid payment owed owing invoice supplier "
+   + "income revenue loss profit administration"],
   ["comms", "Communication and transparency",
-   "communication communicate communicating told telling inform informed silence statement transparency transparent explain explanation honest"],
+   "communication communicate told telling inform silence statement transparency "
+   + "transparent explain explanation honest honesty truth lied update announced"],
   ["ownership", "Ownership and investment",
-   "owner ownership takeover consortium buyer sale invest investor investment shareholding akhtar"],
+   "owner ownership takeover consortium buyer sale sell sold buy bid offer "
+   + "custodian invest investor investment shareholding akhtar"],
   ["ground", "The ground and the lease",
-   "ground stadium lease latimer freehold tenancy pitch"],
+   "ground stadium lease latimer rockingham freehold tenancy pitch facility "
+   + "floodlight toilet fence infrastructure 3g"],
   ["sponsors", "Sponsors and partners",
    "sponsor sponsorship partner commercial advertising"],
   ["football", "The team and the manager",
-   "manager coach signing recruitment playing budget squad football"],
+   "manager coach signing recruitment playing budget squad football player team"],
   ["governance", "Board and governance",
-   "board director chairman committee governance agm minutes constitution"],
+   "board director chairman committee governance agm minutes constitution trustee"],
   ["matchday", "Matchday, tickets and the bar",
-   "ticket admission price programme bar turnstile matchday queue"],
+   "ticket admission price programme bar turnstile matchday queue clubhouse"],
 ];
 
 /* Words too ordinary to say anything. Deliberately long, and it includes the
@@ -3741,6 +3753,27 @@ function qTopic(words) {
   }
   return best;
 }
+
+/**
+ * A first draft of each theme's question, to be edited rather than accepted.
+ *
+ * "Start from the themes" used to hand over empty boxes, which is the correct
+ * principle -- the wording has to be the Association's, not a supporter's raw
+ * sentence -- applied in the least useful way. Editing a sentence is a far
+ * smaller job than facing a blank one, and it is still entirely rewritable.
+ */
+const Q_TOPIC_DRAFT = {
+  volunteers: "How many volunteers and members of staff have left the club since June, and what was the reason in each case?",
+  money: "What is the club's current financial position, and when will its accounts be published?",
+  comms: "Why has the club not explained recent changes to supporters, and what will it do differently?",
+  ownership: "Has the club received a formal takeover approach, and on what terms would the owner consider selling?",
+  ground: "What investment is planned at the ground, how will it be funded, and what is the long-term plan for a home?",
+  sponsors: "Which commercial partnerships is the club relying on, and how is that income shared across the club?",
+  football: "What are the plans for the squad and the management, and what is the playing budget?",
+  governance: "Who sits on the board and the committee, what is each person's role, and who takes the final decision?",
+  matchday: "How are admission prices set, and what is being done about the matchday experience?",
+  other: "",
+};
 
 const Q_TOPIC_LABEL = Object.fromEntries(
   [...Q_TOPICS.map(([k, l]) => [k, l]), ["other", "Everything else"]]
@@ -4064,7 +4097,9 @@ function questionWorkbench(rows) {
         asked.forEach((q) => tally.set(q.topic, [...(tally.get(q.topic) || []), q.id]));
         groups = state.questionGroups = [...tally.entries()]
           .sort((a, b) => b[1].length - a[1].length)
-          .map(([topic, ids]) => ({ label: "", topic, members: ids, wording: [] }));
+          .map(([topic, ids]) => ({
+            label: Q_TOPIC_DRAFT[topic] || "", topic, members: ids, wording: [],
+          }));
         draw();
       });
       const blank = el(`<button class="btn btn--sm btn--ghost">Start from nothing</button>`);
@@ -4075,7 +4110,9 @@ function questionWorkbench(rows) {
       seedRow.append(seed, blank);
       box.append(seedRow);
       box.append(el(`<p class="hint" style="margin-top:0">Starting from the themes files every
-        question under its theme straight away, so you are writing wording rather than sorting.</p>`));
+        question under its theme and puts a rough first line in each, so you are editing wording
+        rather than facing a blank box. Every word of it is yours to change, and themes nobody
+        asked about are not created at all.</p>`));
       return;
     }
 
