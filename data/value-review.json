@@ -1,35 +1,11 @@
 {
   "season": "2026/27",
-  "homeMatches": 21,
   "checked": "2026-08-21",
-  "sourceNote": "Season ticket prices are the club's own 2026/27 commercial announcement. Gate prices across the division are the ones this app checks and dates itself, club by club.",
-
-  "seasonTickets": [
-    { "band": "Adult", "detail": "Early bird, until 31 May", "price": 250 },
-    { "band": "Concession", "detail": "66+ and NUS", "price": 170 },
-    { "band": "Youth", "detail": "Secondary school up to 18", "price": 85 },
-    { "band": "Junior", "detail": "Pre-secondary", "price": 30 }
-  ],
-
-  "extras": [
-    { "id": "card", "label": "Physical season ticket card", "price": 5 },
-    { "id": "seat", "label": "Reserved seating", "price": 50 },
-    { "id": "alumasc", "label": "Alumasc parking pass", "price": 40 },
-    { "id": "clubhouse", "label": "Clubhouse car park pass", "price": 100 }
-  ],
-
-  "benefits": [
-    { "what": "Discount in the clubhouse or bar", "ktfc": false },
-    { "what": "Priority on cup tickets", "ktfc": false },
-    { "what": "Club shop discount", "ktfc": false },
-    { "what": "Bring-a-friend passes", "ktfc": false },
-    { "what": "Digital matchday programme", "ktfc": false }
-  ],
-  "benefitsNote": "An earlier Association review found each of these offered at Halesowen Town, Leamington or Stratford Town. That was a sample of three clubs rather than a survey of the division, so it is worth rechecking before anyone leans on it.",
+  "sourceNote": "Every price here is checked against the club's own site or ticketing page and carries the date it was checked. Where a club has not published 2026/27 prices, the season the figure came from is shown against it.",
 
   "openQuestions": [
-    "The club has still not published 2026/27 admission prices anywhere. Its own ticket page is placeholder text, the Ticket Tailor store is empty and Fanbase sits behind a login.",
-    "Whether a season ticket covers cup ties, and what happens to it if a match is called off.",
-    "Whether any discount exists for a second or third family member."
+    "Kettering has still not published 2026/27 admission prices anywhere. The club's own ticket page is placeholder text, the Ticket Tailor store is empty and Fanbase sits behind a login. The £15 here follows the Football Ground Guide, updated March 2026.",
+    "Nothing published lists a price for younger children, so families are left to ask at the turnstile.",
+    "There is no advance or online price, while seven clubs in the division are cheaper booked ahead."
   ]
 }

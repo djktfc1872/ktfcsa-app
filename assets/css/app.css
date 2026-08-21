@@ -5227,24 +5227,8 @@ button,
 
 /* ============================================================ what it costs */
 
-.value-total {
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: var(--r);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-}
 
-.value-total__num {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--gold-400);
-  line-height: 1.05;
-}
 
-.value-total__sub { margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-2); }
-.value-add { color: var(--text-3); font-size: 12.5px; }
 
 /* Every club's gate price, so the average never has to be taken on trust. */
 .bars { display: flex; flex-direction: column; gap: 5px; }

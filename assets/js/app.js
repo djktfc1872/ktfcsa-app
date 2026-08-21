@@ -6658,16 +6658,17 @@ const ARCHIVE_HELP = [
 /* ============================================================ what it costs */
 
 /**
- * What following Kettering actually costs, and how that sits against the rest
- * of the division. Carried over from the Association's season ticket review on
- * the old site, but rebuilt on data this app can stand behind: the gate prices
- * here are the ones we check and date ourselves, club by club.
+ * What it costs to watch Kettering, and where that sits in the division.
  *
- * The old review led on a "£219 peer average" for season tickets. That is not
- * repeated. Its own footnote said ten clubs, it showed five, those five average
- * £229.60 rather than £219, and they were 2025/26 prices set against Kettering's
- * 2026/27. A number that cannot be reconstructed is a number the club can
- * dismiss, and one bad figure would be used to wave away the rest.
+ * Grown out of the Association's season ticket review on the old site, but the
+ * season ticket half is gone: the early bird closed on 31 May and nobody
+ * mid-season is deciding whether to buy one. What is left is the thing a
+ * supporter actually needs on a Saturday, and it is built on our own data --
+ * every price checked against the club's own site and carrying the date.
+ *
+ * The old review's "£219 peer average" for season tickets is not repeated
+ * anywhere. Its footnote said ten clubs, it showed five, those five average
+ * £229.60, and they were 2025/26 prices set against Kettering's 2026/27.
  */
 function viewValue() {
   const wrap = el(`<div></div>`);
@@ -6679,84 +6680,41 @@ function viewValue() {
     return wrap;
   }
 
-  wrap.append(el(`
-    <div class="page-head page-head--airy">
-      <h1>What it costs</h1>
-      <p>Season tickets, what you pay on the gate, and how Kettering compares with
-         the ${TEAMS.length} other clubs in the division.</p>
-    </div>`));
-
-  /* ---------------------------------------------------------- the builder */
-  wrap.append(el(`<h2 class="section-title">Work out your season</h2>`));
-  const calc = el(`<div class="card"></div>`);
-  calc.append(el(`
-    <p class="club-overview" style="margin-bottom:12px">The advertised price is the start of it.
-    Pick your band and anything you would actually buy.</p>`));
-
-  const bands = el(`<div class="chips__row" style="margin-bottom:14px"></div>`);
-  let band = v.seasonTickets[0];
-  const chosen = new Set();
-
-  const total = el(`<div class="value-total"></div>`);
-  const paint = () => {
-    const extras = v.extras.filter((e) => chosen.has(e.id));
-    const sum = band.price + extras.reduce((n, e) => n + e.price, 0);
-    const per = sum / v.homeMatches;
-    total.replaceChildren(el(`
-      <div>
-        <div class="value-total__num">${pounds(sum)}</div>
-        <div class="value-total__sub">${esc(band.band)}${
-          extras.length ? ` plus ${extras.length} extra${extras.length > 1 ? "s" : ""}` : ""
-        } &middot; <b>${pounds(per)} a match</b> across ${v.homeMatches} home league games</div>
-      </div>`));
-  };
-
-  v.seasonTickets.forEach((b) => {
-    const chip = el(`
-      <button class="chip${b === band ? " is-on" : ""}">${esc(b.band)} <span>${money(b.price)}</span></button>`);
-    chip.addEventListener("click", () => {
-      band = b;
-      bands.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-on"));
-      chip.classList.add("is-on");
-      paint();
-    });
-    bands.append(chip);
-  });
-  calc.append(bands);
-
-  v.extras.forEach((e) => {
-    const row = el(`
-      <label class="offer" style="margin-bottom:6px">
-        <input type="checkbox">
-        <span><b>${esc(e.label)}</b> <span class="value-add">+${money(e.price)}</span></span>
-      </label>`);
-    row.querySelector("input").addEventListener("change", (ev) => {
-      ev.target.checked ? chosen.add(e.id) : chosen.delete(e.id);
-      paint();
-    });
-    calc.append(row);
-  });
-
-  calc.append(total);
-  paint();
-  calc.append(el(`
-    <p class="hint" style="margin-top:10px">Cup ties are not included in that ${v.homeMatches}, and
-    the club has not said whether a season ticket covers them.</p>`));
-  wrap.append(calc);
-
-  /* ------------------------------------------------- on the gate, compared */
   const KT = KTFC.adultPrice;
   const prices = TEAMS.map((t) => t.adultPrice).filter((n) => typeof n === "number");
   const all = [...prices, KT].sort((a, b) => b - a);
   const mean = all.reduce((n, x) => n + x, 0) / all.length;
   const rank = all.indexOf(KT) + 1;
   const joint = all.filter((x) => x === KT).length - 1;
+  const dearer = KT > mean;
 
-  wrap.append(el(`<h2 class="section-title">On the gate</h2>`));
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <h1>What it costs</h1>
+      <p>What you pay on the gate at Latimer Park, and how that compares with the
+         ${TEAMS.length} other clubs in the division.</p>
+    </div>`));
+
+  /* What a supporter actually pays on Saturday, before any comparison. */
+  const mine = el(`<div class="card"></div>`);
+  mine.append(el(`
+    <div class="info-grid info-grid--3">
+      <div class="info"><div class="info__label">${esc(KTFC.adultRange)}</div>
+        <div class="info__value" style="color:var(--gold-400)">${money(KT)}</div></div>
+      <div class="info"><div class="info__label">${esc(KTFC.concessionRange)}</div>
+        <div class="info__value">${money(KTFC.concessionPrice)}</div></div>
+      <div class="info"><div class="info__label">${esc(KTFC.youthRange)}</div>
+        <div class="info__value">${money(KTFC.youthPrice)}</div></div>
+    </div>`));
+  mine.append(el(`<p class="hint">${esc(KTFC.priceNote)}</p>`));
+  wrap.append(mine);
+
+  /* ------------------------------------------------- against the division */
+  wrap.append(el(`<h2 class="section-title">Against the division</h2>`));
   const gate = el(`<div class="card"></div>`);
   gate.append(el(`
     <div class="info-grid info-grid--3">
-      <div class="info"><div class="info__label">Kettering, adult</div>
+      <div class="info"><div class="info__label">Kettering</div>
         <div class="info__value" style="color:var(--gold-400)">${money(KT)}</div></div>
       <div class="info"><div class="info__label">Division average</div>
         <div class="info__value">${pounds(mean)}</div></div>
@@ -6764,10 +6722,12 @@ function viewValue() {
         <div class="info__value">${rank}<span style="font-size:13px;color:var(--text-3)"> of ${all.length}</span></div></div>
     </div>`));
   gate.append(el(`
-    <p class="club-overview" style="margin-top:12px">Kettering is <b>${pounds(KT - mean)}
-    above the average</b> for the division and the ${ordinal(rank)} dearest of ${all.length}${
+    <p class="club-overview" style="margin-top:12px">An adult at Latimer Park is
+    <b>${pounds(Math.abs(KT - mean))} ${dearer ? "above" : "below"} the division average</b>, the
+    ${ordinal(rank)} dearest of ${all.length}${
       joint ? `, level with ${joint} other club${joint > 1 ? "s" : ""}` : ""
-    }. Concessions at ${money(KTFC.concessionPrice)} sit almost exactly on the average.</p>`));
+    }. Concessions at ${money(KTFC.concessionPrice)} sit almost exactly on the average, so it is
+    the adult price that stands out rather than the whole card.</p>`));
 
   /* Every club, so nobody has to take the average on trust. */
   const chart = el(`<div class="bars" style="margin-top:14px"></div>`);
@@ -6786,26 +6746,10 @@ function viewValue() {
   });
   gate.append(chart);
   gate.append(el(`
-    <p class="note" style="margin-top:12px">Each club's price is checked against its own site or
-    ticketing page and carries the date it was checked; open any club in the Away Guide to see
-    which. A few clubs have not published ${v.season} prices, and those are marked there as the
-    older season they came from.</p>`));
+    <p class="note" style="margin-top:12px">${esc(v.sourceNote)} Open any club in the
+    <button class="link-btn" data-nav="clubs">Away Guide</button> to see the source and the date
+    behind its price.</p>`));
   wrap.append(gate);
-
-  /* --------------------------------------------------- what it does not get */
-  wrap.append(el(`<h2 class="section-title">What a season ticket includes</h2>`));
-  const ben = el(`<div class="card"></div>`);
-  v.benefits.forEach((b) => {
-    ben.append(el(`
-      <div class="crew">
-        <span class="crew__who">${esc(b.what)}</span>
-        <span class="crew__when" style="color:${b.ktfc ? "var(--gold-400)" : "var(--text-3)"}">${
-          b.ktfc ? "Included" : "Not offered"
-        }</span>
-      </div>`));
-  });
-  ben.append(el(`<p class="note" style="margin:12px 0 0">${esc(v.benefitsNote)}</p>`));
-  wrap.append(ben);
 
   /* ------------------------------------------------------ still unanswered */
   wrap.append(el(`<h2 class="section-title">Still unanswered</h2>`));
@@ -6820,9 +6764,8 @@ function viewValue() {
   wrap.append(open);
 
   wrap.append(el(`
-    <p class="note" style="margin-top:16px">${esc(v.sourceNote)} Checked
-    ${esc(fmtDate(v.checked))}. If you spot a price that is wrong,
-    <a href="mailto:${esc(CONFIG.credit.email)}">tell us</a> and we will fix it.</p>`));
+    <p class="note" style="margin-top:16px">Checked ${esc(fmtDate(v.checked))}. If you spot a price
+    that is wrong, <a href="mailto:${esc(CONFIG.credit.email)}">tell us</a> and we will fix it.</p>`));
 
   return wrap;
 }
