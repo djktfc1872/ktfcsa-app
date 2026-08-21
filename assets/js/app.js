@@ -270,6 +270,7 @@ const state = {
   qUnfiled: true,         // the sweep hides what is already filed
   qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
   qRedact: "",            // names to take out of the addendum before it goes
+  qReplyBy: "",           // the date a reply is asked for, so silence becomes a fact
   publishedPromise: null,
   dailyAnswers: [],   // right/wrong so far in today's run
 };
@@ -4263,6 +4264,17 @@ function questionWorkbench(rows) {
 
     const ready = () => groups.filter((g) => g.label.trim().length >= 8);
 
+    /* A fortnight is long enough that "we needed time" is not an answer, and
+       short enough that the countdown means something. Nudged off a weekend,
+       because a deadline nobody is at work for invites a late reply. */
+    if (!state.qReplyBy) {
+      const d = new Date(`${londonToday()}T12:00`);
+      d.setDate(d.getDate() + 14);
+      if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+      if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+      state.qReplyBy = d.toISOString().slice(0, 10);
+    }
+
     /* One builder for the preview and the real thing. If they came from
        separate code the preview would stop being a preview the first time one
        of them was edited. */
@@ -4296,8 +4308,11 @@ function questionWorkbench(rows) {
       }
       lines.push(
         ``,
+        `We would ask for a reply by ${fmtDate(state.qReplyBy)}.`,
+        ``,
         `We will publish which of these have been answered, and how long any unanswered`,
-        `question has been outstanding.`,
+        `question has been outstanding. That page updates itself, so a question left`,
+        `unanswered is counted in days rather than raised again.`,
       );
       return lines.join("\n");
     };
@@ -4409,6 +4424,16 @@ function questionWorkbench(rows) {
       state.qRedact = e.target.value;
     });
     wrap2.append(red);
+
+    const by = el(`
+      <div class="field">
+        <label for="q-replyby">Ask for a reply by</label>
+        <input id="q-replyby" type="date" value="${esc(state.qReplyBy)}" min="${londonToday()}">
+      </div>`);
+    by.querySelector("input").addEventListener("change", (e) => {
+      state.qReplyBy = e.target.value || state.qReplyBy;
+    });
+    wrap2.append(by);
 
     wrap2.append(row);
     wrap2.append(el(`<p class="hint">Saving marks them final and puts them on the public page.
