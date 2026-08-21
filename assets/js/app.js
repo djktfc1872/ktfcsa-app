@@ -6846,10 +6846,12 @@ function viewAssociation() {
       : esc(m.name);
     who.append(el(`
       <div class="crew">
-        <span class="crew__who">${name}<span class="crew__note">${esc(m.doing)}</span></span>
+        <span class="crew__who">${name}${
+          m.doing ? `<span class="crew__note">${esc(m.doing)}</span>` : ""
+        }</span>
         <span class="crew__when">${esc(m.role)}</span>
       </div>
-      <p class="value__fact">${esc(m.fact)}</p>`));
+      ${m.fact ? `<p class="value__fact">${esc(m.fact)}</p>` : ""}`));
   });
   who.append(el(`
     <p class="note" style="margin:14px 0 0">This is a working group, not a committee. If you want
