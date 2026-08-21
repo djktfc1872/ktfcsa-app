@@ -8382,6 +8382,25 @@ function consultResults() {
       state.hasFinalGroups = qs.length > 0;
       if (!qs.length) return;
       qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
+
+      /* The commitment, stated before the list rather than under it. Once the
+         email has gone the promise becomes a date, because a page still
+         promising to send something a week later reads as a page nobody is
+         keeping up. */
+      const sentAt = qs.find((q) => q.asked_at)?.asked_at;
+      qbox.append(el(`
+        <div class="card pledge">
+          <p class="club-overview" style="margin:0">${sentAt
+            ? `These ${qs.length} questions were put to Kettering Town FC in writing on
+               <b>${esc(fmtDate(String(sentAt).slice(0, 10)))}</b>, word for word as they appear
+               here, along with every question that did not fall under one of them. Each one below
+               shows how long it has gone without an answer.`
+            : `These ${qs.length} questions will be put to Kettering Town FC in writing
+               <b>within 24 hours</b>, word for word as they appear here, along with every question
+               that did not fall under one of them. Nothing is softened, and nothing is left out.
+               Each one below will then show how long it has gone without an answer.`}</p>
+        </div>`));
+
       const card = el(`<div class="card"></div>`);
       qs.forEach((q, i) => {
         const days = q.asked_at && !q.answered_at

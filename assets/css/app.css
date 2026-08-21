@@ -5391,6 +5391,10 @@ button,
   .quotes .quote--bad  { border-left: 3px solid #9c1824 !important; }
   .quote__score { background: #ece8e0 !important; }
 
+  /* The .card rule above would flatten this back to a plain box, and the
+     undertaking to the club is the one panel that should still stand out. */
+  .pledge { background: #fbf7ec !important; border-left: 3px solid #a8873c !important; }
+
   .info__value { color: #14120f !important; }
   .info-grid { break-inside: avoid; }
 
@@ -5486,4 +5490,11 @@ button,
   flex: 0 0 auto; padding: 2px 7px; border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--text-3);
   font-size: 11px; font-variant-numeric: tabular-nums;
+}
+
+/* The undertaking to put the questions to the club. Set apart from the list it
+   introduces, because it is the part that commits the Association to something. */
+.pledge {
+  border-left: 3px solid var(--gold-400);
+  background: color-mix(in srgb, var(--gold-400) 7%, transparent);
 }
