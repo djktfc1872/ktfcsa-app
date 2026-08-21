@@ -3882,6 +3882,23 @@ function questionWorkbench(rows) {
         <span style="color:var(--gold-400)">none lost</span>
       </div>`));
 
+    /* Getting all of them out in one go: for a second pair of eyes, for a
+       backup, and because reading ninety questions in a scrolling panel on a
+       phone is not how anybody should be deciding what to ask a football club. */
+    const dump = el(`<button class="btn btn--sm btn--ghost" style="margin-bottom:10px">Copy all ${asked.length} questions</button>`);
+    dump.addEventListener("click", async () => {
+      const text = asked
+        .map((q, i) => `${i + 1}. [${Q_TOPIC_LABEL[q.topic] || q.topic}]${
+          q.approved ? "" : " (not approved)"} ${q.text.replace(/\s+/g, " ")}`)
+        .join("\n");
+      const ok = await copyText(text);
+      if (ok) return toast(`${asked.length} questions copied.`);
+      modal(`<h3 style="margin-bottom:10px">Every question asked</h3>
+        <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
+        <textarea readonly rows="14" style="width:100%">${esc(text)}</textarea>`);
+    });
+    box.append(dump);
+
     const tabs = el(`
       <div class="chips__row" style="margin-bottom:12px">
         <button class="chip${tab === "list" ? " is-on" : ""}" data-tab="list">The list <span>${groups.length}</span></button>
