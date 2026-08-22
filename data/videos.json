@@ -1,8 +1,43 @@
 {
-  "updated": "2026-08-22T20:12:17.300Z",
+  "updated": "2026-08-22T20:41:13.898Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "1gH4a77tyk8",
+      "title": "Post Match Interview | Kettering Town 0-0 Peterborough Sports (22/08/2026)",
+      "published": "2026-08-22T20:28:49+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a19f6ce9ef452b61f41f5"
+    },
+    {
+      "videoId": "vJnPA6sVWW8",
+      "title": "Kettering Town VS Real Bedford",
+      "published": "2026-08-22T20:23:53+00:00",
+      "kind": "commentary",
+      "fixtureId": null
+    },
+    {
+      "videoId": "3ZRye7kss0w",
+      "title": "Kettering Town VS Worcester City",
+      "published": "2026-08-22T20:23:49+00:00",
+      "kind": "commentary",
+      "fixtureId": null
+    },
+    {
+      "videoId": "dU2xCBnbXqM",
+      "title": "Kettering Town VS Redditch United",
+      "published": "2026-08-22T20:23:44+00:00",
+      "kind": "commentary",
+      "fixtureId": null
+    },
+    {
+      "videoId": "rZCu9x66-2c",
+      "title": "Kettering Town VS Halesowen Town",
+      "published": "2026-08-22T20:23:33+00:00",
+      "kind": "commentary",
+      "fixtureId": null
+    },
     {
       "videoId": "NmsD_sELQf8",
       "title": "Kettering Town VS Peterborough Sports | Live Commentary",
