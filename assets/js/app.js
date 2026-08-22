@@ -271,6 +271,7 @@ const state = {
   qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
   qRedact: "",            // names to take out of the addendum before it goes
   peopleFilter: "all",    // which slice of the People tab is showing
+  offerFilter: "all",     // which slice of the archive offers is showing
   peopleSort: "new",      // newest first, or alphabetical
   qReplyBy: "",           // the date a reply is asked for, so silence becomes a fact
   publishedPromise: null,
@@ -5252,33 +5253,94 @@ function viewAdmin() {
     wrap.append(offersCard);
   }
 
-  db.archiveOfferList().then((rows) => {
-    offersCard.replaceChildren();
-    if (!rows.length) {
-      offersCard.append(el(`<p class="note" style="margin:0">Nobody has offered yet. The page is at
-        <b>More, Supporters, Archive Project</b>.</p>`));
-      return;
-    }
-    const WHAT = [["can_scan", "Scanning"], ["has_media", "Has material"],
-                  ["can_catalogue", "Cataloguing"], ["can_store", "Kit or storage"]];
-    rows.forEach((r) => {
-      const offers = WHAT.filter(([k]) => r[k]).map(([, l]) => l);
+  /* Same shape as the People tab: what the list adds up to, then a way to
+     narrow it, then the list. Before, it was every offer in one run with the
+     capabilities buried in a subtitle, so "who can actually scan" meant
+     reading all of them. */
+  const paintOffers = () => {
+    db.archiveOfferList().then((rows) => {
+      offersCard.replaceChildren();
+      if (!rows.length) {
+        offersCard.append(el(`<p class="note" style="margin:0">Nobody has offered yet. The page is at
+          <b>More, Supporters, Archive Project</b>.</p>`));
+        return;
+      }
+
+      const WHAT = [["can_scan", "Scanning"], ["has_media", "Has material"],
+                    ["can_catalogue", "Cataloguing"], ["can_store", "Kit or storage"]];
+
       offersCard.append(el(`
-        <div class="crew">
-          <span class="crew__who">${namePlusTag(r.profile_id, r.display_name)}
-            <span class="crew__note">${esc(offers.join(" \u00B7 ") || "no boxes ticked")}${
-              r.note ? `<br>${esc(r.note)}` : ""}</span>
-          </span>
-          <span class="crew__when">${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
+        <div class="info-grid info-grid--dense">
+          <div class="info"><div class="info__label">Offers</div>
+            <div class="info__value">${rows.length}</div></div>
+          ${WHAT.map(([k, label]) => {
+            const n = rows.filter((r) => r[k]).length;
+            return `<div class="info${k === "can_scan" && n ? " info--good" : ""}">
+              <div class="info__label">${esc(label)}</div>
+              <div class="info__value">${n}</div></div>`;
+          }).join("")}
         </div>`));
+
+      let filter = state.offerFilter || "all";
+      const FILTERS = [["all", "All", () => true],
+        ...WHAT.map(([k, label]) => [k, label, (r) => Boolean(r[k])]),
+        ["notes", "Left a note", (r) => Boolean(r.note)]];
+
+      const chips = el(`<div class="chips__row" style="margin:12px 0 10px"></div>`);
+      FILTERS.forEach(([key, label, test]) => {
+        const n = rows.filter(test).length;
+        const b = el(`<button class="chip${filter === key ? " is-on" : ""}">${esc(label)} <span>${n}</span></button>`);
+        b.addEventListener("click", () => { state.offerFilter = key; paintOffers(); });
+        chips.append(b);
+      });
+      offersCard.append(chips);
+
+      const test = FILTERS.find(([k]) => k === filter)?.[2] || (() => true);
+      const shown = rows.filter(test);
+      if (!shown.length) {
+        offersCard.append(el(`<p class="note">Nobody in that group.</p>`));
+      }
+
+      shown.forEach((r) => {
+        const offers = WHAT.filter(([k]) => r[k]).map(([, l]) => l);
+        const row = el(`
+          <div class="offer-row">
+            <div class="offer-row__head">
+              <span class="person__name">${namePlusTag(r.profile_id, r.display_name)}</span>
+              <span class="person__meta">${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
+            </div>
+            <div class="person__badges" style="justify-content:flex-start;max-width:none">${
+              offers.map((o) => `<span class="pill${o === "Scanning" ? " pill--gold" : ""}">${esc(o)}</span>`).join("")
+              || `<span class="pill">Nothing ticked</span>`}</div>
+            ${r.note ? `<p class="offer-row__note">${esc(r.note)}</p>` : ""}
+          </div>`);
+        offersCard.append(row);
+      });
+
+      /* The point of the list is getting hold of these people, and that
+         happens away from a phone screen. */
+      const copy = el(`<button class="btn btn--sm btn--ghost" style="margin-top:12px">Copy this list</button>`);
+      copy.addEventListener("click", async () => {
+        const text = shown.map((r) => {
+          const offers = WHAT.filter(([k]) => r[k]).map(([, l]) => l).join(", ") || "nothing ticked";
+          return `${r.display_name} - ${offers}${r.note ? ` - "${String(r.note).replace(/\s+/g, " ")}"` : ""}`;
+        }).join("\n");
+        const ok = await copyText(text);
+        if (ok) return toast(`${shown.length} copied.`);
+        modal(`<h3 style="margin-bottom:10px">Archive offers</h3>
+          <textarea readonly rows="12" style="width:100%">${esc(text)}</textarea>`);
+      });
+      offersCard.append(copy);
+
+      offersCard.append(el(`<p class="note">Offers are private. Only volunteers see this list, and
+        the public page shows totals with no names.</p>`));
+    }).catch(() => {
+      offersCard.replaceChildren();
+      offersCard.append(el(`<p class="note" style="margin:0">Offers are not switched on in the
+        database yet.</p>`));
     });
-    offersCard.append(el(`<p class="note">Offers are private. Only volunteers see this list, and
-      the public page shows totals with no names.</p>`));
-  }).catch(() => {
-    offersCard.replaceChildren();
-    offersCard.append(el(`<p class="note" style="margin:0">Offers are not switched on in the
-      database yet.</p>`));
-  });
+  };
+  paintOffers();
 
   const peopleCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
   if (atab === "people") {

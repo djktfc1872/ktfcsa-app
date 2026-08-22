@@ -5621,3 +5621,27 @@ button,
   .person__badges { max-width: 42%; }
   .people-tools { flex-wrap: wrap; }
 }
+
+/* --------------------------------------------------- archive offers */
+
+/* Separator between rows, not above the first one. :first-of-type would look
+   right and do nothing: the first div sibling here is the stats grid, so the
+   rule never matches an offer row at all. */
+.offer-row { padding: 12px 0; }
+.offer-row + .offer-row { border-top: 1px solid var(--line-soft); }
+.offer-row__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.offer-row__head .person__meta { flex: 0 0 auto; }
+.offer-row__note {
+  margin: 8px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
