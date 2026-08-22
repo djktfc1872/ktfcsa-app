@@ -7060,11 +7060,19 @@ function newPasswordPanel() {
     const b = box.querySelector("#np2").value;
     if (a.length < 8) return toast("Eight characters or more, please.", "bad");
     if (a !== b) return toast("Those two do not match.", "bad");
+    /* withBusy has no catch of its own, so anything thrown in here becomes an
+       unhandled rejection: the button springs back and the person is told
+       nothing at all. Supabase refuses a password matching the old one, among
+       other things, and that refusal was going straight to the floor. */
     withBusy(box.querySelector("button"), "Saving", async () => {
-      await db.setPassword(a);
-      state.recovering = false;
-      toast("Password changed.", "good");
-      render({ toTop: true });
+      try {
+        await db.setPassword(a);
+        state.recovering = false;
+        toast("Password changed.", "good");
+        render({ toTop: true });
+      } catch (err) {
+        toast(err.message || "That did not save.", "bad");
+      }
     });
   });
   return box;
@@ -9689,6 +9697,15 @@ async function boot() {
 
   loadPodcast().then(() => {
     if (state.view === "podcast") render();
+  });
+
+  /* Nothing should fail in silence. Several places fire a promise and never
+     look at it again, and a rejection there is invisible: the password reset
+     told people nothing for exactly this reason. */
+  window.addEventListener("unhandledrejection", (e) => {
+    console.error("Unhandled rejection:", e.reason);
+    const msg = e.reason?.message;
+    if (msg) toast(msg, "bad");
   });
 
   /* keep the countdown honest without hammering the browser */
