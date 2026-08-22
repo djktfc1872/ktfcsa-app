@@ -7074,11 +7074,24 @@ function viewAccount() {
 
       <div class="btn-row">
         <button class="btn btn--ghost btn--sm" id="ac-rename">Change name</button>
+        ${online ? `<button class="btn btn--ghost btn--sm" id="ac-pass">Change password</button>` : ""}
         <button class="btn btn--ghost btn--sm" id="ac-out">Sign out</button>
         ${!online && user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-lock">Turn off admin tools</button>` : ""}
         ${!online && !user.isAdmin ? `<button class="btn btn--ghost btn--sm" id="ac-admin">Volunteer sign in</button>` : ""}
       </div>
     </div>`);
+
+  /* Changing it while signed in was not possible at all: the only route to a
+     new password was the forgotten-password link, which is only on the signed
+     out page and needs an email round trip to use. */
+  const passBtn = $("#ac-pass", idCard);
+  if (passBtn) {
+    passBtn.addEventListener("click", () => {
+      const holder = el(`<div style="margin-top:12px"></div>`);
+      holder.append(newPasswordPanel());
+      passBtn.replaceWith(holder);
+    });
+  }
 
   /* Badges are a fixed set, so picking one is a tap and nothing is uploaded.
      Tapping the one you already have puts you back to your initials. */
