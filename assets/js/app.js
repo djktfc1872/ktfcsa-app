@@ -5470,45 +5470,6 @@ function viewAdmin() {
   };
 
   paintPeople();
-              } catch (err) {
-                eye.disabled = false;
-                toast(err.message || "That did not save.");
-              }
-            });
-            row.append(eye);
-          }
-          const picker = el(`<div class="person__tags"></div>`);
-          [["", "None"], ...Object.entries(TAG_LABEL)].forEach(([key, label]) => {
-            const on = (r.tag || "") === key;
-            const b = el(`<button class="tag-btn${on ? " is-on" : ""}" type="button">${esc(label)}</button>`);
-            b.addEventListener("click", async () => {
-              if (on) return;
-              b.disabled = true;
-              try {
-                await db.setTag(r.id, key || null);
-                r.tag = key || null;
-                toast(key ? `${r.display_name} is now ${TAG_LABEL[key]}.` : `Tag removed from ${r.display_name}.`, "good");
-                draw(search.value);
-              } catch (err) {
-                toast(err.message || "That did not save.", "bad");
-                b.disabled = false;
-              }
-            });
-            picker.append(b);
-          });
-          row.append(picker);
-          list.append(row);
-        });
-        if (shown.length > 60) {
-          list.append(el(`<p class="note">Showing 60 of ${shown.length}. Search to narrow it down.</p>`));
-        }
-      };
-
-      search.addEventListener("input", () => draw(search.value));
-      draw();
-    });
-  };
-  paintPeople();
 
   return wrap;
 }
