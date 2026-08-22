@@ -70,6 +70,7 @@ const live = {
   lineups: {},              // fixtureId -> [{name, number, started}] typed in by a volunteer
   ratings: { match: [], season: [], mine: {} },
   resultsViewers: new Set(),  // early, read-only sight of the consultation results
+  moderators: new Set(),      // can moderate what supporters write, but not change structure
   quiz: {},                 // "2026-08-22" -> {score, marks} for the signed-in supporter
 };
 
@@ -107,6 +108,21 @@ export function currentUser() {
 }
 
 export const isAdmin = () => Boolean(currentUser()?.isAdmin);
+
+/* A moderator deals with what supporters write. An admin can do everything a
+   moderator can, so this is true for them too: anywhere that asks "may this
+   person moderate" should ask this rather than isAdmin(). */
+export const isModerator = () => {
+  const u = currentUser();
+  return Boolean(u && (u.isAdmin || live.moderators.has(u.id)));
+};
+export const isModeratorId = (id) => live.moderators.has(id);
+
+export async function setModerator(profileId, allowed) {
+  if (!backend) return;
+  await backend.setModerator(profileId, allowed);
+  await refresh();
+}
 
 /* ------------------------------------------------------------------- setup */
 
@@ -182,6 +198,7 @@ export async function refresh() {
     live.tags = people.tags || {};
     live.optIn = people.optIn || {};
     live.resultsViewers = new Set(people.resultsViewers || []);
+    live.moderators = new Set(people.moderators || []);
     live.supporters = await backend.supporterCount();
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();

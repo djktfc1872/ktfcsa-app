@@ -1765,3 +1765,97 @@ $$;
 
 revoke all on function record_view(text, boolean) from public;
 grant execute on function record_view(text, boolean) to anon, authenticated;
+
+-- ===========================================================================
+-- Moderators
+-- ===========================================================================
+--
+-- A second, smaller role. A moderator can see the panel and deal with what
+-- supporters write: approving or rejecting consultation comments, hiding a
+-- wall post, reading feedback. A moderator cannot change the shape of
+-- anything: not publishing the findings, not agreeing the questions that go to
+-- the club, not handing out roles or tags, not touching polls or lineups.
+--
+-- is_admin() is deliberately untouched. Fifty four policies depend on it and
+-- it still means exactly what it did: full rights. Everything below is
+-- additive, so an existing admin loses nothing and gains nothing.
+
+alter table profiles add column if not exists is_moderator boolean not null default false;
+
+comment on column profiles.is_moderator is
+  'Can moderate what supporters write, and see the panel. Cannot change structure.';
+
+-- True for moderators and for admins, since an admin can do anything a
+-- moderator can. Used only on the moderation surfaces below.
+create or replace function is_moderator()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select is_admin or is_moderator from profiles where id = auth.uid()),
+    false);
+$$;
+
+-- ---- what a moderator may do ---------------------------------------------
+
+-- The consultation queue: read it, and set what is approved or rejected.
+drop policy if exists "volunteers read the responses" on consultation_responses;
+create policy "volunteers read the responses" on consultation_responses
+  for select using (is_moderator());
+
+drop policy if exists "amend your own answer" on consultation_responses;
+create policy "amend your own answer" on consultation_responses
+  for update using (
+    is_moderator() or (consultation_open() and profile_id is not null and profile_id = auth.uid())
+  )
+  with check (
+    is_moderator() or (consultation_open() and profile_id is not null and profile_id = auth.uid())
+  );
+
+-- Deleting a response outright stays with admins. Rejecting one hides it just
+-- as well and can be undone; deletion cannot, and a moderator has no reason to
+-- need it.
+
+-- The fan wall: hide a post, or remove one.
+drop policy if exists "wall readable" on wall_posts;
+create policy "wall readable" on wall_posts
+  for select using (hidden = false or is_moderator());
+
+drop policy if exists "update wall post" on wall_posts;
+create policy "update wall post" on wall_posts
+  for update using (auth.uid() = profile_id or is_moderator() or auth.role() = 'authenticated');
+
+drop policy if exists "remove wall post" on wall_posts;
+create policy "remove wall post" on wall_posts
+  for delete using (auth.uid() = profile_id or is_moderator());
+
+-- Feedback: read it, mark it dealt with. Deleting it stays with admins.
+drop policy if exists "volunteers reads feedback" on feedback;
+create policy "volunteers reads feedback" on feedback for select using (is_moderator());
+
+drop policy if exists "volunteers updates feedback" on feedback;
+create policy "volunteers updates feedback" on feedback for update using (is_moderator());
+
+-- ---- handing the role out -------------------------------------------------
+
+-- Admins only, and an admin cannot be demoted to moderator by accident here:
+-- this sets one flag and leaves is_admin alone.
+create or replace function set_moderator(target uuid, allowed boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can do that.';
+  end if;
+  update profiles set is_moderator = allowed where id = target;
+end;
+$$;
+
+revoke all on function set_moderator(uuid, boolean) from public;
+grant execute on function set_moderator(uuid, boolean) to authenticated;

@@ -106,15 +106,21 @@ class Backend {
      asking it for a missing column once took every account down with it. This
      one already fails soft. */
   async loadAvatars() {
-    const { data, error } = await this.sb
-      .from("profiles").select("id, avatar, is_admin, tag, email_opt_in, results_viewer");
-    if (error) {
-      /* Older database without the consent column: ask again without it. */
-      const retry = await this.sb.from("profiles").select("id, avatar, is_admin, tag");
-      if (retry.error) return { avatars: {}, admins: [], tags: {}, optIn: {}, resultsViewers: [] };
-      return this.shapePeople(retry.data || []);
+    /* Narrowed one column at a time rather than straight to the bones. The
+       code ships before the schema is run, and a single retry that dropped
+       back to four columns took early sight of the consultation results away
+       from the people who had been given it, for as long as that gap lasted. */
+    const TRIES = [
+      "id, avatar, is_admin, tag, email_opt_in, results_viewer, is_moderator",
+      "id, avatar, is_admin, tag, email_opt_in, results_viewer",
+      "id, avatar, is_admin, tag, email_opt_in",
+      "id, avatar, is_admin, tag",
+    ];
+    for (const cols of TRIES) {
+      const { data, error } = await this.sb.from("profiles").select(cols);
+      if (!error) return this.shapePeople(data || []);
     }
-    return this.shapePeople(data || []);
+    return { avatars: {}, admins: [], tags: {}, optIn: {}, resultsViewers: [], moderators: [] };
   }
 
   shapePeople(rows) {
@@ -124,6 +130,7 @@ class Backend {
       tags: Object.fromEntries(rows.filter((r) => r.tag).map((r) => [r.id, r.tag])),
       optIn: Object.fromEntries(rows.map((r) => [r.id, !!r.email_opt_in])),
       resultsViewers: rows.filter((r) => r.results_viewer).map((r) => r.id),
+      moderators: rows.filter((r) => r.is_moderator).map((r) => r.id),
     };
   }
 
@@ -431,10 +438,20 @@ class Backend {
   async adminPeople() {
     const { data, error } = await this.sb
       .from("profiles")
+      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator")
+      .order("created_at", { ascending: false });
+    if (!error) return data || [];
+    /* Same reason as loadAvatars: usable before the schema catches up. */
+    const retry = await this.sb
+      .from("profiles")
       .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer")
       .order("created_at", { ascending: false });
-    if (error) return [];
-    return data || [];
+    return retry.error ? [] : (retry.data || []);
+  }
+
+  async setModerator(profileId, allowed) {
+    const { error } = await this.sb.rpc("set_moderator", { target: profileId, allowed });
+    if (error) throw new Error(error.message);
   }
 
   async setTag(profileId, tag) {

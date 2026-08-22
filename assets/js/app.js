@@ -353,6 +353,8 @@ const ROUTES = {
   privacy: { label: "Your data", icon: "🔒", nav: "hidden", render: viewPrivacy },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
+  /* adminOnly now means "a moderator or better". What a moderator may actually
+     do once inside is decided section by section, not by hiding the door. */
   admin: { label: "Admin", icon: "🛠️", nav: "more", group: "You", adminOnly: true, render: viewAdmin },
   match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
 };
@@ -383,9 +385,9 @@ function readHash() {
 /* Everything waiting on a volunteer. Admin only, and zero for everybody else,
    so the badge simply never renders. Refreshed on nav paint rather than polled. */
 let pendingWaiting = 0;
-const pendingCount = () => (db.isAdmin() ? pendingWaiting : 0);
+const pendingCount = () => (db.isModerator() ? pendingWaiting : 0);
 function refreshPending() {
-  if (!db.isAdmin()) { pendingWaiting = 0; return; }
+  if (!db.isModerator()) { pendingWaiting = 0; return; }
   db.pendingActions().then((p) => {
     const n = p ? (p.consultation || 0) + (p.polls || 0) + (p.feedback || 0) : 0;
     if (n !== pendingWaiting) { pendingWaiting = n; renderNav(); }
@@ -396,7 +398,8 @@ function refreshPending() {
    here rather than at each call site, so a new nav surface cannot forget. The
    page itself still checks: hiding a button is not a control. */
 const routesWhere = (...kinds) =>
-  Object.entries(ROUTES).filter(([, r]) => kinds.includes(r.nav) && (!r.adminOnly || db.isAdmin()));
+  Object.entries(ROUTES).filter(([, r]) =>
+    kinds.includes(r.nav) && (!r.adminOnly || db.isModerator()));
 
 function renderNav() {
   let lastGroup = null;
@@ -4815,7 +4818,7 @@ function viewAdmin() {
     </div>
   </div>`);
 
-  if (!db.isAdmin()) {
+  if (!db.isModerator()) {
     wrap.append(el(`
       <div class="empty">
         <b>Not for you, sorry</b>
@@ -4823,6 +4826,12 @@ function viewAdmin() {
       </div>`));
     return wrap;
   }
+
+  /* A moderator sees the panel and deals with what supporters write. Structural
+     things stay hidden rather than shown and refused: a button that exists and
+     then fails is worse than one that was never offered. The database refuses
+     them as well, so this is the courtesy, not the control. */
+  const canRunThings = db.isAdmin();
 
   /* Four tabs rather than one long stack of cards. The panel had grown to
      thirteen sections in a row and nothing was findable. */
@@ -5000,6 +5009,15 @@ function viewAdmin() {
                turnout and a note saying the results are coming.`}
         </div>`);
       const row = el(`<div class="btn-row" style="margin-top:-8px;margin-bottom:18px"></div>`);
+      /* Publishing, previewing early sight, and agreeing the questions are all
+         admin work. A moderator still sees the card, so they know where things
+         stand; they just have no buttons on it. */
+      if (!canRunThings) {
+        pub.append(card);
+        pub.append(el(`<p class="hint" style="margin-top:-8px;margin-bottom:18px">Publishing is
+          done by a volunteer.</p>`));
+        return;
+      }
       const b = el(`<button class="btn btn--sm${on ? " btn--ghost" : ""}">${
         on ? "Take the findings down" : "Publish the findings"}</button>`);
       b.addEventListener("click", () => {
@@ -5036,14 +5054,19 @@ function viewAdmin() {
     wrap.append(pub);
 
     wrap.append(el(`<h2 class="section-title" id="a-questions">Questions for the club</h2>`));
-    const qb = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-    wrap.append(qb);
-    db.consultationQueue().then((rows) => {
-      qb.replaceWith(questionWorkbench(rows));
-    }).catch(() => {
-      qb.replaceChildren();
-      qb.append(el(`<p class="note" style="margin:0">Not set up in the database yet.</p>`));
-    });
+    if (canRunThings) {
+      const qb = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+      wrap.append(qb);
+      db.consultationQueue().then((rows) => {
+        qb.replaceWith(questionWorkbench(rows));
+      }).catch(() => {
+        qb.replaceChildren();
+        qb.append(el(`<p class="note" style="margin:0">Not set up in the database yet.</p>`));
+      });
+    } else {
+      wrap.append(el(`<div class="card"><p class="note" style="margin:0">Agreeing the questions
+        that go to the club is done by a volunteer.</p></div>`));
+    }
 
     wrap.append(el(`<h2 class="section-title" id="a-queue">Waiting to be read</h2>`));
     wrap.append(el(`<div class="queue-slot"></div>`));
@@ -5458,6 +5481,7 @@ function viewAdmin() {
         all: rows.length,
         admins: rows.filter((r) => r.is_admin).length,
         tagged: rows.filter((r) => r.tag).length,
+        mods: rows.filter((r) => r.is_moderator && !r.is_admin).length,
         early: rows.filter((r) => db.isResultsViewer(r.id)).length,
         fresh: rows.filter((r) => String(r.created_at) >= weekAgo).length,
         email: rows.filter((r) => r.email_opt_in).length,
@@ -5471,6 +5495,8 @@ function viewAdmin() {
             <div class="info__value">${counts.fresh}</div></div>
           <div class="info"><div class="info__label">Volunteers</div>
             <div class="info__value">${counts.admins}</div></div>
+          <div class="info"><div class="info__label">Moderators</div>
+            <div class="info__value">${counts.mods}</div></div>
           <div class="info"><div class="info__label">Tagged</div>
             <div class="info__value">${counts.tagged}</div></div>
           <div class="info"><div class="info__label">Early sight</div>
@@ -5483,6 +5509,7 @@ function viewAdmin() {
         ["all", "Everyone", () => true],
         ["fresh", "Joined this week", (r) => String(r.created_at) >= weekAgo],
         ["admins", "Volunteers", (r) => r.is_admin],
+        ["mods", "Moderators", (r) => r.is_moderator && !r.is_admin],
         ["tagged", "Tagged", (r) => Boolean(r.tag)],
         ["untagged", "Untagged", (r) => !r.tag && !r.is_admin],
         ["early", "Early sight", (r) => db.isResultsViewer(r.id)],
@@ -5534,6 +5561,7 @@ function viewAdmin() {
           const seeing = db.isResultsViewer(r.id);
           const badges = [
             r.is_admin ? `<span class="pill pill--gold">Volunteer</span>` : "",
+            r.is_moderator && !r.is_admin ? `<span class="pill pill--gold">Moderator</span>` : "",
             r.tag ? `<span class="pill">${esc(TAG_LABEL[r.tag] || r.tag)}</span>` : "",
             seeing ? `<span class="pill">Early sight</span>` : "",
             r.email_opt_in ? `<span class="pill">Email</span>` : "",
@@ -5563,7 +5591,33 @@ function viewAdmin() {
             if (built || open) return;
             built = true;
 
-            if (!r.is_admin) {
+            /* Only an admin hands out roles. A moderator sees the person and
+               their tag and nothing that would let them promote anybody,
+               themselves included. The function refuses it as well. */
+            if (canRunThings && !r.is_admin) {
+              const isMod = Boolean(r.is_moderator);
+              panel.append(el(`<div class="person__field">Role</div>`));
+              const mod = el(`<button class="tag-btn${isMod ? " is-on" : ""}" type="button">${
+                isMod ? "\u2713 Moderator" : "Make a moderator"}</button>`);
+              mod.addEventListener("click", async () => {
+                mod.disabled = true;
+                try {
+                  await db.setModerator(r.id, !isMod);
+                  toast(isMod ? `${r.display_name} is no longer a moderator.`
+                              : `${r.display_name} can now moderate.`, "good");
+                  paintPeople();
+                } catch (err) {
+                  mod.disabled = false;
+                  toast(err.message || "That did not save.", "bad");
+                }
+              });
+              panel.append(mod);
+              panel.append(el(`<p class="hint">A moderator can read the panel, approve or reject
+                what supporters write, and hide a post. They cannot publish the findings, agree
+                the questions, or hand out roles.</p>`));
+            }
+
+            if (canRunThings && !r.is_admin) {
               const eye = el(`<button class="tag-btn${seeing ? " is-on" : ""}" type="button">${
                 seeing ? "\u2713 Sees results early" : "Give early sight of results"}</button>`);
               eye.addEventListener("click", async () => {
@@ -5583,12 +5637,13 @@ function viewAdmin() {
             }
 
             panel.append(el(`<div class="person__field">Tag</div>`));
-            const picker = el(`<div class="person__tags"></div>`);
+            const picker = el(`<div class="person__tags"${canRunThings ? "" : " aria-disabled=\"true\""}></div>`);
             [["", "None"], ...Object.entries(TAG_LABEL)].forEach(([key, label]) => {
               const on = (r.tag || "") === key;
-              const b = el(`<button class="tag-btn${on ? " is-on" : ""}" type="button">${esc(label)}</button>`);
+              const b = el(`<button class="tag-btn${on ? " is-on" : ""}" type="button"${
+                canRunThings ? "" : " disabled"}>${esc(label)}</button>`);
               b.addEventListener("click", async () => {
-                if (on) return;
+                if (on || !canRunThings) return;
                 b.disabled = true;
                 try {
                   await db.setTag(r.id, key || null);
@@ -6281,18 +6336,19 @@ function viewThread({ id }) {
 
   wrap.append(composer(t.id));
 
-  const posts = threadPosts(t.id).filter((p) => !p.hidden || db.isAdmin());
+  const posts = threadPosts(t.id).filter((p) => !p.hidden || db.isModerator());
   if (!posts.length) {
     wrap.append(el(`<div class="empty"><b>Nothing posted yet</b>Get the conversation going.</div>`));
   } else {
-    posts.forEach((p) => wrap.append(wallCard(p, db.isAdmin())));
+    posts.forEach((p) => wrap.append(wallCard(p, db.isModerator())));
   }
 
   return wrap;
 }
 
 /** A reply: the same post, drawn quieter and tucked under its parent. */
-function replyCard(p, admin, depth = 1) {
+/* `mod`: hiding a reply is moderation, not administration. */
+function replyCard(p, mod, depth = 1) {
   const card = el(`
     <div class="reply" ${p.hidden ? 'style="opacity:.5"' : ""}>
       <div class="post__head">
@@ -6308,7 +6364,7 @@ function replyCard(p, admin, depth = 1) {
       <div class="post__actions">
         ${depth < MAX_REPLY_DEPTH ? `<button class="link-btn" data-act="reply">Reply</button>` : ""}
         <button class="link-btn" data-act="report">Report</button>
-        ${admin ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
+        ${mod ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
         ${db.canEdit(p) ? `<button class="link-btn" data-act="del">Delete</button>` : ""}
       </div>
       <div class="replies"></div>
@@ -6318,9 +6374,9 @@ function replyCard(p, admin, depth = 1) {
      the database enforces too, so a stale tab cannot get past it. */
   const holder = card.querySelector(".replies");
   db.list("wall")
-    .filter((r) => r.replyTo === p.id && (!r.hidden || admin))
+    .filter((r) => r.replyTo === p.id && (!r.hidden || mod))
     .sort((a, b) => a.createdAt - b.createdAt)
-    .forEach((r) => holder.append(replyCard(r, admin, depth + 1)));
+    .forEach((r) => holder.append(replyCard(r, mod, depth + 1)));
 
   const replyBtn = card.querySelector('[data-act="reply"]');
   if (replyBtn) {
@@ -6404,7 +6460,10 @@ function composer(thread = null, { replyTo = null, onDone = null } = {}) {
 /* ================================================================ fan wall */
 
 function viewWall() {
+  /* Two different rights wearing one name. Creating and approving polls is
+     structural and stays with admins; hiding a post is moderation. */
   const admin = db.isAdmin();
+  const mod = db.isModerator();
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Fan Wall</h1>
@@ -6495,7 +6554,7 @@ function viewWall() {
   const nudge = consentNudge();
   if (nudge) wrap.append(nudge);
 
-  const posts = db.list("wall").filter((p) => !p.thread && !p.replyTo && (!p.hidden || admin));
+  const posts = db.list("wall").filter((p) => !p.thread && !p.replyTo && (!p.hidden || mod));
   wrap.append(el(`
     <div class="feed-head">
       <h2>The wall</h2>
@@ -6507,14 +6566,14 @@ function viewWall() {
     wrap.append(el(`<div class="empty"><b>Nothing posted yet</b>Get the conversation going.</div>`));
   } else {
     const feed = el(`<div class="feed"></div>`);
-    posts.forEach((p) => feed.append(wallCard(p, admin)));
+    posts.forEach((p) => feed.append(wallCard(p, mod)));
     wrap.append(feed);
   }
 
   return wrap;
 }
 
-function wallCard(p, admin) {
+function wallCard(p, mod) {
   const liked = db.read(`like:${p.id}`, false);
   const card = el(`
     <div class="post" ${p.hidden ? 'style="opacity:.5"' : ""}>
@@ -6530,7 +6589,7 @@ function wallCard(p, admin) {
       <div class="post__actions">
         <button class="link-btn" data-act="like">${liked ? "♥" : "♡"} ${p.likes || 0}</button>
         <button class="link-btn" data-act="report">Report</button>
-        ${admin ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
+        ${mod ? `<button class="link-btn" data-act="hide">${p.hidden ? "Unhide" : "Hide"}</button>` : ""}
         ${db.canEdit(p) ? `<button class="link-btn" data-act="del">Delete</button>` : ""}
         ${p.replyTo ? "" : `<button class="link-btn" data-act="reply">Reply</button>`}
       </div>
@@ -6543,9 +6602,9 @@ function wallCard(p, admin) {
   if (!p.replyTo) {
     const holder = card.querySelector(".replies");
     const kids = db.list("wall")
-      .filter((r) => r.replyTo === p.id && (!r.hidden || admin))
+      .filter((r) => r.replyTo === p.id && (!r.hidden || mod))
       .sort((a, b) => a.createdAt - b.createdAt);
-    kids.forEach((r) => holder.append(replyCard(r, admin, 1)));
+    kids.forEach((r) => holder.append(replyCard(r, mod, 1)));
 
     const replyBtn = card.querySelector('[data-act="reply"]');
     if (replyBtn) {
