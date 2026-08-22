@@ -4994,7 +4994,7 @@ button,
   display: flex; align-items: center; justify-content: space-between;
 }
 .fold__head::-webkit-details-marker { display: none; }
-.fold__head::after { content: "\\203A"; color: var(--gold-400); font-size: 18px; transform: rotate(90deg); transition: transform 0.2s; }
+.fold__head::after { content: "\203A"; color: var(--gold-400); font-size: 18px; transform: rotate(90deg); transition: transform 0.2s; }
 .fold[open] > .fold__head::after { transform: rotate(-90deg); }
 .fold__body { padding: 0 12px 12px; }
 

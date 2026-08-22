@@ -326,17 +326,22 @@ const ROUTES = {
   clubs: { label: "Away Guide", icon: "📖", nav: "more", group: "Away days", render: viewClubs },
   map: { label: "Grounds Map", icon: "🗺️", nav: "more", group: "Away days", render: viewMap },
 
+  /* What supporters do, and the Association itself. */
   association: { label: "Supporters\u2019 Association", short: "Association", icon: "\u{1F91D}",
     nav: "more", group: "Supporters", render: viewAssociation },
+  wall: { label: "Fan Wall", icon: "\uD83D\uDCAC", nav: "tab", group: "Supporters", render: viewWall },
+  daily: { label: "Poppies Daily", short: "Daily", icon: "\uD83C\uDF3A", nav: "more", group: "Supporters", render: viewDaily },
+  heritage: { label: "Archive Project", icon: "\uD83D\uDCFC", nav: "more", group: "Supporters", render: viewHeritage },
+  podcast: { label: "Poppycast", icon: "\uD83C\uDF99\uFE0F", nav: "more", group: "Supporters", render: viewPodcast },
+  memorial: { label: "Memorial Match", icon: "\uD83D\uDC99", nav: "more", group: "Supporters", render: viewMemorial },
+
+  /* About Kettering Town rather than about us. Nine things under one heading
+     meant the Association sat in the same list as the club's video feed, and
+     neither was easy to find. */
+  poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", group: "The club", render: viewPoppies },
   value: { label: "What It Costs", short: "Costs", icon: "\u{1F4B7}",
-    nav: "more", group: "Supporters", render: viewValue },
-  wall: { label: "Fan Wall", icon: "💬", nav: "tab", group: "Supporters", render: viewWall },
-  daily: { label: "Poppies Daily", short: "Daily", icon: "🌺", nav: "more", group: "Supporters", render: viewDaily },
-  memorial: { label: "Memorial Match", icon: "💙", nav: "more", group: "Supporters", render: viewMemorial },
-  heritage: { label: "Archive Project", icon: "📼", nav: "more", group: "Supporters", render: viewHeritage },
-  podcast: { label: "Poppycast", icon: "🎙️", nav: "more", group: "Supporters", render: viewPodcast },
-  videos: { label: "Club Videos", icon: "📺", nav: "more", group: "Supporters", render: viewVideos },
-  poppies: { label: "Kettering Town", icon: ICON.poppy, nav: "more", group: "Supporters", render: viewPoppies },
+    nav: "more", group: "The club", render: viewValue },
+  videos: { label: "Club Videos", icon: "\uD83D\uDCFA", nav: "more", group: "The club", render: viewVideos },
 
   season: { label: "My Season", icon: "📈", nav: "more", group: "You", render: viewSeason },
   account: { label: "Account", icon: "👤", nav: "more", group: "You", render: viewAccount },
