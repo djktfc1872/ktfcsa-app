@@ -4172,6 +4172,103 @@ function viewsPane() {
   return box;
 }
 
+/**
+ * Cloudflare's figures, beside our own.
+ *
+ * Ours count route changes inside the app and only since the counter was
+ * switched on. Cloudflare counts requests at the edge, has been doing it all
+ * along, and sees people who bounced before anything loaded. The two will never
+ * agree and are not meant to: shown together, the gap is itself informative.
+ */
+function cloudflarePane() {
+  const box = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+
+  db.cloudflareStats().then((d) => {
+    box.replaceChildren();
+
+    if (d.error === "not-configured") {
+      box.append(el(`<div class="empty"><b>Not connected yet</b>Cloudflare needs an API token,
+        and a token cannot live in the app because everything the app holds is public. Set
+        <code>CF_API_TOKEN</code>, <code>CF_ACCOUNT_ID</code> and <code>CF_SITE_TAG</code> in the
+        Pages dashboard and this fills itself in.</div>`));
+      return;
+    }
+    if (d.error === "not-signed-in") {
+      box.append(el(`<p class="note" style="margin:0">Sign in to see these.</p>`));
+      return;
+    }
+    if (d.error) {
+      box.append(el(`<div class="empty"><b>Cloudflare would not answer</b>${esc(d.error)}</div>`));
+      return;
+    }
+
+    const days = (d.days || []).slice().sort((a, b) => b.day.localeCompare(a.day));
+    if (!days.length) {
+      box.append(el(`<div class="empty"><b>Nothing back</b>Cloudflare returned no rows for the
+        last 30 days. Web Analytics may not be switched on for this site.</div>`));
+      return;
+    }
+
+    const total = days.reduce((a, r) => ({
+      views: a.views + r.views, visits: a.visits + r.visits,
+    }), { views: 0, visits: 0 });
+    const today = londonToday();
+    const now = days.find((r) => r.day === today) || { views: 0, visits: 0 };
+
+    box.append(el(`
+      <div class="info-grid info-grid--4">
+        <div class="info"><div class="info__label">Today</div>
+          <div class="info__value" style="color:var(--gold-400)">${now.views}</div></div>
+        <div class="info"><div class="info__label">Today, visits</div>
+          <div class="info__value">${now.visits}</div></div>
+        <div class="info"><div class="info__label">30 days</div>
+          <div class="info__value">${total.views.toLocaleString("en-GB")}</div></div>
+        <div class="info"><div class="info__label">30 days, visits</div>
+          <div class="info__value">${total.visits.toLocaleString("en-GB")}</div></div>
+      </div>`));
+
+    const top = Math.max(...days.map((r) => r.views), 1);
+    box.append(el(`<div class="events__head" style="margin-top:14px">By day</div>`));
+    days.slice(0, 14).forEach((r) => {
+      box.append(el(`
+        <div class="dist">
+          <span class="dist__key dist__key--wide">${esc(fmtDate(r.day, "short"))}${
+            r.day === today ? " (so far)" : ""}</span>
+          <span class="dist__bar"><span class="dist__fill" style="width:${
+            Math.round((r.views / top) * 100)}%"></span></span>
+          <span class="dist__n">${r.views}<span style="color:var(--text-3)"> / ${r.visits}</span></span>
+        </div>`));
+    });
+
+    const paths = (d.paths || []).slice(0, 12);
+    if (paths.length) {
+      const topPath = Math.max(...paths.map((r) => r.views), 1);
+      box.append(el(`<div class="events__head" style="margin-top:14px">Most requested</div>`));
+      paths.forEach((r) => {
+        box.append(el(`
+          <div class="dist">
+            <span class="dist__key dist__key--wide">${esc(r.path)}</span>
+            <span class="dist__bar"><span class="dist__fill" style="width:${
+              Math.round((r.views / topPath) * 100)}%"></span></span>
+            <span class="dist__n">${r.views}</span>
+          </div>`));
+      });
+      box.append(el(`<p class="hint">Cloudflare sees the page request, not which screen the app
+        then showed, so nearly everything lands on <code>/</code>. Our own counts above break that
+        down by screen.</p>`));
+    }
+
+    box.append(el(`<p class="hint">Views are page loads, visits are arrivals from somewhere else.
+      Counted at the edge, so this includes people who left before the app finished loading, and it
+      covers the whole period rather than only since our own counter was switched on.</p>`));
+  }).catch((err) => {
+    box.replaceChildren();
+    box.append(el(`<div class="empty"><b>Could not load</b>${esc(err.message || "Try again.")}</div>`));
+  });
+
+  return box;
+}
+
 function questionWorkbench(rows) {
   const box = el(`<div class="card"></div>`);
   const asked = rows
@@ -4805,6 +4902,9 @@ function viewAdmin() {
 
     wrap.append(el(`<h2 class="section-title">Who is looking</h2>`));
     wrap.append(viewsPane());
+
+    wrap.append(el(`<h2 class="section-title">Cloudflare</h2>`));
+    wrap.append(cloudflarePane());
   }
 
   /* The findings as they stand, for volunteers, before the public page opens on
