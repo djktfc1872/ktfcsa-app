@@ -5757,3 +5757,8 @@ button,
   color: var(--text-2);
   overflow-wrap: anywhere;
 }
+
+/* The archive nudge on the home page. Sepia rather than gold, so it reads as
+   the old thing it is and does not compete with the daily game beside it. */
+.daily-promo--archive { border-left-color: #8a6d1f; }
+.daily-promo--archive .daily-promo__go { color: #cfa963; }

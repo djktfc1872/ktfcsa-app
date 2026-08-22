@@ -272,6 +272,7 @@ const state = {
   qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
   qRedact: "",            // names to take out of the addendum before it goes
   groupsLoaded: false,    // saved question groups have been read back once
+  archiveOffers: null,    // how many have offered to help with the archive
   recovering: false,      // arrived from a password reset link
   peopleFilter: "all",    // which slice of the People tab is showing
   offerFilter: "all",     // which slice of the archive offers is showing
@@ -724,6 +725,8 @@ function viewHome() {
   if (tick) $(".ticker-slot", wrap).append(tick);
   const mem = memorialPromo();
   if (mem) $(".daily-slot", wrap).append(mem);
+  const arch = archivePromo();
+  if (arch) $(".daily-slot", wrap).append(arch);
   const promo = dailyPromo();
   if (promo) $(".daily-slot", wrap).append(promo);
   $(".otd-slot", wrap).append(onThisDayCard());
@@ -8233,13 +8236,6 @@ function viewHeritage() {
            it is lost. Early days, and we could use a hand.</p>
       </div>
 
-      <div class="soon">
-        <span class="soon__tag">An idea, not a promise</span>
-        <p>Nothing is built yet and there is no date. This page is here to see whether enough
-           people fancy it to make it worth starting. If that turns out to be no, it stays an idea,
-           and you will not hear about it again.</p>
-      </div>
-
       <h2 class="section-title">What we would like to do</h2>
       <div class="card">
         <p class="club-overview">Kettering Town have been going since 1872, and a great deal of
@@ -8261,6 +8257,17 @@ function viewHeritage() {
         <p class="club-overview" style="margin-top:12px">There is a personal side to it as well.
         There are hundreds of programmes here going back to the sixties, and it seems daft to
         have them sat in a cupboard when they could be shared.</p>
+      </div>
+
+      <!-- Kept, because it is true, but no longer the first thing on the page.
+           Opening with "this might never happen and you will not hear about it
+           again" is a reason to close the tab, and one offer in three weeks
+           suggested people were taking it. -->
+      <div class="soon">
+        <span class="soon__tag">An idea, not a promise</span>
+        <p>Nothing is built yet and there is no date. Whether it starts depends on how many
+           people put their hand up. If that turns out to be too few, it stays an idea, and you
+           will not hear about it again.</p>
       </div>
 
       <h2 class="section-title">Where the work is</h2>
@@ -8289,14 +8296,31 @@ function viewHeritage() {
 function archiveOfferPanel() {
   const box = el(`<div><div class="skeleton" style="height:220px"></div></div>`);
 
+  /* A count only helps once there is one worth showing. "1 supporter has
+     offered" reads as nobody is doing this, which is the opposite of what a
+     number is there for, so below the threshold it says what is needed
+     instead. */
+  const SHOW_COUNT_FROM = 5;
   const counts = el(`<div></div>`);
   db.archiveCounts().then((c) => {
-    if (!c || !c.offers) return;
+    if (!c) return;
+    if (c.offers >= SHOW_COUNT_FROM) {
+      const bits = [`${c.scanners} of them with the scanning`];
+      if (c.with_media) {
+        bits.push(`${c.with_media} ${c.with_media === 1 ? "has" : "have"} material to lend`);
+      }
+      counts.append(el(`
+        <div class="otd" style="margin-top:14px">
+          <span class="otd__year">${c.offers}</span>
+          <span>supporters have offered to help so far, ${bits.join(", and ")}.</span>
+        </div>`));
+      return;
+    }
     counts.append(el(`
       <div class="otd" style="margin-top:14px">
-        <span class="otd__year">${c.offers}</span>
-        <span>${c.offers === 1 ? "supporter has" : "supporters have"} offered to help so far,
-        ${c.scanners} of them with the scanning${c.with_media ? `, and ${c.with_media} have material to lend` : ""}.</span>
+        <span class="otd__year">${Math.max(SHOW_COUNT_FROM - (c.offers || 0), 1)}</span>
+        <span>more offers and this gets started. It needs about a dozen people doing an hour
+        here and there, not one person doing all of it.</span>
       </div>`));
   }).catch(() => { /* counts are a nicety */ });
 
@@ -9528,6 +9552,30 @@ function memorialNotice() {
 }
 
 /** A card on the home page, for as long as the match is still to come. */
+/**
+ * A nudge towards the archive project on the home page.
+ *
+ * The page had one offer in three weeks, which is what happens to something
+ * reachable only through More, Supporters, Archive Project. It is asking for
+ * a free evening rather than money, and nobody was being asked.
+ *
+ * Stands down once enough people have offered, since at that point the project
+ * needs starting rather than advertising.
+ */
+function archivePromo() {
+  if (state.archiveOffers !== null && state.archiveOffers >= 12) return null;
+  const b = el(`
+    <button class="daily-promo daily-promo--archive" data-nav="heritage">
+      <span class="daily-promo__icon">\uD83D\uDCFC</span>
+      <span class="daily-promo__text">
+        <strong>Got Poppies programmes in the loft?</strong>
+        <span>We want to scan the club's history before any more of it goes in a skip</span>
+      </span>
+      <span class="daily-promo__go">Have a look</span>
+    </button>`);
+  return b;
+}
+
 function memorialPromo() {
   if (!memorialUpcoming()) return null;
   const today = londonToday();
