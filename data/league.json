@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-22T15:36:18.667Z",
+  "updated": "2026-08-22T15:53:11.360Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -14,9 +14,9 @@
       "won": 4,
       "drawn": 0,
       "lost": 0,
-      "for": 13,
+      "for": 14,
       "against": 4,
-      "goalDifference": 9,
+      "goalDifference": 10,
       "points": 12,
       "deduction": 0,
       "form": "WWW"
@@ -48,9 +48,9 @@
       "won": 3,
       "drawn": 0,
       "lost": 1,
-      "for": 7,
+      "for": 8,
       "against": 2,
-      "goalDifference": 5,
+      "goalDifference": 6,
       "points": 9,
       "deduction": 0,
       "form": "LWW"
@@ -83,8 +83,8 @@
       "drawn": 0,
       "lost": 1,
       "for": 8,
-      "against": 5,
-      "goalDifference": 3,
+      "against": 6,
+      "goalDifference": 2,
       "points": 9,
       "deduction": 0,
       "form": "WLW"
@@ -104,7 +104,7 @@
       "goalDifference": 3,
       "points": 8,
       "deduction": 0,
-      "form": "DDW"
+      "form": "DDWW"
     },
     {
       "position": 7,
@@ -155,7 +155,7 @@
       "goalDifference": 1,
       "points": 6,
       "deduction": 0,
-      "form": "LW"
+      "form": "LWW"
     },
     {
       "position": 10,
@@ -176,6 +176,23 @@
     },
     {
       "position": 11,
+      "name": "Racing Club Warwick",
+      "short": "RC Warwick",
+      "slug": "racing-club-warwick",
+      "crest": "assets/crests/racing-club-warwick.png",
+      "played": 4,
+      "won": 1,
+      "drawn": 2,
+      "lost": 1,
+      "for": 5,
+      "against": 5,
+      "goalDifference": 0,
+      "points": 5,
+      "deduction": 0,
+      "form": "DLW"
+    },
+    {
+      "position": 12,
       "name": "Leighton Town",
       "short": "Leighton",
       "slug": "leighton-town",
@@ -189,41 +206,24 @@
       "goalDifference": -1,
       "points": 5,
       "deduction": 0,
-      "form": "DDW"
-    },
-    {
-      "position": 12,
-      "name": "Racing Club Warwick",
-      "short": "RC Warwick",
-      "slug": "racing-club-warwick",
-      "crest": "assets/crests/racing-club-warwick.png",
-      "played": 4,
-      "won": 1,
-      "drawn": 1,
-      "lost": 2,
-      "for": 4,
-      "against": 5,
-      "goalDifference": -1,
-      "points": 4,
-      "deduction": 0,
-      "form": "DLW"
+      "form": "DDWL"
     },
     {
       "position": 13,
-      "name": "Hitchin Town",
-      "short": "HitchinTown",
-      "slug": "hitchin-town",
-      "crest": "assets/crests/hitchin-town.png",
+      "name": "Banbury United",
+      "short": "Banbury Utd",
+      "slug": "banbury-united",
+      "crest": "assets/crests/banbury-united.png",
       "played": 4,
       "won": 1,
       "drawn": 1,
       "lost": 2,
-      "for": 4,
-      "against": 6,
+      "for": 5,
+      "against": 7,
       "goalDifference": -2,
       "points": 4,
       "deduction": 0,
-      "form": "LLD"
+      "form": "DWL"
     },
     {
       "position": 14,
@@ -244,23 +244,6 @@
     },
     {
       "position": 15,
-      "name": "Banbury United",
-      "short": "Banbury Utd",
-      "slug": "banbury-united",
-      "crest": "assets/crests/banbury-united.png",
-      "played": 4,
-      "won": 1,
-      "drawn": 1,
-      "lost": 2,
-      "for": 4,
-      "against": 7,
-      "goalDifference": -3,
-      "points": 4,
-      "deduction": 0,
-      "form": "DWL"
-    },
-    {
-      "position": 16,
       "name": "Redditch United",
       "short": "Redditch Utd",
       "slug": "redditch-united",
@@ -277,7 +260,7 @@
       "form": "DDD"
     },
     {
-      "position": 17,
+      "position": 16,
       "name": "Needham Market",
       "short": "Needham Market",
       "slug": "needham-market",
@@ -291,7 +274,24 @@
       "goalDifference": -3,
       "points": 3,
       "deduction": 0,
-      "form": "LWL"
+      "form": "LWLL"
+    },
+    {
+      "position": 17,
+      "name": "Hitchin Town",
+      "short": "HitchinTown",
+      "slug": "hitchin-town",
+      "crest": "assets/crests/hitchin-town.png",
+      "played": 4,
+      "won": 0,
+      "drawn": 2,
+      "lost": 2,
+      "for": 4,
+      "against": 7,
+      "goalDifference": -3,
+      "points": 2,
+      "deduction": 0,
+      "form": "LLD"
     },
     {
       "position": 18,
@@ -321,31 +321,14 @@
       "drawn": 2,
       "lost": 2,
       "for": 3,
-      "against": 8,
-      "goalDifference": -5,
+      "against": 9,
+      "goalDifference": -6,
       "points": 2,
       "deduction": 0,
       "form": "DDL"
     },
     {
       "position": 20,
-      "name": "Bishop's Stortford",
-      "short": "Bishop's Stortford",
-      "slug": "Bishop's Stortford",
-      "crest": "assets/crests/bishops-stortford.png",
-      "played": 4,
-      "won": 0,
-      "drawn": 1,
-      "lost": 3,
-      "for": 1,
-      "against": 6,
-      "goalDifference": -5,
-      "points": 1,
-      "deduction": 0,
-      "form": "DLL"
-    },
-    {
-      "position": 21,
       "name": "Leamington",
       "short": "Leamington",
       "slug": "leamington",
@@ -360,6 +343,23 @@
       "points": 1,
       "deduction": 0,
       "form": "LDL"
+    },
+    {
+      "position": 21,
+      "name": "Bishop's Stortford",
+      "short": "Bishop's Stortford",
+      "slug": "Bishop's Stortford",
+      "crest": "assets/crests/bishops-stortford.png",
+      "played": 4,
+      "won": 0,
+      "drawn": 1,
+      "lost": 3,
+      "for": 1,
+      "against": 7,
+      "goalDifference": -6,
+      "points": 1,
+      "deduction": 0,
+      "form": "DLL"
     },
     {
       "position": 22,
@@ -1054,6 +1054,14 @@
           },
           {
             "name": "Carl  Mensah",
+            "minute": 73,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Ben Hart",
             "minute": 73,
             "ours": false,
             "type": null,
