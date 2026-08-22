@@ -165,9 +165,10 @@ function footer({ askForMoney = true } = {}) {
            footer where somebody has to go looking. -->
       ${askForMoney ? `
       <div class="kofi">
-        <p class="kofi__text"><b>You never have to give anything.</b> Free, no adverts, nothing
-        behind a paywall. If you want to chip in towards the domain and hosting, there is a
-        Ko-fi.</p>
+        <p class="kofi__text"><b>You never have to give anything.</b> The app is free, there are
+        no adverts and nothing sits behind a paywall, and that does not change. If you want to
+        chip in towards keeping it going, and towards the domain and hosting it runs on, there is
+        a Ko-fi.</p>
         <a class="btn btn--sm btn--ghost kofi__go" href="https://ko-fi.com/ktfcsa"
            target="_blank" rel="noopener">Donate towards app fees</a>
       </div>` : ""}
