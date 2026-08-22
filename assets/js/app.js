@@ -4811,7 +4811,63 @@ function questionWorkbench(rows) {
   return box;
 }
 
+/**
+ * One part of the admin panel, rendered so that it cannot take the rest down.
+ *
+ * The panel has gone blank twice, both times because a single card threw while
+ * the tab was being built and took everything with it. Nothing here is worth
+ * that: a broken stats card should cost you the stats card, not the queue you
+ * came in to work through.
+ *
+ * Covers the async half as well, since most of these cards paint from a
+ * promise and a rejected one used to leave "Loading." sitting there for ever.
+ */
+function panelSection(wrap, title, build) {
+  const broke = (err, where) => {
+    console.error(`Admin section "${title || where}" failed:`, err);
+    return el(`
+      <div class="card panel-broke">
+        <b>This part did not load</b>
+        <p class="panel-broke__why">${esc(err?.message || String(err))}</p>
+        <p class="hint">Everything else on this page still works. Worth reporting.</p>
+      </div>`);
+  };
+
+  if (title) wrap.append(el(`<h2 class="section-title">${esc(title)}</h2>`));
+  try {
+    const node = build();
+    if (!node) return;
+    wrap.append(node);
+    /* A card that paints itself later: give it somewhere to put a failure. */
+    if (node.dataset && node.dataset.async === "1" && node.__settled) {
+      node.__settled.catch((err) => node.replaceWith(broke(err, "async")));
+    }
+  } catch (err) {
+    wrap.append(broke(err, "build"));
+  }
+}
+
 function viewAdmin() {
+  /* Last line of defence. Every part below is wrapped on its own, but the
+     panel changes often and a section added later without a boundary should
+     still not be able to blank the page. */
+  try {
+    return buildAdmin();
+  } catch (err) {
+    console.error("The admin panel failed to build:", err);
+    const wrap = el(`<div>
+      <div class="page-head"><h1>Admin</h1></div>
+      <div class="card panel-broke">
+        <b>The panel did not load</b>
+        <p class="panel-broke__why">${esc(err?.message || String(err))}</p>
+        <p class="hint">This is a fault in the site rather than anything you did.</p>
+      </div>
+    </div>`);
+    return wrap;
+  }
+}
+
+function buildAdmin() {
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Admin</h1>
@@ -4955,11 +5011,8 @@ function viewAdmin() {
       statCard.append(el(`<p class="note">Things people have done on the site. Page views are counted separately, below.</p>`));
     });
 
-    wrap.append(el(`<h2 class="section-title">Who is looking</h2>`));
-    wrap.append(viewsPane());
-
-    wrap.append(el(`<h2 class="section-title">Cloudflare</h2>`));
-    wrap.append(cloudflarePane());
+    panelSection(wrap, "Who is looking", () => viewsPane());
+    panelSection(wrap, "Cloudflare", () => cloudflarePane());
   }
 
   /* The findings as they stand, for volunteers, before the public page opens on
@@ -4992,7 +5045,7 @@ function viewAdmin() {
     wrap.append(jump);
 
     /* Where it has got to, before any of the parts. */
-    wrap.append(consultStatusBoard(goTo));
+    panelSection(wrap, "", () => consultStatusBoard(goTo));
 
     /* Publishing is a button, not a clock. On a timer the findings would go out
        at midday on the Friday with whatever had been read by lunchtime. */
@@ -5060,9 +5113,11 @@ function viewAdmin() {
       wrap.append(qb);
       db.consultationQueue().then((rows) => {
         qb.replaceWith(questionWorkbench(rows));
-      }).catch(() => {
+      }).catch((err) => {
+        console.error("Question workbench failed:", err);
         qb.replaceChildren();
-        qb.append(el(`<p class="note" style="margin:0">Not set up in the database yet.</p>`));
+        qb.append(el(`<p class="note" style="margin:0">${esc(err?.message
+          || "Not set up in the database yet.")}</p>`));
       });
     } else {
       wrap.append(el(`<div class="card"><p class="note" style="margin:0">Agreeing the questions
@@ -5367,8 +5422,7 @@ function viewAdmin() {
      ring these people; the public page shows counts and nothing else. */
   const offersCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
   if (atab === "archive") {
-    wrap.append(el(`<h2 class="section-title">Archive project offers</h2>`));
-    wrap.append(offersCard);
+    panelSection(wrap, "Archive project offers", () => offersCard);
   }
 
   /* Same shape as the People tab: what the list adds up to, then a way to
@@ -5772,13 +5826,9 @@ function viewAdmin() {
      paintTags are consts declared below it and reaching for either of them
      earlier throws before initialisation, which took the whole tab out. */
   if (atab === "people") {
-    wrap.append(el(`<h2 class="section-title">People</h2>`));
-    wrap.append(peopleCard);
-    paintPeople();
+    panelSection(wrap, "People", () => { paintPeople(); return peopleCard; });
     if (canRunThings) {
-      wrap.append(el(`<h2 class="section-title">Tags</h2>`));
-      wrap.append(tagsCard);
-      paintTags();
+      panelSection(wrap, "Tags", () => { paintTags(); return tagsCard; });
     }
   }
 

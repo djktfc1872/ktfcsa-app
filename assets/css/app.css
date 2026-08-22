@@ -5741,3 +5741,19 @@ button,
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .tag-row__acts { flex: 0 0 auto; display: flex; gap: 12px; }
+
+/* A part of the admin panel that failed, shown in place of that part rather
+   than in place of everything. */
+.panel-broke {
+  border-left: 3px solid var(--red-400);
+  background: color-mix(in srgb, var(--red-400) 7%, transparent);
+}
+.panel-broke b { display: block; margin-bottom: 6px; }
+.panel-broke__why {
+  margin: 0 0 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
