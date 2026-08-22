@@ -4328,6 +4328,39 @@ function questionWorkbench(rows) {
   let tab = state.qTab || "list";
   let onlyUnfiled = state.qUnfiled !== false;
 
+  /* Groups already saved have to be read back, or the workbench starts empty on
+     every reload, shows the "start from the themes" screen, and returns from
+     that branch before the row carrying Save, Copy and Mark as sent. The work
+     looked lost and the controls looked gone. */
+  let loading = false;
+  const loadSaved = () => {
+    if (loading || groups.length || state.groupsLoaded) return;
+    loading = true;
+    db.questionGroups().then((rows) => {
+      loading = false;
+      state.groupsLoaded = true;
+      if (rows.length) {
+        groups = state.questionGroups = rows
+          .slice()
+          .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+          .map((r) => ({
+            label: r.label || "",
+            topic: r.topic || "other",
+            members: Array.isArray(r.members) ? r.members : [],
+            wording: [],
+            asked_at: r.asked_at,
+            answered_at: r.answered_at,
+          }));
+      }
+      draw();
+    }).catch((err) => {
+      loading = false;
+      state.groupsLoaded = true;
+      console.warn("Saved question groups could not be read:", err);
+      draw();
+    });
+  };
+
   const filedIds = () => new Set(groups.flatMap((g) => g.members));
   const draw = () => {
     box.replaceChildren();
