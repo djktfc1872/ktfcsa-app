@@ -5461,16 +5461,6 @@ function viewAdmin() {
   paintOffers();
 
   const peopleCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-  if (atab === "people") {
-    wrap.append(el(`<h2 class="section-title">People</h2>`));
-    wrap.append(peopleCard);
-    if (canRunThings) {
-      wrap.append(el(`<h2 class="section-title">Tags</h2>`));
-      wrap.append(tagsCard);
-      paintTags();
-    }
-  }
-
   /* Managing the tags themselves, rather than who wears them. Admin only: a
      moderator handing out labels is fine, inventing new ones is not. */
   const tagsCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
@@ -5778,7 +5768,19 @@ function viewAdmin() {
     });
   };
 
-  paintPeople();
+  /* Appended here rather than beside peopleCard, because tagsCard and
+     paintTags are consts declared below it and reaching for either of them
+     earlier throws before initialisation, which took the whole tab out. */
+  if (atab === "people") {
+    wrap.append(el(`<h2 class="section-title">People</h2>`));
+    wrap.append(peopleCard);
+    paintPeople();
+    if (canRunThings) {
+      wrap.append(el(`<h2 class="section-title">Tags</h2>`));
+      wrap.append(tagsCard);
+      paintTags();
+    }
+  }
 
   return wrap;
 }
