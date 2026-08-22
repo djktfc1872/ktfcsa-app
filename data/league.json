@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-22T15:53:11.360Z",
+  "updated": "2026-08-22T16:12:34.229Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -19,7 +19,7 @@
       "goalDifference": 10,
       "points": 12,
       "deduction": 0,
-      "form": "WWW"
+      "form": "WWWW"
     },
     {
       "position": 2,
@@ -36,7 +36,7 @@
       "goalDifference": 7,
       "points": 12,
       "deduction": 0,
-      "form": "WWW"
+      "form": "WWWW"
     },
     {
       "position": 3,
@@ -53,7 +53,7 @@
       "goalDifference": 6,
       "points": 9,
       "deduction": 0,
-      "form": "LWW"
+      "form": "LWWW"
     },
     {
       "position": 4,
@@ -70,7 +70,7 @@
       "goalDifference": 3,
       "points": 9,
       "deduction": 0,
-      "form": "WWL"
+      "form": "WWLW"
     },
     {
       "position": 5,
@@ -87,7 +87,7 @@
       "goalDifference": 2,
       "points": 9,
       "deduction": 0,
-      "form": "WLW"
+      "form": "WLWW"
     },
     {
       "position": 6,
@@ -121,7 +121,7 @@
       "goalDifference": 2,
       "points": 8,
       "deduction": 0,
-      "form": "WDW"
+      "form": "WDWD"
     },
     {
       "position": 8,
@@ -138,7 +138,7 @@
       "goalDifference": 3,
       "points": 7,
       "deduction": 0,
-      "form": "WW"
+      "form": "WWD"
     },
     {
       "position": 9,
@@ -172,7 +172,7 @@
       "goalDifference": 1,
       "points": 5,
       "deduction": 0,
-      "form": "DWL"
+      "form": "DWLD"
     },
     {
       "position": 11,
@@ -189,7 +189,7 @@
       "goalDifference": 0,
       "points": 5,
       "deduction": 0,
-      "form": "DLW"
+      "form": "DLWD"
     },
     {
       "position": 12,
@@ -223,7 +223,7 @@
       "goalDifference": -2,
       "points": 4,
       "deduction": 0,
-      "form": "DWL"
+      "form": "DWLL"
     },
     {
       "position": 14,
@@ -240,7 +240,7 @@
       "goalDifference": -2,
       "points": 4,
       "deduction": 0,
-      "form": "DLL"
+      "form": "DLLW"
     },
     {
       "position": 15,
@@ -257,7 +257,7 @@
       "goalDifference": -1,
       "points": 3,
       "deduction": 0,
-      "form": "DDD"
+      "form": "DDDL"
     },
     {
       "position": 16,
@@ -291,7 +291,7 @@
       "goalDifference": -3,
       "points": 2,
       "deduction": 0,
-      "form": "LLD"
+      "form": "LLDD"
     },
     {
       "position": 18,
@@ -308,7 +308,7 @@
       "goalDifference": -3,
       "points": 2,
       "deduction": 0,
-      "form": "DLL"
+      "form": "DLLD"
     },
     {
       "position": 19,
@@ -325,7 +325,7 @@
       "goalDifference": -6,
       "points": 2,
       "deduction": 0,
-      "form": "DDL"
+      "form": "DDLL"
     },
     {
       "position": 20,
@@ -342,7 +342,7 @@
       "goalDifference": -6,
       "points": 1,
       "deduction": 0,
-      "form": "LDL"
+      "form": "LDLL"
     },
     {
       "position": 21,
@@ -359,7 +359,7 @@
       "goalDifference": -6,
       "points": 1,
       "deduction": 0,
-      "form": "DLL"
+      "form": "DLLL"
     },
     {
       "position": 22,
@@ -376,7 +376,7 @@
       "goalDifference": -5,
       "points": 0,
       "deduction": 0,
-      "form": "LLL"
+      "form": "LLLL"
     }
   ],
   "fixtures": [
@@ -901,8 +901,8 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "live",
-      "rawStatus": "SecondHalf",
+      "status": "played",
+      "rawStatus": "FullTime",
       "homeScore": 0,
       "awayScore": 0,
       "attendance": 966,
@@ -1063,6 +1063,14 @@
           {
             "name": "Ben Hart",
             "minute": 73,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Lewis Green",
+            "minute": 90,
             "ours": false,
             "type": null,
             "second": false,
