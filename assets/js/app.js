@@ -855,12 +855,21 @@ function viewTable() {
           ${rows.map((r) => `
             <tr class="${/kettering/i.test(r.name) ? "is-ktfc" : ""}">
               <td>${r.position}</td>
-              <td>
-                <div class="club-cell">
-                  ${r.crest ? `<img src="${esc(r.crest)}" alt="" loading="lazy">` : ""}
-                  <span>${esc(clubName(r.name))}</span>
-                </div>
-              </td>
+              <td>${(() => {
+                /* Every club in the table has a page: ours, or the away guide
+                   entry for everybody else. A club nobody has an entry for
+                   stays plain text rather than becoming a dead button. */
+                const us = /kettering/i.test(r.name);
+                const t = us ? null : teamByName(r.name);
+                const inner = `
+                  <span class="club-cell">
+                    ${r.crest ? `<img src="${esc(r.crest)}" alt="" loading="lazy">` : ""}
+                    <span>${esc(clubName(r.name))}</span>
+                  </span>`;
+                if (us) return `<button class="club-link" data-nav="poppies">${inner}</button>`;
+                if (t) return `<button class="club-link" data-club="${esc(t.id)}">${inner}</button>`;
+                return `<div class="club-cell">${inner}</div>`;
+              })()}</td>
               <td>${r.played}</td><td>${r.won}</td><td>${r.drawn}</td><td>${r.lost}</td>
               <td>${r.for}</td><td>${r.against}</td>
               <td>${r.goalDifference > 0 ? "+" : ""}${r.goalDifference}</td>

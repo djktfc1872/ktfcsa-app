@@ -5704,3 +5704,19 @@ button,
   font-weight: 600;
   color: var(--text-2);
 }
+
+/* Every club in the league table is a way into its page. Styled as the cell
+   already looked, so the table does not turn into a column of buttons. */
+.club-link {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.club-link:hover span:last-child { color: var(--gold-400); text-decoration: underline; }
+.club-link:focus-visible { outline: 2px solid var(--gold-400); outline-offset: 2px; border-radius: 3px; }

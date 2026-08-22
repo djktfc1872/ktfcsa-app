@@ -318,6 +318,13 @@ async function formByTeam(rows) {
         const res = await get(`/matches?teamId=${id}&limit=1000`);
         const played = (res.items || [])
           .filter((m) => m.date >= SEASON_FROM && m.date <= SEASON_TO)
+          /* League only. The feed returns every fixture a club has, and the
+             season window starts on 1 July, so without this a club's form is
+             padded out with pre-season friendlies: Racing Club Warwick played
+             six of them before a ball was kicked in the league, and all six
+             were showing in the table. Cup ties would do the same thing later
+             in the season. */
+          .filter((m) => (m.competition?.id || "") === COMPETITION_ID)
           .filter((m) => readStatus(m.status) === "played")
           .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
 
