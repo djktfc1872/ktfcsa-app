@@ -271,6 +271,7 @@ const state = {
   qUnfiled: true,         // the sweep hides what is already filed
   qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
   qRedact: "",            // names to take out of the addendum before it goes
+  groupsLoaded: false,    // saved question groups have been read back once
   recovering: false,      // arrived from a password reset link
   peopleFilter: "all",    // which slice of the People tab is showing
   offerFilter: "all",     // which slice of the archive offers is showing
@@ -4425,6 +4426,10 @@ function questionWorkbench(rows) {
 
   /* ------------------------------------------------------------ the list */
   const drawList = (loose, held) => {
+    if (!groups.length && (loading || !state.groupsLoaded)) {
+      box.append(el(`<p class="note" style="margin:0">Reading the saved list.</p>`));
+      return;
+    }
     if (!groups.length) {
       box.append(el(`
         <p class="hint">Write the questions you want answered, in your words. Ten is about right:
@@ -4808,6 +4813,7 @@ function questionWorkbench(rows) {
   };
 
   draw();
+  loadSaved();
   return box;
 }
 
