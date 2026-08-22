@@ -5762,3 +5762,58 @@ button,
    the old thing it is and does not compete with the daily game beside it. */
 .daily-promo--archive { border-left-color: #8a6d1f; }
 .daily-promo--archive .daily-promo__go { color: #cfa963; }
+
+/* ------------------------------------------------------- the open letter */
+
+.letter__h {
+  margin: 20px 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-400);
+}
+.letter__h:first-child { margin-top: 0; }
+.letter__p { margin: 0 0 12px; font-size: 14px; line-height: 1.65; color: var(--text-2); }
+
+.letter__list {
+  margin: 0 0 12px;
+  padding-left: 0;
+  list-style: none;
+}
+.letter__list li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.letter__list li:last-child { border-bottom: 0; }
+
+.letter__q {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--line);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.letter__ref {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+.letter__sign {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-2);
+}

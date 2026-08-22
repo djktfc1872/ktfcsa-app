@@ -253,6 +253,7 @@ const state = {
   facts: null,    // researched club history, from data/club-facts.json
   association: null,  // who we are and what we stand for, from data/association.json
   valueReview: null,  // season ticket and gate price review, from data/value-review.json
+  letter: null,       // the open letter to the club, from data/open-letter.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -8595,12 +8596,20 @@ function consultCount({ compact = false } = {}) {
 function viewConsult() {
   /* Asked once and remembered, so the page can tell "closed" from "published"
      without a round trip on every render. */
-  if (!state.publishedPromise) {
+  /* Only asked once the backend exists. Asked earlier, the store answers
+     "not published" because there is nothing to ask, and that answer used to
+     be cached for the life of the page: anyone whose first paint of this page
+     beat the connection saw "the results are being checked" and never stopped
+     seeing it, however long they waited or however often they came back. */
+  if (!state.publishedPromise && db.isOnline()) {
     state.publishedPromise = db.consultationPublished().then((p) => {
       const on = Boolean(p?.results_public);
       if (on !== state.resultsPublic) { state.resultsPublic = on; render(); }
       return p;
-    }).catch(() => null);
+    }).catch(() => {
+      state.publishedPromise = null;   /* a failed ask is not an answer */
+      return null;
+    });
   }
 
   const wrap = el(`
@@ -8977,6 +8986,47 @@ function verdictBar(name, counts) {
   return row;
 }
 
+/**
+ * The letter that went to the club, reproduced on the page.
+ *
+ * The letter itself promises that a copy will be published, so this is the
+ * page keeping that promise rather than a nicety. Folded away by default: it
+ * is long, and anybody who wants the argument in short form has just read it
+ * in the report above.
+ *
+ * The ten questions are not repeated inside it. They are already on this page
+ * with their counts and their day counters, and two copies would drift.
+ */
+function openLetterSection() {
+  const box = el(`<div></div>`);
+  loadLetter().then((L) => {
+    if (!L) return;
+    box.append(el(`<h2 class="section-title">The letter we sent</h2>`));
+    box.append(foldable(`Read it in full, as sent on ${L.sentWords}`, () => {
+      const card = el(`<div class="card letter"></div>`);
+      L.body.forEach((b) => {
+        if (b.t === "h") {
+          card.append(el(`<h3 class="letter__h">${esc(b.x)}</h3>`));
+        } else if (b.t === "p") {
+          card.append(el(`<p class="letter__p">${esc(b.x)}</p>`));
+        } else if (b.t === "list") {
+          card.append(el(`<ul class="letter__list">${
+            b.x.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>`));
+        } else if (b.t === "quotes") {
+          b.x.forEach((q) => card.append(el(`<blockquote class="letter__q">${esc(q)}</blockquote>`)));
+        } else if (b.t === "ref") {
+          card.append(el(`<p class="letter__ref">${esc(b.x)}</p>`));
+        } else if (b.t === "sign") {
+          card.append(el(`<p class="letter__sign">${b.x.map(esc).join("<br>")}</p>`));
+        }
+      });
+      card.append(el(`<p class="note" style="margin-top:14px">${esc(L.note)}</p>`));
+      return card;
+    }));
+  }).catch(() => { /* the report stands on its own without it */ });
+  return box;
+}
+
 function consultResults() {
   const box = el(`<div><div class="skeleton" style="height:320px"></div></div>`);
 
@@ -9235,6 +9285,9 @@ function consultResults() {
       qbox.append(card);
     }).catch(() => {});
     box.append(qbox);
+
+    /* Directly under the questions, because it is the covering note to them. */
+    box.append(openLetterSection());
 
     /* The questions, numbered, with how long each has gone unanswered. That
        last column is the point of the exercise. */
@@ -9613,6 +9666,12 @@ async function loadLeague(force = false) {
   } catch {
     state.league = null; /* the app falls back to the spreadsheet fixture list */
   }
+}
+
+async function loadLetter() {
+  if (state.letter) return state.letter;
+  state.letter = await readJSON("data/open-letter.json");
+  return state.letter;
 }
 
 async function loadValueReview() {
