@@ -637,24 +637,6 @@ class Backend {
     };
   }
 
-  /* Cloudflare's own numbers, fetched through our Pages Function because the
-     API token it needs can never be sent to a browser. The Function decides
-     whether the caller is a volunteer; this just passes their session on. */
-  async cloudflareStats() {
-    const { data } = await this.sb.auth.getSession();
-    const token = data?.session?.access_token;
-    if (!token) return { error: "not-signed-in" };
-    const res = await fetch("/api/analytics", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    /* A 404 means Pages is serving the site but not running the Function, which
-       is a project setting rather than anything wrong with the code. */
-    if (res.status === 404) return { error: "no-function" };
-    const body = await res.json().catch(() => ({ error: "unreadable" }));
-    if (!res.ok) return { error: body.error || `http-${res.status}` };
-    return body;
-  }
-
   /* Fire and forget. A failed count is not worth a retry, still less an error
      in front of somebody reading the page. */
   async recordView(route, isUnique) {

@@ -566,9 +566,6 @@ export function recordView(route) {
   backend.recordView(route, first);
 }
 
-export const cloudflareStats = () =>
-  (backend?.cloudflareStats ? backend.cloudflareStats() : Promise.resolve({ error: "offline" }));
-
 export const viewStats = (days) => (backend ? backend.viewStats(days) : Promise.resolve([]));
 
 export const questionGroups = () => (backend ? backend.questionGroups() : Promise.resolve([]));

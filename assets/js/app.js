@@ -4173,108 +4173,33 @@ function viewsPane() {
 }
 
 /**
- * Cloudflare's figures, beside our own.
+ * A way through to Cloudflare's own figures.
  *
- * Ours count route changes inside the app and only since the counter was
- * switched on. Cloudflare counts requests at the edge, has been doing it all
- * along, and sees people who bounced before anything loaded. The two will never
- * agree and are not meant to: shown together, the gap is itself informative.
+ * Not embedded, and not for want of trying. Reading them needs an API token,
+ * and a token cannot live in the app because everything the app ships is
+ * public. The usual answer is a small server-side function, but this site is a
+ * Worker serving static assets rather than a Pages project, so there is no
+ * functions/ directory convention to drop one into. Doing it properly means
+ * adding a Worker entry point and a wrangler config to a deployment that
+ * currently works, which is not a thing to attempt casually on a live site.
+ *
+ * So: a link, and our own counts above it, which cover the question most of
+ * the time.
  */
 function cloudflarePane() {
-  const box = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
-
-  db.cloudflareStats().then((d) => {
-    box.replaceChildren();
-
-    if (d.error === "not-configured") {
-      box.append(el(`<div class="empty"><b>Not connected yet</b>Cloudflare needs an API token,
-        and a token cannot live in the app because everything the app holds is public. Set
-        <code>CF_API_TOKEN</code>, <code>CF_ACCOUNT_ID</code> and <code>CF_SITE_TAG</code> in the
-        Pages dashboard and this fills itself in.</div>`));
-      return;
-    }
-    if (d.error === "no-function") {
-      box.append(el(`<div class="empty"><b>Cloudflare Pages is not running the function</b>
-        The file is deployed but <code>/api/analytics</code> returns 404, which is a project
-        setting rather than the code. In the Pages project, check Settings &rsaquo; Build: the root
-        directory should be the repository root, so that <code>functions/</code> sits beside
-        <code>index.html</code>.</div>`));
-      return;
-    }
-    if (d.error === "not-signed-in") {
-      box.append(el(`<p class="note" style="margin:0">Sign in to see these.</p>`));
-      return;
-    }
-    if (d.error) {
-      box.append(el(`<div class="empty"><b>Cloudflare would not answer</b>${esc(d.error)}</div>`));
-      return;
-    }
-
-    const days = (d.days || []).slice().sort((a, b) => b.day.localeCompare(a.day));
-    if (!days.length) {
-      box.append(el(`<div class="empty"><b>Nothing back</b>Cloudflare returned no rows for the
-        last 30 days. Web Analytics may not be switched on for this site.</div>`));
-      return;
-    }
-
-    const total = days.reduce((a, r) => ({
-      views: a.views + r.views, visits: a.visits + r.visits,
-    }), { views: 0, visits: 0 });
-    const today = londonToday();
-    const now = days.find((r) => r.day === today) || { views: 0, visits: 0 };
-
-    box.append(el(`
-      <div class="info-grid info-grid--4">
-        <div class="info"><div class="info__label">Today</div>
-          <div class="info__value" style="color:var(--gold-400)">${now.views}</div></div>
-        <div class="info"><div class="info__label">Today, visits</div>
-          <div class="info__value">${now.visits}</div></div>
-        <div class="info"><div class="info__label">30 days</div>
-          <div class="info__value">${total.views.toLocaleString("en-GB")}</div></div>
-        <div class="info"><div class="info__label">30 days, visits</div>
-          <div class="info__value">${total.visits.toLocaleString("en-GB")}</div></div>
-      </div>`));
-
-    const top = Math.max(...days.map((r) => r.views), 1);
-    box.append(el(`<div class="events__head" style="margin-top:14px">By day</div>`));
-    days.slice(0, 14).forEach((r) => {
-      box.append(el(`
-        <div class="dist">
-          <span class="dist__key dist__key--wide">${esc(fmtDate(r.day, "short"))}${
-            r.day === today ? " (so far)" : ""}</span>
-          <span class="dist__bar"><span class="dist__fill" style="width:${
-            Math.round((r.views / top) * 100)}%"></span></span>
-          <span class="dist__n">${r.views}<span style="color:var(--text-3)"> / ${r.visits}</span></span>
-        </div>`));
-    });
-
-    const paths = (d.paths || []).slice(0, 12);
-    if (paths.length) {
-      const topPath = Math.max(...paths.map((r) => r.views), 1);
-      box.append(el(`<div class="events__head" style="margin-top:14px">Most requested</div>`));
-      paths.forEach((r) => {
-        box.append(el(`
-          <div class="dist">
-            <span class="dist__key dist__key--wide">${esc(r.path)}</span>
-            <span class="dist__bar"><span class="dist__fill" style="width:${
-              Math.round((r.views / topPath) * 100)}%"></span></span>
-            <span class="dist__n">${r.views}</span>
-          </div>`));
-      });
-      box.append(el(`<p class="hint">Cloudflare sees the page request, not which screen the app
-        then showed, so nearly everything lands on <code>/</code>. Our own counts above break that
-        down by screen.</p>`));
-    }
-
-    box.append(el(`<p class="hint">Views are page loads, visits are arrivals from somewhere else.
-      Counted at the edge, so this includes people who left before the app finished loading, and it
-      covers the whole period rather than only since our own counter was switched on.</p>`));
-  }).catch((err) => {
-    box.replaceChildren();
-    box.append(el(`<div class="empty"><b>Could not load</b>${esc(err.message || "Try again.")}</div>`));
-  });
-
-  return box;
+  return el(`
+    <div class="card">
+      <p class="club-overview">Cloudflare counts every request at the edge, including people who
+      left before the app finished loading, and it has been counting since long before our own
+      counter existed. It is the place to look for the nights we have no figures for.</p>
+      <div class="btn-row" style="margin-top:12px">
+        <a class="btn btn--sm btn--ghost" href="https://dash.cloudflare.com/?to=/:account/workers-and-pages"
+           target="_blank" rel="noopener">${ICON.globe} Open Cloudflare</a>
+      </div>
+      <p class="hint">Web Analytics, then the site for fans.ktfcsa.com. Bringing these numbers into
+      this page would mean an API token, and a token in the app is a token given to everybody who
+      opens it. It can be done through a Worker route if it is worth doing.</p>
+    </div>`);
 }
 
 function questionWorkbench(rows) {

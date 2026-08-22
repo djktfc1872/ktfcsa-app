@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v151";
+const CACHE = "ktfcsa-v152";
 
 const SHELL = [
   "./",
@@ -67,10 +67,6 @@ self.addEventListener("fetch", (e) => {
   /* Anything else off-site, including Supabase, is left alone. */
   if (url.origin !== location.origin) return;
 
-  /* The analytics endpoint is per-person and short lived. Caching it would
-     serve one volunteer's figures to the next, and hand back yesterday's
-     numbers offline as though they were today's. */
-  if (url.pathname.startsWith("/api/")) return;
 
   /* Our own code and data: always ask the network first. */
   e.respondWith(
