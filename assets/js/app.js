@@ -4193,6 +4193,14 @@ function cloudflarePane() {
         Pages dashboard and this fills itself in.</div>`));
       return;
     }
+    if (d.error === "no-function") {
+      box.append(el(`<div class="empty"><b>Cloudflare Pages is not running the function</b>
+        The file is deployed but <code>/api/analytics</code> returns 404, which is a project
+        setting rather than the code. In the Pages project, check Settings &rsaquo; Build: the root
+        directory should be the repository root, so that <code>functions/</code> sits beside
+        <code>index.html</code>.</div>`));
+      return;
+    }
     if (d.error === "not-signed-in") {
       box.append(el(`<p class="note" style="margin:0">Sign in to see these.</p>`));
       return;
@@ -4803,13 +4811,26 @@ function viewAdmin() {
   const ATABS = [["overview", "Overview"], ["consult", "Consultation"],
                  ["archive", "Archive"], ["people", "People"]];
   const atab = state.adminTab || "overview";
+  /* Sticky, because the consultation tab is twenty thousand pixels tall and
+     getting back to the section bar meant scrolling all the way up. */
   const abar = el(`
-    <div class="segmented" style="margin-bottom:18px" role="group" aria-label="Admin sections">
-      ${ATABS.map(([k, l]) => `<button data-atab="${k}" class="${atab === k ? "is-active" : ""}">${l}</button>`).join("")}
+    <div class="segmented segmented--sticky" role="group" aria-label="Admin sections">
+      ${ATABS.map(([k, l]) => `<button data-atab="${k}" class="${atab === k ? "is-active" : ""}">${
+        esc(l)}<span class="seg-badge" data-badge="${k}" hidden></span></button>`).join("")}
     </div>`);
   abar.querySelectorAll("[data-atab]").forEach((b) =>
-    b.addEventListener("click", () => { state.adminTab = b.dataset.atab; render(); }));
+    b.addEventListener("click", () => { state.adminTab = b.dataset.atab; render({ toTop: true }); }));
   wrap.append(abar);
+
+  /* The badge says where the work is without opening the tab to find out. */
+  db.pendingActions().then((pa) => {
+    if (!pa) return;
+    const marks = { consult: pa.consultation || 0 };
+    Object.entries(marks).forEach(([k, n]) => {
+      const dot = abar.querySelector(`[data-badge="${k}"]`);
+      if (dot && n > 0) { dot.textContent = n; dot.hidden = false; }
+    });
+  }).catch(() => {});
 
   /* Whatever is waiting on a volunteer, first, on every tab. Everything else
      here is information; this is the only part that is a job, so each line is
@@ -4888,11 +4909,17 @@ function viewAdmin() {
         statCard.append(el(`<div class="stat-group__head">${esc(heading)}</div>`));
         const grid = el(`<div class="info-grid info-grid--dense"></div>`);
         have.forEach(([key, label]) => {
-          const urgent = /waiting/.test(key) && o[key] > 0;
+          /* Green means nothing needs doing, amber means it does. Everything
+             else stays neutral: colouring every tile would mean none of them
+             carried any signal. */
+          const v = Number(o[key]);
+          let tone = "";
+          if (heading === "Waiting on a volunteer") tone = v > 0 ? "warn" : "good";
+          else if (/this_week|today/.test(key) && v > 0) tone = "good";
           grid.append(el(`
-            <div class="info">
+            <div class="info${tone ? ` info--${tone}` : ""}">
               <div class="info__label">${esc(label)}</div>
-              <div class="info__value"${urgent ? ` style="color:var(--gold-400)"` : ""}>${Number(o[key]).toLocaleString("en-GB")}</div>
+              <div class="info__value">${v.toLocaleString("en-GB")}</div>
             </div>`));
         });
         statCard.append(grid);
@@ -4915,6 +4942,26 @@ function viewAdmin() {
      the dashboard is twenty thousand pixels tall, so "jump to the queue" meant
      a smooth scroll through the whole thing. The work belongs at the top. */
   if (atab === "consult") {
+    /* Where to, within a tab that runs to several screens. Scrolls rather than
+       switches, so nothing is hidden behind another click and the page can
+       still be read straight through. */
+    const jump = el(`
+      <div class="jump" role="group" aria-label="Jump to">
+        <button data-to="a-publish">Publish</button>
+        <button data-to="a-questions">Questions</button>
+        <button data-to="a-queue">Queue</button>
+        <button data-to="a-live">Findings</button>
+      </div>`);
+    jump.querySelectorAll("[data-to]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const target = document.getElementById(b.dataset.to);
+        if (!target) return toast("That part has not loaded yet.");
+        const top = target.getBoundingClientRect().top + window.scrollY - 96;
+        window.scrollTo({ top, behavior: "smooth" });
+      });
+    });
+    wrap.append(jump);
+
     /* Publishing is a button, not a clock. On a timer the findings would go out
        at midday on the Friday with whatever had been read by lunchtime. */
     const pub = el(`<div></div>`);
@@ -4922,7 +4969,7 @@ function viewAdmin() {
       const on = Boolean(p?.results_public);
       state.resultsPublic = on;
       const card = el(`
-        <div class="${on ? "todo todo--clear" : "todo"}">
+        <div class="${on ? "todo todo--clear" : "todo"}" id="a-publish">
           <b>${on ? "The findings are public" : "The findings are not public yet"}</b>
           ${on
             ? `Published ${esc(fmtDate(String(p.published_at).slice(0, 10)))}. Supporters can see the
@@ -4966,7 +5013,7 @@ function viewAdmin() {
     }).catch(() => {});
     wrap.append(pub);
 
-    wrap.append(el(`<h2 class="section-title">Questions for the club</h2>`));
+    wrap.append(el(`<h2 class="section-title" id="a-questions">Questions for the club</h2>`));
     const qb = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
     wrap.append(qb);
     db.consultationQueue().then((rows) => {
@@ -4976,12 +5023,12 @@ function viewAdmin() {
       qb.append(el(`<p class="note" style="margin:0">Not set up in the database yet.</p>`));
     });
 
-    wrap.append(el(`<h2 class="section-title">Waiting to be read</h2>`));
+    wrap.append(el(`<h2 class="section-title" id="a-queue">Waiting to be read</h2>`));
     wrap.append(el(`<div class="queue-slot"></div>`));
   }
 
   if (atab === "consult" && consultState() !== "before") {
-    wrap.append(el(`<h2 class="section-title">Consultation, live</h2>`));
+    wrap.append(el(`<h2 class="section-title" id="a-live">Consultation, live</h2>`));
     const liveNote = el(`
       <div class="soon" style="margin-bottom:14px">
         <span class="soon__tag">${consultState() === "open" ? "Still open" : "Closed"}</span>

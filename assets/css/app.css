@@ -5498,3 +5498,69 @@ button,
   border-left: 3px solid var(--gold-400);
   background: color-mix(in srgb, var(--gold-400) 7%, transparent);
 }
+
+/* ============================================================ admin panel */
+
+/* The section bar follows you down. The consultation tab runs to several
+   screens and getting back to it meant scrolling all the way up. */
+.segmented--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 0 18px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.seg-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--gold-400);
+  color: #17140f;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+/* Within a long tab. Scrolls rather than switches, so nothing is hidden
+   behind another click. */
+.jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.jump button {
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.jump button:hover { border-color: var(--gold-400); color: var(--text); }
+
+/* Green when there is nothing to do, amber when there is. Only those two
+   carry colour: tinting every tile would leave none of them meaning anything. */
+.info--good .info__value { color: #6aa84f; }
+.info--warn .info__value { color: var(--gold-400); }
+.info--bad  .info__value { color: var(--red-400); }
+
+.info--good, .info--warn, .info--bad { position: relative; }
+.info--good::before, .info--warn::before, .info--bad::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+}
+.info--good::before { background: #6aa84f; }
+.info--warn::before { background: var(--gold-400); }
+.info--bad::before  { background: var(--red-400); }

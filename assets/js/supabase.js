@@ -647,6 +647,9 @@ class Backend {
     const res = await fetch("/api/analytics", {
       headers: { Authorization: `Bearer ${token}` },
     });
+    /* A 404 means Pages is serving the site but not running the Function, which
+       is a project setting rather than anything wrong with the code. */
+    if (res.status === 404) return { error: "no-function" };
     const body = await res.json().catch(() => ({ error: "unreadable" }));
     if (!res.ok) return { error: body.error || `http-${res.status}` };
     return body;
