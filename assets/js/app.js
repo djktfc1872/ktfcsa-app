@@ -271,6 +271,7 @@ const state = {
   qUnfiled: true,         // the sweep hides what is already filed
   qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
   qRedact: "",            // names to take out of the addendum before it goes
+  recovering: false,      // arrived from a password reset link
   peopleFilter: "all",    // which slice of the People tab is showing
   offerFilter: "all",     // which slice of the archive offers is showing
   peopleSort: "new",      // newest first, or alphabetical
@@ -6986,6 +6987,37 @@ function viewFeedback() {
 
 /* ================================================================= account */
 
+/** Choosing a new password, after a reset link or from the account page. */
+function newPasswordPanel() {
+  const box = el(`
+    <div class="card">
+      <div class="field">
+        <label for="np1">New password</label>
+        <input id="np1" type="password" autocomplete="new-password" minlength="8">
+      </div>
+      <div class="field">
+        <label for="np2">Type it again</label>
+        <input id="np2" type="password" autocomplete="new-password" minlength="8">
+      </div>
+      <div class="btn-row"><button class="btn btn--sm">Save the new password</button></div>
+      <p class="hint">Eight characters or more. You stay signed in on this device.</p>
+    </div>`);
+
+  box.querySelector("button").addEventListener("click", () => {
+    const a = box.querySelector("#np1").value;
+    const b = box.querySelector("#np2").value;
+    if (a.length < 8) return toast("Eight characters or more, please.", "bad");
+    if (a !== b) return toast("Those two do not match.", "bad");
+    withBusy(box.querySelector("button"), "Saving", async () => {
+      await db.setPassword(a);
+      state.recovering = false;
+      toast("Password changed.", "good");
+      render({ toTop: true });
+    });
+  });
+  return box;
+}
+
 function viewAccount() {
   const user = db.currentUser();
   const online = db.isOnline();
@@ -6998,6 +7030,19 @@ function viewAccount() {
         : "Running on this device only. No account service is set up yet."}</p>
     </div>
   </div>`);
+
+  /* Arrived from a reset link: the session is already live, so the only thing
+     to do here is choose a new password. Put above everything, because that is
+     the one job this visit has. */
+  if (state.recovering) {
+    wrap.append(el(`
+      <div class="soon">
+        <span class="soon__tag">Reset link opened</span>
+        <p>You are signed in. Choose a new password and you are done.</p>
+      </div>`));
+    wrap.append(newPasswordPanel());
+    return wrap;
+  }
 
   if (!user) {
     wrap.append(online ? authPanel() : localSignInPanel());
@@ -9561,6 +9606,21 @@ async function boot() {
       .initStore({ change: () => render(), error: (message) => toast(message) })
       .then(() => render()),
   ]);
+
+  /* A password reset link arrives as #access_token=...&type=recovery, which the
+     router cannot read and quietly turns into the home page. It needs the
+     backend, so it runs here rather than at the top of boot, and on its own
+     rather than inside the Promise.all, where a rejection would have taken the
+     rest of the boot down with it. */
+  try {
+    if (await db.consumeRecoveryLink()) {
+      state.recovering = true;
+      go("account");
+    }
+  } catch (err) {
+    toast(err.message || "That reset link has expired. Ask for a new one.", "bad");
+    go("account");
+  }
 
   loadPodcast().then(() => {
     if (state.view === "podcast") render();

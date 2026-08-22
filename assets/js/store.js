@@ -118,6 +118,16 @@ export const isModerator = () => {
 };
 export const isModeratorId = (id) => live.moderators.has(id);
 
+/* True when the page was opened from a password reset link, in which case the
+   session is now live and the person needs to choose a new password. */
+export const consumeRecoveryLink = () =>
+  (backend?.consumeRecoveryLink ? backend.consumeRecoveryLink() : Promise.resolve(false));
+
+export async function setPassword(password) {
+  if (!backend) throw new Error("Not connected.");
+  await backend.setPassword(password);
+}
+
 export const supporterTags = () =>
   (backend?.supporterTags ? backend.supporterTags() : Promise.resolve(null));
 export const upsertTag = (key, label, sort) => backend.upsertTag(key, label, sort);

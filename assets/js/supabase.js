@@ -91,6 +91,45 @@ class Backend {
     this.profile = null;
   }
 
+  /**
+   * Takes the token out of a password reset link and signs that session in.
+   *
+   * detectSessionInUrl is off because this app routes on the hash and the SDK
+   * doing its own thing with #/fixtures caused more trouble than it solved.
+   * The cost is that nothing was reading recovery links either, so the reset
+   * email led to the app and then simply sat there. This reads it deliberately
+   * and only when the link actually is one.
+   */
+  async consumeRecoveryLink() {
+    const raw = location.hash.startsWith("#") ? location.hash.slice(1) : location.hash;
+    if (!raw.includes("access_token")) return false;
+    const q = new URLSearchParams(raw);
+    if (q.get("type") !== "recovery") return false;
+    const access_token = q.get("access_token");
+    const refresh_token = q.get("refresh_token");
+    if (!access_token || !refresh_token) return false;
+    /* setSession throws on a malformed token rather than returning an error,
+       so both have to be caught. The hash is cleared in either case: a used or
+       expired token in the address bar is worth nothing to anybody and gets
+       copied into messages when people ask for help. */
+    let failed = null;
+    try {
+      const { error } = await this.sb.auth.setSession({ access_token, refresh_token });
+      if (error) failed = friendly(error);
+    } catch (err) {
+      failed = friendly(err) || err?.message || "That link did not work.";
+    } finally {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    if (failed) throw new Error(failed);
+    return true;
+  }
+
+  async setPassword(password) {
+    const { error } = await this.sb.auth.updateUser({ password });
+    if (error) throw new Error(friendly(error));
+  }
+
   async resetPassword(email) {
     const { error } = await this.sb.auth.resetPasswordForEmail(email, {
       redirectTo: location.href.split("#")[0],
