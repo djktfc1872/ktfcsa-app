@@ -270,6 +270,8 @@ const state = {
   qUnfiled: true,         // the sweep hides what is already filed
   qExcluded: [],          // deliberately not sent: allegations, abuse, not questions
   qRedact: "",            // names to take out of the addendum before it goes
+  peopleFilter: "all",    // which slice of the People tab is showing
+  peopleSort: "new",      // newest first, or alphabetical
   qReplyBy: "",           // the date a reply is asked for, so silence becomes a fact
   publishedPromise: null,
   dailyAnswers: [],   // right/wrong so far in today's run
@@ -5284,6 +5286,9 @@ function viewAdmin() {
     wrap.append(peopleCard);
   }
 
+  /* Sixty rows each carrying eight tag buttons was a wall nobody could read.
+     The list scans first: name, what they are, when they joined. The controls
+     are one tap away, on the person you actually meant. */
   const paintPeople = () => {
     db.adminPeople().then((rows) => {
       peopleCard.replaceChildren();
@@ -5291,42 +5296,180 @@ function viewAdmin() {
         peopleCard.append(el(`<p class="note" style="margin:0">Nobody yet.</p>`));
         return;
       }
-      const search = el(`<input class="admin-search" type="search" placeholder="Search ${rows.length} supporters" aria-label="Search supporters">`);
-      peopleCard.append(search);
+
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const counts = {
+        all: rows.length,
+        admins: rows.filter((r) => r.is_admin).length,
+        tagged: rows.filter((r) => r.tag).length,
+        early: rows.filter((r) => db.isResultsViewer(r.id)).length,
+        fresh: rows.filter((r) => String(r.created_at) >= weekAgo).length,
+        email: rows.filter((r) => r.email_opt_in).length,
+      };
+
+      peopleCard.append(el(`
+        <div class="info-grid info-grid--dense">
+          <div class="info"><div class="info__label">Accounts</div>
+            <div class="info__value">${counts.all}</div></div>
+          <div class="info${counts.fresh ? " info--good" : ""}"><div class="info__label">This week</div>
+            <div class="info__value">${counts.fresh}</div></div>
+          <div class="info"><div class="info__label">Volunteers</div>
+            <div class="info__value">${counts.admins}</div></div>
+          <div class="info"><div class="info__label">Tagged</div>
+            <div class="info__value">${counts.tagged}</div></div>
+          <div class="info"><div class="info__label">Early sight</div>
+            <div class="info__value">${counts.early}</div></div>
+          <div class="info"><div class="info__label">Email opted in</div>
+            <div class="info__value">${counts.email}</div></div>
+        </div>`));
+
+      const FILTERS = [
+        ["all", "Everyone", () => true],
+        ["fresh", "Joined this week", (r) => String(r.created_at) >= weekAgo],
+        ["admins", "Volunteers", (r) => r.is_admin],
+        ["tagged", "Tagged", (r) => Boolean(r.tag)],
+        ["untagged", "Untagged", (r) => !r.tag && !r.is_admin],
+        ["early", "Early sight", (r) => db.isResultsViewer(r.id)],
+        ["email", "Email opted in", (r) => r.email_opt_in],
+      ];
+      let filter = state.peopleFilter || "all";
+      let sort = state.peopleSort || "new";
+
+      const chips = el(`<div class="chips__row" style="margin:12px 0 10px"></div>`);
+      FILTERS.forEach(([key, label, test]) => {
+        const n = rows.filter(test).length;
+        const b = el(`<button class="chip${filter === key ? " is-on" : ""}">${esc(label)} <span>${n}</span></button>`);
+        b.addEventListener("click", () => { filter = state.peopleFilter = key; paintPeople(); });
+        chips.append(b);
+      });
+      peopleCard.append(chips);
+
+      const tools = el(`
+        <div class="people-tools">
+          <input class="admin-search" type="search" placeholder="Search by name" aria-label="Search supporters">
+          <button class="chip">${sort === "new" ? "Newest first" : "A to Z"}</button>
+        </div>`);
+      const search = tools.querySelector("input");
+      tools.querySelector(".chip").addEventListener("click", () => {
+        sort = state.peopleSort = sort === "new" ? "az" : "new";
+        paintPeople();
+      });
+      peopleCard.append(tools);
+
       const list = el(`<div></div>`);
       peopleCard.append(list);
 
-      const draw = (filter = "") => {
-        const want = filter.trim().toLowerCase();
-        const shown = rows.filter((r) => !want || (r.display_name || "").toLowerCase().includes(want));
+      const draw = (q = "") => {
+        const want = q.trim().toLowerCase();
+        const test = FILTERS.find(([k]) => k === filter)?.[2] || (() => true);
+        let shown = rows.filter(test)
+          .filter((r) => !want || (r.display_name || "").toLowerCase().includes(want));
+        shown = sort === "az"
+          ? shown.sort((a, b) => (a.display_name || "").localeCompare(b.display_name || ""))
+          : shown.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+
         list.replaceChildren();
         if (!shown.length) {
-          list.append(el(`<p class="note">Nobody by that name.</p>`));
+          list.append(el(`<p class="note">Nobody matches that.</p>`));
           return;
         }
+
         shown.slice(0, 60).forEach((r) => {
+          const seeing = db.isResultsViewer(r.id);
+          const badges = [
+            r.is_admin ? `<span class="pill pill--gold">Volunteer</span>` : "",
+            r.tag ? `<span class="pill">${esc(TAG_LABEL[r.tag] || r.tag)}</span>` : "",
+            seeing ? `<span class="pill">Early sight</span>` : "",
+            r.email_opt_in ? `<span class="pill">Email</span>` : "",
+          ].filter(Boolean).join("");
+
           const row = el(`
             <div class="person">
-              <div class="person__who">
-                <span class="person__name">${namePlusTag(r.id, r.display_name)}</span>
-                <span class="person__meta">${r.is_admin ? "Admin \u00B7 " : ""}${
-                  db.isResultsViewer(r.id) ? "Sees results early \u00B7 " : ""}joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
-              </div>
+              <button class="person__row" type="button" aria-expanded="false">
+                <span class="person__who">
+                  <span class="person__name">${namePlusTag(r.id, r.display_name)}</span>
+                  <span class="person__meta">Joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
+                </span>
+                <span class="person__badges">${badges}</span>
+                <span class="person__chev" aria-hidden="true">\u203A</span>
+              </button>
+              <div class="person__panel" hidden></div>
             </div>`);
 
-          /* Early sight of the consultation findings, before they go public.
-             Read-only: it gives them the same summary everybody gets later and
-             never anybody's raw response. Admins already have it. */
-          if (!r.is_admin) {
-            const seeing = db.isResultsViewer(r.id);
-            const eye = el(`<button class="tag-btn${seeing ? " is-on" : ""}" type="button" style="margin-bottom:6px">${
-              seeing ? "\u2713 Sees results early" : "Give early sight of results"}</button>`);
-            eye.addEventListener("click", async () => {
-              eye.disabled = true;
-              try {
-                await db.setResultsViewer(r.id, !seeing);
-                toast(seeing ? `${r.display_name} can no longer see them early.` : `${r.display_name} can see the results early.`);
-                paintPeople();
+          const panel = row.querySelector(".person__panel");
+          const toggle = row.querySelector(".person__row");
+          let built = false;
+          toggle.addEventListener("click", () => {
+            const open = !panel.hidden;
+            panel.hidden = open;
+            toggle.setAttribute("aria-expanded", String(!open));
+            row.classList.toggle("person--open", !open);
+            if (built || open) return;
+            built = true;
+
+            if (!r.is_admin) {
+              const eye = el(`<button class="tag-btn${seeing ? " is-on" : ""}" type="button">${
+                seeing ? "\u2713 Sees results early" : "Give early sight of results"}</button>`);
+              eye.addEventListener("click", async () => {
+                eye.disabled = true;
+                try {
+                  await db.setResultsViewer(r.id, !seeing);
+                  toast(seeing ? `${r.display_name} can no longer see them early.`
+                               : `${r.display_name} can see the results early.`, "good");
+                  paintPeople();
+                } catch (err) {
+                  eye.disabled = false;
+                  toast(err.message || "That did not save.", "bad");
+                }
+              });
+              panel.append(el(`<div class="person__field">Early sight of consultation results</div>`));
+              panel.append(eye);
+            }
+
+            panel.append(el(`<div class="person__field">Tag</div>`));
+            const picker = el(`<div class="person__tags"></div>`);
+            [["", "None"], ...Object.entries(TAG_LABEL)].forEach(([key, label]) => {
+              const on = (r.tag || "") === key;
+              const b = el(`<button class="tag-btn${on ? " is-on" : ""}" type="button">${esc(label)}</button>`);
+              b.addEventListener("click", async () => {
+                if (on) return;
+                b.disabled = true;
+                try {
+                  await db.setTag(r.id, key || null);
+                  r.tag = key || null;
+                  toast(key ? `${r.display_name} is now ${TAG_LABEL[key]}.`
+                            : `Tag removed from ${r.display_name}.`, "good");
+                  paintPeople();
+                } catch (err) {
+                  toast(err.message || "That did not save.", "bad");
+                  b.disabled = false;
+                }
+              });
+              picker.append(b);
+            });
+            panel.append(picker);
+
+            /* Deliberately not here: making somebody an admin, and deleting an
+               account. Both are done in Supabase, on purpose. A mis-tap in a
+               list of sixty should not be able to hand over the keys. */
+            panel.append(el(`<p class="hint" style="margin-bottom:0">Admin rights and deleting an
+              account are done in Supabase, not here.</p>`));
+          });
+
+          list.append(row);
+        });
+
+        if (shown.length > 60) {
+          list.append(el(`<p class="note">Showing 60 of ${shown.length}. Search or filter to narrow it down.</p>`));
+        }
+      };
+
+      search.addEventListener("input", () => draw(search.value));
+      draw();
+    });
+  };
+
+  paintPeople();
               } catch (err) {
                 eye.disabled = false;
                 toast(err.message || "That did not save.");

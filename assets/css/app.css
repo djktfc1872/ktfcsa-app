@@ -5564,3 +5564,60 @@ button,
 .info--good::before { background: #6aa84f; }
 .info--warn::before { background: var(--gold-400); }
 .info--bad::before  { background: var(--red-400); }
+
+/* --------------------------------------------------------- people tab */
+
+.people-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.people-tools .admin-search { flex: 1 1 auto; margin-bottom: 0; }
+.people-tools .chip { flex: 0 0 auto; white-space: nowrap; }
+
+/* The list scans first. Everything you can change to somebody sits behind a
+   tap on that person, so a mis-tap in a list of sixty cannot do anything. */
+.person__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.person__row .person__who { flex: 1 1 auto; min-width: 0; }
+.person__name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.person__badges {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 52%;
+}
+
+.person__chev {
+  flex: 0 0 auto;
+  color: var(--text-3);
+  font-size: 17px;
+  transition: transform 0.18s ease;
+}
+.person--open .person__chev { transform: rotate(90deg); }
+
+.person__panel { padding: 4px 0 12px; }
+.person__field {
+  margin: 10px 0 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.person__panel .person__field:first-child { margin-top: 0; }
+
+@media (max-width: 460px) {
+  .person__badges { max-width: 42%; }
+  .people-tools { flex-wrap: wrap; }
+}

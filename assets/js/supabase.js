@@ -431,7 +431,7 @@ class Backend {
   async adminPeople() {
     const { data, error } = await this.sb
       .from("profiles")
-      .select("id, display_name, is_admin, avatar, tag, created_at")
+      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer")
       .order("created_at", { ascending: false });
     if (error) return [];
     return data || [];
