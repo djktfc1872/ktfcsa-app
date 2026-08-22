@@ -4205,6 +4205,81 @@ function cloudflarePane() {
     </div>`);
 }
 
+/**
+ * Where the consultation has actually got to, in one panel.
+ *
+ * The tab had all of this in it already, spread across five cards and two
+ * foldables, so answering "have the questions gone yet" meant scrolling and
+ * remembering. Each tile is a button into the part it describes.
+ */
+function consultStatusBoard(goTo) {
+  const box = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+
+  Promise.all([
+    db.consultationResults().catch(() => null),
+    db.pendingActions().catch(() => null),
+    db.publishedQuestions().catch(() => []),
+    db.consultationPublished().catch(() => null),
+  ]).then(([res, pending, groups, pub]) => {
+    box.replaceChildren();
+    const responses = res?.summary?.responses || 0;
+    const asked = res?.summary?.questions_asked || 0;
+    const waiting = pending?.consultation || 0;
+    const isPublic = Boolean(pub?.results_public);
+    const sentAt = groups.find((g) => g.asked_at)?.asked_at;
+    const answered = groups.filter((g) => g.answered_at).length;
+    const days = sentAt
+      ? Math.floor((Date.now() - new Date(sentAt).getTime()) / 86400000) : null;
+
+    const tile = (label, value, tone, to) => {
+      const b = el(`
+        <button class="board__tile${tone ? ` board__tile--${tone}` : ""}" type="button">
+          <span class="board__label">${esc(label)}</span>
+          <span class="board__value">${value}</span>
+        </button>`);
+      if (to) b.addEventListener("click", () => goTo(to));
+      else b.disabled = true;
+      return b;
+    };
+
+    const grid = el(`<div class="board"></div>`);
+    grid.append(tile("Responses", responses, "", "a-live"));
+    grid.append(tile("Waiting to be read", waiting, waiting ? "warn" : "good", "a-queue"));
+    grid.append(tile("Questions asked", asked, "", "a-questions"));
+    grid.append(tile(
+      groups.length ? "Questions agreed" : "Questions not agreed",
+      groups.length || "\u2014",
+      groups.length ? "good" : "warn", "a-questions"));
+    grid.append(tile(
+      sentAt ? "Sent to the club" : "Not sent yet",
+      sentAt ? `${days}d` : "\u2014",
+      sentAt ? "good" : "warn", "a-questions"));
+    grid.append(tile(
+      isPublic ? "Published" : "Not published",
+      isPublic ? "\u2713" : "\u2014",
+      isPublic ? "good" : "warn", "a-publish"));
+    box.append(grid);
+
+    /* One line saying what to do next, because six tiles state a position and
+       none of them states a move. */
+    let next = "";
+    if (waiting) next = `${waiting} comment${waiting === 1 ? "" : "s"} still to read.`;
+    else if (!groups.length) next = "Agree the questions, then save them as final.";
+    else if (!sentAt) next = "Send the email, then press Mark as sent to start the clock.";
+    else if (!isPublic) next = "The questions have gone. Publish the findings when you are ready.";
+    else if (answered < groups.length) {
+      next = `${groups.length - answered} of ${groups.length} still unanswered after ${days} day${
+        days === 1 ? "" : "s"}.`;
+    } else next = "Every question has been answered.";
+    box.append(el(`<p class="board__next">${esc(next)}</p>`));
+  }).catch(() => {
+    box.replaceChildren();
+    box.append(el(`<p class="note" style="margin:0">Could not read where things are up to.</p>`));
+  });
+
+  return box;
+}
+
 function questionWorkbench(rows) {
   const box = el(`<div class="card"></div>`);
   const asked = rows
@@ -4880,15 +4955,19 @@ function viewAdmin() {
         <button data-to="a-queue">Queue</button>
         <button data-to="a-live">Findings</button>
       </div>`);
+    const goTo = (id) => {
+      const target = document.getElementById(id);
+      if (!target) return toast("That part has not loaded yet.");
+      const top = target.getBoundingClientRect().top + window.scrollY - 96;
+      window.scrollTo({ top, behavior: "smooth" });
+    };
     jump.querySelectorAll("[data-to]").forEach((b) => {
-      b.addEventListener("click", () => {
-        const target = document.getElementById(b.dataset.to);
-        if (!target) return toast("That part has not loaded yet.");
-        const top = target.getBoundingClientRect().top + window.scrollY - 96;
-        window.scrollTo({ top, behavior: "smooth" });
-      });
+      b.addEventListener("click", () => goTo(b.dataset.to));
     });
     wrap.append(jump);
+
+    /* Where it has got to, before any of the parts. */
+    wrap.append(consultStatusBoard(goTo));
 
     /* Publishing is a button, not a clock. On a timer the findings would go out
        at midday on the Friday with whatever had been read by lunchtime. */
