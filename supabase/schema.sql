@@ -1477,7 +1477,11 @@ where (note_status = 'approved' or question_status = 'approved')
     or is_admin()
     or exists (
       select 1 from profiles p
-      where p.id = auth.uid() and p.results_viewer
+      -- The moderator role carries early sight as well, so the one-off flag is
+      -- for people who need to read the findings and nothing else. Without
+      -- this, making somebody a moderator and clearing their flag would quietly
+      -- take away something they had.
+      where p.id = auth.uid() and (p.results_viewer or p.is_moderator)
     )
   );
 
@@ -1697,7 +1701,11 @@ where g.status = 'final'
     or is_admin()
     or exists (
       select 1 from profiles p
-      where p.id = auth.uid() and p.results_viewer
+      -- The moderator role carries early sight as well, so the one-off flag is
+      -- for people who need to read the findings and nothing else. Without
+      -- this, making somebody a moderator and clearing their flag would quietly
+      -- take away something they had.
+      where p.id = auth.uid() and (p.results_viewer or p.is_moderator)
     )
   );
 
