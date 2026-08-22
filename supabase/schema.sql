@@ -1859,3 +1859,107 @@ $$;
 
 revoke all on function set_moderator(uuid, boolean) from public;
 grant execute on function set_moderator(uuid, boolean) to authenticated;
+
+-- ===========================================================================
+-- Tags a volunteer can create
+-- ===========================================================================
+--
+-- The list of supporter tags was in three places: a CHECK constraint here, a
+-- label map in the app, and for a while a third copy inside set_user_tag that
+-- drifted the moment the volunteer tag was split in two. Now it is a table,
+-- and the other two read from it.
+--
+-- The constraint becomes a foreign key, so a tag cannot be set to something
+-- that does not exist and a tag in use cannot quietly vanish from under the
+-- people wearing it.
+
+create table if not exists supporter_tags (
+  key        text primary key
+             check (key ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(key) between 2 and 40),
+  label      text not null check (char_length(label) between 2 and 40),
+  sort       int  not null default 100,
+  created_at timestamptz not null default now()
+);
+
+comment on table supporter_tags is
+  'The supporter tags a volunteer may hand out. Editable from the admin panel.';
+
+-- Seed with the ten that were hard coded, keeping the order they were shown
+-- in. Existing profiles already carry these keys, so the foreign key below
+-- has something to point at.
+insert into supporter_tags (key, label, sort) values
+  ('contributor',      'Contributor',      10),
+  ('top-contributor',  'Top Contributor',  20),
+  ('ktfcsa-volunteer', 'KTFCSA Volunteer', 30),
+  ('club-volunteer',   'Club Volunteer',   40),
+  ('reporter',         'Reporter',         50),
+  ('photographer',     'Photographer',     60),
+  ('commentator',      'Commentator',      70),
+  ('historian',        'Historian',        80),
+  ('groundhopper',     'Groundhopper',     90),
+  ('legend',           'Legend',          100)
+on conflict (key) do nothing;
+
+-- Anything a profile carries that predates the table would break the foreign
+-- key, so it is cleared first. In practice there is nothing, but a migration
+-- that fails halfway on the one database that counts is not worth the risk.
+update profiles set tag = null
+ where tag is not null and tag not in (select key from supporter_tags);
+
+alter table profiles drop constraint if exists profiles_tag_check;
+alter table profiles drop constraint if exists profiles_tag_fkey;
+alter table profiles add constraint profiles_tag_fkey
+  foreign key (tag) references supporter_tags (key) on update cascade on delete restrict;
+
+alter table supporter_tags enable row level security;
+
+-- Everyone reads them: a tag shows on a supporter's name all over the site.
+drop policy if exists "tags readable" on supporter_tags;
+create policy "tags readable" on supporter_tags for select using (true);
+
+-- No insert, update or delete policy. Everything goes through the functions
+-- below, so a moderator cannot invent a role-sounding tag for themselves.
+
+create or replace function upsert_tag(p_key text, p_label text, p_sort int default 100)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can do that.';
+  end if;
+  insert into supporter_tags (key, label, sort)
+  values (lower(trim(p_key)), trim(p_label), coalesce(p_sort, 100))
+  on conflict (key) do update set label = excluded.label, sort = excluded.sort;
+end;
+$$;
+
+/* Refuses rather than cascades. Deleting a tag somebody is wearing should be a
+   decision, not a side effect, so this says how many hold it and stops. */
+create or replace function delete_tag(p_key text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  held int;
+begin
+  if not is_admin() then
+    raise exception 'Only a volunteer can do that.';
+  end if;
+  select count(*) into held from profiles where tag = p_key;
+  if held > 0 then
+    raise exception 'Still worn by % supporter%. Clear it from them first.',
+      held, case when held = 1 then '' else 's' end;
+  end if;
+  delete from supporter_tags where key = p_key;
+end;
+$$;
+
+revoke all on function upsert_tag(text, text, int) from public;
+revoke all on function delete_tag(text) from public;
+grant execute on function upsert_tag(text, text, int) to authenticated;
+grant execute on function delete_tag(text) to authenticated;

@@ -118,6 +118,11 @@ export const isModerator = () => {
 };
 export const isModeratorId = (id) => live.moderators.has(id);
 
+export const supporterTags = () =>
+  (backend?.supporterTags ? backend.supporterTags() : Promise.resolve(null));
+export const upsertTag = (key, label, sort) => backend.upsertTag(key, label, sort);
+export const deleteTag = (key) => backend.deleteTag(key);
+
 export async function setModerator(profileId, allowed) {
   if (!backend) return;
   await backend.setModerator(profileId, allowed);

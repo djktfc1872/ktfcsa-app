@@ -449,6 +449,24 @@ class Backend {
     return retry.error ? [] : (retry.data || []);
   }
 
+  async supporterTags() {
+    const { data, error } = await this.sb
+      .from("supporter_tags").select("key, label, sort").order("sort");
+    if (error) return null;   /* null means "table not there", not "no tags" */
+    return data || [];
+  }
+
+  async upsertTag(key, label, sort) {
+    const { error } = await this.sb.rpc("upsert_tag",
+      { p_key: key, p_label: label, p_sort: sort });
+    if (error) throw new Error(error.message);
+  }
+
+  async deleteTag(key) {
+    const { error } = await this.sb.rpc("delete_tag", { p_key: key });
+    if (error) throw new Error(error.message);
+  }
+
   async setModerator(profileId, allowed) {
     const { error } = await this.sb.rpc("set_moderator", { target: profileId, allowed });
     if (error) throw new Error(error.message);

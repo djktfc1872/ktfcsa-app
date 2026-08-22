@@ -5463,7 +5463,104 @@ function viewAdmin() {
   if (atab === "people") {
     wrap.append(el(`<h2 class="section-title">People</h2>`));
     wrap.append(peopleCard);
+    if (canRunThings) {
+      wrap.append(el(`<h2 class="section-title">Tags</h2>`));
+      wrap.append(tagsCard);
+      paintTags();
+    }
   }
+
+  /* Managing the tags themselves, rather than who wears them. Admin only: a
+     moderator handing out labels is fine, inventing new ones is not. */
+  const tagsCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+  const paintTags = () => {
+    db.supporterTags().then((rows) => {
+      tagsCard.replaceChildren();
+      if (rows === null) {
+        tagsCard.append(el(`<p class="note" style="margin:0">Tags are not in the database yet.
+          The site is using its built-in list.</p>`));
+        return;
+      }
+
+      rows.forEach((t) => {
+        const row = el(`
+          <div class="tag-row">
+            <span class="pill">${esc(t.label)}</span>
+            <span class="tag-row__key">${esc(t.key)}</span>
+            <span class="tag-row__acts"></span>
+          </div>`);
+        const acts = row.querySelector(".tag-row__acts");
+
+        const ren = el(`<button class="link-btn">Rename</button>`);
+        ren.addEventListener("click", () => {
+          const { node, close } = modal(`
+            <h3 style="margin-bottom:10px">Rename ${esc(t.label)}</h3>
+            <div class="field"><label for="tg-l">What it says</label>
+              <input id="tg-l" type="text" value="${esc(t.label)}" maxlength="40"></div>
+            <p class="hint">The key stays <b>${esc(t.key)}</b>, so nobody loses their tag.</p>
+            <div class="btn-row" style="margin-top:10px">
+              <button class="btn btn--sm" data-ok>Save</button>
+              <button class="btn btn--sm btn--ghost" data-no>Cancel</button>
+            </div>`);
+          node.querySelector("[data-no]").addEventListener("click", close);
+          node.querySelector("[data-ok]").addEventListener("click", async () => {
+            const label = node.querySelector("#tg-l").value.trim();
+            if (label.length < 2) return toast("Give it a name.", "bad");
+            try {
+              await db.upsertTag(t.key, label, t.sort);
+              close(); toast("Renamed.", "good"); await loadTags(); paintTags(); paintPeople();
+            } catch (err) { toast(err.message || "That did not save.", "bad"); }
+          });
+        });
+        acts.append(ren);
+
+        const del = el(`<button class="link-btn">Delete</button>`);
+        del.addEventListener("click", async () => {
+          try {
+            await db.deleteTag(t.key);
+            toast("Deleted.", "good"); await loadTags(); paintTags(); paintPeople();
+          } catch (err) {
+            /* The function refuses while anybody is wearing it and says how
+               many, which is the useful half of the message. */
+            toast(err.message || "That did not work.", "bad");
+          }
+        });
+        acts.append(del);
+        tagsCard.append(row);
+      });
+
+      const add = el(`<button class="btn btn--sm btn--ghost" style="margin-top:12px">Add a tag</button>`);
+      add.addEventListener("click", () => {
+        const { node, close } = modal(`
+          <h3 style="margin-bottom:10px">Add a tag</h3>
+          <div class="field"><label for="tg-new">What it says</label>
+            <input id="tg-new" type="text" placeholder="Matchday Steward" maxlength="40"></div>
+          <p class="hint">The key is made from the name: lower case, dashes for spaces. It cannot
+            be changed later, though the wording can.</p>
+          <div class="btn-row" style="margin-top:10px">
+            <button class="btn btn--sm" data-ok>Add it</button>
+            <button class="btn btn--sm btn--ghost" data-no>Cancel</button>
+          </div>`);
+        node.querySelector("[data-no]").addEventListener("click", close);
+        node.querySelector("[data-ok]").addEventListener("click", async () => {
+          const label = node.querySelector("#tg-new").value.trim();
+          const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+          if (label.length < 2 || key.length < 2) return toast("Give it a name.", "bad");
+          try {
+            await db.upsertTag(key, label, (rows.length + 1) * 10);
+            close(); toast(`${label} added.`, "good");
+            await loadTags(); paintTags(); paintPeople();
+          } catch (err) { toast(err.message || "That did not save.", "bad"); }
+        });
+      });
+      tagsCard.append(add);
+      tagsCard.append(el(`<p class="hint">A tag in use cannot be deleted. Take it off everybody
+        wearing it first, and the delete will go through.</p>`));
+    }).catch(() => {
+      tagsCard.replaceChildren();
+      tagsCard.append(el(`<p class="note" style="margin:0">Could not read the tags.</p>`));
+    });
+  };
 
   /* Sixty rows each carrying eight tag buttons was a wall nobody could read.
      The list scans first: name, what they are, when they joined. The controls
@@ -5638,7 +5735,7 @@ function viewAdmin() {
 
             panel.append(el(`<div class="person__field">Tag</div>`));
             const picker = el(`<div class="person__tags"${canRunThings ? "" : " aria-disabled=\"true\""}></div>`);
-            [["", "None"], ...Object.entries(TAG_LABEL)].forEach(([key, label]) => {
+            [["", "None"], ...TAG_ORDER.map((k) => [k, TAG_LABEL[k]])].forEach(([key, label]) => {
               const on = (r.tag || "") === key;
               const b = el(`<button class="tag-btn${on ? " is-on" : ""}" type="button"${
                 canRunThings ? "" : " disabled"}>${esc(label)}</button>`);
@@ -5687,7 +5784,11 @@ function viewAdmin() {
 
 /* =========================================================== supporter tags */
 
-const TAG_LABEL = {
+/* The ten that were hard coded, kept as the fallback rather than the source.
+   The real list lives in the database so a volunteer can add to it; this is
+   what the site shows if that table is not there yet, or if the fetch fails,
+   so a tag never renders as a bare slug. */
+const TAG_FALLBACK = {
   contributor: "Contributor",
   "top-contributor": "Top Contributor",
   "ktfcsa-volunteer": "KTFCSA Volunteer",
@@ -5699,6 +5800,19 @@ const TAG_LABEL = {
   groundhopper: "Groundhopper",
   legend: "Legend",
 };
+
+/* Filled from supporter_tags on boot. A Proxy would be neater than reassigning
+   a const, but this is read in six places and a plain object keeps them all
+   working unchanged. */
+let TAG_LABEL = { ...TAG_FALLBACK };
+let TAG_ORDER = Object.keys(TAG_FALLBACK);
+
+async function loadTags() {
+  const rows = await db.supporterTags().catch(() => null);
+  if (!rows || !rows.length) return;   /* keep the fallback */
+  TAG_LABEL = Object.fromEntries(rows.map((r) => [r.key, r.label]));
+  TAG_ORDER = rows.map((r) => r.key);
+}
 
 const TAG_WHY = {
   contributor: "Has added information other supporters rely on",
@@ -9401,6 +9515,10 @@ async function boot() {
   readHash();
   countView();
   wireGlobalClicks();
+
+  /* Tags are cosmetic, so this never blocks a paint: the built-in list renders
+     immediately and the database list replaces it a moment later. */
+  loadTags().then(() => render()).catch(() => {});
 
   $("#account-btn").addEventListener("click", () => go("account"));
   /* Covers the back and forward buttons as well as the crest link in the
