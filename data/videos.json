@@ -1,8 +1,15 @@
 {
-  "updated": "2026-08-22T22:56:50.202Z",
+  "updated": "2026-08-23T07:46:20.718Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "NmsD_sELQf8",
+      "title": "Kettering Town VS Peterborough Sports | Live Commentary",
+      "published": "2026-08-23T04:04:26+00:00",
+      "kind": "highlights",
+      "fixtureId": "6a5a19f6ce9ef452b61f41f5"
+    },
     {
       "videoId": "1gH4a77tyk8",
       "title": "Post Match Interview | Kettering Town 0-0 Peterborough Sports (22/08/2026)",
@@ -37,13 +44,6 @@
       "published": "2026-08-22T20:23:33+00:00",
       "kind": "commentary",
       "fixtureId": null
-    },
-    {
-      "videoId": "NmsD_sELQf8",
-      "title": "Kettering Town VS Peterborough Sports | Live Commentary",
-      "published": "2026-08-22T13:41:47+00:00",
-      "kind": "highlights",
-      "fixtureId": "6a5a19f6ce9ef452b61f41f5"
     },
     {
       "videoId": "72cLA9FRdh4",
