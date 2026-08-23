@@ -321,10 +321,10 @@
       ]
     },
     "hitchin-town": {
-      "atGround": null,
-      "price": null,
-      "text": null,
-      "source": null,
+      "atGround": false,
+      "price": "None for supporters",
+      "text": "There is no supporter parking at Top Field at all. The car park is for club officials, players, match officials, sponsors and volunteers only, home and away alike. The one exception is registered Blue Badge holders, who should email parking@hitchintownfc.club in advance to be allocated a space. No room for supporters' coaches or minibuses either, though there is a bus pull-in in front of the turnstiles.",
+      "source": "https://hitchintownfc.club/matchday-info/",
       "nearby": [
         {
           "name": null,
@@ -521,6 +521,12 @@
           "metres": 92
         }
       ]
+    },
+    "worcester-city": {
+      "atGround": true,
+      "price": "On site",
+      "text": "Ample on-site parking in the Conference and Events car park at Sixways, on the right as you come in and clearly signposted. Junction 6 of the M5, then Warriors Way.",
+      "source": "http://www.worcestercityfc.org/visit/"
     }
   },
   "osm": {
