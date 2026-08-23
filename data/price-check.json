@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-23T17:55:44+00:00",
+  "checked": "2026-08-23T18:17:48+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -71,20 +71,6 @@
       }
     },
     {
-      "club": "stourbridge",
-      "name": "Stourbridge",
-      "source": "http://www.stourbridgefc.com/news/this-saturday-stourbridge-v-leistonfc--book-your-tickets-online-now-2993032.html",
-      "found": {
-        "adultPrice": 13
-      },
-      "differences": {
-        "adultPrice": {
-          "site": 13,
-          "ours": 14
-        }
-      }
-    },
-    {
       "club": "worcester-city",
       "name": "Worcester City",
       "source": "https://worcestercityfc.org/season-tickets/",
@@ -108,20 +94,6 @@
           "ours": 14
         }
       }
-    },
-    {
-      "club": "stourbridge",
-      "name": "Stourbridge",
-      "source": "http://www.stourbridgefc.com/news/this-saturday-stourbridge-v-leistonfc--book-your-tickets-online-now-2993032.html",
-      "found": {
-        "adultPrice": 13
-      },
-      "differences": {
-        "adultPrice": {
-          "site": 13,
-          "ours": 14
-        }
-      }
     }
   ],
   "unreadable": [
@@ -136,6 +108,7 @@
     "racing-club-warwick",
     "redditch-united",
     "stamford",
+    "stourbridge",
     "stratford-town"
   ]
 }
