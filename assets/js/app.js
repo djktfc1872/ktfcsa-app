@@ -7677,16 +7677,29 @@ function wallCard(p, mod) {
     }
   }
 
-  card.querySelector('[data-act="like"]').addEventListener("click", () => {
+  /* The database owns the count now and hands back the new total, so two
+     supporters liking at the same moment both register. The local note of what
+     you have liked stays: it is what draws the heart filled in before the round
+     trip finishes. */
+  card.querySelector('[data-act="like"]').addEventListener("click", async () => {
     const now = !liked;
     db.write(`like:${p.id}`, now);
-    db.update("wall", p.id, { likes: Math.max(0, (p.likes || 0) + (now ? 1 : -1)) });
+    db.patchLocal("wall", p.id, { likes: Math.max(0, (p.likes || 0) + (now ? 1 : -1)) });
     render();
+    try {
+      const total = await db.likePost(p.id, now);
+      if (typeof total === "number") { db.patchLocal("wall", p.id, { likes: total }); render(); }
+    } catch {
+      /* Put the heart back rather than leave a like that did not happen. */
+      db.write(`like:${p.id}`, !now);
+      db.patchLocal("wall", p.id, { likes: Math.max(0, p.likes || 0) });
+      toast("That like did not save. Try again in a moment.");
+      render();
+    }
   });
   card.querySelector('[data-act="report"]').addEventListener("click", () => {
-    db.update("wall", p.id, { reports: (p.reports || 0) + 1 });
+    db.reportPost(p.id);
     toast("Reported. Thank you, one of the volunteers will take a look.");
-    render();
   });
   card.querySelector('[data-act="hide"]')?.addEventListener("click", () => {
     db.update("wall", p.id, { hidden: !p.hidden });

@@ -371,6 +371,25 @@ as $$
   select coalesce((select is_admin from profiles where id = auth.uid()), false);
 $$;
 
+alter table profiles add column if not exists is_moderator boolean not null default false;
+
+comment on column profiles.is_moderator is
+  'Can moderate what supporters write, and see the panel. Cannot change structure.';
+
+-- True for moderators and for admins, since an admin can do anything a
+-- moderator can. Used only on the moderation surfaces below.
+create or replace function is_moderator()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select is_admin or is_moderator from profiles where id = auth.uid()),
+    false);
+$$;
+
 -- Has this fixture kicked off yet?
 create or replace function fixture_open(fid text)
 returns boolean
@@ -567,11 +586,19 @@ drop policy if exists "post to wall" on wall_posts;
 create policy "post to wall" on wall_posts
   for insert with check (auth.uid() = profile_id);
 
--- A supporter may edit their own post. Anyone signed in may nudge the likes
--- and reports counters. Only the KTFCSA team can hide something.
+-- A supporter may edit their own post. Nobody else may touch it.
+--
+-- This policy used to end with `or auth.role() = 'authenticated'`, which was
+-- there so that anybody could nudge the likes and reports counters. With no
+-- `with check` alongside it, that clause let any signed-in supporter update any
+-- column of any post: rewrite somebody else's words, or un-hide a post a
+-- moderator had hidden. Liking now goes through wall_likes and like_post()
+-- below, and reporting through report_post(), so the blanket clause is gone.
 drop policy if exists "update wall post" on wall_posts;
 create policy "update wall post" on wall_posts
-  for update using (auth.uid() = profile_id or is_admin() or auth.role() = 'authenticated');
+  for update
+  using       (auth.uid() = profile_id or is_admin() or is_moderator())
+  with check  (auth.uid() = profile_id or is_admin() or is_moderator());
 
 drop policy if exists "remove wall post" on wall_posts;
 create policy "remove wall post" on wall_posts
@@ -1811,24 +1838,10 @@ grant execute on function record_view(text, boolean) to anon, authenticated;
 -- it still means exactly what it did: full rights. Everything below is
 -- additive, so an existing admin loses nothing and gains nothing.
 
-alter table profiles add column if not exists is_moderator boolean not null default false;
-
-comment on column profiles.is_moderator is
-  'Can moderate what supporters write, and see the panel. Cannot change structure.';
-
--- True for moderators and for admins, since an admin can do anything a
--- moderator can. Used only on the moderation surfaces below.
-create or replace function is_moderator()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce(
-    (select is_admin or is_moderator from profiles where id = auth.uid()),
-    false);
-$$;
+-- The column and the function that go with it now live beside is_admin(), near
+-- the top of this file. They were here, below the first policy that calls
+-- is_moderator(), which worked only because an existing database already had
+-- them from a previous run. On a fresh one the file would have failed.
 
 -- ---- what a moderator may do ---------------------------------------------
 
@@ -2248,3 +2261,640 @@ group by club_slug;
 
 alter view ground_visit_counts set (security_invoker = false);
 grant select on ground_visit_counts to anon, authenticated;
+
+-- ===========================================================================
+-- Likes that belong to somebody
+-- ===========================================================================
+--
+-- wall_posts.likes was a bare integer that the browser read, added one to, and
+-- wrote back. Two supporters liking the same post in the same minute produced
+-- one like, and nothing stopped the same person liking the same post all
+-- afternoon. It also needed a policy letting any signed-in supporter update the
+-- row, which let them update every other column too. That policy is gone.
+--
+-- A like is now a row. The counter on wall_posts stays, kept in step by the
+-- function below, so nothing that already reads it has to change.
+
+-- Existing likes cannot be attributed to anybody, because until now nothing
+-- recorded who gave them. Rebuilding the counter from wall_likes would
+-- therefore reset every post on the wall to zero, and supporters would watch
+-- their posts lose likes overnight for no reason they could see.
+--
+-- So the old total is kept as a floor and new likes count on top of it. The
+-- seed runs once: after it, legacy_likes is non-zero and the guard skips it, so
+-- running this file again does not double anything.
+alter table wall_posts add column if not exists legacy_likes int not null default 0;
+
+comment on column wall_posts.legacy_likes is
+  'Likes from before wall_likes existed. Nobody owns them, so they are a floor
+   under the real count rather than rows. Never written again after the seed.';
+
+update wall_posts set legacy_likes = likes where legacy_likes = 0 and likes > 0;
+
+create table if not exists wall_likes (
+  post_id    uuid not null references wall_posts on delete cascade,
+  profile_id uuid not null references profiles   on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, profile_id)
+);
+
+create index if not exists wall_likes_profile_idx on wall_likes (profile_id);
+
+alter table wall_likes enable row level security;
+
+-- Readable so the heart can be drawn filled in for what you have already liked.
+drop policy if exists "likes readable" on wall_likes;
+create policy "likes readable" on wall_likes for select using (true);
+
+-- No insert or update policy. like_post() is the only way in.
+
+create or replace function like_post(p_post uuid, p_on boolean)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n int;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in to like a post';
+  end if;
+
+  if coalesce(p_on, true) then
+    insert into wall_likes (post_id, profile_id) values (p_post, auth.uid())
+      on conflict do nothing;
+  else
+    delete from wall_likes where post_id = p_post and profile_id = auth.uid();
+  end if;
+
+  select count(*) + coalesce((select legacy_likes from wall_posts where id = p_post), 0)
+    into n
+    from wall_likes where post_id = p_post;
+  update wall_posts set likes = n where id = p_post;
+  return n;
+end;
+$$;
+
+revoke all on function like_post(uuid, boolean) from public;
+grant execute on function like_post(uuid, boolean) to authenticated;
+
+-- Reporting lost its blanket update policy along with liking, so it needs the
+-- same treatment: anyone signed in may flag a post, and only that.
+create or replace function report_post(p_post uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return;
+  end if;
+  update wall_posts set reports = reports + 1 where id = p_post;
+end;
+$$;
+
+revoke all on function report_post(uuid) from public;
+grant execute on function report_post(uuid) to authenticated;
+
+-- ===========================================================================
+-- Topics: somewhere to start a conversation
+-- ===========================================================================
+--
+-- Until now a supporter could reply to things but never begin one. Match
+-- threads appear on their own around each fixture and the open wall is a single
+-- feed, so "has anyone got a spare for Saturday" had nowhere to live. That is
+-- the one thing a Facebook group does that this did not.
+--
+-- Almost nothing new is needed to carry it. wall_posts.thread is already a
+-- scope string holding 'pre:<fixture>' or 'post:<fixture>', indexed by
+-- (thread, created_at desc). A topic is simply 'topic:<uuid>', which means
+-- replies, likes, reports, hiding, moderation and the "somebody replied to you"
+-- inbox all work on topics the day this lands, without a line of change: the
+-- inbox joins a reply to its parent and never asks what thread they are in.
+
+create table if not exists topics (
+  id           uuid primary key default gen_random_uuid(),
+  profile_id   uuid not null references profiles on delete cascade,
+  author_name  text not null,
+  category     text not null check (category in
+                 ('matchday','tickets','ground','memories','market','other')),
+  title        text not null check (char_length(title) between 4 and 90),
+  pinned       boolean not null default false,
+  locked       boolean not null default false,
+  hidden       boolean not null default false,
+  reports      int not null default 0,
+  created_at   timestamptz not null default now(),
+  last_post_at timestamptz not null default now()
+);
+
+-- The list is read in this order every time, so it is worth an index.
+create index if not exists topics_active_idx
+  on topics (pinned desc, last_post_at desc) where hidden = false;
+
+comment on table topics is
+  'Fan-started conversations. The posts themselves live in wall_posts under
+   thread = ''topic:<id>'', which is why nothing else needed changing.';
+
+alter table topics enable row level security;
+
+-- Hidden topics are for the KTFCSA team only. Everything else is public,
+-- because a conversation nobody can read is not much of one.
+drop policy if exists "topics readable" on topics;
+create policy "topics readable" on topics
+  for select using (hidden = false or is_moderator());
+
+-- No insert policy: start_topic() below is the only way in, so the rate limit
+-- cannot be walked around by posting straight at the table.
+
+-- The author may retitle their own topic. Moderators may do the rest.
+drop policy if exists "edit own topic" on topics;
+create policy "edit own topic" on topics
+  for update
+  using      (auth.uid() = profile_id or is_moderator())
+  with check (auth.uid() = profile_id or is_moderator());
+
+drop policy if exists "remove topic" on topics;
+create policy "remove topic" on topics
+  for delete using (auth.uid() = profile_id or is_admin());
+
+-- ---- starting one ---------------------------------------------------------
+--
+-- Six new topics a day is generous for a supporter with something to say and
+-- tight enough that a bad afternoon cannot bury the list. The count ignores
+-- hidden ones deliberately: having a topic hidden should not buy you another.
+
+create or replace function start_topic(p_category text, p_title text, p_body text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  t_id  uuid;
+  mine  int;
+  who   text;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in to start a topic';
+  end if;
+
+  select count(*) into mine
+    from topics
+   where profile_id = auth.uid()
+     and created_at > now() - interval '24 hours';
+
+  if mine >= 6 then
+    raise exception 'That is six topics today. Have a reply instead, and come back tomorrow.';
+  end if;
+
+  select display_name into who from profiles where id = auth.uid();
+
+  insert into topics (profile_id, author_name, category, title)
+  values (auth.uid(), coalesce(who, 'Supporter'), p_category, btrim(p_title))
+  returning id into t_id;
+
+  -- The opening post is an ordinary wall post, which is the whole point.
+  insert into wall_posts (profile_id, author_name, text, thread)
+  values (auth.uid(), coalesce(who, 'Supporter'), p_body, 'topic:' || t_id);
+
+  return t_id;
+end;
+$$;
+
+revoke all on function start_topic(text, text, text) from public;
+grant execute on function start_topic(text, text, text) to authenticated;
+
+-- ---- keeping the order honest ---------------------------------------------
+--
+-- Sorting by when a topic was started puts a dead thread from last week above
+-- one somebody answered this morning. Sorting by last activity is most of what
+-- makes a place feel alive, and it costs one trigger.
+
+create or replace function touch_topic()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.thread like 'topic:%' then
+    update topics
+       set last_post_at = greatest(last_post_at, new.created_at)
+     where id = substring(new.thread from 7)::uuid;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_topic_post on wall_posts;
+create trigger on_topic_post
+  after insert on wall_posts
+  for each row execute function touch_topic();
+
+-- ---- moderation -----------------------------------------------------------
+
+create or replace function set_topic_state(p_topic uuid, p_field text, p_on boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_moderator() then
+    raise exception 'Not allowed';
+  end if;
+  if p_field not in ('pinned', 'locked', 'hidden') then
+    raise exception 'Unknown field %', p_field;
+  end if;
+  execute format('update topics set %I = $1 where id = $2', p_field)
+    using coalesce(p_on, false), p_topic;
+end;
+$$;
+
+revoke all on function set_topic_state(uuid, text, boolean) from public;
+grant execute on function set_topic_state(uuid, text, boolean) to authenticated;
+
+-- A locked topic still reads, it just takes no more posts. Enforced here
+-- rather than in the browser, where it would be a suggestion.
+create or replace function guard_locked_topic()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  shut boolean;
+begin
+  if new.thread like 'topic:%' then
+    select locked or hidden into shut
+      from topics where id = substring(new.thread from 7)::uuid;
+    if coalesce(shut, false) and not is_moderator() then
+      raise exception 'That topic is closed';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_topic_post_guard on wall_posts;
+create trigger on_topic_post_guard
+  before insert on wall_posts
+  for each row execute function guard_locked_topic();
+
+-- ---- the list -------------------------------------------------------------
+--
+-- Runs as owner so it can count posts and name authors without opening either
+-- table up row by row.
+
+drop view if exists topic_list cascade;
+create view topic_list as
+select
+  t.id,
+  t.profile_id,
+  t.author_name,
+  t.category,
+  t.title,
+  t.pinned,
+  t.locked,
+  t.reports,
+  t.created_at,
+  t.last_post_at,
+  (select count(*) from wall_posts w
+    where w.thread = 'topic:' || t.id and w.hidden = false) as posts,
+  (select w.author_name from wall_posts w
+    where w.thread = 'topic:' || t.id and w.hidden = false
+    order by w.created_at desc limit 1) as last_author
+from topics t
+where t.hidden = false
+order by t.pinned desc, t.last_post_at desc
+limit 200;
+
+alter view topic_list set (security_invoker = false);
+grant select on topic_list to anon, authenticated;
+
+-- ===========================================================================
+-- Poppies Points
+-- ===========================================================================
+--
+-- Worked out, never stored. poppies_daily_league already computes streaks in a
+-- view rather than keeping a column, and the same reasoning applies here: no
+-- ledger to drift out of step, no backfill when a weight changes, and changing
+-- what something is worth is one edit to this file rather than a recount.
+--
+-- Two things this is deliberately not:
+--
+--   * It never touches anybody's say. Not the consultation, not polls, not
+--     anything the Association reports. The published value is that nobody's
+--     say counts for more than anyone else's, and a points total must not
+--     quietly undercut it. No consultation or poll query reads this view.
+--
+--   * It is not a measure of being a supporter. It counts what somebody has
+--     put into the app. A fan of forty years who never fills in a form is not
+--     mid-table, and the page that shows this says so in as many words.
+--
+-- The weights favour usefulness over volume. A ground report helps every away
+-- fan who comes after you and is worth ten; a wall post is worth one and caps
+-- out at ten a day, so nobody can type their way to the top. A like received
+-- is worth three, which makes what other people thought of a post worth more
+-- than having written it.
+
+create or replace function season_start()
+returns date
+language sql
+stable
+as $$
+  -- Seasons run July to May. Anything from 1 July belongs to the season that
+  -- takes that year's name.
+  select make_date(
+    case when extract(month from london_today()) >= 7
+         then extract(year from london_today())::int
+         else extract(year from london_today())::int - 1 end,
+    7, 1);
+$$;
+
+grant execute on function season_start() to anon, authenticated;
+
+-- Everything below counts this season only, from season_start(). A board that
+-- never resets is owned by whoever joined first, and somebody signing up in
+-- January can never catch them however much they put in. Badges are the place
+-- for a lifetime record, and they are worked out separately.
+--
+-- Two sources are left out rather than guessed at. pub_votes keeps no date at
+-- all, so it cannot be attributed to a season; duel_scores keeps a running
+-- total of plays with only the last date, so counting it would hand this
+-- season every play since the game launched. Both are small, and a wrong
+-- number is worse than a missing one.
+
+drop view if exists supporter_points cascade;
+create view supporter_points as
+with
+  -- Reports about a ground. The most work, and the most use to other people.
+  reports as (
+    select profile_id, count(*) * 10 as pts from ground_reports
+      where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 10 from access_reports
+      where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 10 from parking_reports
+      where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 10 from price_reports
+      where profile_id is not null and created_at >= season_start() group by profile_id
+  ),
+  -- Offering something to the archive is the rarest thing anybody does.
+  archive as (
+    select profile_id, 15 as pts from archive_offers where created_at >= season_start()
+  ),
+  -- That somebody answered the consultation. Never what they said.
+  consulted as (
+    select profile_id, 10 as pts from consultation_responses
+     where profile_id is not null and created_at >= season_start()
+  ),
+  turning_up as (
+    select profile_id, count(*) * 3 as pts from attendance
+      where created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 2 from predictions
+      where created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 2 from quiz_results
+      where quiz_date >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 2 from ground_visits
+      where created_at >= season_start() group by profile_id
+  ),
+  -- Posting is worth something, but only up to a point: ten a day, so a long
+  -- argument is not a scoring opportunity.
+  posting as (
+    select profile_id, sum(capped) as pts from (
+      select profile_id, least(count(*), 10) as capped
+        from wall_posts
+       where hidden = false and created_at >= season_start()
+       group by profile_id, date_trunc('day', created_at)
+    ) d group by profile_id
+  ),
+  -- What other people made of it.
+  liked as (
+    select w.profile_id, count(*) * 3 as pts
+      from wall_likes l
+      join wall_posts w on w.id = l.post_id
+     where w.hidden = false
+       and l.profile_id <> w.profile_id      -- liking yourself is not a signal
+       and l.created_at >= season_start()
+     group by w.profile_id
+  ),
+  -- And what the moderators made of it. Costs more than it earned.
+  hidden_cost as (
+    select profile_id, count(*) * -10 as pts
+      from wall_posts
+     where hidden = true and created_at >= season_start() group by profile_id
+  ),
+  all_pts as (
+    select * from reports    union all
+    select * from archive    union all
+    select * from consulted  union all
+    select * from turning_up union all
+    select * from posting    union all
+    select * from liked      union all
+    select * from hidden_cost
+  )
+select
+  p.id            as profile_id,
+  p.display_name,
+  greatest(coalesce(sum(a.pts), 0), 0)::int as points
+from profiles p
+left join all_pts a on a.profile_id = p.id
+group by p.id, p.display_name;
+
+alter view supporter_points set (security_invoker = false);
+grant select on supporter_points to anon, authenticated;
+
+-- The board. Capped at fifty like the others, and it shows nobody on zero:
+-- appearing last on a list you never joined is not encouragement.
+drop view if exists contributor_board cascade;
+create view contributor_board as
+select profile_id, display_name, points
+  from supporter_points
+ where points > 0
+ order by points desc, display_name
+ limit 50;
+
+alter view contributor_board set (security_invoker = false);
+grant select on contributor_board to anon, authenticated;
+
+-- ---- where your own points came from --------------------------------------
+--
+-- A total on its own tells you nothing about what to do next. This breaks it
+-- down for the supporter asking, and only for them.
+
+create or replace function my_points()
+returns table (source text, points int)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  -- The same season window and the same weights as supporter_points. If these
+  -- two ever disagree, the supporter sees one total on the board and a
+  -- different one on their own card, so they are edited together or not at all.
+  select 'Ground and away-day reports', (
+    (select count(*) from ground_reports  where profile_id = auth.uid() and created_at >= season_start()) +
+    (select count(*) from access_reports  where profile_id = auth.uid() and created_at >= season_start()) +
+    (select count(*) from parking_reports where profile_id = auth.uid() and created_at >= season_start()) +
+    (select count(*) from price_reports   where profile_id = auth.uid() and created_at >= season_start()))::int * 10
+  union all
+  select 'The archive project',
+    (select count(*) from archive_offers
+      where profile_id = auth.uid() and created_at >= season_start())::int * 15
+  union all
+  select 'The consultation',
+    (select count(*) from consultation_responses
+      where profile_id = auth.uid() and created_at >= season_start())::int * 10
+  union all
+  select 'Games at the ground',
+    (select count(*) from attendance
+      where profile_id = auth.uid() and created_at >= season_start())::int * 3
+  union all
+  select 'Grounds ticked off',
+    (select count(*) from ground_visits
+      where profile_id = auth.uid() and created_at >= season_start())::int * 2
+  union all
+  select 'Predictions and the daily quiz',
+    ((select count(*) from predictions
+       where profile_id = auth.uid() and created_at >= season_start()) * 2 +
+     (select count(*) from quiz_results
+       where profile_id = auth.uid() and quiz_date >= season_start()) * 2)::int
+  union all
+  select 'On the wall',
+    coalesce((select sum(least(c, 10)) from (
+      select count(*) as c from wall_posts
+       where profile_id = auth.uid() and hidden = false and created_at >= season_start()
+       group by date_trunc('day', created_at)) d), 0)::int
+  union all
+  select 'Likes from other supporters',
+    (select count(*) from wall_likes l join wall_posts w on w.id = l.post_id
+      where w.profile_id = auth.uid() and w.hidden = false
+        and l.profile_id <> w.profile_id
+        and l.created_at >= season_start())::int * 3
+  union all
+  select 'Posts hidden by a moderator',
+    (select count(*) from wall_posts
+      where profile_id = auth.uid() and hidden = true
+        and created_at >= season_start())::int * -10;
+$$;
+
+revoke all on function my_points() from public;
+grant execute on function my_points() to authenticated;
+
+-- ===========================================================================
+-- Poppies Wordle
+-- ===========================================================================
+--
+-- Built the same way as Poppies Daily: one puzzle a day, one attempt per
+-- supporter, and the marks string kept so the shareable grid survives the round
+-- trip. The word length varies day to day, which is why it is stored: a grid
+-- cannot be redrawn without knowing how wide it was.
+
+create table if not exists wordle_results (
+  profile_id uuid not null references profiles on delete cascade,
+  play_date  date not null,
+  word_len   int  not null check (word_len between 4 and 9),
+  guesses    int  not null check (guesses between 1 and 7),
+  solved     boolean not null,
+  -- One character per guessed letter, in order: 2 right place, 1 wrong place,
+  -- 0 not in the word. Length is guesses * word_len.
+  marks      text not null check (marks ~ '^[012]+$' and char_length(marks) <= 63),
+  created_at timestamptz not null default now(),
+  primary key (profile_id, play_date)
+);
+
+create index if not exists wordle_date_idx on wordle_results (play_date desc);
+
+comment on table wordle_results is
+  'One Poppies Wordle per supporter per day. Streaks are worked out in the view
+   below, never stored, same as the quiz.';
+
+alter table wordle_results enable row level security;
+
+-- Public for the same reason the quiz is: a date and a number of guesses says
+-- no more than the board it feeds.
+drop policy if exists "wordle results are public" on wordle_results;
+create policy "wordle results are public" on wordle_results for select using (true);
+
+-- No insert policy. record_wordle() checks the day is real and that the marks
+-- match the shape claimed, which a policy cannot.
+
+create or replace function record_wordle(
+  p_date date, p_len int, p_guesses int, p_solved boolean, p_marks text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return;   /* playing signed out is fine, it just does not count */
+  end if;
+
+  -- No filling in tomorrow, and no quietly backdating a streak. Sixty days
+  -- back matches the window the quiz allows for a guest carrying results over.
+  if p_date > london_today() or p_date < london_today() - 60 then
+    raise exception 'That is not a day you can play';
+  end if;
+
+  -- The grid has to be the size it says it is, or the share is a fiction.
+  if char_length(p_marks) <> p_guesses * p_len then
+    raise exception 'That result does not add up';
+  end if;
+
+  insert into wordle_results (profile_id, play_date, word_len, guesses, solved, marks)
+  values (auth.uid(), p_date, p_len, p_guesses, coalesce(p_solved, false), p_marks)
+  on conflict (profile_id, play_date) do nothing;   -- first go is the one that counts
+end;
+$$;
+
+revoke all on function record_wordle(date, int, int, boolean, text) from public;
+grant execute on function record_wordle(date, int, int, boolean, text) to authenticated;
+
+-- The board. Ranked on the current unbroken run of solved days, then on how
+-- few guesses it took, so somebody who solves in three beats somebody who
+-- scrapes home in six.
+drop view if exists wordle_league cascade;
+create view wordle_league as
+with runs as (
+  select
+    r.profile_id,
+    r.play_date,
+    r.solved,
+    r.guesses,
+    -- Consecutive solved days share a value here, which is what makes a streak
+    -- countable without storing it.
+    r.play_date - (row_number() over (partition by r.profile_id order by r.play_date))::int
+      as run_key
+  from wordle_results r
+  where r.solved
+),
+best as (
+  select profile_id, run_key, count(*) as len, max(play_date) as ends, avg(guesses) as avg_g
+    from runs group by profile_id, run_key
+),
+latest as (
+  select distinct on (profile_id) profile_id, len, ends, avg_g
+    from best order by profile_id, ends desc
+)
+select
+  c.profile_id,
+  p.display_name,
+  case when c.ends >= london_today() - 1 then c.len else 0 end as streak,
+  (select count(*) from wordle_results w where w.profile_id = c.profile_id and w.solved) as solved,
+  round(c.avg_g, 2) as avg_guesses
+from latest c
+join profiles p on p.id = c.profile_id
+order by streak desc, avg_guesses asc, solved desc
+limit 50;
+
+alter view wordle_league set (security_invoker = false);
+grant select on wordle_league to anon, authenticated;

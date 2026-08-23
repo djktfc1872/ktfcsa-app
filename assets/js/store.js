@@ -134,6 +134,13 @@ export const recordDuel = (streak) =>
 export const duelLeague = () =>
   (backend?.duelLeague ? backend.duelLeague() : Promise.resolve([]));
 
+export const likePost = (id, on) =>
+  (backend?.likePost ? backend.likePost(id, on) : Promise.resolve(null));
+export const reportPost = (id) =>
+  (backend?.reportPost ? backend.reportPost(id) : Promise.resolve());
+export const myLikes = () =>
+  (backend?.myLikes ? backend.myLikes() : Promise.resolve([]));
+
 export const unseenReplies = () =>
   (backend?.unseenReplies ? backend.unseenReplies() : Promise.resolve([]));
 export const markWallSeen = () =>
@@ -443,6 +450,19 @@ export function update(name, id, patch) {
   cache[name] = list(name).map((r) => (r.id === id ? { ...r, ...patch } : r));
   if (backend) attempt(backend.updateRow(name, id, patch), "That change did not save.");
   else write(`c:${name}`, cache[name]);
+  return cache[name];
+}
+
+/**
+ * Change a row in the local copy only.
+ *
+ * Used where the database is the one keeping score and the browser is only
+ * showing what it expects to happen. Liking is the case that matters: the
+ * counter belongs to like_post(), and a supporter has no right to write to
+ * somebody else's post, so sending this to the server would be a no-op at best.
+ */
+export function patchLocal(name, id, patch) {
+  cache[name] = list(name).map((r) => (r.id === id ? { ...r, ...patch } : r));
   return cache[name];
 }
 

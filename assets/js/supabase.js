@@ -494,6 +494,32 @@ class Backend {
     try { await this.sb.rpc("record_duel", { p_streak: streak }); } catch { /* never mind */ }
   }
 
+  /* Liking used to be a read, an add and a write back from the browser, which
+     lost one of two simultaneous likes and let the same person like the same
+     post all afternoon. It also needed a policy that let any signed-in
+     supporter update any column of any post. Both are gone: the function owns
+     the counter and returns the new total. */
+  async likePost(id, on) {
+    const { data, error } = await this.sb.rpc("like_post", { p_post: id, p_on: Boolean(on) });
+    if (error) throw new Error(friendly(error));
+    return typeof data === "number" ? data : null;
+  }
+
+  async reportPost(id) {
+    try { await this.sb.rpc("report_post", { p_post: id }); } catch { /* flagged is flagged */ }
+  }
+
+  /* Which posts this supporter has already liked, so the heart is drawn filled
+     in on a device they have never used before. */
+  async myLikes() {
+    const me = this.profile;
+    if (!me) return [];
+    const { data, error } = await this.sb
+      .from("wall_likes").select("post_id").eq("profile_id", me.id);
+    if (error) return [];
+    return (data || []).map((r) => r.post_id);
+  }
+
   async duelLeague() {
     const { data, error } = await this.sb.from("duel_league").select("*");
     if (error) return [];
