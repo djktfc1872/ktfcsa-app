@@ -270,6 +270,8 @@ const state = {
   groundLinks: null,  // verified outbound ground guides, from data/ground-links.json
   parking: null,      // what each club says about parking, from data/parking.json
   pubsNearby: null,   // pubs mapped near each ground, from data/pubs-nearby.json
+  topics: null,       // fan-started conversations, from topic_list
+  topicCat: "",       // which category the list is filtered to, "" for all
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -380,6 +382,8 @@ const ROUTES = {
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   privacy: { label: "Your data", icon: "🔒", nav: "hidden", render: viewPrivacy },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
+  topic: { label: "Topic", icon: "\uD83D\uDDE8\uFE0F", nav: "hidden", render: viewTopic },
+  supporter: { label: "Supporter", icon: "\uD83D\uDC64", nav: "hidden", render: viewSupporter },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   /* adminOnly now means "a moderator or better". What a moderator may actually
      do once inside is decided section by section, not by hiding the door. */
@@ -7508,6 +7512,316 @@ function replyInbox() {
   return box;
 }
 
+/* ------------------------------------------------------- supporter profile */
+
+/**
+ * One supporter's card, reached by tapping their name anywhere they have
+ * posted.
+ *
+ * Everything on it is already public somewhere else: the boards, the grounds
+ * map, the prediction league. Nothing new is exposed by gathering it, and
+ * gathering it is the point, because a name on a wall post tells you nothing
+ * about who you are talking to.
+ */
+function viewSupporter({ id, from }) {
+  const wrap = el(`<div></div>`);
+  wrap.append(el(`<button class="back-link" data-nav="${esc(from || "wall")}">\u2190 Back</button>`));
+
+  const me = db.currentUser();
+  const mine = me && String(me.id) === String(id);
+  const name = supporterName(id) || (mine ? me.name : "Supporter");
+
+  wrap.append(el(`
+    <div class="page-head page-head--airy sup-head">
+      ${avatarHtml(name, id)}
+      <div>
+        <h1>${esc(name)}</h1>
+        <p>${db.isVolunteer(id) ? "Runs this site &middot; " : ""}${
+          db.isModeratorId?.(id) ? "Moderator &middot; " : ""}${
+          mine ? "This is you" : "Poppies supporter"}</p>
+      </div>
+    </div>`));
+
+  const sum = state.supporters?.[id];
+  if (sum === undefined) {
+    wrap.append(el(`<div class="card"><p class="hint">Looking that up\u2026</p></div>`));
+    state.supporters = state.supporters || {};
+    state.supporters[id] = null;                       /* stops a second fetch */
+    db.supporterSummary(id)
+      .then((r) => { state.supporters[id] = r || false; render(); })
+      .catch(() => { state.supporters[id] = false; render(); });
+    return wrap;
+  }
+  if (!sum) {
+    wrap.append(el(`<div class="empty"><b>Nothing to show yet</b>Once they have been to a game or played along, it turns up here.</div>`));
+    return wrap;
+  }
+
+  /* The headline numbers, only the ones that are actually something. */
+  const stats = [];
+  if (sum.points) stats.push(["Poppies Points", sum.points, "this season"]);
+  if (sum.grounds?.length) stats.push(["Grounds visited", sum.grounds.length, "of 22"]);
+  if (sum.predictPlace) stats.push(["Prediction league", `${ordinal(sum.predictPlace)}`, `of ${sum.predictOf}`]);
+  if (sum.quiz?.streak) stats.push(["Poppies Daily", sum.quiz.streak, "day streak"]);
+  if (sum.wordle?.streak) stats.push(["Poppies Wordle", sum.wordle.streak, "day streak"]);
+  if (sum.duel?.best) stats.push(["Who Played More", sum.duel.best, "best run"]);
+
+  if (!stats.length) {
+    wrap.append(el(`<div class="empty"><b>Not much here yet</b>${
+      mine ? "Log a game, make a prediction, play the daily, and this fills up."
+           : "They have not played along yet."}</div>`));
+  } else {
+    const grid = el(`<div class="info-grid info-grid--3"></div>`);
+    stats.forEach(([label, value, sub]) => grid.append(el(`
+      <div class="info">
+        <div class="info__label">${esc(label)}</div>
+        <div class="info__value" style="color:var(--accent)">${esc(String(value))}</div>
+        <div class="info__sub">${esc(sub)}</div>
+      </div>`)));
+    const card = el(`<div class="card"></div>`);
+    card.append(grid);
+    wrap.append(card);
+  }
+
+  /* Your own card shows where the points came from. Nobody else's does: what
+     somebody has and has not filled in is their business. */
+  if (mine) {
+    wrap.append(el(`<h2 class="section-title">Where your points came from</h2>`));
+    const box = el(`<div class="card"></div>`);
+    box.append(el(`<p class="hint">Points are for what you have put into the app this season. They
+      are not a measure of being a supporter, and they count for nothing anywhere it matters:
+      not the consultation, not a poll, not anything the Association reports.
+      <button class="link-btn" data-nav="points">How points work</button></p>`));
+    const list = el(`<div class="pts-list"></div>`);
+    box.append(list);
+    wrap.append(box);
+
+    db.myPoints().then((rows) => {
+      list.textContent = "";
+      if (!rows.length) {
+        list.append(el(`<p class="hint">Nothing yet this season.</p>`));
+        return;
+      }
+      rows.forEach((r) => list.append(el(`
+        <div class="pts-row">
+          <span>${esc(r.source)}</span>
+          <span class="pts-row__n">${r.points > 0 ? "+" : ""}${r.points}</span>
+        </div>`)));
+    }).catch(() => { list.append(el(`<p class="hint">That did not load.</p>`)); });
+  }
+
+  return wrap;
+}
+
+/** Their display name, from anywhere on the wall they have posted. */
+function supporterName(id) {
+  const hit = db.list("wall").find((p) => String(p.authorId) === String(id));
+  if (hit) return hit.authorName;
+  const t = (state.topics || []).find((x) => String(x.authorId) === String(id));
+  return t ? t.authorName : null;
+}
+
+/* ---------------------------------------------------------------- topics */
+
+/** The six a supporter can choose from. Few enough to fit on a phone. */
+const TOPIC_CATS = [
+  { key: "matchday", label: "Matchday",         hint: "The game itself" },
+  { key: "tickets",  label: "Tickets & Travel", hint: "Getting there, spares, lifts" },
+  { key: "ground",   label: "Club & Ground",    hint: "The club, Latimer Park, the league" },
+  { key: "memories", label: "Memories",         hint: "Old games, old players" },
+  { key: "market",   label: "Buy, Sell, Swap",  hint: "Shirts, programmes, badges" },
+  { key: "other",    label: "Anything else",    hint: "Whatever it is" },
+];
+const catLabel = (k) => TOPIC_CATS.find((c) => c.key === k)?.label || "Anything else";
+
+/**
+ * The topic list.
+ *
+ * Ordered by last activity rather than when it started, which is most of what
+ * makes a place feel alive: a thread somebody answered this morning belongs
+ * above one started last week and ignored. The database does that ordering, so
+ * the browser only draws it.
+ */
+function topicList() {
+  const box = el(`
+    <section class="wall-block">
+      <div class="wall-block__head">
+        <h2>Topics</h2>
+        <span>Anything you want to talk about, started by supporters</span>
+      </div>
+    </section>`);
+
+  if (db.currentUser()) {
+    box.append(el(`<button class="btn btn--sm" data-act="new-topic">Start a topic</button>`));
+    box.querySelector('[data-act="new-topic"]').addEventListener("click", () => {
+      const existing = box.querySelector(".topic-new");
+      if (existing) return existing.remove();
+      box.querySelector('[data-act="new-topic"]').after(newTopicForm());
+    });
+  } else {
+    box.append(el(`<p class="hint">Sign in to start one or join in.</p>`));
+  }
+
+  const all = state.topics || [];
+  if (!all.length) {
+    box.append(el(`<div class="empty"><b>No topics yet</b>${
+      db.currentUser() ? "Be the first. Anything you would have posted in the group belongs here."
+        : "Sign in and start the first one."}</div>`));
+    return box;
+  }
+
+  /* The filter only appears once there is enough to filter. */
+  const live = TOPIC_CATS.filter((c) => all.some((t) => t.category === c.key));
+  if (live.length > 1 && all.length > 4) {
+    const chips = el(`<div class="cat-chips"></div>`);
+    const draw = () => {
+      chips.textContent = "";
+      const mk = (key, label) => {
+        const on = (state.topicCat || "") === key;
+        const b = el(`<button class="chip${on ? " chip--on" : ""}">${esc(label)}</button>`);
+        b.addEventListener("click", () => { state.topicCat = key; render(); });
+        chips.append(b);
+      };
+      mk("", "All");
+      live.forEach((c) => mk(c.key, c.label));
+    };
+    draw();
+    box.append(chips);
+  }
+
+  const shown = state.topicCat ? all.filter((t) => t.category === state.topicCat) : all;
+  if (!shown.length) {
+    box.append(el(`<div class="empty"><b>Nothing under that heading yet</b>Try another, or start one.</div>`));
+  }
+  shown.forEach((t) => box.append(topicRow(t)));
+  return box;
+}
+
+function topicRow(t) {
+  const when = t.lastPostAt ? relTime(t.lastPostAt) : relTime(t.createdAt);
+  const row = el(`
+    <button class="club-row" data-topic="${esc(t.id)}">
+      <span class="thread__tag thread__tag--topic">${esc(catLabel(t.category))}</span>
+      <span style="flex:1;min-width:0">
+        <span class="club-row__name">${t.pinned ? "\uD83D\uDCCC " : ""}${esc(t.title)}${
+          t.locked ? " \uD83D\uDD12" : ""}</span>
+        <span class="club-row__meta">${t.posts} post${t.posts === 1 ? "" : "s"}${
+          t.lastAuthor ? ` &middot; last from ${esc(t.lastAuthor)}` : ""} &middot; ${esc(when)}</span>
+      </span>
+    </button>`);
+  row.addEventListener("click", () => go("topic", { id: t.id }));
+  return row;
+}
+
+function newTopicForm() {
+  const form = el(`
+    <div class="card topic-new">
+      <label class="field">
+        <span class="field__label">What is it about?</span>
+        <select class="input" data-f="cat">
+          ${TOPIC_CATS.map((c) => `<option value="${c.key}">${esc(c.label)} &mdash; ${esc(c.hint)}</option>`).join("")}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">Title</span>
+        <input class="input" data-f="title" maxlength="90" placeholder="Say it in a few words">
+      </label>
+      <label class="field">
+        <span class="field__label">First post</span>
+        <textarea class="input" data-f="body" rows="4" maxlength="600"
+          placeholder="What did you want to say?"></textarea>
+      </label>
+      <div class="row">
+        <button class="btn" data-act="post">Start it</button>
+        <span class="hint" data-role="say"></span>
+      </div>
+    </div>`);
+
+  const say = form.querySelector('[data-role="say"]');
+  form.querySelector('[data-act="post"]').addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const cat = form.querySelector('[data-f="cat"]').value;
+    const title = form.querySelector('[data-f="title"]').value.trim();
+    const body = form.querySelector('[data-f="body"]').value.trim();
+
+    if (title.length < 4) { say.textContent = "Give it a title first."; return; }
+    if (body.length < 1)  { say.textContent = "And something to start it off."; return; }
+
+    /* The same check the wall itself runs, so a topic cannot be the way round
+       the word filter. */
+    const check = db.checkPost(`${title} ${body}`, { minLength: 5, maxLength: 690 });
+    if (!check.ok) { say.textContent = check.reason; return; }
+    const limit = db.rateLimit("topic", { max: 3, windowMs: 600000 });
+    if (!limit.ok) { say.textContent = limit.reason; return; }
+
+    btn.disabled = true; say.textContent = "Posting\u2026";
+    try {
+      const id = await db.startTopic(cat, title, body);
+      state.topics = await db.topics();
+      go("topic", { id });
+    } catch (err) {
+      btn.disabled = false;
+      say.textContent = String(err?.message || err) || "That did not post.";
+    }
+  });
+  return form;
+}
+
+function viewTopic({ id }) {
+  const wrap = el(`<div></div>`);
+  wrap.append(el(`<button class="back-link" data-nav="wall">\u2190 Fan Wall</button>`));
+
+  const t = (state.topics || []).find((x) => String(x.id) === String(id));
+  if (!t) {
+    wrap.append(el(`<div class="empty"><b>That topic is not here</b>It may have been taken down, or the link may be old.</div>`));
+    /* It may simply not have loaded yet on a cold open. */
+    if (!state.topics) db.topics().then((rows) => { state.topics = rows; render(); }).catch(() => {});
+    return wrap;
+  }
+
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <span class="thread__tag thread__tag--topic">${esc(catLabel(t.category))}</span>
+      <h1>${esc(t.title)}</h1>
+      <p>Started by ${esc(t.authorName)} &middot; ${esc(relTime(t.createdAt))}${
+        t.locked ? " &middot; closed to new posts" : ""}</p>
+    </div>`));
+
+  if (db.isModerator()) {
+    const bar = el(`<div class="row row--wrap mod-bar"></div>`);
+    const btn = (field, on, label) => {
+      const b = el(`<button class="link-btn">${esc(label)}</button>`);
+      b.addEventListener("click", async () => {
+        try {
+          await db.setTopicState(t.id, field, on);
+          state.topics = await db.topics();
+          render();
+        } catch (err) { toast(String(err?.message || err)); }
+      });
+      bar.append(b);
+    };
+    btn("pinned", !t.pinned, t.pinned ? "Unpin" : "Pin to the top");
+    btn("locked", !t.locked, t.locked ? "Reopen" : "Close to new posts");
+    btn("hidden", true, "Hide it");
+    wrap.append(bar);
+  }
+
+  const key = `topic:${t.id}`;
+  if (!t.locked || db.isModerator()) wrap.append(composer(key));
+
+  const posts = db.list("wall")
+    .filter((p) => p.thread === key && !p.replyTo)
+    .filter((p) => !p.hidden || db.isModerator())
+    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+
+  if (!posts.length) {
+    wrap.append(el(`<div class="empty"><b>Nothing here yet</b>Say the first thing.</div>`));
+  } else {
+    posts.forEach((p) => wrap.append(wallCard(p, db.isModerator())));
+  }
+  return wrap;
+}
+
 function viewWall() {
   /* Two different rights wearing one name. Creating and approving polls is
      structural and stays with admins; hiding a post is moderation. */
@@ -7543,6 +7857,11 @@ function viewWall() {
     threads.forEach((t) => box.append(threadCard(t)));
     wrap.append(box);
   }
+
+  /* Under the match threads, because the game is the one conversation that is
+     guaranteed to happen every week. Everything else supporters bring
+     themselves, and this is where it goes. */
+  panelSection(wrap, null, () => topicList());
 
   const allPolls = db.list("poll");
   const polls = allPolls.filter((p) => (p.status || "live") === "live");

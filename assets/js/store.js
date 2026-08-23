@@ -141,6 +141,26 @@ export const reportPost = (id) =>
 export const myLikes = () =>
   (backend?.myLikes ? backend.myLikes() : Promise.resolve([]));
 
+export const topics = () =>
+  (backend?.topics ? backend.topics() : Promise.resolve([]));
+export const startTopic = (category, title, body) =>
+  (backend?.startTopic ? backend.startTopic(category, title, body)
+    : Promise.reject(new Error("Sign in to start a topic")));
+export const setTopicState = (id, field, on) =>
+  (backend?.setTopicState ? backend.setTopicState(id, field, on) : Promise.resolve());
+
+export const contributorBoard = () =>
+  (backend?.contributorBoard ? backend.contributorBoard() : Promise.resolve([]));
+export const myPoints = () =>
+  (backend?.myPoints ? backend.myPoints() : Promise.resolve([]));
+export const supporterSummary = (id) =>
+  (backend?.supporterSummary ? backend.supporterSummary(id) : Promise.resolve(null));
+
+export const recordWordle = (d, len, g, solved, marks) =>
+  (backend?.recordWordle ? backend.recordWordle(d, len, g, solved, marks) : Promise.resolve());
+export const wordleLeague = () =>
+  (backend?.wordleLeague ? backend.wordleLeague() : Promise.resolve([]));
+
 export const unseenReplies = () =>
   (backend?.unseenReplies ? backend.unseenReplies() : Promise.resolve([]));
 export const markWallSeen = () =>

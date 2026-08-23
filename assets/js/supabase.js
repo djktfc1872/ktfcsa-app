@@ -520,6 +520,90 @@ class Backend {
     return (data || []).map((r) => r.post_id);
   }
 
+  /* ---- topics ------------------------------------------------------------
+     A topic is a row in `topics` plus ordinary wall posts under
+     thread = 'topic:<id>'. That is why replies, likes, reporting, hiding and
+     the "somebody replied to you" inbox all worked on topics the day they
+     landed: none of them ask what kind of thread they are in. */
+
+  async topics() {
+    const { data, error } = await this.sb.from("topic_list").select("*");
+    if (error) return [];
+    return (data || []).map((r) => ({
+      id: r.id, authorId: r.profile_id, authorName: r.author_name,
+      category: r.category, title: r.title, pinned: r.pinned, locked: r.locked,
+      reports: r.reports, createdAt: r.created_at, lastPostAt: r.last_post_at,
+      posts: r.posts, lastAuthor: r.last_author,
+    }));
+  }
+
+  async startTopic(category, title, body) {
+    const { data, error } = await this.sb.rpc("start_topic",
+      { p_category: category, p_title: title, p_body: body });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  async setTopicState(id, field, on) {
+    const { error } = await this.sb.rpc("set_topic_state",
+      { p_topic: id, p_field: field, p_on: Boolean(on) });
+    if (error) throw new Error(friendly(error));
+  }
+
+  /* ---- standing ---------------------------------------------------------- */
+
+  async contributorBoard() {
+    const { data, error } = await this.sb.from("contributor_board").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
+  async myPoints() {
+    const { data, error } = await this.sb.rpc("my_points");
+    if (error) return [];
+    return (data || []).filter((r) => r.points);
+  }
+
+  /* One supporter's public activity, for their profile card. Everything here
+     is already on a leaderboard somebody can read, so nothing new is exposed. */
+  async supporterSummary(profileId) {
+    const [pts, grounds, quiz, duel, wordle, predict] = await Promise.all([
+      this.sb.from("supporter_points").select("points").eq("profile_id", profileId).maybeSingle(),
+      this.sb.from("ground_visits").select("club_slug").eq("profile_id", profileId),
+      this.sb.from("poppies_daily_league").select("*").eq("profile_id", profileId).maybeSingle(),
+      this.sb.from("duel_league").select("*").eq("profile_id", profileId).maybeSingle(),
+      this.sb.from("wordle_league").select("*").eq("profile_id", profileId).maybeSingle(),
+      this.sb.from("prediction_league").select("*"),
+    ]);
+    /* The view has no order by of its own, so a placement taken from the order
+       it happens to return would be a made-up number. */
+    const table = (predict.data || []).slice().sort((a, b) =>
+      (b.points - a.points) || (b.exact_scores - a.exact_scores) || (a.played - b.played));
+    const at = table.findIndex((r) => r.profile_id === profileId);
+    return {
+      points: pts.data?.points ?? 0,
+      grounds: (grounds.data || []).map((r) => r.club_slug),
+      quiz: quiz.data || null,
+      duel: duel.data || null,
+      wordle: wordle.data || null,
+      predictPlace: at >= 0 ? at + 1 : null,
+      predictOf: table.length,
+    };
+  }
+
+  async recordWordle(date, len, guesses, solved, marks) {
+    try {
+      await this.sb.rpc("record_wordle", {
+        p_date: date, p_len: len, p_guesses: guesses, p_solved: solved, p_marks: marks });
+    } catch { /* a result that fails to record is not worth an error mid-game */ }
+  }
+
+  async wordleLeague() {
+    const { data, error } = await this.sb.from("wordle_league").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
   async duelLeague() {
     const { data, error } = await this.sb.from("duel_league").select("*");
     if (error) return [];

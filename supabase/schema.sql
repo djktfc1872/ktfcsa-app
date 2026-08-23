@@ -2575,6 +2575,81 @@ alter view topic_list set (security_invoker = false);
 grant select on topic_list to anon, authenticated;
 
 -- ===========================================================================
+-- Credit for work that happened away from the app
+-- ===========================================================================
+--
+-- Darren Young wrote the pen pics for all nineteen players. That is one of the
+-- largest single contributions anybody has made and none of it happened through
+-- a form, so the points system could never see it. The same will be true of
+-- whoever scans the first box of programmes.
+--
+-- An admin awards it by hand, with the reason recorded next to it, because a
+-- points system nobody can explain is a points system nobody believes.
+
+create table if not exists points_credits (
+  id         uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references profiles on delete cascade,
+  reason     text not null check (char_length(reason) between 3 and 120),
+  points     int  not null check (points between -500 and 500),
+  awarded_by uuid references profiles on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists points_credits_profile_idx on points_credits (profile_id);
+
+comment on table points_credits is
+  'Points awarded by hand for work done away from the app. The reason is shown
+   to the supporter on their own card, so it is written to be read.';
+
+alter table points_credits enable row level security;
+
+-- Readable by everyone: it is part of a public total, and a total you cannot
+-- account for is worse than no total.
+drop policy if exists "credits readable" on points_credits;
+create policy "credits readable" on points_credits for select using (true);
+
+drop policy if exists "admins award credit" on points_credits;
+create policy "admins award credit" on points_credits
+  for insert with check (is_admin());
+
+drop policy if exists "admins withdraw credit" on points_credits;
+create policy "admins withdraw credit" on points_credits
+  for delete using (is_admin());
+
+-- ===========================================================================
+-- Dormant accounts
+-- ===========================================================================
+--
+-- A few supporters signed up twice and use one of the two. The spare sits on
+-- every board on nought and clutters the list of people, and clicking it shows
+-- a profile with nothing in it. Deleting it would take their sign-in with it,
+-- so it is hidden instead: still theirs, still able to sign in, simply not
+-- listed. Reversible, which deleting is not.
+
+alter table profiles add column if not exists dormant boolean not null default false;
+
+comment on column profiles.dormant is
+  'A duplicate or abandoned account. Hidden from boards and from the people
+   list. Never deleted: the sign-in still belongs to somebody.';
+
+create or replace function set_dormant(target uuid, hidden boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Not allowed';
+  end if;
+  update profiles set dormant = coalesce(hidden, false) where id = target;
+end;
+$$;
+
+revoke all on function set_dormant(uuid, boolean) from public;
+grant execute on function set_dormant(uuid, boolean) to authenticated;
+
+-- ===========================================================================
 -- Poppies Points
 -- ===========================================================================
 --
@@ -2627,10 +2702,29 @@ grant execute on function season_start() to anon, authenticated;
 -- season every play since the game launched. Both are small, and a wrong
 -- number is worse than a missing one.
 
+-- pub_votes was the one contribution with no date on it at all, so it could not
+-- be attributed to a season. Rather than leave it out, give it one. Votes cast
+-- before today have no date and simply do not count this season, which is
+-- honest: nothing recorded when they happened.
+alter table pub_votes add column if not exists created_at timestamptz default now();
+
+-- Everything below counts this season only, from season_start(). A board that
+-- never resets is owned by whoever joined first, and somebody signing up in
+-- January can never catch them however much they put in. Badges are the place
+-- for a lifetime record, and they are worked out separately.
+--
+-- duel_scores is still left out: it keeps a running total of plays with only
+-- the date of the last one, so counting it would hand this season every play
+-- since the game launched. A wrong number is worse than a missing one.
+--
+-- If a weight changes here it changes in my_points() and in data/points.json
+-- too, or a supporter sees one total on the board, a different one on their own
+-- card, and a third explanation on the page telling them how it works.
+
 drop view if exists supporter_points cascade;
 create view supporter_points as
 with
-  -- Reports about a ground. The most work, and the most use to other people.
+  -- The most work, and the most use to everybody who comes after you.
   reports as (
     select profile_id, count(*) * 10 as pts from ground_reports
       where profile_id is not null and created_at >= season_start() group by profile_id
@@ -2643,18 +2737,32 @@ with
     union all
     select profile_id, count(*) * 10 from price_reports
       where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, 15 from archive_offers
+      where created_at >= season_start()
+    union all
+    select profile_id, 10 from consultation_responses
+      where profile_id is not null and created_at >= season_start()
   ),
-  -- Offering something to the archive is the rarest thing anybody does.
-  archive as (
-    select profile_id, 15 as pts from archive_offers where created_at >= season_start()
-  ),
-  -- That somebody answered the consultation. Never what they said.
-  consulted as (
-    select profile_id, 10 as pts from consultation_responses
-     where profile_id is not null and created_at >= season_start()
+  -- Doing something that helps other supporters get to a game.
+  organising as (
+    select profile_id, count(*) * 8 as pts from pubs
+      where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 8 from coach_notices
+      where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 5 from lifts
+      where profile_id is not null and created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 3 from topics
+      where hidden = false and created_at >= season_start() group by profile_id
   ),
   turning_up as (
     select profile_id, count(*) * 3 as pts from attendance
+      where created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 2 from ground_visits
       where created_at >= season_start() group by profile_id
     union all
     select profile_id, count(*) * 2 from predictions
@@ -2663,8 +2771,24 @@ with
     select profile_id, count(*) * 2 from quiz_results
       where quiz_date >= season_start() group by profile_id
     union all
-    select profile_id, count(*) * 2 from ground_visits
+    select profile_id, count(*) * 2 from wordle_results
+      where play_date >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 1 from poll_votes
       where created_at >= season_start() group by profile_id
+    union all
+    select profile_id, count(*) * 1 from pub_votes
+      where created_at >= season_start() group by profile_id
+    -- Per match, not per player: marking a full eleven is one contribution,
+    -- not eleven, and weighting it by squad size would be daft.
+    union all
+    select profile_id, count(distinct fixture_id) * 5 from player_ratings
+      where created_at >= season_start() group by profile_id
+    -- Telling us something is broken is worth something, and worth something
+    -- five times rather than fifty.
+    union all
+    select profile_id, least(count(*), 5) * 2 from feedback
+      where profile_id is not null and created_at >= season_start() group by profile_id
   ),
   -- Posting is worth something, but only up to a point: ten a day, so a long
   -- argument is not a scoring opportunity.
@@ -2676,7 +2800,7 @@ with
        group by profile_id, date_trunc('day', created_at)
     ) d group by profile_id
   ),
-  -- What other people made of it.
+  -- What other people made of it, which is worth more than having written it.
   liked as (
     select w.profile_id, count(*) * 3 as pts
       from wall_likes l
@@ -2692,13 +2816,19 @@ with
       from wall_posts
      where hidden = true and created_at >= season_start() group by profile_id
   ),
+  -- Work done away from the app, awarded by hand. Darren Young's pen pics are
+  -- the reason this exists.
+  credited as (
+    select profile_id, sum(points)::int as pts from points_credits
+     where created_at >= season_start() group by profile_id
+  ),
   all_pts as (
     select * from reports    union all
-    select * from archive    union all
-    select * from consulted  union all
+    select * from organising union all
     select * from turning_up union all
     select * from posting    union all
     select * from liked      union all
+    select * from credited   union all
     select * from hidden_cost
   )
 select
@@ -2707,6 +2837,7 @@ select
   greatest(coalesce(sum(a.pts), 0), 0)::int as points
 from profiles p
 left join all_pts a on a.profile_id = p.id
+where p.dormant = false          -- a spare account is not a competitor
 group by p.id, p.display_name;
 
 alter view supporter_points set (security_invoker = false);
@@ -2738,8 +2869,8 @@ security definer
 set search_path = public
 as $$
   -- The same season window and the same weights as supporter_points. If these
-  -- two ever disagree, the supporter sees one total on the board and a
-  -- different one on their own card, so they are edited together or not at all.
+  -- two ever disagree, a supporter sees one total on the board and a different
+  -- one on their own card, so they are edited together or not at all.
   select 'Ground and away-day reports', (
     (select count(*) from ground_reports  where profile_id = auth.uid() and created_at >= season_start()) +
     (select count(*) from access_reports  where profile_id = auth.uid() and created_at >= season_start()) +
@@ -2754,6 +2885,18 @@ as $$
     (select count(*) from consultation_responses
       where profile_id = auth.uid() and created_at >= season_start())::int * 10
   union all
+  select 'Getting other people to games',
+    ((select count(*) from pubs
+       where profile_id = auth.uid() and created_at >= season_start()) * 8 +
+     (select count(*) from coach_notices
+       where profile_id = auth.uid() and created_at >= season_start()) * 8 +
+     (select count(*) from lifts
+       where profile_id = auth.uid() and created_at >= season_start()) * 5)::int
+  union all
+  select 'Starting conversations',
+    (select count(*) from topics
+      where profile_id = auth.uid() and hidden = false and created_at >= season_start())::int * 3
+  union all
   select 'Games at the ground',
     (select count(*) from attendance
       where profile_id = auth.uid() and created_at >= season_start())::int * 3
@@ -2762,11 +2905,27 @@ as $$
     (select count(*) from ground_visits
       where profile_id = auth.uid() and created_at >= season_start())::int * 2
   union all
-  select 'Predictions and the daily quiz',
+  select 'Rating the players',
+    (select count(distinct fixture_id) from player_ratings
+      where profile_id = auth.uid() and created_at >= season_start())::int * 5
+  union all
+  select 'Predictions and the daily games',
     ((select count(*) from predictions
        where profile_id = auth.uid() and created_at >= season_start()) * 2 +
      (select count(*) from quiz_results
-       where profile_id = auth.uid() and quiz_date >= season_start()) * 2)::int
+       where profile_id = auth.uid() and quiz_date >= season_start()) * 2 +
+     (select count(*) from wordle_results
+       where profile_id = auth.uid() and play_date >= season_start()) * 2)::int
+  union all
+  select 'Votes and recommendations',
+    ((select count(*) from poll_votes
+       where profile_id = auth.uid() and created_at >= season_start()) +
+     (select count(*) from pub_votes
+       where profile_id = auth.uid() and created_at >= season_start()))::int
+  union all
+  select 'Telling us what is broken',
+    (select least(count(*), 5) from feedback
+      where profile_id = auth.uid() and created_at >= season_start())::int * 2
   union all
   select 'On the wall',
     coalesce((select sum(least(c, 10)) from (
@@ -2779,6 +2938,12 @@ as $$
       where w.profile_id = auth.uid() and w.hidden = false
         and l.profile_id <> w.profile_id
         and l.created_at >= season_start())::int * 3
+  union all
+  select coalesce((select string_agg(distinct reason, ', ') from points_credits
+                    where profile_id = auth.uid() and created_at >= season_start()),
+                  'Awarded by hand'),
+    coalesce((select sum(points) from points_credits
+               where profile_id = auth.uid() and created_at >= season_start()), 0)::int
   union all
   select 'Posts hidden by a moderator',
     (select count(*) from wall_posts
