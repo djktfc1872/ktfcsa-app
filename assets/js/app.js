@@ -7361,7 +7361,10 @@ function replyCard(p, mod, depth = 1) {
     <div class="reply" ${p.hidden ? 'style="opacity:.5"' : ""}>
       <div class="post__head">
         ${avatarHtml(p.authorName, p.authorId)}
-        <span class="post__who">${esc(p.authorName)}</span>
+        ${p.authorId
+          ? `<button class="post__who post__who--link" data-supporter="${esc(String(p.authorId))}"
+               >${esc(p.authorName)}</button>`
+          : `<span class="post__who">${esc(p.authorName)}</span>`}
         ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : ""}
         ${!db.isVolunteer(p.authorId) && db.isContributor(p.authorId)
           ? `<span class="pill pill--contrib" title="Has added ground or access information">Contributor</span>` : ""}
@@ -7823,6 +7826,14 @@ function viewTopic({ id }) {
 }
 
 function viewWall() {
+  /* Refresh the topic list every time the wall is opened, so a topic somebody
+     started on another device is there without a reload. */
+  db.topics().then((rows) => {
+    const same = JSON.stringify(rows) === JSON.stringify(state.topics);
+    state.topics = rows;
+    if (!same && state.view === "wall") render();
+  }).catch(() => {});
+
   /* Two different rights wearing one name. Creating and approving polls is
      structural and stays with admins; hiding a post is moderation. */
   const admin = db.isAdmin();
@@ -7950,7 +7961,10 @@ function wallCard(p, mod) {
     <div class="post" ${p.hidden ? 'style="opacity:.5"' : ""}>
       <div class="post__head">
         ${avatarHtml(p.authorName, p.authorId)}
-        <span class="post__who">${esc(p.authorName)}</span>
+        ${p.authorId
+          ? `<button class="post__who post__who--link" data-supporter="${esc(String(p.authorId))}"
+               >${esc(p.authorName)}</button>`
+          : `<span class="post__who">${esc(p.authorName)}</span>`}
         ${db.isVolunteer(p.authorId) ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : ""}
         ${supporterTag(p.authorId)}
         ${p.hidden ? `<span class="pill pill--off">Hidden</span>` : ""}
@@ -11161,6 +11175,13 @@ function wireGlobalClicks() {
       go("player", { id: encodeURIComponent(player.dataset.player) });
       return;
     }
+    /* A name anywhere it appears opens that supporter's card. Checked before
+       the club and match handlers, because a post can sit inside either. */
+    const who = e.target.closest("[data-supporter]");
+    if (who && who.dataset.supporter) {
+      go("supporter", { id: who.dataset.supporter, from: state.view });
+      return;
+    }
     const match = e.target.closest("[data-match]");
     if (match && match.dataset.match) {
       go("match", { id: match.dataset.match });
@@ -11194,6 +11215,13 @@ async function boot() {
   Promise.all([loadGroundLinks(), loadParking(), loadPubsNearby()]).then(() => {
     if (state.view === "club" || state.view === "clubs") render();
   }).catch(() => {});
+
+  /* Topics come from the database rather than a file, so they are pulled once
+     the backend is up and again whenever the wall is opened. */
+  db.topics().then((rows) => {
+    state.topics = rows;
+    if (state.view === "wall" || state.view === "topic") render();
+  }).catch(() => { state.topics = []; });
 
   $("#account-btn").addEventListener("click", () => go("account"));
   /* Covers the back and forward buttons as well as the crest link in the

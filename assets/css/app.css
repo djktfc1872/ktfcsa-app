@@ -21,12 +21,22 @@
   --red-500: #9c1824;
   --red-600: #7d111b;
 
-  /* What the app leans on. Named for the job rather than the colour, so the
-     next change is one line instead of a hundred and twelve. */
-  --accent: var(--red-300);        /* text, links, numbers that matter */
-  --accent-line: var(--red-400);   /* borders and rules, never text */
-  --accent-deep: var(--red-500);   /* solid fills carrying white text */
-  --accent-soft: #f0808c;          /* hover text, a step brighter than accent */
+  /* What the app leans on. Named for the job rather than the colour, which is
+     what made this change four lines instead of a hundred and twelve.
+     
+     Gold rather than poppy red. It is the club's own gold, it sits better
+     against the crest, and it reads far more easily: #ddc084 scores 9.18
+     against the darkest surface where the red managed 4.48. Every fill using
+     --accent already carried dark text, because the red was picked so that it
+     could, so nothing needed rescuing on the way past.
+     
+     The reds are still defined above and still used where red is the point
+     rather than the decoration: the away dot on the grounds map, and anything
+     warning somebody. */
+  --accent: var(--gold-300);       /* text, links, numbers that matter */
+  --accent-line: var(--gold-500);  /* borders and rules, never text */
+  --accent-deep: var(--gold-600);  /* solid fills, dark text only: white fails on gold */
+  --accent-soft: #ecd6a6;          /* hover text, a step brighter than accent */
 
   --ink-950: #08080a;
   --ink-900: #0d0d10;
@@ -6143,3 +6153,64 @@ button,
 
 .park-lot--link { text-decoration: none; color: inherit; }
 .park-lot--link:hover .park-lot__name { color: var(--accent); }
+
+/* ---- topics -------------------------------------------------------------- */
+
+.thread__tag--topic {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.cat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+
+.chip {
+  border: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); color: var(--text-1); }
+.chip--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-950);   /* white on gold is 1.76:1 and unreadable */
+  font-weight: 600;
+}
+
+.topic-new { margin: 10px 0; }
+
+.mod-bar { gap: 14px; margin: 0 0 10px; }
+
+/* A name you can tap looks like a name, not a button, until you are on it. */
+.post__who--link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.post__who--link:hover { color: var(--accent); text-decoration: underline; }
+
+/* ---- supporter card ------------------------------------------------------ */
+
+.sup-head { display: flex; align-items: center; gap: 14px; }
+.sup-head h1 { margin: 0; }
+.sup-head p { margin: 2px 0 0; }
+
+.info__sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+.pts-list { margin-top: 10px; }
+.pts-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.pts-row + .pts-row { border-top: 1px solid var(--line-soft); }
+.pts-row__n { flex: 0 0 auto; color: var(--accent); font-variant-numeric: tabular-nums; }
