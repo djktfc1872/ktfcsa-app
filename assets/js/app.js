@@ -1589,15 +1589,21 @@ function parkingCard(t) {
       if (l.fee === "no") bits.push("free");
       else if (l.fee === "yes") bits.push("pay and display");
       if (l.capacity) bits.push(`${l.capacity} spaces`);
-      list.append(el(`
-        <div class="park-lot">
-          <span class="park-lot__name">${esc(l.name || "Unnamed car park")}</span>
-          <span class="park-lot__meta">${bits.length ? `${esc(bits.join(", "))} &middot; ` : ""}${
-            l.metres}m</span>
-        </div>`));
+      if (l.postcode) bits.push(l.postcode);
+      /* A postcode you cannot tap is half a postcode. Where there is one the
+         row opens directions to it; where there is not, it stays plain text. */
+      const label = `
+        <span class="park-lot__name">${esc(l.name || "Car park")}</span>
+        <span class="park-lot__meta">${bits.length ? `${esc(bits.join(" \u00B7 "))} &middot; ` : ""}${
+          l.metres}m</span>`;
+      list.append(el(l.postcode
+        ? `<a class="park-lot park-lot--link" href="${placeUrl(l.name || "car park", l.postcode)}"
+             target="_blank" rel="noopener">${label}</a>`
+        : `<div class="park-lot">${label}</div>`));
     });
-    list.append(el(`<p class="park-near__src">From OpenStreetMap, which anyone can add to. Plenty
-      are on there without a name or a price, so this is what is there rather than what it costs.</p>`));
+    list.append(el(`<p class="park-near__src">From OpenStreetMap, with street names and postcodes
+      filled in from its geocoder where a car park was mapped without one. Few carry a price, so
+      this is where they are rather than what they cost. Tap one for directions.</p>`));
   }
 
   /* What people who have actually been say, which beats both of the above. */

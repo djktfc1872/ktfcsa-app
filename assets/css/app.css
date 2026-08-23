@@ -6140,3 +6140,6 @@ button,
   padding: 0;
 }
 .ground__who:hover .ground__name { color: var(--accent); }
+
+.park-lot--link { text-decoration: none; color: inherit; }
+.park-lot--link:hover .park-lot__name { color: var(--accent); }
