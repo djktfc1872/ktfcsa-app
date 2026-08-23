@@ -1209,19 +1209,68 @@ table.league tbody tr.is-ktfc td {
   color: var(--text);
 }
 
+/* ---------------------------------------------------------------- avatars */
+
+/* A kit rather than a coloured blob. Two custom properties carry the
+   colourway, and each pattern is a gradient over them, so sixty combinations
+   cost one rule each instead of sixty. */
 .avatar {
-  width: 30px;
-  height: 30px;
+  position: relative;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--red-500));
+  overflow: hidden;
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11.5px;
-  font-weight: 780;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
+  /* Lifts it off whatever it is sitting on without a hard outline. */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+              0 1px 3px rgba(0, 0, 0, 0.45);
+  --kit-a: #8e1420;
+  --kit-b: #c8323f;
 }
+
+/* Initials sit above the pattern, with enough shadow to hold up over the
+   lighter half of a stripe. */
+.avatar__mark {
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.avatar--plain    { background: var(--kit-a); }
+.avatar--halves   { background: linear-gradient(90deg, var(--kit-a) 50%, var(--kit-b) 50%); }
+.avatar--sash     { background: linear-gradient(115deg, var(--kit-a) 38%, var(--kit-b) 38%,
+                                var(--kit-b) 62%, var(--kit-a) 62%); }
+/* Bands as a share of the circle, not a fixed number of pixels: the same
+   avatar is drawn at 32px in a list and 44px on the account page, and 6px
+   bands are stripes at one size and a smudge at the other. */
+.avatar--stripes  { background: repeating-linear-gradient(90deg,
+                                var(--kit-a) 0 20%, var(--kit-b) 20% 40%); }
+.avatar--hoops    { background: repeating-linear-gradient(180deg,
+                                var(--kit-a) 0 20%, var(--kit-b) 20% 40%); }
+.avatar--quarters { background:
+                      linear-gradient(90deg, var(--kit-a) 50%, var(--kit-b) 50%) top / 100% 50% no-repeat,
+                      linear-gradient(90deg, var(--kit-b) 50%, var(--kit-a) 50%) bottom / 100% 50% no-repeat; }
+
+/* The ten colourways. Every one carries white initials at 5.27 to 1 or better,
+   measured against the lighter half rather than the base. */
+.avatar--t0 { --kit-a: #8e1420; --kit-b: #c8323f; }
+.avatar--t1 { --kit-a: #5c1030; --kit-b: #8d2149; }
+.avatar--t2 { --kit-a: #14432c; --kit-b: #1f6b45; }
+.avatar--t3 { --kit-a: #16294d; --kit-b: #26467f; }
+.avatar--t4 { --kit-a: #1a3f8f; --kit-b: #2f5fc0; }
+.avatar--t5 { --kit-a: #3d2263; --kit-b: #5f3796; }
+.avatar--t6 { --kit-a: #0f3d3a; --kit-b: #1a635e; }
+.avatar--t7 { --kit-a: #4a1414; --kit-b: #7a2222; }
+.avatar--t8 { --kit-a: #26303a; --kit-b: #41525f; }
+.avatar--t9 { --kit-a: #6b3d09; --kit-b: #9c5c12; }
 
 /* ------------------------------------------------------------------- poll */
 
@@ -3589,14 +3638,13 @@ button,
 
 /* Derived from the name, so the same supporter is always the same colour and
    a page of posts is no longer a page of identical circles. */
-.avatar--t0 { background: linear-gradient(135deg, var(--gold-500), var(--red-500)); }
-.avatar--t1 { background: linear-gradient(135deg, #7f1d2e, #c2415a); }
-.avatar--t2 { background: linear-gradient(135deg, #14532d, #3f9e5c); }
-.avatar--t3 { background: linear-gradient(135deg, #1e3a5f, #4a7fb5); }
-.avatar--t4 { background: linear-gradient(135deg, #4a2b6b, #8b5fb8); }
-.avatar--t5 { background: linear-gradient(135deg, #7a4a12, #c68a3e); }
 
-.avatar--emblem { background: var(--surface-3); font-size: 15px; }
+/* An emblem sits on the kit, darkened a touch so the symbol reads. */
+.avatar--emblem { font-size: 15px; }
+.avatar--emblem::after {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.34);
+}
 
 .emblem-pick { margin: 4px 0 14px; }
 .emblem-pick__label {
@@ -4169,7 +4217,7 @@ button,
 /* A drawn poppy and the association lion sit alongside the emoji badges, so
    they need the same footprint. */
 .emblem svg, .emblem .emblem-img { width: 22px; height: 22px; display: block; margin: 0 auto; }
-.avatar--emblem svg, .avatar--emblem .emblem-img { width: 17px; height: 17px; display: block; }
+.avatar--emblem svg, .avatar--emblem .emblem-img { width: 18px; height: 18px; display: block; }
 .emblem-img { object-fit: contain; }
 
 /* "caretaker" sits beside a name rather than under it, so a list of fifty

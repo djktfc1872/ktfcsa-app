@@ -6606,7 +6606,22 @@ function seasonStats() {
    same gold gradient, so a page of posts was a page of identical circles. The
    colour is derived, not stored: the same supporter always gets the same one. */
 
-const AVATAR_TONES = 6;
+/* Avatars as kits.
+ *
+ * They were a 30px circle with one of six muddy gradients behind two letters,
+ * which said nothing about anybody and looked like a placeholder because it
+ * was one. A football app can do better than that without asking anybody to
+ * upload a photograph, which would mean hosting and moderating pictures of
+ * strangers.
+ *
+ * Ten colourways and six patterns off the shirt: plain, stripes, hoops,
+ * halves, quarters and a sash. Sixty combinations, picked from the name, so
+ * the same supporter is the same kit everywhere and two people in a thread are
+ * very unlikely to match. Every colourway carries white initials at 5.27 to 1
+ * or better, checked on the darker half of the pattern as well as the base.
+ */
+const AVATAR_KITS = 10;
+const AVATAR_PATTERNS = ["plain", "stripes", "hoops", "halves", "quarters", "sash"];
 
 const initialsFor = (name) => {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -6616,12 +6631,18 @@ const initialsFor = (name) => {
   return (first + last).toUpperCase();
 };
 
-const toneFor = (name) => {
+const hashName = (name) => {
   const s = String(name || "");
   let h = 0;
   for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h % AVATAR_TONES;
+  return h;
 };
+
+/* Two different mixes of the same hash, so a name that lands on kit 3 is not
+   forced onto pattern 3 as well. */
+const toneFor = (name) => hashName(name) % AVATAR_KITS;
+const patternFor = (name) =>
+  AVATAR_PATTERNS[Math.floor(hashName(name) / AVATAR_KITS) % AVATAR_PATTERNS.length];
 
 /* A fixed set the app ships. Nothing is uploaded, so nothing needs hosting or
    moderating. */
@@ -6681,8 +6702,13 @@ const ADMIN_ONLY_EMBLEMS = new Set(["lion", "admin"]);
 function avatarHtml(name, profileId, style = "") {
   const emblem = profileId ? db.avatarOf(profileId) : null;
   const badge = emblem && EMBLEMS[emblem];
-  return `<span class="avatar avatar--t${toneFor(name)}${badge ? " avatar--emblem" : ""}"
-    title="${esc(name || "")}"${style ? ` style="${style}"` : ""}>${badge || esc(initialsFor(name))}</span>`;
+  /* A chosen emblem still sits on that supporter's kit rather than on a flat
+     grey square, so the two kinds of avatar look like they belong together. */
+  const cls = `avatar avatar--t${toneFor(name)} avatar--${patternFor(name)}${
+    badge ? " avatar--emblem" : ""}`;
+  return `<span class="${cls}" title="${esc(name || "")}"${
+    style ? ` style="${style}"` : ""}><span class="avatar__mark">${
+    badge || esc(initialsFor(name))}</span></span>`;
 }
 
 /** How far a conversation can nest. The database enforces the same number. */
