@@ -106,6 +106,23 @@ create table if not exists pubs (
 
 create index if not exists pubs_club_idx on pubs (club_slug);
 
+-- ===========================================================================
+-- Whether away fans are actually welcome
+-- ===========================================================================
+--
+-- The one thing a travelling supporter wants to know about a pub near an away
+-- ground, and the one thing the existing free-text note was the wrong shape
+-- for. Some places are glad to see you, some would rather you walked on, and
+-- finding out at the door is how away days go wrong.
+--
+-- Three values rather than a rating: this is not a review of the beer.
+
+alter table pubs add column if not exists away_friendly text
+  check (away_friendly is null or away_friendly in ('yes', 'mixed', 'no'));
+
+comment on column pubs.away_friendly is
+  'Whether away supporters are made welcome. Set by whoever suggested it, corrected by anybody who goes.';
+
 -- ------------------------------------------------------ access reports
 --
 -- There is no usable source for this at Step 3. OpenStreetMap has almost
@@ -312,7 +329,13 @@ from poll_votes
 group by poll_id, option_index;
 
 -- Pub suggestions with their vote counts.
-create or replace view pub_list as
+--
+-- Dropped and recreated rather than replaced. It selects p.*, so every column
+-- added to pubs lands in the middle of this view's shape, and "create or
+-- replace view" refuses to change the name of a column in a given position:
+-- adding away_friendly failed with 42P16 saying it could not rename "votes".
+drop view if exists pub_list cascade;
+create view pub_list as
 select p.*, coalesce(v.votes, 0)::int as votes
 from pubs p
 left join (
@@ -2168,22 +2191,7 @@ group by club_slug;
 
 grant select on parking_summary to anon, authenticated;
 
--- ===========================================================================
--- Whether away fans are actually welcome
--- ===========================================================================
---
--- The one thing a travelling supporter wants to know about a pub near an away
--- ground, and the one thing the existing free-text note was the wrong shape
--- for. Some places are glad to see you, some would rather you walked on, and
--- finding out at the door is how away days go wrong.
---
--- Three values rather than a rating: this is not a review of the beer.
 
-alter table pubs add column if not exists away_friendly text
-  check (away_friendly is null or away_friendly in ('yes', 'mixed', 'no'));
-
-comment on column pubs.away_friendly is
-  'Whether away supporters are made welcome. Set by whoever suggested it, corrected by anybody who goes.';
 
 -- ===========================================================================
 -- Grounds visited
