@@ -1,0 +1,54 @@
+{
+  "checked": "2026-08-23",
+  "note": "Read off each club's own website, one at a time. Fourteen of the twenty two publish nothing about parking anywhere we could find, and those say so rather than carrying a guess. Anything here can be corrected by a supporter who has just been.",
+  "clubs": {
+    "kettering-town": {
+      "atGround": true,
+      "price": "Free, or reserve a space",
+      "text": "There is a car park at Latimer Park. The club also lets you reserve a space for the season if you would rather not chance it on the day.",
+      "source": "https://www.ketteringtownfc.com/match-day-hospitality/"
+    },
+    "peterborough-sports": {
+      "atGround": true,
+      "price": "Free",
+      "text": "Free parking for home and away supporters at the clubhouse. Drive in through the Medical Centre car park and follow it all the way round. The turnstiles are in the car park itself.",
+      "source": "https://www.psfc.co.uk/matchday-information"
+    },
+    "racing-club-warwick": {
+      "atGround": true,
+      "price": "Free for 2 hours",
+      "text": "Large car park directly next to the ground. Two hours are free, but you must still take a ticket from the machine or you will be caught out.",
+      "source": "https://www.rcwfc.co.uk/ground"
+    },
+    "rushall-olympic": {
+      "atGround": true,
+      "price": "£3",
+      "text": "Large private car park, stewarded on a matchday. Three pounds. Disabled parking by prior arrangement with the club.",
+      "source": "https://www.rofc.co.uk/club-info/club-stadium"
+    },
+    "real-bedford": {
+      "atGround": true,
+      "price": "At the ground",
+      "text": "Parking at The Ledger Stadium, with overflow at Priory Business Park a short walk away on busier days. The club also runs free buses and a car share scheme.",
+      "source": "https://www.realbedford.com/travel"
+    },
+    "bromsgrove-sporting": {
+      "atGround": false,
+      "price": "£2 at the ground if lucky, or £1 to £1.30 an hour in town",
+      "text": "Limited at the ground. The front car park is officials, disabled and VIPs only; the rear is mainly staff and players, with spectator spaces at £2 that go quickly. The club points visiting fans at the Stourbridge Road council car park (B61 0AB), with Parkside, Market Street by Asda, Recreation Road and School Drive as backups. Council pay and display, and they enforce it strictly.",
+      "source": "https://www.bromsgrovesporting.co.uk/matchday-parking"
+    },
+    "needham-market": {
+      "atGround": true,
+      "price": "Free",
+      "text": "Free parking on site at Bloomfields.",
+      "source": "http://www.needhammarketfc.co.uk/"
+    },
+    "bishops-stortford": {
+      "atGround": null,
+      "price": null,
+      "text": "The club warned in August 2026 that parking enforcement is now in place outside the Seko Unit on Woodside Park. Worth reading the signs before you leave the car.",
+      "source": "http://www.bsfc.co.uk/"
+    }
+  }
+}
