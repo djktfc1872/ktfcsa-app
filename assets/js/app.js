@@ -1253,9 +1253,16 @@ function groundsVisited() {
     if (!prev || f.date < prev.date) seen.set(f.team.id, { team: f.team, date: f.date });
   });
 
+  /* Ticked by hand, for the decades before this app existed. Attendance can
+     only ever know about this season, and a groundhopper's list that starts in
+     August 2026 is not their list. */
+  const ticked = db.groundVisits();
+
   const away = TEAMS.filter((t) => typeof t.distanceMiles === "number");
   const total = away.length + 1;                 /* every away ground, plus ours */
-  const done = seen.size + (homeVisits ? 1 : 0);
+  const beenTo = (id) => seen.has(id) || ticked.has(id);
+  const done = away.filter((t) => beenTo(t.id)).length
+    + (homeVisits || ticked.has("kettering-town") ? 1 : 0);
 
   wrap.append(el(`<h2 class="section-title">Grounds ticked off</h2>`));
   const card = el(`<div class="card"></div>`);
@@ -1275,34 +1282,57 @@ function groundsVisited() {
   const list = el(`<div class="grounds__list"></div>`);
   const rows = [
     { team: { id: "kettering-town", name: KTFC.name, stadium: KTFC.ground },
-      date: homeVisits ? "home" : null, home: true },
+      date: homeVisits ? "home" : null, home: true, been: Boolean(homeVisits) || ticked.has("kettering-town") },
     ...away
-      .map((t) => ({ team: t, date: seen.get(t.id)?.date || null }))
+      .map((t) => ({ team: t, date: seen.get(t.id)?.date || null, been: beenTo(t.id) }))
       .sort((a, b) => {
-        if (Boolean(a.date) !== Boolean(b.date)) return a.date ? -1 : 1;
+        if (a.been !== b.been) return a.been ? -1 : 1;
         return a.team.name.localeCompare(b.team.name);
       }),
   ];
 
   rows.forEach((r) => {
-    const been = Boolean(r.date);
+    const been = r.been;
+    const auto = r.home ? Boolean(homeVisits) : seen.has(r.team.id);
     const when = r.home
-      ? `${homeVisits} game${homeVisits === 1 ? "" : "s"} at home`
-      : been ? `First visit ${fmtDate(r.date, "short")}` : `${r.team.distanceMiles} miles away`;
+      ? (homeVisits ? `${homeVisits} game${homeVisits === 1 ? "" : "s"} at home` : "Ticked off")
+      : auto ? `First visit ${fmtDate(r.date, "short")}`
+      : been ? "Ticked off" : `${r.team.distanceMiles} miles away`;
+    /* The tick is its own control so the row can still open the ground's page.
+       One that came from marking attendance is not tickable here: the game is
+       where that belongs, and two places to change one fact drift apart. */
     const row = el(`
-      <button class="ground${been ? " ground--been" : ""}"${
-        r.home ? ' data-nav="poppies"' : ` data-club="${esc(r.team.id)}"`}>
-        <span class="ground__tick" aria-hidden="true">${been ? "\u2713" : ""}</span>
-        <span class="ground__who">
+      <div class="ground${been ? " ground--been" : ""}">
+        <button class="ground__tick${auto ? " ground__tick--auto" : ""}" type="button"
+          aria-pressed="${been}" title="${auto
+            ? "From a game you marked as attended"
+            : been ? "Been there. Tap to untick." : "Tap if you have been"}"
+          ${auto ? "disabled" : ""}>${been ? "\u2713" : ""}</button>
+        <button class="ground__who" type="button"${
+          r.home ? ' data-nav="poppies"' : ` data-club="${esc(r.team.id)}"`}>
           <span class="ground__name">${esc(r.team.name)}</span>
           <span class="ground__where">${esc(r.team.stadium)} &middot; ${esc(when)}</span>
-        </span>
-      </button>`);
+        </button>
+      </div>`);
+    if (!auto) {
+      const tick = row.querySelector(".ground__tick");
+      tick.addEventListener("click", async () => {
+        tick.disabled = true;
+        try {
+          await db.setGroundVisit(r.team.id, !been, r.date && r.date !== "home" ? r.date : null);
+        } catch (err) {
+          toast(err.message || "That did not save.", "bad");
+        }
+        tick.disabled = false;
+      });
+    }
     list.append(row);
   });
   card.append(list);
-  card.append(el(`<p class="hint">Counted from the games you have ticked off above, so it fills in
-    as you go. This season only: nothing before it was recorded.</p>`));
+  card.append(el(`<p class="hint">This season fills itself in from the games you tick off above.
+    Anything before that, tap the circle: plenty of people have been going for thirty years and a
+    list that starts in August is not their list. Nobody else sees it, and there is no table of who
+    has been to most, because it is a collection rather than a competition.</p>`));
 
   wrap.append(card);
   return wrap;

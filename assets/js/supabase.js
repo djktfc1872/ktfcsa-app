@@ -543,6 +543,27 @@ class Backend {
     return data || [];
   }
 
+  async groundVisits() {
+    const { data, error } = await this.sb
+      .from("ground_visits").select("club_slug, first_seen, note");
+    if (error) return [];
+    return data || [];
+  }
+
+  async setGroundVisit(clubSlug, on, firstSeen) {
+    if (!this.profile?.id) return;
+    if (!on) {
+      const { error } = await this.sb.from("ground_visits").delete()
+        .eq("profile_id", this.profile.id).eq("club_slug", clubSlug);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    const { error } = await this.sb.from("ground_visits").upsert({
+      profile_id: this.profile.id, club_slug: clubSlug, first_seen: firstSeen || null,
+    }, { onConflict: "profile_id,club_slug" });
+    if (error) throw new Error(error.message);
+  }
+
   async supporterTags() {
     const { data, error } = await this.sb
       .from("supporter_tags").select("key, label, sort").order("sort");

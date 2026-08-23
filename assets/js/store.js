@@ -71,6 +71,7 @@ const live = {
   ratings: { match: [], season: [], mine: {} },
   resultsViewers: new Set(),  // early, read-only sight of the consultation results
   moderators: new Set(),      // can moderate what supporters write, but not change structure
+  groundVisits: new Set(),    // club slugs whose ground this supporter has been to
   quiz: {},                 // "2026-08-22" -> {score, marks} for the signed-in supporter
 };
 
@@ -146,6 +147,22 @@ export function addParkingReport(slug, report) {
   if (!backend) return Promise.resolve();
   return attempt(backend.addParkingReport(slug, report).then(refresh),
     "That did not save.");
+}
+
+/* Grounds ticked off, kept in one place so a page can ask without a round trip.
+   Attendance covers this season on its own; this is everything before it. */
+export const groundVisits = () => live.groundVisits;
+export async function loadGroundVisits() {
+  if (!backend || !currentUser()) { live.groundVisits = new Set(); return; }
+  const rows = await backend.groundVisits().catch(() => []);
+  live.groundVisits = new Set(rows.map((r) => r.club_slug));
+}
+export async function setGroundVisit(clubSlug, on, firstSeen) {
+  if (!backend) return;
+  if (on) live.groundVisits.add(clubSlug);
+  else live.groundVisits.delete(clubSlug);
+  onChange();
+  await attempt(backend.setGroundVisit(clubSlug, on, firstSeen), "That did not save.");
 }
 
 export const supporterTags = () =>
@@ -234,6 +251,7 @@ export async function refresh() {
     live.optIn = people.optIn || {};
     live.resultsViewers = new Set(people.resultsViewers || []);
     live.moderators = new Set(people.moderators || []);
+    loadGroundVisits();   /* the ticked list, once there is somebody to ask about */
     live.supporters = await backend.supporterCount();
     live.lineups = await backend.loadLineups();
       live.ratings = await backend.loadRatings();
@@ -287,6 +305,7 @@ export async function signOut() {
     live.predictions = {};
     live.attendance = new Set();
     live.attendanceSummary = null;
+    live.groundVisits = new Set();
     live.pollVotes = {};
     live.pubVotes = new Set();
     await refresh();

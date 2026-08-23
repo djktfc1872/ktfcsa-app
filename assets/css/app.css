@@ -6113,3 +6113,30 @@ button,
   color: var(--accent);
   border: 1px solid color-mix(in srgb, var(--red-400) 40%, transparent);
 }
+
+/* The tick became its own button so the row can still open the ground's page.
+   One that came from marking attendance is shown as settled rather than
+   disabled-looking: it is true, it just cannot be changed from here. */
+.ground__tick {
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  /* It was a span before it needed to be pressable, and a bare button brings
+     the browser's own grey with it. */
+  background: transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ground__tick:not(:disabled):hover { border-color: var(--accent); }
+.ground__tick:disabled { cursor: default; }
+.ground__tick--auto { opacity: 0.85; }
+.ground__who {
+  flex: 1 1 auto;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+.ground__who:hover .ground__name { color: var(--accent); }
