@@ -22,6 +22,7 @@ import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { QUIZ_EPOCH, dayNumber, dateForDay, londonToday, rngFor, seededShuffle } from "../assets/js/quiz.js";
+import { TEAMS, KTFC } from "../assets/js/data.js";
 
 const DATA = resolve(dirname(fileURLToPath(import.meta.url)), "..", "data");
 const OUT = resolve(DATA, "quiz-bank.json");
@@ -113,6 +114,14 @@ const QUIZZABLE = archive.matches.filter(
   (m) => (m.competition || "").toLowerCase() !== "friendly" && m.opponent
 );
 
+/* Recall questions are rationed to the seasons people were actually at.
+   "How did Kettering v Barwell finish in September 2018?" is not difficult, it
+   is unanswerable, and there were 384 of those between the two types: over
+   half the bank. Three seasons is far enough back to be a test and near enough
+   to be a memory. */
+const RECENT = [...new Set(QUIZZABLE.map((m) => m.season))].sort().slice(-3);
+const isRecent = (m) => RECENT.includes(m.season);
+
 /** season -> playerIndex -> { apps, starts, shirts: Map<number, count> } */
 const bySeason = new Map();
 for (const m of QUIZZABLE) {
@@ -157,6 +166,7 @@ const DELTAS = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [2, 0], [0, 2], [-1, 1
 const outcome = (a, b) => (a > b ? "W" : a < b ? "L" : "D");
 
 for (const m of QUIZZABLE) {
+  if (!isRecent(m)) continue;
   const correct = `${m.us}-${m.them}`;
   const rnd = rngFor(`sc:${m.id}`);
   const wrong = [];
@@ -204,8 +214,23 @@ for (const m of QUIZZABLE) {
 const roundness = (n) => [100, 50, 10, 5, 1].find((r) => n % r === 0) || 1;
 const MULTS = [0.58, 0.66, 0.74, 0.83, 1.19, 1.28, 1.41, 1.56, 1.72];
 
+/* Kept, but rationed. Guessing a gate is barely a question: nobody remembers
+   that a Tuesday in October drew 704, and four plausible numbers is a coin
+   toss with extra steps. There were 166 of these, 22% of the whole bank. Now
+   only the notable ones are asked, meaning the biggest crowds of a season and
+   the ones that stand out, and the rest of the bank carries the day. */
+const attSeasonBest = new Map();
+for (const m of QUIZZABLE) {
+  if (!m.att) continue;
+  const cur = attSeasonBest.get(m.season);
+  if (!cur || m.att > cur) attSeasonBest.set(m.season, m.att);
+}
+
 for (const m of QUIZZABLE) {
   if (!m.att || m.att < 100) continue;              // tiny gates make silly questions
+  /* Within a fifth of the season's best, or it is not a day anybody recalls. */
+  const seasonBest = attSeasonBest.get(m.season) || 0;
+  if (m.att < seasonBest * 0.8) continue;
   const A = m.att;
   const cls = roundness(A);
   const digits = String(A).length;
@@ -311,7 +336,7 @@ for (const [season, players] of bySeason) {
 
 const allOpponents = [...new Set(QUIZZABLE.map((m) => m.opponent))].filter(Boolean);
 for (const m of QUIZZABLE) {
-  if (!m.opponent) continue;
+  if (!m.opponent || !isRecent(m)) continue;
   const rnd = rngFor(`op:${m.id}`);
   const wrong = seededShuffle(allOpponents.filter((o) => o !== m.opponent), rnd).slice(0, 3);
   if (wrong.length < 3) continue;
@@ -380,6 +405,178 @@ for (const q of extra.questions || []) {
   const correct = q.a[q.c];
   if (correct === undefined) throw new Error(`quiz-extra.json: "${q.q}" has no valid answer index.`);
   push(finish(q.type || "extra", q.q, correct, q.a.filter((_, i) => i !== q.c), q.note));
+}
+
+/* ------------------------------------------------- the division around us
+
+   Everything above this point asks a supporter to recall one specific match
+   from as far back as 2018. Three quarters of the bank was that, and a gate of
+   704 on a Tuesday in October is not a hard question, it is an unanswerable
+   one. What follows is the other kind: things a supporter can work out, or
+   knows because they have been there, or learns by getting it wrong once. */
+
+const OPP = TEAMS.filter((t) => t.name && t.stadium);
+const pick = (list, n, rng, not) => {
+  const pool = list.filter((x) => x !== not);
+  const out = [];
+  const r = seededShuffle(pool, rng);
+  for (const x of r) { if (out.length < n) out.push(x); }
+  return out;
+};
+
+/* --- which club plays where ------------------------------------------- */
+for (const t of OPP) {
+  const rng = rngFor(`ground:${t.id}`);
+  const wrong = pick(OPP.map((o) => o.name), 3, rng, t.name);
+  if (wrong.length < 3) continue;
+  push(finish("ground", `Which club plays at ${t.stadium}?`, t.name, wrong,
+    `${t.stadium} is in ${t.postcode.split(" ")[0]}, ${t.distanceMiles} miles from Kettering.`));
+}
+
+/* --- nicknames --------------------------------------------------------- */
+for (const t of OPP) {
+  if (!t.nickname) continue;
+  const rng = rngFor(`nick:${t.id}`);
+  const wrong = pick(OPP.map((o) => o.name), 3, rng, t.name);
+  if (wrong.length < 3) continue;
+  push(finish("nickname", `Which club are known as ${t.nickname}?`, t.name, wrong,
+    `They play at ${t.stadium}.`));
+}
+
+/* --- the long trips ---------------------------------------------------- */
+{
+  const byMiles = OPP.filter((t) => typeof t.distanceMiles === "number")
+    .slice().sort((a, b) => b.distanceMiles - a.distanceMiles);
+
+  /* Every window of four down the list, asked both ways round. The furthest
+     and the nearest are different questions and both are answerable by anybody
+     who has done the trips. Skipped where the top two are within eight miles,
+     because then it is a guess between two places the same way up the A14. */
+  for (let i = 0; i + 3 < byMiles.length; i += 1) {
+    const set = byMiles.slice(i, i + 4);
+    if (set[0].distanceMiles - set[1].distanceMiles >= 4) {
+      push(finish("distance",
+        "Which of these is the longest away trip from Kettering?",
+        set[0].name, set.slice(1).map((t) => t.name),
+        `${set[0].name} at ${set[0].stadium}, ${set[0].distanceMiles} miles each way.`));
+    }
+    if (set[2].distanceMiles - set[3].distanceMiles >= 4) {
+      push(finish("distance",
+        "Which of these is the shortest away trip from Kettering?",
+        set[3].name, set.slice(0, 3).map((t) => t.name),
+        `${set[3].name} at ${set[3].stadium}, ${set[3].distanceMiles} miles each way.`));
+    }
+  }
+
+  /* Capacity, which groundhoppers know and nobody else does until they read
+     this note once. */
+  const byCap = OPP.filter((t) => typeof t.capacity === "number")
+    .slice().sort((a, b) => b.capacity - a.capacity);
+  for (let i = 0; i + 3 < byCap.length; i += 1) {
+    const set = byCap.slice(i, i + 4);
+    if (set[0].capacity - set[1].capacity < 150) continue;
+    push(finish("capacity",
+      "Which of these grounds holds the most?",
+      set[0].name, set.slice(1).map((t) => t.name),
+      `${set[0].stadium} holds ${commas(set[0].capacity)}.`));
+  }
+}
+
+/* --- who has played the most ------------------------------------------- */
+{
+  const apps = new Map();
+  for (const m of archive.matches) {
+    for (const [pi] of m.lineup || []) apps.set(P[pi], (apps.get(P[pi]) || 0) + 1);
+  }
+  const ranked = [...apps.entries()].filter(([, n]) => n >= 8).sort((a, b) => b[1] - a[1]);
+  /* Down the whole list rather than the first eight, so it asks about squad
+     players as well as the obvious names. Still only where the top of the four
+     is clear of the rest, or it is a guess. */
+  for (let i = 0; i + 3 < ranked.length; i += 1) {
+    const set = [ranked[i], ranked[i + 1], ranked[i + 2], ranked[i + 3]];
+    if (set[0][1] - set[1][1] < 4) continue;
+    push(finish("appearances",
+      "Which of these has made the most appearances for Kettering since 2018/19?",
+      set[0][0], set.slice(1).map(([n]) => n),
+      `${set[0][0]} played ${set[0][1]} to ${set[1][0]}'s ${set[1][1]}.`));
+  }
+}
+
+/* --- the big days, asked the answerable way round ---------------------- */
+{
+  const bySeasonAtt = new Map();
+  for (const m of QUIZZABLE) {
+    if (!m.att || m.venue !== "Home") continue;
+    if (!bySeasonAtt.has(m.season)) bySeasonAtt.set(m.season, []);
+    bySeasonAtt.get(m.season).push(m);
+  }
+  for (const [season, list] of bySeasonAtt) {
+    if (list.length < 6) continue;
+    const sorted = list.slice().sort((a, b) => b.att - a.att);
+    const best = sorted[0];
+    const rest = sorted.slice(Math.floor(sorted.length / 2));
+    const rng = rngFor(`bigday:${season}`);
+    const wrong = pick(rest.map((m) => m.opponent), 3, rng, best.opponent);
+    if (wrong.length < 3 || best.att - sorted[1].att < 60) continue;
+    /* Which game drew the crowd, not what the number was. One is memory, the
+       other is a lottery. */
+    push(finish("bigday",
+      `Which home game drew the biggest crowd of ${season}?`,
+      best.opponent, wrong,
+      `${commas(best.att)} against ${best.opponent}, ${longDate(best.date)}.`));
+  }
+}
+
+/* --- guess the player -------------------------------------------------- */
+
+/* Clues a supporter could actually use, all of them real. Nationality and
+   previous clubs are not in any feed this app has: the nineteen pen pics carry
+   them in prose and nothing else does, so they are not asked about rather than
+   half-invented. What the archive does hold is appearances, which seasons
+   somebody was here for, and the shirt they wore, which between them describe
+   a player well enough to be got. */
+{
+  const info = new Map();
+  for (const m of archive.matches) {
+    for (const [pi, shirt] of m.lineup || []) {
+      const n = P[pi];
+      if (!info.has(n)) info.set(n, { apps: 0, seasons: new Set(), shirts: new Map() });
+      const r = info.get(n);
+      r.apps += 1;
+      r.seasons.add(m.season);
+      if (shirt != null) r.shirts.set(shirt, (r.shirts.get(shirt) || 0) + 1);
+    }
+  }
+
+  /* Twenty games or it is not a player anybody would place. */
+  const known = [...info.entries()].filter(([, r]) => r.apps >= 20);
+
+  for (const [name, r] of known) {
+    const seasons = [...r.seasons].sort();
+    const usual = [...r.shirts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const rng = rngFor(`who:${name}`);
+    const wrong = pick(known.map(([n]) => n), 3, rng, name);
+    if (wrong.length < 3) continue;
+
+    /* Two spells are not one long one. Paul White was here in 2018/19 and
+       again in 2025/26, and "from 2018/19 to 2025/26" makes that read as eight
+       unbroken years next to a note saying two seasons. A range is only used
+       where the seasons actually run end to end. */
+    const yearOf = (x) => Number(String(x).slice(0, 4));
+    const contiguous = seasons.every((x, i) =>
+      i === 0 || yearOf(x) === yearOf(seasons[i - 1]) + 1);
+    const span = seasons.length === 1
+      ? `in ${seasons[0]}`
+      : contiguous
+        ? `from ${seasons[0]} to ${seasons[seasons.length - 1]}`
+        : `across ${seasons.length} seasons, ${seasons.join(" and ")}`;
+    const shirtBit = usual ? `, mostly in number ${usual[0]}` : "";
+    push(finish("whoisit",
+      `Who made ${r.apps} appearances for the Poppies ${span}${shirtBit}?`,
+      name, wrong,
+      `${name}: ${r.apps} games across ${seasons.length} season${
+        seasons.length === 1 ? "" : "s"}.`));
+  }
 }
 
 /* ---------------------------------------------------------------- validate */
