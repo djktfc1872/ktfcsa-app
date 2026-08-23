@@ -2099,3 +2099,71 @@ order by r.created_at desc
 limit 50;
 
 grant select on wall_replies_to_me to authenticated;
+
+-- ===========================================================================
+-- Where people actually parked
+-- ===========================================================================
+--
+-- Fourteen of the twenty two clubs publish nothing about parking, and the map
+-- can only say what is there rather than what it costs or whether it fills up
+-- by half two. The people who know are the ones who have just done it, and the
+-- app already knows who they are because they marked themselves as having
+-- gone. So it asks them, once, afterwards.
+--
+-- Same shape and same rules as price_reports next door: readable by everyone,
+-- written only by the person it belongs to, editable and removable by them or
+-- a volunteer.
+
+create table if not exists parking_reports (
+  id          uuid primary key default gen_random_uuid(),
+  club_slug   text not null,
+  profile_id  uuid references profiles on delete set null,
+  author_name text not null,
+  spot        text not null check (spot in ('ground', 'street', 'town', 'pub', 'other')),
+  cost        numeric(5,2) check (cost is null or cost between 0 and 40),
+  walk_min    int check (walk_min is null or walk_min between 0 and 60),
+  notes       text check (notes is null or char_length(notes) <= 300),
+  visited_on  date,
+  hidden      boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists parking_club_idx on parking_reports (club_slug, created_at desc);
+
+comment on table parking_reports is
+  'Where supporters actually parked, and what it cost. Asked after a game they marked attending.';
+
+alter table parking_reports enable row level security;
+
+drop policy if exists "parking readable" on parking_reports;
+create policy "parking readable" on parking_reports
+  for select using (hidden = false or is_moderator());
+
+drop policy if exists "report parking" on parking_reports;
+create policy "report parking" on parking_reports
+  for insert with check (auth.uid() = profile_id);
+
+drop policy if exists "edit own parking report" on parking_reports;
+create policy "edit own parking report" on parking_reports
+  for update using (auth.uid() = profile_id or is_moderator());
+
+drop policy if exists "remove own parking report" on parking_reports;
+create policy "remove own parking report" on parking_reports
+  for delete using (auth.uid() = profile_id or is_moderator());
+
+-- What the app shows: the going rate rather than a list of individual trips.
+drop view if exists parking_summary cascade;
+create view parking_summary as
+select
+  club_slug,
+  count(*)::int                                     as reports,
+  mode() within group (order by spot)               as usual_spot,
+  round(avg(cost) filter (where cost is not null), 2) as avg_cost,
+  count(*) filter (where cost = 0)::int             as free_reports,
+  round(avg(walk_min) filter (where walk_min is not null))::int as avg_walk,
+  max(created_at)                                   as latest
+from parking_reports
+where hidden = false
+group by club_slug;
+
+grant select on parking_summary to anon, authenticated;

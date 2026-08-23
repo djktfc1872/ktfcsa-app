@@ -138,6 +138,16 @@ export const unseenReplies = () =>
 export const markWallSeen = () =>
   (backend?.markWallSeen ? backend.markWallSeen() : Promise.resolve());
 
+export const parkingSummary = () =>
+  (backend?.parkingSummary ? backend.parkingSummary() : Promise.resolve({}));
+export const parkingReports = (slug) =>
+  (backend?.parkingReports ? backend.parkingReports(slug) : Promise.resolve([]));
+export function addParkingReport(slug, report) {
+  if (!backend) return Promise.resolve();
+  return attempt(backend.addParkingReport(slug, report).then(refresh),
+    "That did not save.");
+}
+
 export const supporterTags = () =>
   (backend?.supporterTags ? backend.supporterTags() : Promise.resolve(null));
 export const upsertTag = (key, label, sort) => backend.upsertTag(key, label, sort);

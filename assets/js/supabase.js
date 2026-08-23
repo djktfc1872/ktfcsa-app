@@ -513,6 +513,36 @@ class Backend {
     try { await this.sb.rpc("mark_wall_seen"); } catch { /* not worth an error */ }
   }
 
+  async addParkingReport(clubSlug, r) {
+    const me = this.profile;
+    const { error } = await this.sb.from("parking_reports").insert({
+      club_slug: clubSlug,
+      profile_id: me?.id || null,
+      author_name: me?.display_name || "A supporter",
+      spot: r.spot,
+      cost: r.cost ?? null,
+      walk_min: r.walkMin ?? null,
+      notes: r.notes || null,
+      visited_on: r.visitedOn || null,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  async parkingSummary() {
+    const { data, error } = await this.sb.from("parking_summary").select("*");
+    if (error) return {};
+    return Object.fromEntries((data || []).map((r) => [r.club_slug, r]));
+  }
+
+  async parkingReports(clubSlug) {
+    const { data, error } = await this.sb
+      .from("parking_reports").select("*")
+      .eq("club_slug", clubSlug).eq("hidden", false)
+      .order("created_at", { ascending: false }).limit(8);
+    if (error) return [];
+    return data || [];
+  }
+
   async supporterTags() {
     const { data, error } = await this.sb
       .from("supporter_tags").select("key, label, sort").order("sort");

@@ -1569,6 +1569,25 @@ function parkingCard(t) {
     list.append(el(`<p class="park-near__src">From OpenStreetMap, which anyone can add to. Plenty
       are on there without a name or a price, so this is what is there rather than what it costs.</p>`));
   }
+
+  /* What people who have actually been say, which beats both of the above. */
+  const said = el(`<div></div>`);
+  card.append(said);
+  db.parkingSummary().then((all) => {
+    const r = all?.[t.id];
+    if (!r || !r.reports) return;
+    const spot = (PARK_SPOTS.find(([k]) => k === r.usual_spot) || [, r.usual_spot])[1];
+    const cost = r.free_reports === r.reports ? "free"
+      : r.avg_cost != null ? `about ${money(Number(r.avg_cost).toFixed(2).replace(/\.00$/, ""))}`
+      : "cost not given";
+    said.append(el(`
+      <div class="park-said">
+        <b>${r.reports} supporter${r.reports === 1 ? "" : "s"} who went</b>
+        <span>Mostly ${esc(String(spot).toLowerCase())}, ${esc(cost)}${
+          r.avg_walk ? `, about ${r.avg_walk} minutes' walk` : ""}.</span>
+      </div>`));
+  }).catch(() => { /* nothing reported yet */ });
+
   return card;
 }
 
@@ -1791,7 +1810,7 @@ function viewClub({ id, from }) {
                   rel="noopener">${ICON.globe} Ground guide</a>` : ""}
         </div>
       </div>`));
-    const ask = groundPrompt(t, awayTrip);
+    const ask = groundPrompt(t, awayTrip) || parkingPrompt(t, awayTrip);
     if (ask) box.append(ask);
     box.append(groundNotes(t));
     return box;
@@ -2165,6 +2184,85 @@ function unknownGroundFields(clubSlug) {
   const reports = db.groundFor(clubSlug);
   return GROUND_FIELDS.filter(([key]) =>
     !reports.some((r) => r[key] && r[key] !== "unsure"));
+}
+
+const PARK_SPOTS = [
+  ["ground", "At the ground"],
+  ["street", "On the street nearby"],
+  ["town", "A car park in town"],
+  ["pub", "At a pub"],
+  ["other", "Somewhere else"],
+];
+const PARK_COSTS = [
+  [0, "Free"], [2, "About £2"], [3, "About £3"], [5, "About £5"], [null, "Cannot remember"],
+];
+
+/**
+ * Two taps from somebody who has just been.
+ *
+ * The map can say a car park exists. It cannot say that it fills by half two,
+ * that the stewards wave you round the back, or that the machine takes cards.
+ * The people who know that were there on Saturday, and the app already knows
+ * who they are because they marked themselves as having gone.
+ *
+ * Only asked where it is worth asking: an away ground whose club publishes
+ * nothing. Turned down once is an answer, and it is not raised again.
+ */
+function parkingPrompt(team, fixture) {
+  if (!db.currentUser() || !team) return null;
+  if (fixture && fixture.venue !== "Away") return null;
+  if (state.parking?.clubs?.[team.id]?.text) return null;      /* the club has said */
+  if (db.read(`parkAsked:${team.id}`, false)) return null;
+
+  const answers = {};
+  const box = el(`<div class="card ask"></div>`);
+
+  const done = (msg) => box.replaceChildren(el(`<p class="ask__done">${esc(msg)}</p>`));
+
+  const askCost = () => {
+    box.replaceChildren();
+    box.append(el(`
+      <div class="ask__head">
+        <b>And what did it cost?</b>
+        <span>Roughly is fine.</span>
+      </div>`));
+    const row = el(`<div class="chips__row"></div>`);
+    PARK_COSTS.forEach(([v, label]) => {
+      const b = el(`<button class="chip">${esc(label)}</button>`);
+      b.addEventListener("click", () => {
+        db.addParkingReport(team.id, {
+          spot: answers.spot, cost: v, walkMin: null, notes: null,
+          visitedOn: fixture?.date || null,
+        });
+        db.write(`parkAsked:${team.id}`, true);
+        done("Thanks. That is the bit nobody else can tell the next lot going.");
+      });
+      row.append(b);
+    });
+    box.append(row);
+  };
+
+  box.append(el(`
+    <div class="ask__head">
+      <b>Where did you park?</b>
+      <span>You were at ${esc(team.stadium)}, and ${esc(team.name)} do not publish anything about
+        parking. Two taps and the next supporter going knows.</span>
+    </div>`));
+  const spots = el(`<div class="chips__row"></div>`);
+  PARK_SPOTS.forEach(([v, label]) => {
+    const b = el(`<button class="chip">${esc(label)}</button>`);
+    b.addEventListener("click", () => { answers.spot = v; askCost(); });
+    spots.append(b);
+  });
+  box.append(spots);
+
+  const no = el(`<button class="link-btn" style="margin-top:10px">Not now</button>`);
+  no.addEventListener("click", () => {
+    db.write(`parkAsked:${team.id}`, true);
+    done("No bother. You will not be asked about this ground again.");
+  });
+  box.append(no);
+  return box;
 }
 
 /**
@@ -7065,6 +7163,12 @@ function viewThread({ id }) {
     if (t.fixture.venue === "Away" && t.fixture.team && db.didAttend(t.fixture.id)) {
       const ask = groundPrompt(t.fixture.team, t.fixture);
       if (ask) wrap.append(ask);
+      /* Only one prompt at a time. Two questionnaires under a match thread is
+         a form, not a conversation. */
+      if (!ask) {
+        const park = parkingPrompt(t.fixture.team, t.fixture);
+        if (park) wrap.append(park);
+      }
     }
   }
 

@@ -6088,3 +6088,15 @@ button,
 .park-lot__name { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .park-lot__meta { flex: 0 0 auto; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .park-near__src { margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: var(--text-3); }
+
+/* What supporters who actually went have said, which outranks both the club
+   and the map, so it is styled to look like it. */
+.park-said {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.park-said b { display: block; font-size: 12px; margin-bottom: 3px; }
+.park-said span { font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
