@@ -1,0 +1,386 @@
+{
+  "checked": "2026-08-23",
+  "attribution": "Pubs near each ground are from OpenStreetMap, © OpenStreetMap contributors, ODbL, with postcodes filled in from Nominatim where one was not mapped.",
+  "note": "Nearest first, with the walk from the ground in metres so you can judge it yourself. Private members' clubs are left out. Three grounds sit far enough out of town that the search had to be widened, which the distances show. This is what is near the ground, not a recommendation: whether away shirts get a welcome is the bit supporters have to tell each other.",
+  "clubs": {
+    "kettering-town": [
+      {
+        "name": "Olde Victoria",
+        "postcode": "NN15 5NJ",
+        "metres": 871
+      },
+      {
+        "name": "The Dukes Arms",
+        "postcode": "NN15 5RL",
+        "metres": 897
+      }
+    ],
+    "alvechurch": [
+      {
+        "name": "The Swan",
+        "postcode": "B48 7RP",
+        "metres": 739
+      }
+    ],
+    "anstey-nomads": [
+      {
+        "name": "The Kneaded Pint",
+        "postcode": "LE7 7EY",
+        "metres": 493
+      },
+      {
+        "name": "Coach and Horses",
+        "postcode": "LE7 7AT",
+        "metres": 558
+      },
+      {
+        "name": "Old Hare and Hounds",
+        "postcode": "LE7 7AA",
+        "metres": 722
+      }
+    ],
+    "banbury-united": [
+      {
+        "name": "The Bell",
+        "postcode": "OX16 4QJ",
+        "metres": 659
+      },
+      {
+        "name": "The Cherwell",
+        "postcode": "OX16 5BL",
+        "metres": 800
+      },
+      {
+        "name": "Danny's Sports Bar & Grill",
+        "postcode": "OX16 5UW",
+        "metres": 834
+      },
+      {
+        "name": "The Wheatsheaf",
+        "postcode": "OX16 5BH",
+        "metres": 857
+      }
+    ],
+    "bishops-stortford": [
+      {
+        "name": "The Three Willows",
+        "postcode": "CM23 5QR",
+        "metres": 852
+      }
+    ],
+    "bromsgrove-sporting": [
+      {
+        "name": "The Hop Pole",
+        "postcode": "B60 1AB",
+        "metres": 161
+      },
+      {
+        "name": "The Crabmill",
+        "postcode": "B61 0GN",
+        "metres": 322
+      },
+      {
+        "name": "The Queens Head",
+        "postcode": "B61 8AB",
+        "metres": 327
+      },
+      {
+        "name": "The Old Post Office",
+        "postcode": "B61 8AS",
+        "metres": 399
+      }
+    ],
+    "bury-town": [
+      {
+        "name": "The Fox",
+        "postcode": "IP33 1XX",
+        "metres": 288
+      },
+      {
+        "name": "The Old Cannon Brewery",
+        "postcode": "IP33 1JR",
+        "metres": 437
+      },
+      {
+        "name": "The One Bull",
+        "postcode": "IP33 1UZ",
+        "metres": 474
+      },
+      {
+        "name": "Sneaky Links",
+        "postcode": "IP33 1EB",
+        "metres": 524
+      }
+    ],
+    "halesowen-town": [
+      {
+        "name": "The Yeltz Bar",
+        "postcode": "B63 3ST",
+        "metres": 108
+      },
+      {
+        "name": "King Edward VII",
+        "postcode": "B63 3UP",
+        "metres": 113
+      },
+      {
+        "name": "Waggon and Horses",
+        "postcode": "B63 3TU",
+        "metres": 352
+      },
+      {
+        "name": "Hawne Tavern",
+        "postcode": "B63 3UG",
+        "metres": 364
+      }
+    ],
+    "hitchin-town": [
+      {
+        "name": "The Angel",
+        "postcode": "SG5 2NG",
+        "metres": 314
+      },
+      {
+        "name": "The Victoria",
+        "postcode": "SG5 1TJ",
+        "metres": 612
+      },
+      {
+        "name": "The Brickyard",
+        "postcode": "SG5 1JW",
+        "metres": 673
+      },
+      {
+        "name": "Craft & Cleaver",
+        "postcode": "SG5 1JQ",
+        "metres": 692
+      }
+    ],
+    "leamington": [
+      {
+        "name": "The Hodcarrier",
+        "postcode": "CV31 2LT",
+        "metres": 762
+      }
+    ],
+    "leighton-town": [
+      {
+        "name": "Leighton Town Football Club",
+        "postcode": "LU7 1RX",
+        "metres": 55
+      },
+      {
+        "name": "The Sun",
+        "postcode": "LU7 1RX",
+        "metres": 202
+      },
+      {
+        "name": "The Picture House",
+        "postcode": "LU7 1RT",
+        "metres": 336
+      },
+      {
+        "name": "The Top Bell",
+        "postcode": "LU7 1EY",
+        "metres": 379
+      }
+    ],
+    "leiston": [
+      {
+        "name": "The Volunteer",
+        "postcode": "IP16 4DZ",
+        "metres": 227
+      },
+      {
+        "name": "The Royal Standard",
+        "postcode": "IP16 4EW",
+        "metres": 467
+      },
+      {
+        "name": "The Engineer's Arms",
+        "postcode": "IP16 4ER",
+        "metres": 471
+      },
+      {
+        "name": "The Bar",
+        "postcode": "IP16 4EL",
+        "metres": 496
+      }
+    ],
+    "needham-market": [
+      {
+        "name": "The Rampant Horse",
+        "postcode": "IP6 8AU",
+        "metres": 82
+      },
+      {
+        "name": "The Swan",
+        "postcode": "IP6 8AL",
+        "metres": 121
+      },
+      {
+        "name": "Bugs Bar",
+        "postcode": "IP6 8DQ",
+        "metres": 371
+      },
+      {
+        "name": "The Lion",
+        "postcode": "IP6 8EH",
+        "metres": 506
+      }
+    ],
+    "racing-club-warwick": [
+      {
+        "name": "The Racehorse",
+        "postcode": "CV34 6AS",
+        "metres": 382
+      },
+      {
+        "name": "LEIF",
+        "postcode": "CV34 6AW",
+        "metres": 591
+      },
+      {
+        "name": "Foresters' Arms",
+        "postcode": "CV34 6HG",
+        "metres": 621
+      },
+      {
+        "name": "The Old Fourpenny Shop Hotel",
+        "postcode": "CV34 6HJ",
+        "metres": 646
+      }
+    ],
+    "redditch-united": [
+      {
+        "name": "The Queen's Head",
+        "postcode": "B97 4RL",
+        "metres": 233
+      },
+      {
+        "name": "The Railway Inn",
+        "postcode": "B97 6AE",
+        "metres": 532
+      },
+      {
+        "name": "The Golden Cross",
+        "postcode": "B97 4RA",
+        "metres": 554
+      },
+      {
+        "name": "The Royal Enfield",
+        "postcode": "B97 4QR",
+        "metres": 633
+      }
+    ],
+    "rushall-olympic": [
+      {
+        "name": "The Manor Arms",
+        "postcode": "WS4 1LG",
+        "metres": 133
+      },
+      {
+        "name": "The Boathouse",
+        "postcode": "WS4 1LG",
+        "metres": 200
+      }
+    ],
+    "stourbridge": [
+      {
+        "name": "The Moorings Tavern",
+        "postcode": "DY8 4LY",
+        "metres": 209
+      },
+      {
+        "name": "The River Rooms",
+        "postcode": "DY8 1JN",
+        "metres": 466
+      },
+      {
+        "name": "Cottage Inn",
+        "postcode": "DY8 1XS",
+        "metres": 494
+      },
+      {
+        "name": "Royal Exchange",
+        "postcode": "DY8 1XW",
+        "metres": 497
+      }
+    ],
+    "stratford-town": [
+      {
+        "name": "The Crown",
+        "postcode": "CV37 7AZ",
+        "metres": 650
+      }
+    ],
+    "worcester-city": [
+      {
+        "name": "The Raven",
+        "postcode": "WR3 7SR",
+        "metres": 496
+      },
+      {
+        "name": "The New Inn",
+        "postcode": "WR3 7DH",
+        "metres": 498
+      },
+      {
+        "name": "Mug House",
+        "postcode": "WR3 7RN",
+        "metres": 645
+      }
+    ],
+    "peterborough-sports": [
+      {
+        "name": "Blue Bell",
+        "postcode": "PE1 3SA",
+        "metres": 914
+      },
+      {
+        "name": "The Lime Tree",
+        "postcode": "PE4 6HA",
+        "metres": 1052
+      },
+      {
+        "name": "The Hand and Heart",
+        "postcode": "PE1 3BE",
+        "metres": 1108
+      },
+      {
+        "name": "Paul Pry",
+        "postcode": "PE4 6AH",
+        "metres": 1284
+      }
+    ],
+    "real-bedford": [
+      {
+        "name": "The Kings Arms",
+        "postcode": "MK44 3SP",
+        "metres": 1118
+      }
+    ],
+    "stamford": [
+      {
+        "name": "Tobie Norris",
+        "postcode": "PE9 2BE",
+        "metres": 1388
+      },
+      {
+        "name": "The Wine Bar",
+        "postcode": "PE9 2BE",
+        "metres": 1408
+      },
+      {
+        "name": "The Lord Burghley",
+        "postcode": "PE9 1PG",
+        "metres": 1412
+      },
+      {
+        "name": "Mama Liz's",
+        "postcode": "PE9 2YN",
+        "metres": 1421
+      }
+    ]
+  }
+}

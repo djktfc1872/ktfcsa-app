@@ -269,6 +269,7 @@ const state = {
   letter: null,       // the open letter to the club, from data/open-letter.json
   groundLinks: null,  // verified outbound ground guides, from data/ground-links.json
   parking: null,      // what each club says about parking, from data/parking.json
+  pubsNearby: null,   // pubs mapped near each ground, from data/pubs-nearby.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -1560,6 +1561,65 @@ function leaveBy(f) {
  * public car parks within three hundred metres, nearest seventy" is a great
  * deal more use on a wet Tuesday than nothing.
  */
+/**
+ * The pub card, built the same way as parking and for the same reason.
+ *
+ * The one pub per ground that shipped with the app came off a spreadsheet, and
+ * ten of the twenty one carried the ground's own postcode rather than the
+ * pub's, so tapping for directions took you back to the turnstiles. Where the
+ * postcode is the ground's it is not shown, because a wrong postcode is worse
+ * than none.
+ *
+ * Underneath, what is actually near the ground. Whether away shirts get a
+ * welcome is not in any map and only supporters can say, which is what the
+ * board below it and the prompt after a game are for.
+ */
+function pubCard(t) {
+  const near = state.pubsNearby?.clubs?.[t.id] || [];
+  if (!t.pub && !near.length) return null;   // an empty Pub card helps nobody
+  const card = el(`<div class="card"></div>`);
+  card.append(el(`<div class="info__label">${ICON.pint} Pub</div>`));
+
+  /* Where the spreadsheet and the map name the same pub, the map wins: Stamford
+     had the Tobie Norris under two different postcodes, and only the mapped one
+     is right. Naming it twice would be the smaller problem of the two. */
+  const key = (n) => String(n).toLowerCase().replace(/^the\s+/, "").replace(/[^a-z0-9]/g, "");
+  const alsoMapped = t.pub && near.some((p) => key(p.name) === key(t.pub));
+
+  /* The spreadsheet's suggestion, minus the postcodes it invented. */
+  const trustworthy = t.pubPostcode && t.pubPostcode !== t.postcode;
+  if (t.pub && !alsoMapped) {
+    card.append(el(`<div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>`));
+    if (trustworthy) {
+      card.append(el(`<a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank"
+        rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>`));
+    }
+  }
+
+  card.append(el(`<div class="hint">Worth a check before you set off. Away support is not always
+    welcome everywhere.</div>`));
+
+  if (near.length) {
+    card.append(el(`<div class="park-near"></div>`));
+    const list = $(".park-near", card);
+    list.append(el(`<div class="park-near__head">${near.length} pub${
+      near.length === 1 ? "" : "s"} near the ground</div>`));
+    near.forEach((p) => {
+      const meta = `${p.postcode ? `${esc(p.postcode)} &middot; ` : ""}${p.metres}m`;
+      const label = `<span class="park-lot__name">${esc(p.name)}</span>
+        <span class="park-lot__meta">${meta}</span>`;
+      list.append(el(p.postcode
+        ? `<a class="park-lot park-lot--link" href="${placeUrl(p.name, p.postcode)}"
+             target="_blank" rel="noopener">${label}</a>`
+        : `<div class="park-lot">${label}</div>`));
+    });
+    list.append(el(`<p class="park-near__src">From OpenStreetMap, nearest first, members' clubs
+      left out. What is near the ground rather than a recommendation: whether away shirts get a
+      welcome is the bit supporters have to tell each other.</p>`));
+  }
+  return card;
+}
+
 function parkingCard(t) {
   const park = state.parking?.clubs?.[t.id];
   const card = el(`<div class="card"></div>`);
@@ -1682,13 +1742,7 @@ function viewPlan({ id }) {
 
     const bits = el(`<div class="grid grid--2"></div>`);
     bits.append(parkingCard(t));
-    bits.append(el(`
-      <div class="card">
-        <div class="info__label">${ICON.pint} Pub</div>
-        <div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>
-        <a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank"
-           rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>
-      </div>`));
+    { const pc = pubCard(t); if (pc) bits.append(pc); }
     wrap.append(bits);
 
     const links = el(`<div class="btn-row" style="margin-top:12px"></div>`);
@@ -1914,13 +1968,7 @@ function viewClub({ id, from }) {
        the plan cannot drift apart on the same question. */
     const pair = el(`<div class="grid grid--2"></div>`);
     pair.append(parkingCard(t));
-    pair.append(el(`
-        <div class="card">
-          <div class="info__label">${ICON.pint} Nearby pub</div>
-          <div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>
-          <div class="hint">Worth a check before you set off. Away support is not always welcome everywhere.</div>
-          <a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>
-        </div>`));
+    { const pc = pubCard(t); if (pc) pair.append(pc); }
     box.append(pair);
     box.append(el(`<h2 class="section-title">Supporter recommendations</h2>`));
     box.append(pubBoard(t));
@@ -10657,6 +10705,12 @@ async function loadLeague(force = false) {
   }
 }
 
+async function loadPubsNearby() {
+  if (state.pubsNearby) return state.pubsNearby;
+  state.pubsNearby = await readJSON("data/pubs-nearby.json");
+  return state.pubsNearby;
+}
+
 async function loadParking() {
   if (state.parking) return state.parking;
   state.parking = await readJSON("data/parking.json");
@@ -10793,7 +10847,7 @@ async function boot() {
   /* Outbound ground links. Small, and only affects a couple of buttons, so it
      never holds up a paint: the page renders without them and gains them a
      moment later. */
-  Promise.all([loadGroundLinks(), loadParking()]).then(() => {
+  Promise.all([loadGroundLinks(), loadParking(), loadPubsNearby()]).then(() => {
     if (state.view === "club" || state.view === "clubs") render();
   }).catch(() => {});
 
