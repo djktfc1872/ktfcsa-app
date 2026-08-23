@@ -101,6 +101,19 @@ const placeUrl = (label, postcode) =>
 const mapUrl = (t) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clubQuery(t))}`;
 
+/* What the place actually looks like. Every ground here has coordinates, so
+   this works for all of them, and knowing which gate you are walking towards
+   in the dark is worth more to an away fan than another map pin. */
+const streetViewUrl = (t) =>
+  (t.lat && t.lng
+    ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${t.lat},${t.lng}`
+    : null);
+
+/* Only where a page was checked and actually resolves. Football Ground Guide
+   sends anything it does not hold to its own home page, so an unverified link
+   looks perfectly fine and takes somebody nowhere. */
+const groundGuideUrl = (t) => state.groundLinks?.guides?.[t.id] || null;
+
 const directionsUrl = (t) =>
   `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
     clubQuery(KTFC)
@@ -254,6 +267,7 @@ const state = {
   association: null,  // who we are and what we stand for, from data/association.json
   valueReview: null,  // season ticket and gate price review, from data/value-review.json
   letter: null,       // the open letter to the club, from data/open-letter.json
+  groundLinks: null,  // verified outbound ground guides, from data/ground-links.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -1575,6 +1589,12 @@ function viewClub({ id, from }) {
         <div class="map-actions">
           <a class="btn btn--map" href="${directionsUrl(t)}" target="_blank" rel="noopener">${ICON.route} Directions</a>
           <a class="btn btn--map btn--ghost" href="${mapUrl(t)}" target="_blank" rel="noopener">${ICON.pin} Open in Maps</a>
+          ${streetViewUrl(t)
+            ? `<a class="btn btn--map btn--ghost" href="${streetViewUrl(t)}" target="_blank"
+                  rel="noopener">${ICON.pin} Street View</a>` : ""}
+          ${groundGuideUrl(t)
+            ? `<a class="btn btn--map btn--ghost" href="${esc(groundGuideUrl(t))}" target="_blank"
+                  rel="noopener">${ICON.globe} Ground guide</a>` : ""}
         </div>
       </div>`));
     const ask = groundPrompt(t, awayTrip);
@@ -10234,6 +10254,12 @@ async function loadLeague(force = false) {
   }
 }
 
+async function loadGroundLinks() {
+  if (state.groundLinks) return state.groundLinks;
+  state.groundLinks = await readJSON("data/ground-links.json");
+  return state.groundLinks;
+}
+
 async function loadLetter() {
   if (state.letter) return state.letter;
   state.letter = await readJSON("data/open-letter.json");
@@ -10349,6 +10375,13 @@ async function boot() {
   /* Tags are cosmetic, so this never blocks a paint: the built-in list renders
      immediately and the database list replaces it a moment later. */
   loadTags().then(() => render()).catch(() => {});
+
+  /* Outbound ground links. Small, and only affects a couple of buttons, so it
+     never holds up a paint: the page renders without them and gains them a
+     moment later. */
+  loadGroundLinks().then(() => {
+    if (state.view === "club" || state.view === "clubs") render();
+  }).catch(() => {});
 
   $("#account-btn").addEventListener("click", () => go("account"));
   /* Covers the back and forward buttons as well as the crest link in the

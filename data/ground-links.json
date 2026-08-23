@@ -1,0 +1,14 @@
+{
+  "source": "Football Ground Guide",
+  "checked": "2026-08-23",
+  "note": "Only clubs with a page that actually resolves. The site sends anything it does not have to its own home page, so an unchecked link looks right and goes nowhere. Fourteen of the twenty two are not on there at all, which is the site being a league-football guide rather than anything wrong with the club.",
+  "guides": {
+    "banbury-united": "https://footballgroundguide.com/leagues/conference/conference-north/banbury-united-spencer-stadium.html",
+    "bishops-stortford": "https://footballgroundguide.com/leagues/bishops-stortford-woodside-park.html",
+    "leamington": "https://footballgroundguide.com/leagues/conference/conference-north/leamington-new-windmill-ground.html",
+    "peterborough-sports": "https://footballgroundguide.com/leagues/conference/conference-north/lincoln-road-peterborough-sports-fc",
+    "rushall-olympic": "https://footballgroundguide.com/leagues/conference/conference-north/dales-lane-rushall-olympic",
+    "worcester-city": "https://footballgroundguide.com/leagues/others/worcester-city.html",
+    "kettering-town": "https://footballgroundguide.com/leagues/conference/conference-north/kettering-town.html"
+  }
+}
