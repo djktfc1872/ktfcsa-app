@@ -5958,3 +5958,9 @@ button,
 .duel-feedback p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
 .duel-feedback__ok { color: #6aa84f; }
 .duel-feedback__no { color: var(--red-400); }
+
+/* Up or down on last season. Green and red both carry an arrow as well as a
+   colour, so the direction survives colour blindness and a grey printout. */
+.gate-diff { font-weight: 700; }
+.gate-diff--up { color: #6aa84f; }
+.gate-diff--down { color: var(--accent); }

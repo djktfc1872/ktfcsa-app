@@ -3300,17 +3300,86 @@ function viewPlayers() {
       wrap.append(card);
     }
 
-    if (stats.gates.length) {
-      const avg = Math.round(stats.gates.reduce((n, g) => n + g, 0) / stats.gates.length);
+    if (stats.gates.length || stats.awayGates.length) {
+      const mean = (a) => Math.round(a.reduce((n, g) => n + g, 0) / a.length);
+      const n = (v) => v.toLocaleString("en-GB");
       wrap.append(el(`<h2 class="section-title">At the gate</h2>`));
-      wrap.append(el(`
-        <div class="card">
-          <div class="info-grid info-grid--4">
-            <div class="info"><div class="info__label">Home games</div><div class="info__value">${stats.gates.length}</div></div>
-            <div class="info"><div class="info__label">Average</div><div class="info__value" style="color:var(--accent)">${avg.toLocaleString("en-GB")}</div></div>
-            <div class="info"><div class="info__label">Best</div><div class="info__value">${Math.max(...stats.gates).toLocaleString("en-GB")}</div></div>
-          </div>
-        </div>`));
+      const card = el(`<div class="card"></div>`);
+
+      if (stats.gates.length) {
+        card.append(el(`<div class="events__head">At Latimer Park</div>`));
+        card.append(el(`
+          <div class="info-grid info-grid--3">
+            <div class="info"><div class="info__label">Games</div><div class="info__value">${stats.gates.length}</div></div>
+            <div class="info"><div class="info__label">Average</div><div class="info__value" style="color:var(--accent)">${n(mean(stats.gates))}</div></div>
+            <div class="info"><div class="info__label">Best</div><div class="info__value">${n(Math.max(...stats.gates))}</div></div>
+          </div>`));
+      }
+
+      /* The other half of the season. These were read off the feed and thrown
+         away, which is a strange thing to do to the crowd you travelled with. */
+      if (stats.awayGates.length) {
+        card.append(el(`<div class="events__head" style="margin-top:14px">On the road</div>`));
+        card.append(el(`
+          <div class="info-grid info-grid--3">
+            <div class="info"><div class="info__label">Games</div><div class="info__value">${stats.awayGates.length}</div></div>
+            <div class="info"><div class="info__label">Average</div><div class="info__value" style="color:var(--accent)">${n(mean(stats.awayGates))}</div></div>
+            <div class="info"><div class="info__label">Biggest</div><div class="info__value">${n(Math.max(...stats.awayGates))}</div></div>
+          </div>`));
+      }
+
+      if (stats.gates.length && stats.awayGates.length) {
+        const all = [...stats.gates, ...stats.awayGates];
+        card.append(el(`<p class="hint">Across all ${all.length} games Kettering have played in
+          front of ${n(all.reduce((a, b) => a + b, 0))} people, an average of ${n(mean(all))}.</p>`));
+      }
+
+      /* Against last season, once the archive is in. Appended rather than
+         rebuilt, so the card is useful before it arrives and better after. */
+      const last = el(`<div></div>`);
+      card.append(last);
+      ensureArchive().then(() => {
+        const prev = lastSeasonGates();
+        if (!prev) return;
+        const nowHome = stats.gates.length ? mean(stats.gates) : null;
+        const nowAway = stats.awayGates.length ? mean(stats.awayGates) : null;
+        const thisComp = state.league?.competition || null;
+        /* The two feeds name the same division differently: the archive says
+           "Premier Central" and the table says "Southern League Premier
+           Central". Compared raw, that reads as a promotion every season. */
+        const sameLevel = (a, b) => {
+          const tidy = (x) => String(x || "")
+            .toLowerCase()
+            .replace(/southern league|northern premier|isthmian|national league/g, "")
+            .replace(/division|league/g, "")
+            .replace(/[^a-z]/g, "");
+          return tidy(a) === tidy(b);
+        };
+        const moved = prev.comp && thisComp && !sameLevel(prev.comp, thisComp);
+
+        last.append(el(`<div class="events__head" style="margin-top:14px">Against ${esc(prev.season)}</div>`));
+        const grid = el(`<div class="info-grid info-grid--3"></div>`);
+        if (prev.home) {
+          grid.append(el(`
+            <div class="info"><div class="info__label">Home then</div>
+              <div class="info__value">${n(prev.home)}</div></div>`));
+        }
+        if (prev.away) {
+          grid.append(el(`
+            <div class="info"><div class="info__label">Away then</div>
+              <div class="info__value">${n(prev.away)}</div></div>`));
+        }
+        last.append(grid);
+        last.append(el(`<p class="hint">Home ${gateChange(nowHome, prev.home)
+          || "has nothing to compare yet"}. Away ${gateChange(nowAway, prev.away)
+          || "has nothing to compare yet"}. Based on ${prev.homeGames} home and
+          ${prev.awayGames} away games in ${esc(prev.season)}.${moved
+            ? ` Worth noting the club was in ${esc(prev.comp)} then and ${esc(thisComp)} now, so
+                the two are not quite like for like.`
+            : ""}</p>`));
+      }).catch(() => { /* this season stands on its own */ });
+
+      wrap.append(card);
     }
   }
 
@@ -6449,12 +6518,60 @@ function matchEvents(fixture) {
   return box;
 }
 
+/**
+ * Last season's gates, for something to measure this season against.
+ *
+ * A number on its own says nothing: 978 at home is good or bad only next to
+ * what came before. Taken from the archive, which holds every season back to
+ * 2018/19 with the attendance and the competition for each match.
+ *
+ * Seasons with a handful of matches are skipped. 2019/20 has one friendly in
+ * it and 2020/21 a single behind-closed-doors cup tie, and averaging those
+ * against a full season would be worse than saying nothing.
+ */
+function lastSeasonGates() {
+  const a = state.archive;
+  if (!a?.matches?.length) return null;
+
+  const by = new Map();
+  a.matches.forEach((m) => {
+    if (!m.season) return;
+    if (!by.has(m.season)) by.set(m.season, { home: [], away: [], comps: new Map() });
+    const r = by.get(m.season);
+    if (m.competition) r.comps.set(m.competition, (r.comps.get(m.competition) || 0) + 1);
+    if (m.att) (m.venue === "Home" ? r.home : r.away).push(m.att);
+  });
+
+  const full = [...by.entries()]
+    .filter(([, r]) => r.home.length >= 8 || r.away.length >= 8)
+    .sort((x, y) => y[0].localeCompare(x[0]));
+  if (!full.length) return null;
+
+  const [season, r] = full[0];
+  const mean = (list) => (list.length
+    ? Math.round(list.reduce((n, g) => n + g, 0) / list.length) : null);
+  const comp = [...r.comps.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || null;
+  return { season, comp, home: mean(r.home), away: mean(r.away),
+           homeGames: r.home.length, awayGames: r.away.length };
+}
+
+/** "up 6%" or "down 12%", or nothing when there is nothing to compare. */
+function gateChange(now, then) {
+  if (!now || !then) return "";
+  const pct = Math.round(((now - then) / then) * 100);
+  if (pct === 0) return `<span class="gate-diff">level with last season</span>`;
+  const up = pct > 0;
+  return `<span class="gate-diff gate-diff--${up ? "up" : "down"}">${
+    up ? "\u25B2" : "\u25BC"} ${Math.abs(pct)}% on last season</span>`;
+}
+
 /** Goals, cards and gates totted up across every played game so far. */
 function seasonStats() {
   const played = fixtures().filter((f) => f.status === "played" && f.events);
   const scorers = new Map();
   const discipline = new Map();
-  const gates = [];
+  const gates = [];      /* at Latimer Park */
+  const awayGates = [];  /* what we walked into on the road */
 
   played.forEach((f) => {
     (f.events.goals || []).filter((g) => g.ours).forEach((g) => {
@@ -6466,7 +6583,10 @@ function seasonStats() {
       else d.yellows += 1;
       discipline.set(c.name, d);
     });
-    if (f.venue === "Home" && f.attendance) gates.push(f.attendance);
+    /* Away gates were being read off the feed and then dropped on the floor.
+       Following Kettering away is half the season, and the crowd you stood in
+       is as much a part of it as the one at home. */
+    if (f.attendance) (f.venue === "Home" ? gates : awayGates).push(f.attendance);
   });
 
   return {
@@ -6476,6 +6596,7 @@ function seasonStats() {
     discipline: [...discipline.entries()].map(([name, d]) => ({ name, ...d }))
       .sort((a, b) => b.reds - a.reds || b.yellows - a.yellows),
     gates,
+    awayGates,
   };
 }
 
