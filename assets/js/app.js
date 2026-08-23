@@ -1576,7 +1576,9 @@ function leaveBy(f) {
  */
 function pubCard(t) {
   const near = state.pubsNearby?.clubs?.[t.id] || [];
-  if (!t.pub && !near.length) return null;   // an empty Pub card helps nobody
+  const anyName = state.pubsNearby?.verified?.[t.id]?.name
+    || (t.pubPostcode && t.pubPostcode === t.postcode ? null : t.pub);
+  if (!anyName && !near.length) return null;   // an empty Pub card helps nobody
   const card = el(`<div class="card"></div>`);
   card.append(el(`<div class="info__label">${ICON.pint} Pub</div>`));
 
@@ -1584,15 +1586,25 @@ function pubCard(t) {
      had the Tobie Norris under two different postcodes, and only the mapped one
      is right. Naming it twice would be the smaller problem of the two. */
   const key = (n) => String(n).toLowerCase().replace(/^the\s+/, "").replace(/[^a-z0-9]/g, "");
-  const alsoMapped = t.pub && near.some((p) => key(p.name) === key(t.pub));
+  const shown = state.pubsNearby?.verified?.[t.id]?.name
+    || (t.pubPostcode && t.pubPostcode === t.postcode ? null : t.pub);
+  const alsoMapped = shown && near.some((p) => key(p.name) === key(shown));
 
-  /* The spreadsheet's suggestion, minus the postcodes it invented. */
-  const trustworthy = t.pubPostcode && t.pubPostcode !== t.postcode;
-  if (t.pub && !alsoMapped) {
-    card.append(el(`<div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>`));
-    if (trustworthy) {
-      card.append(el(`<a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank"
-        rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>`));
+  /* Ten grounds shipped with the ground's own postcode against the pub. Four of
+     those pubs were confirmed by name on the map and are shown with the real
+     one; the other six could not be found at all, and one of them was West
+     Bromwich Albion's ground, so the name goes too. A pub nobody can find is
+     not a recommendation. */
+  const fabricated = t.pubPostcode && t.pubPostcode === t.postcode;
+  const fixed = state.pubsNearby?.verified?.[t.id];
+  const name = fabricated ? fixed?.name : t.pub;
+  const code = fabricated ? fixed?.postcode : t.pubPostcode;
+
+  if (name && !alsoMapped) {
+    card.append(el(`<div class="info__value" style="margin-bottom:2px">${esc(name)}</div>`));
+    if (code) {
+      card.append(el(`<a class="map-link" href="${placeUrl(name, code)}" target="_blank"
+        rel="noopener">${ICON.pin} ${esc(code)}</a>`));
     }
   }
 

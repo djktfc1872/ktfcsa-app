@@ -382,5 +382,28 @@
         "metres": 1421
       }
     ]
-  }
+  },
+  "verified": {
+    "anstey-nomads": {
+      "name": "Coach and Horses",
+      "postcode": "LE7 7AT",
+      "metres": 558
+    },
+    "bromsgrove-sporting": {
+      "name": "Golden Cross Hotel",
+      "postcode": "B61 8HH",
+      "metres": 731
+    },
+    "leighton-town": {
+      "name": "The Black Lion",
+      "postcode": "LU7 1EA",
+      "metres": 437
+    },
+    "needham-market": {
+      "name": "The Swan",
+      "postcode": "IP6 8AL",
+      "metres": 121
+    }
+  },
+  "verifiedNote": "Four of the ten pubs that shipped with a wrong postcode were confirmed by name against OpenStreetMap and given their real one. The other six could not be confirmed at all: Halesowen's was The Hawthorns, which is West Bromwich Albion's ground, and The Golden Cross was given to both Bromsgrove and Redditch. Those six names are no longer shown, because a pub nobody can find is not a recommendation. The mapped list below each one covers them."
 }
