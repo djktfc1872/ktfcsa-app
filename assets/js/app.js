@@ -398,6 +398,22 @@ function readHash() {
    so the badge simply never renders. Refreshed on nav paint rather than polled. */
 let pendingWaiting = 0;
 const pendingCount = () => (db.isModerator() ? pendingWaiting : 0);
+
+/* Replies to things you wrote that you have not read.
+ *
+ * The wall had no way of telling anybody they had been answered: you posted,
+ * and unless you happened to scroll back to the same thread days later you
+ * never found out. Refreshed when the nav paints and whenever anybody posts,
+ * since the app is already listening for that. */
+let replyWaiting = 0;
+const replyCount = () => (db.currentUser() ? replyWaiting : 0);
+function refreshReplies() {
+  if (!db.currentUser()) { replyWaiting = 0; return; }
+  db.unseenReplies().then((rows) => {
+    const n = rows.length;
+    if (n !== replyWaiting) { replyWaiting = n; renderNav(); }
+  }).catch(() => { /* not migrated yet */ });
+}
 function refreshPending() {
   if (!db.isModerator()) { pendingWaiting = 0; return; }
   db.pendingActions().then((p) => {
@@ -419,7 +435,8 @@ function renderNav() {
     .map(([key, r]) => {
       const heading = r.group && r.group !== lastGroup ? `<div class="sidebar__group">${r.group}</div>` : "";
       lastGroup = r.group;
-      const waiting = key === "admin" ? pendingCount() : 0;
+      const waiting = key === "admin" ? pendingCount()
+        : key === "wall" ? replyCount() : 0;
       const urgent = key === "consult" && consultState() === "open";
       return `${heading}
       <button class="sidebar__link ${state.view === key ? "is-active" : ""}${urgent ? " is-urgent" : ""}" data-nav="${key}">
@@ -437,7 +454,9 @@ function renderNav() {
       .map(([key, r]) => `
         <button class="${state.view === key ? "is-active" : ""}" data-nav="${key}"
                 aria-current="${state.view === key ? "page" : "false"}">
-          <span class="ic" aria-hidden="true">${r.icon}</span>${r.short || r.label}
+          <span class="ic" aria-hidden="true">${r.icon}</span>${r.short || r.label}${
+            key === "wall" && replyCount()
+              ? `<span class="nav-badge">${replyCount()}</span>` : ""}
         </button>`)
       .join("") +
     `<button class="${onMore ? "is-active" : ""}" data-nav="more"
@@ -469,6 +488,7 @@ function viewMore() {
           key === "consult" && consultState() === "open"
             ? `<span class="club-row__sub">Closes ${CLOSES_WORDS}</span>` : ""}</div></div>
         ${key === "admin" && pendingCount() ? `<span class="nav-badge">${pendingCount()}</span>` : ""}
+        ${key === "wall" && replyCount() ? `<span class="nav-badge">${replyCount()}</span>` : ""}
         <span style="color:var(--text-3)">›</span>
       </button>`));
   });
@@ -489,6 +509,7 @@ function countView() {
 function render({ toTop = false } = {}) {
   renderNav();
   refreshPending();
+  refreshReplies();
   const main = $("#main");
   main.innerHTML = "";
   const node = ROUTES[state.view].render(state.params);
@@ -6959,6 +6980,51 @@ function composer(thread = null, { replyTo = null, onDone = null } = {}) {
 
 /* ================================================================ fan wall */
 
+/**
+ * What you have missed, at the top of the wall.
+ *
+ * A badge tells you there is something; this tells you what, and takes you to
+ * it. Marked as seen once it has been shown, so opening the wall is what
+ * clears it rather than some separate act of dismissal.
+ */
+function replyInbox() {
+  const box = el(`<div></div>`);
+  if (!db.currentUser()) return box;
+
+  db.unseenReplies().then((rows) => {
+    if (!rows.length) return;
+    const card = el(`
+      <div class="card inbox">
+        <div class="inbox__head">${rows.length} ${
+          rows.length === 1 ? "reply" : "replies"} while you were away</div>
+      </div>`);
+
+    rows.slice(0, 6).forEach((r) => {
+      const row = el(`
+        <button class="inbox__row"${r.thread ? ` data-thread="${esc(r.thread)}"` : ""}>
+          <span class="inbox__who">${esc(r.author_name)}</span>
+          <span class="inbox__text">${esc(r.text)}</span>
+          <span class="inbox__on">on your post: ${esc(String(r.parent_text).slice(0, 60))}${
+            String(r.parent_text).length > 60 ? "\u2026" : ""}</span>
+        </button>`);
+      if (r.thread) {
+        row.addEventListener("click", () => go("thread", { id: r.thread }));
+      }
+      card.append(row);
+    });
+    if (rows.length > 6) {
+      card.append(el(`<p class="hint">And ${rows.length - 6} more further down.</p>`));
+    }
+    box.append(card);
+
+    /* Cleared on sight. Coming to the wall is the act of reading them, and a
+       separate "mark as read" would be one more thing to tap for no gain. */
+    db.markWallSeen().then(() => { replyWaiting = 0; renderNav(); });
+  }).catch(() => { /* the wall is fine without it */ });
+
+  return box;
+}
+
 function viewWall() {
   /* Two different rights wearing one name. Creating and approving polls is
      structural and stays with admins; hiding a post is moderation. */
@@ -6973,6 +7039,9 @@ function viewWall() {
 
   const onAir = liveBanner();
   if (onAir) wrap.append(onAir);
+
+  /* Anything answered since you last looked, before anything else. */
+  wrap.append(replyInbox());
 
   /* Three different things used to run together down one column with nothing
      but a heading between them, so the wall itself read as an afterthought

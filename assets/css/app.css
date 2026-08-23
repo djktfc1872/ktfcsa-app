@@ -6016,3 +6016,28 @@ button,
 .gate-diff { font-weight: 700; }
 .gate-diff--up { color: #6aa84f; }
 .gate-diff--down { color: var(--accent); }
+
+/* ------------------------------------------------------------ reply inbox */
+
+.inbox { border-left: 3px solid var(--accent); }
+.inbox__head {
+  margin-bottom: 6px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--accent);
+}
+.inbox__row {
+  display: flex; flex-direction: column; gap: 3px;
+  width: 100%; padding: 9px 6px; margin: 0 -6px;
+  border: 0; border-radius: var(--r-sm);
+  background: none; font: inherit; color: inherit;
+  text-align: left; cursor: pointer;
+}
+.inbox__row:hover { background: var(--surface-2); }
+.inbox__row + .inbox__row { border-top: 1px solid var(--line-soft); border-radius: 0; }
+.inbox__who { font-size: 13px; font-weight: 700; }
+.inbox__text {
+  font-size: 13.5px; line-height: 1.5; color: var(--text-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.inbox__on { font-size: 11.5px; color: var(--text-3); }

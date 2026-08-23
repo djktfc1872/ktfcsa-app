@@ -500,6 +500,19 @@ class Backend {
     return data || [];
   }
 
+  /* Replies to this supporter's posts that they have not seen. The view does
+     the filtering from auth.uid(), so there is nothing to pass and nothing to
+     ask about anybody else. */
+  async unseenReplies() {
+    const { data, error } = await this.sb.from("wall_replies_to_me").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
+  async markWallSeen() {
+    try { await this.sb.rpc("mark_wall_seen"); } catch { /* not worth an error */ }
+  }
+
   async supporterTags() {
     const { data, error } = await this.sb
       .from("supporter_tags").select("key, label, sort").order("sort");

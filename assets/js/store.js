@@ -133,6 +133,11 @@ export const recordDuel = (streak) =>
 export const duelLeague = () =>
   (backend?.duelLeague ? backend.duelLeague() : Promise.resolve([]));
 
+export const unseenReplies = () =>
+  (backend?.unseenReplies ? backend.unseenReplies() : Promise.resolve([]));
+export const markWallSeen = () =>
+  (backend?.markWallSeen ? backend.markWallSeen() : Promise.resolve());
+
 export const supporterTags = () =>
   (backend?.supporterTags ? backend.supporterTags() : Promise.resolve(null));
 export const upsertTag = (key, label, sort) => backend.upsertTag(key, label, sort);

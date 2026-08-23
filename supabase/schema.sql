@@ -2040,3 +2040,62 @@ limit 50;
 
 alter view duel_league set (security_invoker = false);
 grant select on duel_league to anon, authenticated;
+
+-- ===========================================================================
+-- "Somebody replied to you"
+-- ===========================================================================
+--
+-- The fan wall had no way of telling anybody they had been answered. You
+-- posted, and unless you happened to scroll back to the same thread you never
+-- found out. A conversation nobody knows is happening is not a conversation.
+--
+-- One timestamp per supporter rather than a row per notification: the question
+-- is only ever "anything since I last looked", and storing a read flag for
+-- every reply to every post would be a table that grows forever to answer it.
+
+alter table profiles add column if not exists wall_seen_at timestamptz;
+
+comment on column profiles.wall_seen_at is
+  'When this supporter last opened the fan wall. Replies after it are unread.';
+
+create or replace function mark_wall_seen()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then return; end if;
+  update profiles set wall_seen_at = now() where id = auth.uid();
+end;
+$$;
+
+revoke all on function mark_wall_seen() from public;
+grant execute on function mark_wall_seen() to authenticated;
+
+-- Replies to things you wrote, by somebody else, that you have not seen.
+-- auth.uid() does the filtering, so this returns one supporter's own business
+-- and nobody can ask it about anybody else.
+drop view if exists wall_replies_to_me cascade;
+create view wall_replies_to_me as
+select
+  r.id,
+  r.reply_to,
+  r.author_name,
+  r.text,
+  r.created_at,
+  parent.thread            as thread,
+  parent.text              as parent_text
+from wall_posts r
+join wall_posts parent on parent.id = r.reply_to
+where parent.profile_id = auth.uid()
+  and r.profile_id is distinct from auth.uid()   -- your own replies are not news
+  and r.hidden = false
+  and (
+    (select wall_seen_at from profiles where id = auth.uid()) is null
+    or r.created_at > (select wall_seen_at from profiles where id = auth.uid())
+  )
+order by r.created_at desc
+limit 50;
+
+grant select on wall_replies_to_me to authenticated;
