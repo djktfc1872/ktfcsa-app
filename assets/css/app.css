@@ -12,9 +12,21 @@
   --gold-500: #c09c54;
   --gold-600: #a3803f;
 
+  /* Poppy red, light enough to read. The club red (#9c1824) scores 2.45
+     against the background and #c8323f only 3.80, so neither can carry text:
+     body copy needs 4.5. This one clears every surface in the app at 4.85 or
+     better, and dark text on top of it clears 5.10, so it works as a fill too. */
+  --red-300: #e05a68;
   --red-400: #c8323f;
   --red-500: #9c1824;
   --red-600: #7d111b;
+
+  /* What the app leans on. Named for the job rather than the colour, so the
+     next change is one line instead of a hundred and twelve. */
+  --accent: var(--red-300);        /* text, links, numbers that matter */
+  --accent-line: var(--red-400);   /* borders and rules, never text */
+  --accent-deep: var(--red-500);   /* solid fills carrying white text */
+  --accent-soft: #f0808c;          /* hover text, a step brighter than accent */
 
   --ink-950: #08080a;
   --ink-900: #0d0d10;
@@ -94,7 +106,7 @@ img {
 }
 
 a {
-  color: var(--gold-400);
+  color: var(--accent);
 }
 
 /* ------------------------------------------------------------------ shell */
@@ -160,7 +172,7 @@ a {
 
 .brand__sub {
   font-size: 9.5px;
-  color: var(--gold-500);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 1.3px;
   font-weight: 700;
@@ -232,8 +244,8 @@ a {
 
   .sidebar__link.is-active {
     background: linear-gradient(90deg, rgba(192, 156, 84, 0.16), transparent);
-    color: var(--gold-300);
-    box-shadow: inset 2px 0 0 var(--gold-500);
+    color: var(--accent-soft);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   .sidebar__link .ic {
@@ -385,7 +397,7 @@ a {
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: 750;
-  color: var(--gold-300);
+  color: var(--accent-soft);
   margin-bottom: 12px;
 }
 
@@ -453,7 +465,7 @@ a {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--gold-300);
+  color: var(--accent-soft);
   font-weight: 700;
 }
 
@@ -497,7 +509,7 @@ a {
 }
 
 .fixture:hover {
-  border-color: var(--gold-600);
+  border-color: var(--accent-line);
 }
 
 .fixture:active {
@@ -509,7 +521,7 @@ a {
 }
 
 .fixture--home {
-  border-left-color: var(--gold-500);
+  border-left-color: var(--accent);
 }
 
 .fixture--next {
@@ -620,7 +632,7 @@ a {
 
 .pill--home {
   background: rgba(192, 156, 84, 0.16);
-  color: var(--gold-300);
+  color: var(--accent-soft);
   border: 1px solid rgba(192, 156, 84, 0.34);
 }
 
@@ -668,7 +680,7 @@ a {
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  background: var(--gold-500);
+  background: var(--accent);
   color: #17140c;
   transition: filter 0.15s, background 0.15s;
   text-decoration: none;
@@ -761,7 +773,7 @@ a.btn:hover {
 }
 
 .segmented button.is-active {
-  background: var(--gold-500);
+  background: var(--accent);
   color: #17140c;
 }
 
@@ -801,7 +813,7 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--gold-500);
+  border-color: var(--accent);
   box-shadow: var(--ring);
 }
 
@@ -909,7 +921,7 @@ table.league tbody tr.is-ktfc {
 }
 
 table.league tbody tr.is-ktfc td {
-  color: var(--gold-300);
+  color: var(--accent-soft);
   font-weight: 750;
 }
 
@@ -957,7 +969,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .club-row:hover {
-  border-color: var(--gold-600);
+  border-color: var(--accent-line);
 }
 
 .club-row__name {
@@ -1034,7 +1046,7 @@ table.league tbody tr.is-ktfc td {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--gold-400);
+  color: var(--accent);
   font-size: 11.5px;
   font-weight: 700;
   text-decoration: none;
@@ -1129,7 +1141,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .post--request {
-  border-left: 3px solid var(--gold-500);
+  border-left: 3px solid var(--accent);
 }
 
 .post__head {
@@ -1197,7 +1209,7 @@ table.league tbody tr.is-ktfc td {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold-500), var(--red-500));
+  background: linear-gradient(135deg, var(--accent), var(--red-500));
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -1243,7 +1255,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .poll__opt:hover:not(:disabled) {
-  border-color: var(--gold-600);
+  border-color: var(--accent-line);
 }
 
 .poll__opt:disabled {
@@ -1270,7 +1282,7 @@ table.league tbody tr.is-ktfc td {
 
 .poll__pct {
   font-variant-numeric: tabular-nums;
-  color: var(--gold-300);
+  color: var(--accent-soft);
   font-weight: 750;
 }
 
@@ -1348,7 +1360,7 @@ table.league tbody tr.is-ktfc td {
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: var(--gold-500);
+  background: var(--accent);
   color: #17140c;
   font-size: 15px;
   cursor: pointer;
@@ -1493,7 +1505,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .tabbar button.is-active {
-  color: var(--gold-400);
+  color: var(--accent);
 }
 
 /* The sidebar takes over from the tab bar on wider screens. */
@@ -1699,7 +1711,7 @@ table.league tbody tr.is-ktfc td {
   margin-top: 9px;
 }
 
-.pts-win { color: var(--gold-400); }
+.pts-win { color: var(--accent); }
 .pts-none { color: var(--text-3); }
 
 /* ------------------------------------------------------------- attendance */
@@ -1720,10 +1732,10 @@ table.league tbody tr.is-ktfc td {
   color: inherit;
 }
 
-.attend:hover { border-color: var(--gold-600); }
+.attend:hover { border-color: var(--accent-line); }
 
 .attend.is-on {
-  border-color: var(--gold-600);
+  border-color: var(--accent-line);
   background: linear-gradient(90deg, rgba(192, 156, 84, 0.1), transparent);
 }
 
@@ -1742,8 +1754,8 @@ table.league tbody tr.is-ktfc td {
 }
 
 .attend.is-on .attend__tick {
-  background: var(--gold-500);
-  border-color: var(--gold-500);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .attend__body { flex: 1; min-width: 0; }
@@ -1763,7 +1775,7 @@ table.league tbody tr.is-ktfc td {
 .badge--gold {
   background: rgba(192, 156, 84, 0.14);
   border-color: rgba(192, 156, 84, 0.36);
-  color: var(--gold-300);
+  color: var(--accent-soft);
 }
 
 /* ----------------------------------------------------------------- footer */
@@ -1772,7 +1784,7 @@ table.league tbody tr.is-ktfc td {
 
 .small-link {
   font-size: 12px;
-  color: var(--gold-500);
+  color: var(--accent);
   cursor: pointer;
   text-align: center;
   font-weight: 650;
@@ -1915,7 +1927,7 @@ table.league tbody tr.is-ktfc td {
   font-weight: 780;
   letter-spacing: 1.6px;
   text-transform: uppercase;
-  color: var(--gold-500);
+  color: var(--accent);
 }
 
 .predict__teams {
@@ -2121,7 +2133,7 @@ table.league tbody tr.is-ktfc td {
 
 .thread__tag--pre {
   background: rgba(192, 156, 84, 0.16);
-  color: var(--gold-300);
+  color: var(--accent-soft);
   border: 1px solid rgba(192, 156, 84, 0.34);
 }
 
@@ -2178,7 +2190,7 @@ table.league tbody tr.is-ktfc td {
 
 .fixture--home {
   border-left-width: 4px;
-  border-left-color: var(--gold-600);
+  border-left-color: var(--accent-line);
   background: var(--surface);
 }
 
@@ -2200,7 +2212,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .fixture:hover .fixture__chev {
-  color: var(--gold-400);
+  color: var(--accent);
 }
 
 /* The spreadsheet's colourful one liner, set apart from the fuller history. */
@@ -2421,7 +2433,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .leaflet-popup-content a {
-  color: var(--gold-400);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -2470,7 +2482,7 @@ table.league tbody tr.is-ktfc td {
 }
 
 .map-legend .dot-home {
-  background: var(--gold-500);
+  background: var(--accent);
 }
 
 .map-legend .dot-away {
@@ -2546,14 +2558,14 @@ table.league tbody tr.is-ktfc td {
 
 .site-footer__mail {
   font-size: 12px;
-  color: var(--gold-500);
+  color: var(--accent);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color 0.15s, color 0.15s;
 }
 
 .site-footer__mail:hover {
-  color: var(--gold-400);
+  color: var(--accent);
   border-bottom-color: currentColor;
 }
 
@@ -2808,7 +2820,7 @@ table.league tbody tr.is-ktfc td {
         never replaced anywhere else, so a keyboard user saw nothing. ---- */
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--gold-400);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: var(--r-xs);
 }
@@ -2819,7 +2831,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: none;
-  border-color: var(--gold-500);
+  border-color: var(--accent);
   box-shadow: var(--ring);
 }
 
@@ -2884,7 +2896,7 @@ textarea:focus-visible {
   .fixture:hover,
   .club-row:hover,
   .attend:hover {
-    border-color: var(--gold-600);
+    border-color: var(--accent-line);
     box-shadow: var(--shadow-1);
   }
 
@@ -3197,7 +3209,7 @@ button,
 }
 
 .poll__opt.is-mine {
-  border-color: var(--gold-600);
+  border-color: var(--accent-line);
 }
 
 /* Everything above stays still for anyone who asked for less motion. */
@@ -3311,7 +3323,7 @@ button,
 }
 .card__head p { margin: 3px 0 0; font-size: 13px; color: var(--text-3); }
 .card__score {
-  font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold-400);
+  font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent);
 }
 
 .note {
@@ -3331,7 +3343,7 @@ button,
 .rating__name { font-weight: 550; font-size: 15px; color: var(--text); }
 .rating__cap {
   display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: var(--r-pill);
-  background: var(--gold-600); color: var(--ink-950); font-size: 10px; font-weight: 700;
+  background: var(--accent-line); color: var(--ink-950); font-size: 10px; font-weight: 700;
 }
 .rating__sub {
   padding: 2px 7px; border-radius: var(--r-pill); background: var(--surface-3);
@@ -3342,7 +3354,7 @@ button,
   font-size: 11px; color: var(--text-3);
 }
 .rating__avg b {
-  font-size: 18px; font-weight: 700; color: var(--gold-400);
+  font-size: 18px; font-weight: 700; color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .rating__avg--none { font-style: italic; }
@@ -3359,12 +3371,12 @@ button,
 .scale__btn:hover { background: var(--surface-3); color: var(--text); }
 .scale__btn:active { transform: scale(0.94); }
 .scale__btn.is-mine {
-  background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-950);
+  background: var(--accent); border-color: var(--accent); color: var(--ink-950);
 }
 
 .lineup-form { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .lineup-form summary {
-  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--gold-300);
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent-soft);
 }
 .lineup-form textarea {
   width: 100%; margin-top: 10px; padding: 11px 12px; border: 1px solid var(--line);
@@ -3387,12 +3399,12 @@ button,
   background: var(--surface); color: var(--text); font: inherit; cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
 }
-.away-toggle:hover { background: var(--surface-2); border-color: var(--gold-600); }
+.away-toggle:hover { background: var(--surface-2); border-color: var(--accent-line); }
 .away-toggle__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .away-toggle__text b { font-size: 15px; font-weight: 600; }
 .away-toggle__text span { font-size: 13px; line-height: 1.5; color: var(--text-3); }
 .away-toggle__chevron {
-  flex: none; font-size: 22px; line-height: 1; color: var(--gold-400);
+  flex: none; font-size: 22px; line-height: 1; color: var(--accent);
   transform: rotate(90deg); transition: transform 200ms ease;
 }
 .away-toggle.is-open .away-toggle__chevron { transform: rotate(-90deg); }
@@ -3423,7 +3435,7 @@ button,
   font-size: 11px; color: var(--text-3);
 }
 .squad__avg b {
-  font-size: 16px; font-weight: 700; color: var(--gold-400);
+  font-size: 16px; font-weight: 700; color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .squad__avg--none { font-style: italic; }
@@ -3478,13 +3490,13 @@ button,
 }
 .lb__bar i {
   display: block; height: 100%; border-radius: inherit;
-  background: linear-gradient(90deg, var(--gold-600), var(--gold-400));
+  background: linear-gradient(90deg, var(--accent-line), var(--accent));
 }
 .lb__avg {
-  font-size: 19px; font-weight: 700; color: var(--gold-400);
+  font-size: 19px; font-weight: 700; color: var(--accent);
   font-variant-numeric: tabular-nums; text-align: right;
 }
-.lb--top .lb__avg { color: var(--gold-300); }
+.lb--top .lb__avg { color: var(--accent-soft); }
 
 /* On a narrow phone the bar is the first thing to go: the number carries it. */
 @media (max-width: 420px) {
@@ -3535,7 +3547,7 @@ button,
   display: none;
   margin: 0 0 10px; padding: 7px 12px;
   border: 1px solid var(--line); border-radius: var(--r-pill);
-  background: var(--surface-2); color: var(--gold-300);
+  background: var(--surface-2); color: var(--accent-soft);
   font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
 }
 .cols-toggle:hover { background: var(--surface-3); }
@@ -3595,12 +3607,12 @@ button,
 }
 .emblem:hover { background: var(--surface-3); }
 .emblem:active { transform: scale(0.92); }
-.emblem.is-mine { border-color: var(--gold-400); background: var(--surface-3); }
+.emblem.is-mine { border-color: var(--accent); background: var(--surface-3); }
 
 /* Marks a post as coming from someone who helps run the association, so
    supporters can tell an official answer from an opinion. */
 .pill--vol {
-  background: var(--gold-600); color: var(--ink-950);
+  background: var(--accent-line); color: var(--ink-950);
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em;
 }
 
@@ -3619,7 +3631,7 @@ button,
   background: var(--surface); color: var(--text); font: inherit; cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
-.ql:hover { background: var(--surface-2); border-color: var(--gold-600); }
+.ql:hover { background: var(--surface-2); border-color: var(--accent-line); }
 .ql:active { transform: scale(0.985); }
 .ql__icon { flex: none; font-size: 17px; line-height: 1.25; }
 .ql__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -3680,7 +3692,7 @@ button,
 .ask__done { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-2); }
 
 .club-row__gap {
-  margin-top: 3px; font-size: 11.5px; color: var(--gold-300);
+  margin-top: 3px; font-size: 11.5px; color: var(--accent-soft);
 }
 
 /* ------------------------------------------------- club overview and history */
@@ -3691,7 +3703,7 @@ button,
 .club-fact + .club-overview { margin-top: 12px; }
 .club-history { margin-top: 14px; }
 .club-history summary {
-  cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--gold-300);
+  cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent-soft);
 }
 .club-history .info__value--body { margin-top: 10px; }
 
@@ -3712,14 +3724,14 @@ button,
 /* ------------------------------------------------------------ contributor tag */
 
 .pill--contrib {
-  background: var(--surface-3); color: var(--gold-300);
-  border: 1px solid var(--gold-600);
+  background: var(--surface-3); color: var(--accent-soft);
+  border: 1px solid var(--accent-line);
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em;
 }
 
 /* Player names are a way through to their profile. */
 .lb__name[data-player], .squad__row[data-player] { cursor: pointer; }
-.lb__name[data-player]:hover { color: var(--gold-300); }
+.lb__name[data-player]:hover { color: var(--accent-soft); }
 .squad__row[data-player]:hover { background: var(--surface-2); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3729,7 +3741,7 @@ button,
 /* Putting a published ticket price right. */
 .price-report {
   display: inline-block; margin-top: 10px;
-  font-size: 12.5px; color: var(--gold-300);
+  font-size: 12.5px; color: var(--accent-soft);
 }
 
 /* --------------------------------------------------- season headline strip */
@@ -3743,7 +3755,7 @@ button,
   background: var(--surface); color: var(--text); cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
 }
-.season-strip:hover { background: var(--surface-2); border-color: var(--gold-600); }
+.season-strip:hover { background: var(--surface-2); border-color: var(--accent-line); }
 .season-strip__label {
   margin-bottom: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--text-3);
@@ -3752,26 +3764,26 @@ button,
 .season-cell { min-width: 0; }
 .season-cell__label { font-size: 10.5px; color: var(--text-3); }
 .season-cell__big {
-  margin: 2px 0 1px; font-size: 17px; font-weight: 700; color: var(--gold-400);
+  margin: 2px 0 1px; font-size: 17px; font-weight: 700; color: var(--accent);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .season-cell__sub { font-size: 10.5px; color: var(--text-3); }
 .season-strip__more {
   margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft);
-  font-size: 11.5px; color: var(--gold-300);
+  font-size: 11.5px; color: var(--accent-soft);
 }
 
 /* The score on a match page. */
 .match-score {
   flex: none; text-align: right; font-size: 26px; font-weight: 800;
-  color: var(--gold-400); font-variant-numeric: tabular-nums; line-height: 1.1;
+  color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.1;
 }
 .match-score span {
   display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--text-3);
 }
 .event[data-player] { cursor: pointer; }
-.event[data-player]:hover .event__name { color: var(--gold-300); }
+.event[data-player]:hover .event__name { color: var(--accent-soft); }
 
 /* ------------------------------------- players and stats: warmth, not noise */
 
@@ -3786,15 +3798,15 @@ button,
   width: 20px; height: 20px; border-radius: 50%;
   font-size: 11px; font-weight: 800;
 }
-.lb__rank--1 { background: var(--gold-500); color: var(--ink-950); }
+.lb__rank--1 { background: var(--accent); color: var(--ink-950); }
 .lb__rank--2 { background: var(--red-500); color: #fff; }
-.lb__rank--3 { background: var(--surface-3); color: var(--gold-300); border: 1px solid var(--gold-600); }
+.lb__rank--3 { background: var(--surface-3); color: var(--accent-soft); border: 1px solid var(--accent-line); }
 
 /* The leading scorer, given a bit of room. */
 .topscorer {
   display: flex; align-items: center; gap: 14px;
   padding: 16px; margin-bottom: var(--gap);
-  border: 1px solid var(--gold-600); border-radius: var(--r);
+  border: 1px solid var(--accent-line); border-radius: var(--r);
   background:
     radial-gradient(120% 140% at 100% 0%, rgba(207, 169, 99, 0.16), transparent 60%),
     linear-gradient(135deg, rgba(122, 20, 34, 0.35), var(--surface));
@@ -3803,17 +3815,17 @@ button,
 .topscorer__who { flex: 1; min-width: 0; }
 .topscorer__label {
   font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--gold-300);
+  text-transform: uppercase; color: var(--accent-soft);
 }
 .topscorer__name {
   margin: 2px 0 1px; font-size: 19px; font-weight: 700; color: var(--text);
   cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.topscorer__name:hover { color: var(--gold-300); }
+.topscorer__name:hover { color: var(--accent-soft); }
 .topscorer__sub { font-size: 12px; color: var(--text-3); }
 .topscorer__count {
   flex: none; text-align: center; font-size: 30px; font-weight: 800;
-  color: var(--gold-400); line-height: 1; font-variant-numeric: tabular-nums;
+  color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums;
 }
 .topscorer__count span {
   display: block; margin-top: 3px; font-size: 10px; font-weight: 600;
@@ -3827,7 +3839,7 @@ button,
   background: var(--surface); cursor: pointer;
   font-size: 13.5px; font-weight: 600; color: var(--text-2);
 }
-.older-match summary:hover { border-color: var(--gold-600); color: var(--text); }
+.older-match summary:hover { border-color: var(--accent-line); color: var(--text); }
 .older-match[open] summary { margin-bottom: 10px; }
 
 /* ----------------------------------------------------------------- welcome */
@@ -3855,7 +3867,7 @@ button,
 .welcome__sign {
   margin-top: 10px !important; padding-top: 10px;
   border-top: 1px solid var(--line-soft);
-  font-size: 12.5px !important; color: var(--gold-300) !important; font-weight: 550;
+  font-size: 12.5px !important; color: var(--accent-soft) !important; font-weight: 550;
 }
 
 @media (max-width: 420px) {
@@ -3906,7 +3918,7 @@ button,
 }
 .soon__tag {
   flex: none; padding: 2px 8px; border-radius: var(--r-pill);
-  background: var(--surface-3); color: var(--gold-300);
+  background: var(--surface-3); color: var(--accent-soft);
   font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
 }
 
@@ -3956,7 +3968,7 @@ button,
 .live-strip__text span { font-size: 12.5px; color: var(--text-3); }
 .live-strip__go {
   flex: none; padding: 6px 12px; border-radius: var(--r-pill);
-  background: var(--gold-500); color: var(--ink-950);
+  background: var(--accent); color: var(--ink-950);
   font-size: 12px; font-weight: 700;
 }
 
@@ -3975,7 +3987,7 @@ button,
   color: var(--text); text-decoration: none;
 }
 .vid:first-child { border-top: 0; }
-.vid:hover .vid__title { color: var(--gold-300); }
+.vid:hover .vid__title { color: var(--accent-soft); }
 .vid__thumb {
   flex: none; width: 104px; height: 58px; object-fit: cover;
   border-radius: var(--r-sm); background: var(--surface-3);
@@ -3983,7 +3995,7 @@ button,
 .vid__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .vid__kind {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--gold-300);
+  text-transform: uppercase; color: var(--accent-soft);
 }
 .vid__title {
   font-size: 13.5px; font-weight: 550; line-height: 1.35;
@@ -4002,7 +4014,7 @@ button,
   flex: none; min-width: 84px; font-size: 11.5px; color: var(--text-3);
   display: inline-flex; align-items: center; gap: 5px;
 }
-.essential__value { font-size: 13.5px; color: var(--gold-300); text-decoration: none; }
+.essential__value { font-size: 13.5px; color: var(--accent-soft); text-decoration: none; }
 .essential__value:hover { text-decoration: underline; }
 
 /* Honours read as a list of lines, not a grid. */
@@ -4041,14 +4053,14 @@ button,
 }
 .tag-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
 .tag-btn.is-on {
-  background: var(--gold-500); border-color: var(--gold-500); color: var(--ink-950);
+  background: var(--accent); border-color: var(--accent); color: var(--ink-950);
 }
 .tag-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* Top Contributor and Legend are meant to read as a cut above the rest. */
 .pill--special {
-  background: linear-gradient(135deg, var(--gold-500), var(--gold-300));
-  border-color: var(--gold-300);
+  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+  border-color: var(--accent-soft);
   color: var(--ink-950);
 }
 
@@ -4084,7 +4096,7 @@ button,
 }
 .join__points li::before {
   content: ""; position: absolute; left: 4px; top: 12px;
-  width: 6px; height: 6px; border-radius: 50%; background: var(--gold-500);
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
 }
 .join__go { max-width: 22em; margin: 0 auto; }
 .join__count {
@@ -4094,7 +4106,7 @@ button,
   margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line-soft);
   font-size: 12.5px; color: var(--text-3);
 }
-.join__footer a { color: var(--gold-300); }
+.join__footer a { color: var(--accent-soft); }
 
 /* ------------------------------------------------------------- fan wall feed */
 
@@ -4108,7 +4120,7 @@ button,
 .wall-block__head { margin-bottom: 12px; }
 .wall-block__head h2 {
   margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.09em;
-  text-transform: uppercase; color: var(--gold-300);
+  text-transform: uppercase; color: var(--accent-soft);
 }
 .wall-block__head span { font-size: 12px; color: var(--text-3); }
 .wall-block .club-row { background: var(--surface); }
@@ -4212,18 +4224,18 @@ button,
   border: 1px solid var(--line); border-radius: var(--r-sm);
   background: var(--surface-2); cursor: pointer;
 }
-.consent input { flex: none; margin-top: 2px; width: 18px; height: 18px; accent-color: var(--gold-500); }
+.consent input { flex: none; margin-top: 2px; width: 18px; height: 18px; accent-color: var(--accent); }
 .consent span { font-size: 12.5px; line-height: 1.5; color: var(--text-3); }
 .consent b { display: block; margin-bottom: 2px; font-size: 13.5px; font-weight: 600; color: var(--text); }
 .consent-row { margin: 4px 0 14px; }
 
-.site-footer__link { font-size: inherit; color: var(--gold-300); }
+.site-footer__link { font-size: inherit; color: var(--accent-soft); }
 
 /* A single ask, then it stays gone. */
 .nudge {
   display: flex; gap: 12px; align-items: flex-start;
   padding: 15px; margin-bottom: var(--gap);
-  border: 1px solid var(--gold-600); border-radius: var(--r);
+  border: 1px solid var(--accent-line); border-radius: var(--r);
   background: linear-gradient(135deg, rgba(122, 20, 34, 0.3), var(--surface));
 }
 .nudge__mark { flex: none; font-size: 20px; line-height: 1.2; }
@@ -4261,11 +4273,11 @@ button,
 
 /* --------------------------------------------------- suggested poll queue */
 
-.wall-block--queue { border-color: var(--gold-600); }
+.wall-block--queue { border-color: var(--accent-line); }
 .suggestion { margin-bottom: 10px; }
 .suggestion__who {
   font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--gold-300);
+  text-transform: uppercase; color: var(--accent-soft);
 }
 .suggestion__q { margin: 4px 0 8px; font-size: 15.5px; font-weight: 600; color: var(--text); }
 .suggestion__opts {
@@ -4300,14 +4312,14 @@ button,
   display: flex; align-items: center; gap: 12px; text-align: left;
   margin-top: 18px; padding: 14px 16px;
   background: linear-gradient(135deg, rgba(122, 20, 34, 0.4), var(--surface));
-  border: 1px solid var(--gold-600); color: var(--text);
+  border: 1px solid var(--accent-line); color: var(--text);
 }
-.talk-btn:hover { border-color: var(--gold-400); }
+.talk-btn:hover { border-color: var(--accent); }
 .talk-btn__icon { flex: none; font-size: 19px; line-height: 1; }
 .talk-btn__text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .talk-btn__text b { font-size: 15px; font-weight: 650; }
 .talk-btn__text span { font-size: 12.5px; font-weight: 400; color: var(--text-3); }
-.talk-btn__go { flex: none; font-size: 20px; color: var(--gold-400); }
+.talk-btn__go { flex: none; font-size: 20px; color: var(--accent); }
 
 /* =========================================================== poppies daily */
 
@@ -4323,14 +4335,14 @@ button,
   margin-bottom: var(--gap);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--gold-400);
+  border-left: 3px solid var(--accent);
   border-radius: var(--r);
   color: inherit;
   cursor: pointer;
   font: inherit;
 }
 
-.daily-promo:hover { border-color: var(--gold-400); }
+.daily-promo:hover { border-color: var(--accent); }
 .daily-promo__icon { font-size: 20px; line-height: 1; }
 .daily-promo__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .daily-promo__text strong { font-size: 13.5px; }
@@ -4338,7 +4350,7 @@ button,
 .daily-promo__go {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gold-400);
+  color: var(--accent);
   white-space: nowrap;
 }
 
@@ -4355,8 +4367,8 @@ button,
   border-radius: var(--r);
 }
 
-.otd__year { font-weight: 700; color: var(--gold-400); font-size: 13px; }
-.otd a { color: var(--gold-400); cursor: pointer; }
+.otd__year { font-weight: 700; color: var(--accent); font-size: 13px; }
+.otd a { color: var(--accent); cursor: pointer; }
 
 /* The game itself. */
 .quiz__head {
@@ -4383,7 +4395,7 @@ button,
 }
 .quiz__dots i.is-right { background: var(--ok); }
 .quiz__dots i.is-wrong { background: var(--text-3); }
-.quiz__dots i.is-now { background: var(--gold-400); transform: scale(1.3); }
+.quiz__dots i.is-now { background: var(--accent); transform: scale(1.3); }
 
 .quiz__q { font-size: 15.5px; line-height: 1.45; margin-bottom: 16px; }
 
@@ -4402,7 +4414,7 @@ button,
   cursor: pointer;
 }
 
-.quiz__opt:hover { border-color: var(--gold-400); }
+.quiz__opt:hover { border-color: var(--accent); }
 .quiz__opts.is-locked .quiz__opt { cursor: default; }
 .quiz__opts.is-locked .quiz__opt:hover { border-color: var(--line); }
 
@@ -4432,7 +4444,7 @@ button,
   font-size: 44px;
   font-weight: 700;
   line-height: 1;
-  color: var(--gold-400);
+  color: var(--accent);
 }
 .quiz__score span { font-size: 20px; color: var(--text-3); }
 .quiz__grid { text-align: center; font-size: 24px; letter-spacing: 3px; margin-top: 10px; }
@@ -4455,8 +4467,8 @@ button,
 .soon {
   padding: 14px 16px;
   margin-bottom: var(--gap);
-  background: color-mix(in srgb, var(--gold-400) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--gold-400) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   border-radius: var(--r);
 }
 
@@ -4466,7 +4478,7 @@ button,
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--gold-400);
+  color: var(--accent);
   margin-bottom: 7px;
 }
 
@@ -4489,14 +4501,14 @@ button,
 }
 
 .offer + .offer { margin-top: 8px; }
-.offer:hover { border-color: var(--gold-400); }
+.offer:hover { border-color: var(--accent); }
 
 .offer input {
   width: 19px;
   height: 19px;
   margin-top: 1px;
   flex: none;
-  accent-color: var(--gold-400);
+  accent-color: var(--accent);
 }
 
 .offer > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -4505,8 +4517,8 @@ button,
 
 /* Ticked rows stand out, so a glance shows what you have already said yes to. */
 .offer:has(input:checked) {
-  border-color: var(--gold-400);
-  background: color-mix(in srgb, var(--gold-400) 7%, transparent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
 }
 
 /* ========================================================= fan consultation */
@@ -4534,10 +4546,10 @@ button,
   border-radius: 7px;
   cursor: pointer;
 }
-.scale button:hover { border-color: var(--gold-400); }
+.scale button:hover { border-color: var(--accent); }
 .scale button.is-on {
-  background: var(--gold-400);
-  border-color: var(--gold-400);
+  background: var(--accent);
+  border-color: var(--accent);
   color: #16161a;
   font-weight: 700;
 }
@@ -4570,12 +4582,12 @@ button,
   position: relative;
 }
 
-.rep__cell:hover { border-color: var(--gold-400); }
-.rep__cell input { width: 17px; height: 17px; accent-color: var(--gold-400); margin: 0; flex: none; }
+.rep__cell:hover { border-color: var(--accent); }
+.rep__cell input { width: 17px; height: 17px; accent-color: var(--accent); margin: 0; flex: none; }
 .rep__word { font-size: 9px; line-height: 1.15; color: var(--text-3); overflow-wrap: anywhere; }
 .rep__cell:has(input:checked) {
-  border-color: var(--gold-400);
-  background: color-mix(in srgb, var(--gold-400) 9%, transparent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
 }
 .rep__cell:has(input:checked) .rep__word { color: var(--text); font-weight: 600; }
 
@@ -4596,7 +4608,7 @@ button,
 .dist:has(.dist__key--wide) { grid-template-columns: 1fr 90px 44px; }
 .dist__key--wide { font-size: 12.5px; color: var(--text-2); }
 .dist__bar { background: var(--surface-2); border-radius: 4px; height: 15px; overflow: hidden; }
-.dist__fill { display: block; height: 100%; background: var(--gold-400); border-radius: 4px; transition: width 0.5s ease; }
+.dist__fill { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s ease; }
 .dist__n { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
 
 /* One stacked bar per body. Colour carries meaning, so the figures are printed
@@ -4618,7 +4630,7 @@ button,
 .qitem:first-child { border-top: 0; }
 .qitem__n {
   flex: none; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--surface-2); color: var(--gold-400);
+  background: var(--surface-2); color: var(--accent);
   font-size: 11px; font-weight: 700; display: grid; place-items: center;
 }
 .qitem p { font-size: 13.5px; line-height: 1.5; }
@@ -4627,7 +4639,7 @@ button,
   margin: 0 0 12px;
   padding: 12px 14px;
   background: var(--surface-2);
-  border-left: 3px solid var(--gold-400);
+  border-left: 3px solid var(--accent);
   border-radius: 0 var(--r) var(--r) 0;
   font-size: 13.5px;
   line-height: 1.55;
@@ -4659,8 +4671,8 @@ button,
   margin-bottom: var(--gap);
   background: linear-gradient(90deg,
     color-mix(in srgb, var(--red-500) 26%, transparent),
-    color-mix(in srgb, var(--gold-400) 10%, transparent));
-  border: 1px solid color-mix(in srgb, var(--gold-400) 34%, transparent);
+    color-mix(in srgb, var(--accent) 10%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
   border-radius: var(--r);
   color: inherit;
   font: inherit;
@@ -4668,7 +4680,7 @@ button,
   overflow: hidden;
 }
 
-.ticker:hover { border-color: var(--gold-400); }
+.ticker:hover { border-color: var(--accent); }
 
 .ticker__tag {
   flex: none;
@@ -4709,7 +4721,7 @@ button,
   to   { transform: translateX(0); }
 }
 
-.ticker__go { flex: none; color: var(--gold-400); font-size: 17px; line-height: 1; }
+.ticker__go { flex: none; color: var(--accent); font-size: 17px; line-height: 1; }
 
 /* Somebody who has asked not to be moved gets the same words, sitting still. */
 @media (prefers-reduced-motion: reduce) {
@@ -4833,7 +4845,7 @@ button,
   border-radius: 0;
   background: none;
   flex: none;
-  accent-color: var(--gold-400);
+  accent-color: var(--accent);
 }
 
 .rep__cell input[type="radio"] { width: 17px; height: 17px; }
@@ -4866,13 +4878,13 @@ button,
 
 .bulk__all { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
 .bulk__all input { width: 18px; height: 18px; padding: 0; margin: 0; border: 0; background: none;
-                   flex: none; accent-color: var(--gold-400); box-sizing: border-box; }
+                   flex: none; accent-color: var(--accent); box-sizing: border-box; }
 .bulk .btn-row { margin: 0; }
 
 /* The tick on an individual item, sitting with its labels. */
 .pick { display: inline-flex; align-items: center; margin-right: 2px; cursor: pointer; }
 .pick input { width: 18px; height: 18px; padding: 0; margin: 0; border: 0; background: none;
-              flex: none; accent-color: var(--gold-400); box-sizing: border-box; }
+              flex: none; accent-color: var(--accent); box-sizing: border-box; }
 
 /* ============================================================ admin panel */
 
@@ -4882,14 +4894,14 @@ button,
   padding: 12px 14px;
   margin-bottom: 18px;
   border-radius: var(--r);
-  border: 1px solid color-mix(in srgb, var(--gold-400) 40%, transparent);
-  background: color-mix(in srgb, var(--gold-400) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--text-2);
 }
 
-.todo b { display: block; margin-bottom: 3px; font-size: 14px; color: var(--gold-400); }
+.todo b { display: block; margin-bottom: 3px; font-size: 14px; color: var(--accent); }
 
 .todo--clear {
   border-color: color-mix(in srgb, var(--ok) 35%, transparent);
@@ -4935,7 +4947,7 @@ button,
 }
 
 .cloud__w { color: var(--text-2); cursor: default; }
-.cloud__w:nth-child(3n) { color: var(--gold-400); }
+.cloud__w:nth-child(3n) { color: var(--accent); }
 .cloud__w:nth-child(5n) { color: var(--text); }
 
 /* Each waiting job is a button to where the work is. It was a line of text
@@ -4952,17 +4964,17 @@ button,
   font-size: 12.5px;
   color: var(--text);
   background: var(--surface-2);
-  border: 1px solid color-mix(in srgb, var(--gold-400) 34%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
   border-radius: 999px;
   cursor: pointer;
 }
 
-.todo__job:hover { border-color: var(--gold-400); background: color-mix(in srgb, var(--gold-400) 12%, transparent); }
-.todo__job span { color: var(--gold-400); }
+.todo__job:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.todo__job span { color: var(--accent); }
 
 /* A full-width shortcut, for the one that leads somewhere big. */
 .ql--wide { grid-column: 1 / -1; }
-.ql__go { margin-left: auto; color: var(--gold-400); font-size: 18px; line-height: 1; }
+.ql__go { margin-left: auto; color: var(--accent); font-size: 18px; line-height: 1; }
 
 /* A name with whatever it has earned sitting beside it. Used on the
    leaderboards and the admin lists as well as the fan wall, so a tag somebody
@@ -4981,9 +4993,9 @@ button,
   border: 1px solid var(--line); border-radius: 999px;
 }
 .chip span { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-.chip:hover { border-color: var(--gold-400); }
-.chip.is-on { border-color: var(--gold-400); background: color-mix(in srgb, var(--gold-400) 14%, transparent); color: var(--text); font-weight: 600; }
-.chip.is-on span { color: var(--gold-400); }
+.chip:hover { border-color: var(--accent); }
+.chip.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text); font-weight: 600; }
+.chip.is-on span { color: var(--accent); }
 .chip--status.is-on { border-color: var(--text-3); background: var(--surface-2); }
 
 /* A section that folds away, for everything below the job in hand. */
@@ -4994,21 +5006,21 @@ button,
   display: flex; align-items: center; justify-content: space-between;
 }
 .fold__head::-webkit-details-marker { display: none; }
-.fold__head::after { content: "\203A"; color: var(--gold-400); font-size: 18px; transform: rotate(90deg); transition: transform 0.2s; }
+.fold__head::after { content: "\203A"; color: var(--accent); font-size: 18px; transform: rotate(90deg); transition: transform 0.2s; }
 .fold[open] > .fold__head::after { transform: rotate(-90deg); }
 .fold__body { padding: 0 12px 12px; }
 
 /* The question grouping workbench. */
 .split { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
-.split input { flex: 1 1 90px; min-width: 90px; accent-color: var(--gold-400); }
-.split span { min-width: 26px; color: var(--gold-400); font-variant-numeric: tabular-nums; }
+.split input { flex: 1 1 90px; min-width: 90px; accent-color: var(--accent); }
+.split span { min-width: 26px; color: var(--accent); font-variant-numeric: tabular-nums; }
 
 .qgroup { padding: 12px 0; border-top: 1px solid var(--line-soft); }
 .qgroup:first-of-type { border-top: 0; }
 .qgroup__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .qgroup__label { width: 100%; font-size: 13.5px; line-height: 1.45; }
 .qgroup__src, .qitem__src { margin-top: 8px; font-size: 12px; }
-.qgroup__src summary, .qitem__src summary { cursor: pointer; color: var(--gold-400); }
+.qgroup__src summary, .qitem__src summary { cursor: pointer; color: var(--accent); }
 .qgroup__src p, .qitem__src p {
   margin-top: 7px; padding-left: 10px;
   border-left: 2px solid var(--line); color: var(--text-3); line-height: 1.5;
@@ -5253,8 +5265,8 @@ button,
 
 /* Us, picked out. The point of the chart is where this bar sits. */
 .bar--us .bar__name { color: var(--text); font-weight: 700; }
-.bar--us .bar__fill { background: var(--gold-400); }
-.bar--us .bar__val { color: var(--gold-400); font-weight: 700; }
+.bar--us .bar__fill { background: var(--accent); }
+.bar--us .bar__val { color: var(--accent); font-weight: 700; }
 
 @media (max-width: 380px) {
   .bar__name { flex-basis: 40%; }
@@ -5285,8 +5297,8 @@ button,
 .sweep__to .chip { padding: 5px 9px; min-width: 30px; justify-content: center; }
 
 /* What the suggester thinks, without deciding it. */
-.chip--hint { border-style: dashed; border-color: var(--gold-600); }
-.chip--hint span { color: var(--gold-400); }
+.chip--hint { border-style: dashed; border-color: var(--accent-line); }
+.chip--hint span { color: var(--accent); }
 
 /* Filed but not cleared for publication: it still counts, it just cannot be shown. */
 .q-unapproved { color: var(--text-3); }
@@ -5477,7 +5489,7 @@ button,
   break-inside: avoid;
 }
 .quotes .quote p { margin: 0; font-size: 13.5px; line-height: 1.6; }
-.quote--good { border-left-color: var(--gold-400); }
+.quote--good { border-left-color: var(--accent); }
 .quote--bad  { border-left-color: var(--red-400); }
 .quotes .quote footer {
   display: flex; align-items: center; justify-content: space-between;
@@ -5495,8 +5507,8 @@ button,
 /* The undertaking to put the questions to the club. Set apart from the list it
    introduces, because it is the part that commits the Association to something. */
 .pledge {
-  border-left: 3px solid var(--gold-400);
-  background: color-mix(in srgb, var(--gold-400) 7%, transparent);
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
 }
 
 /* ============================================================ admin panel */
@@ -5521,7 +5533,7 @@ button,
   margin-left: 6px;
   padding: 0 4px;
   border-radius: var(--r-pill);
-  background: var(--gold-400);
+  background: var(--accent);
   color: #17140f;
   font-size: 10.5px;
   font-weight: 800;
@@ -5545,12 +5557,12 @@ button,
   font-size: 12px;
   cursor: pointer;
 }
-.jump button:hover { border-color: var(--gold-400); color: var(--text); }
+.jump button:hover { border-color: var(--accent); color: var(--text); }
 
 /* Green when there is nothing to do, amber when there is. Only those two
    carry colour: tinting every tile would leave none of them meaning anything. */
 .info--good .info__value { color: #6aa84f; }
-.info--warn .info__value { color: var(--gold-400); }
+.info--warn .info__value { color: var(--accent); }
 .info--bad  .info__value { color: var(--red-400); }
 
 .info--good, .info--warn, .info--bad { position: relative; }
@@ -5562,7 +5574,7 @@ button,
   border-radius: 2px;
 }
 .info--good::before { background: #6aa84f; }
-.info--warn::before { background: var(--gold-400); }
+.info--warn::before { background: var(--accent); }
 .info--bad::before  { background: var(--red-400); }
 
 /* --------------------------------------------------------- people tab */
@@ -5672,7 +5684,7 @@ button,
   cursor: pointer;
 }
 .board__tile:disabled { cursor: default; opacity: 0.85; }
-.board__tile:not(:disabled):hover { border-color: var(--gold-400); }
+.board__tile:not(:disabled):hover { border-color: var(--accent); }
 
 .board__label {
   font-size: 10px;
@@ -5692,8 +5704,8 @@ button,
 
 .board__tile--good { border-left-color: #6aa84f; }
 .board__tile--good .board__value { color: #6aa84f; }
-.board__tile--warn { border-left-color: var(--gold-400); }
-.board__tile--warn .board__value { color: var(--gold-400); }
+.board__tile--warn { border-left-color: var(--accent); }
+.board__tile--warn .board__value { color: var(--accent); }
 
 /* Six tiles state a position; none of them states a move. */
 .board__next {
@@ -5718,8 +5730,8 @@ button,
   text-align: left;
   cursor: pointer;
 }
-.club-link:hover span:last-child { color: var(--gold-400); text-decoration: underline; }
-.club-link:focus-visible { outline: 2px solid var(--gold-400); outline-offset: 2px; border-radius: 3px; }
+.club-link:hover span:last-child { color: var(--accent); text-decoration: underline; }
+.club-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 /* ------------------------------------------------------------ tag manager */
 
@@ -5771,7 +5783,7 @@ button,
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--gold-400);
+  color: var(--accent);
 }
 .letter__h:first-child { margin-top: 0; }
 .letter__p { margin: 0 0 12px; font-size: 14px; line-height: 1.65; color: var(--text-2); }
@@ -5845,12 +5857,12 @@ button,
 .ladder__meta { flex: 0 0 auto; font-size: 11.5px; color: var(--text-3); }
 .ladder__pts {
   flex: 0 0 auto; min-width: 30px; text-align: right;
-  font-size: 15px; font-weight: 800; color: var(--gold-400);
+  font-size: 15px; font-weight: 800; color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
 /* Your own row, wherever it is. */
-.ladder__row--me { background: color-mix(in srgb, var(--gold-400) 9%, transparent); }
+.ladder__row--me { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .ladder__row--me .ladder__who { font-weight: 700; }
 
 .ladder__gap { padding: 2px 0 2px 8px; color: var(--text-3); font-size: 12px; letter-spacing: 0.2em; }
@@ -5862,14 +5874,14 @@ button,
   gap: 16px; padding-bottom: 14px; margin-bottom: 4px;
   border-bottom: 1px solid var(--line-soft);
 }
-.grounds__count { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: var(--gold-400); line-height: 1; }
+.grounds__count { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); line-height: 1; }
 .grounds__count span { margin-left: 6px; font-size: 15px; font-weight: 600; color: var(--text-3); }
 .grounds__sub { margin-top: 6px; font-size: 12.5px; color: var(--text-2); }
 
 /* A ring rather than a bar: it reads as a collection rather than a task list. */
 .grounds__ring {
   flex: 0 0 auto; width: 58px; height: 58px; border-radius: 50%;
-  background: conic-gradient(var(--gold-400) calc(var(--pct) * 1%), var(--surface-3) 0);
+  background: conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--surface-3) 0);
   position: relative;
 }
 .grounds__ring::after {
@@ -5891,7 +5903,7 @@ button,
   border: 1px solid var(--line); color: #17140f;
   font-size: 12px; font-weight: 800;
 }
-.ground--been .ground__tick { background: var(--gold-400); border-color: var(--gold-400); }
+.ground--been .ground__tick { background: var(--accent); border-color: var(--accent); }
 .ground__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ground__name { font-size: 14px; color: var(--text-3); }
 .ground--been .ground__name { color: var(--text); font-weight: 600; }
@@ -5903,7 +5915,7 @@ button,
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--text-2);
 }
-.duel-score b { font-size: 19px; color: var(--gold-400); font-variant-numeric: tabular-nums; }
+.duel-score b { font-size: 19px; color: var(--accent); font-variant-numeric: tabular-nums; }
 .duel-score__best { font-size: 12px; color: var(--text-3); }
 
 /* Two sides with the word between them. Stacked on a phone, side by side
@@ -5920,12 +5932,12 @@ button,
   text-align: left; cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.duel__side:hover { border-color: var(--gold-400); }
+.duel__side:hover { border-color: var(--accent); }
 .duel__name { font-size: 17px; font-weight: 700; line-height: 1.25; }
 .duel__meta { font-size: 12px; color: var(--text-3); }
 .duel__apps {
   margin-top: 4px; font-size: 26px; font-weight: 800;
-  color: var(--gold-400); font-variant-numeric: tabular-nums; line-height: 1;
+  color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1;
 }
 .duel__apps span { margin-left: 5px; font-size: 12px; font-weight: 600; color: var(--text-3); }
 

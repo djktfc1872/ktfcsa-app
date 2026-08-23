@@ -1294,7 +1294,7 @@ function viewSeason() {
       <div class="info"><div class="info__label">Games</div><div class="info__value">${s?.games ?? 0}</div></div>
       <div class="info"><div class="info__label">Home</div><div class="info__value">${s?.home_games ?? 0}</div></div>
       <div class="info"><div class="info__label">Away</div><div class="info__value">${s?.away_games ?? 0}</div></div>
-      <div class="info"><div class="info__label">Miles</div><div class="info__value" style="color:var(--gold-400)">${(s?.miles ?? 0).toLocaleString("en-GB")}</div></div>
+      <div class="info"><div class="info__label">Miles</div><div class="info__value" style="color:var(--accent)">${(s?.miles ?? 0).toLocaleString("en-GB")}</div></div>
     </div>`));
 
   const badges = earnedBadges(s);
@@ -1562,7 +1562,7 @@ function viewClub({ id, from }) {
     box.append(el(`
       <div class="card">
         <div class="info-grid info-grid--4">
-          <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--gold-400)">${money(t.adultPrice)}</div></div>
+          <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--accent)">${money(t.adultPrice)}</div></div>
           <div class="info"><div class="info__label">Concession${concessionAges(t) ? ` · ${esc(concessionAges(t))}` : ""}</div><div class="info__value">${money(t.concessionPrice)}</div></div>
           <div class="info"><div class="info__label">Youth · ${esc(t.youthRange)}</div><div class="info__value">${money(t.youthPrice)}</div></div>
           <div class="info"><div class="info__label">Child · ${esc(t.childRange)}</div><div class="info__value">${money(t.childPrice)}</div></div>
@@ -2401,7 +2401,7 @@ function viewPoppies() {
         <div class="info"><div class="info__label">Ground</div><div class="info__value">${esc(KTFC.ground)}</div></div>
         <div class="info"><div class="info__label">Postcode</div><div class="info__value">${esc(KTFC.postcode)}</div></div>
         <div class="info"><div class="info__label">Home games</div><div class="info__value">${home.length}</div></div>
-        <div class="info"><div class="info__label">League position</div><div class="info__value" style="color:var(--gold-400)">${
+        <div class="info"><div class="info__label">League position</div><div class="info__value" style="color:var(--accent)">${
           row ? row.position : "not yet"
         }</div></div>
       </div>
@@ -2429,7 +2429,7 @@ function viewPoppies() {
   wrap.append(el(`
     <div class="card">
       <div class="info-grid info-grid--3">
-        <div class="info"><div class="info__label">${esc(KTFC.adultRange)}</div><div class="info__value" style="color:var(--gold-400)">£${KTFC.adultPrice}</div></div>
+        <div class="info"><div class="info__label">${esc(KTFC.adultRange)}</div><div class="info__value" style="color:var(--accent)">£${KTFC.adultPrice}</div></div>
         <div class="info"><div class="info__label">Concession</div><div class="info__value">£${KTFC.concessionPrice}</div></div>
         <div class="info"><div class="info__label">${esc(KTFC.youthRange)}</div><div class="info__value">£${KTFC.youthPrice}</div></div>
       </div>
@@ -3301,7 +3301,7 @@ function viewPlayers() {
         <div class="card">
           <div class="info-grid info-grid--4">
             <div class="info"><div class="info__label">Home games</div><div class="info__value">${stats.gates.length}</div></div>
-            <div class="info"><div class="info__label">Average</div><div class="info__value" style="color:var(--gold-400)">${avg.toLocaleString("en-GB")}</div></div>
+            <div class="info"><div class="info__label">Average</div><div class="info__value" style="color:var(--accent)">${avg.toLocaleString("en-GB")}</div></div>
             <div class="info"><div class="info__label">Best</div><div class="info__value">${Math.max(...stats.gates).toLocaleString("en-GB")}</div></div>
           </div>
         </div>`));
@@ -3529,7 +3529,7 @@ function awayEssentials(t) {
     <div class="info-grid info-grid--4">
       <div class="info"><div class="info__label">Ground</div><div class="info__value">${esc(t.stadium)}</div></div>
       <div class="info"><div class="info__label">Distance</div><div class="info__value">${t.distanceMiles} miles</div></div>
-      <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--gold-400)">${money(t.adultPrice)}</div></div>
+      <div class="info"><div class="info__label">Adult</div><div class="info__value" style="color:var(--accent)">${money(t.adultPrice)}</div></div>
       <div class="info"><div class="info__label">Concession</div><div class="info__value">${money(t.concessionPrice)}</div></div>
     </div>`));
 
@@ -4285,7 +4285,7 @@ function viewsPane() {
     box.append(el(`
       <div class="info-grid info-grid--4">
         <div class="info"><div class="info__label">Today</div>
-          <div class="info__value" style="color:var(--gold-400)">${now.views}</div></div>
+          <div class="info__value" style="color:var(--accent)">${now.views}</div></div>
         <div class="info"><div class="info__label">Today, first look</div>
           <div class="info__value">${now.uniques}</div></div>
         <div class="info"><div class="info__label">30 days</div>
@@ -4517,7 +4517,7 @@ function questionWorkbench(rows) {
         <b>${loose.length}</b> to the addendum &middot;
         <b>${held.length}</b> held back &middot;
         <span style="color:${filed.size + loose.length + held.length === asked.length
-          ? "var(--gold-400)" : "var(--red-400)"}">${
+          ? "var(--accent)" : "var(--red-400)"}">${
           filed.size + loose.length + held.length === asked.length
             ? "all accounted for" : "DOES NOT ADD UP"}</span>
       </div>`));
@@ -5332,7 +5332,7 @@ function buildAdmin() {
       compare.append(el(`
         <div class="card" style="margin-bottom:14px">
           <div class="info-grid info-grid--dense">
-            <div class="info"><div class="info__label">Now</div><div class="info__value" style="color:var(--gold-400)">${now}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
+            <div class="info"><div class="info__label">Now</div><div class="info__value" style="color:var(--accent)">${now}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
             <div class="info"><div class="info__label">May survey</div><div class="info__value">${was}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
             <div class="info"><div class="info__label">Change</div><div class="info__value" style="color:${now < was ? "var(--red-400)" : "var(--ok)"}">${delta > 0 ? "+" : ""}${delta}</div></div>
           </div>
@@ -6332,7 +6332,7 @@ function viewPlayer({ id }) {
       box.append(el(`
         <div class="card">
           <div class="info-grid info-grid--3">
-            <div class="info"><div class="info__label">Appearances</div><div class="info__value" style="color:var(--gold-400)">${past.apps}</div></div>
+            <div class="info"><div class="info__label">Appearances</div><div class="info__value" style="color:var(--accent)">${past.apps}</div></div>
             <div class="info"><div class="info__label">Seasons</div><div class="info__value">${seasons.length}</div></div>
             <div class="info"><div class="info__label">Shirt</div><div class="info__value">${[...past.shirts].sort((a, b) => a - b).join(", ") || "Not known"}</div></div>
           </div>
@@ -6351,7 +6351,7 @@ function viewPlayer({ id }) {
       <div class="info-grid info-grid--4">
         <div class="info"><div class="info__label">Appearances</div><div class="info__value">${rec.games.length}</div></div>
         <div class="info"><div class="info__label">Started</div><div class="info__value">${rec.starts}</div></div>
-        <div class="info"><div class="info__label">Goals</div><div class="info__value" style="color:var(--gold-400)">${rec.goals}</div></div>
+        <div class="info"><div class="info__label">Goals</div><div class="info__value" style="color:var(--accent)">${rec.goals}</div></div>
         <div class="info"><div class="info__label">Fan rating</div><div class="info__value">${season ? season.average : "\u2014"}</div></div>
       </div>
     </div>`));
@@ -7440,8 +7440,8 @@ function viewAccount() {
       <div class="info-grid info-grid--4">
         <div class="info"><div class="info__label">Games</div><div class="info__value">${s.games}</div></div>
         <div class="info"><div class="info__label">Away</div><div class="info__value">${s.away_games}</div></div>
-        <div class="info"><div class="info__label">Miles</div><div class="info__value" style="color:var(--gold-400)">${s.miles.toLocaleString("en-GB")}</div></div>
-        <div class="info"><div class="info__label">See all</div><div class="info__value"><button class="link-btn" data-nav="season" style="font-size:13px;color:var(--gold-400)">My Season ›</button></div></div>
+        <div class="info"><div class="info__label">Miles</div><div class="info__value" style="color:var(--accent)">${s.miles.toLocaleString("en-GB")}</div></div>
+        <div class="info"><div class="info__label">See all</div><div class="info__value"><button class="link-btn" data-nav="season" style="font-size:13px;color:var(--accent)">My Season ›</button></div></div>
       </div>`));
   }
 
@@ -8316,7 +8316,7 @@ function viewValue() {
   mine.append(el(`
     <div class="info-grid info-grid--3">
       <div class="info"><div class="info__label">${esc(KTFC.adultRange)}</div>
-        <div class="info__value" style="color:var(--gold-400)">${money(KT)}</div></div>
+        <div class="info__value" style="color:var(--accent)">${money(KT)}</div></div>
       <div class="info"><div class="info__label">${esc(KTFC.concessionRange)}</div>
         <div class="info__value">${money(KTFC.concessionPrice)}</div></div>
       <div class="info"><div class="info__label">${esc(KTFC.youthRange)}</div>
@@ -8331,7 +8331,7 @@ function viewValue() {
   gate.append(el(`
     <div class="info-grid info-grid--3">
       <div class="info"><div class="info__label">Kettering</div>
-        <div class="info__value" style="color:var(--gold-400)">${money(KT)}</div></div>
+        <div class="info__value" style="color:var(--accent)">${money(KT)}</div></div>
       <div class="info"><div class="info__label">Division average</div>
         <div class="info__value">${pounds(mean)}</div></div>
       <div class="info"><div class="info__label">Dearest</div>
@@ -9363,7 +9363,7 @@ function consultResults() {
     box.append(el(`
       <div class="card">
         <div class="info-grid info-grid--4">
-          <div class="info"><div class="info__label">Responses</div><div class="info__value" style="color:var(--gold-400)">${s.responses}</div></div>
+          <div class="info"><div class="info__label">Responses</div><div class="info__value" style="color:var(--accent)">${s.responses}</div></div>
           <div class="info"><div class="info__label">Confidence</div><div class="info__value">${s.confidence_avg}<span style="font-size:14px;color:var(--text-3)">/10</span></div></div>
           <div class="info"><div class="info__label">Wrong direction</div><div class="info__value">${pct(s.direction_wrong)}%</div></div>
           <div class="info"><div class="info__label">Would attend a meeting</div><div class="info__value">${s.meeting_any}</div></div>
@@ -9494,7 +9494,7 @@ function consultResults() {
       box.append(el(`
         <div class="card">
           <div class="info-grid info-grid--3">
-            <div class="info"><div class="info__label">Would come</div><div class="info__value" style="color:var(--gold-400)">${s.meeting_any}</div></div>
+            <div class="info"><div class="info__label">Would come</div><div class="info__value" style="color:var(--accent)">${s.meeting_any}</div></div>
             <div class="info"><div class="info__label">In a room</div><div class="info__value">${s.meeting_in_person}</div></div>
             <div class="info"><div class="info__label">Online</div><div class="info__value">${s.meeting_online}</div></div>
           </div>
@@ -9795,7 +9795,7 @@ function viewMemorial() {
 
       <div class="card">
         <div class="info-grid info-grid--3">
-          <div class="info"><div class="info__label">When</div><div class="info__value" style="font-size:17px;color:var(--gold-400)">Sun 23 Aug</div></div>
+          <div class="info"><div class="info__label">When</div><div class="info__value" style="font-size:17px;color:var(--accent)">Sun 23 Aug</div></div>
           <div class="info"><div class="info__label">Kick-off</div><div class="info__value" style="font-size:17px">2.30pm</div></div>
           <div class="info"><div class="info__label">Where</div><div class="info__value" style="font-size:17px">Latimer Park</div></div>
         </div>
