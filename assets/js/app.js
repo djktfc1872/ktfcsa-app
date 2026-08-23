@@ -9553,6 +9553,18 @@ function openLetterSection() {
   loadLetter().then((L) => {
     if (!L) return;
     box.append(el(`<h2 class="section-title">The letter we sent</h2>`));
+
+    /* Who it went to and when, in the open, before anybody has to unfold
+       anything. A letter published without its address and its timestamp is
+       an article about a letter. */
+    box.append(el(`
+      <div class="card sent-slip">
+        <div class="sent-slip__row"><span>To</span><b>${esc(L.to || "the club")}</b></div>
+        <div class="sent-slip__row"><span>Sent</span><b>${esc(L.sentWords)}</b></div>
+        <div class="sent-slip__row"><span>Reply asked for by</span><b>${
+          esc(fmtDate(L.replyBy))}</b></div>
+      </div>`));
+
     box.append(foldable(`Read it in full, as sent on ${L.sentWords}`, () => {
       const card = el(`<div class="card letter"></div>`);
       L.body.forEach((b) => {

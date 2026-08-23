@@ -6041,3 +6041,19 @@ button,
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .inbox__on { font-size: 11.5px; color: var(--text-3); }
+
+/* Who the letter went to and when. A published letter without its address and
+   timestamp is an article about a letter. */
+.sent-slip { border-left: 3px solid var(--accent); }
+.sent-slip__row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; padding: 7px 0;
+}
+.sent-slip__row + .sent-slip__row { border-top: 1px solid var(--line-soft); }
+.sent-slip__row span {
+  flex: 0 0 auto; font-size: 10.5px; font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.sent-slip__row b {
+  min-width: 0; text-align: right; font-size: 13.5px; overflow-wrap: anywhere;
+}
