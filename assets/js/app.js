@@ -335,12 +335,18 @@ const ROUTES = {
   association: { label: "Supporters\u2019 Association", short: "Association", icon: "\u{1F91D}",
     nav: "more", group: "Supporters", render: viewAssociation },
   wall: { label: "Fan Wall", icon: "\uD83D\uDCAC", nav: "tab", group: "Supporters", render: viewWall },
-  daily: { label: "Poppies Daily", short: "Daily", icon: "\uD83C\uDF3A", nav: "more", group: "Supporters", render: viewDaily },
-  duel: { label: "Who Played More?", short: "Played More", icon: "\u2694\uFE0F",
-    nav: "more", group: "Supporters", render: viewDuel },
+
   heritage: { label: "Archive Project", icon: "\uD83D\uDCFC", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "\uD83C\uDF99\uFE0F", nav: "more", group: "Supporters", render: viewPodcast },
   memorial: { label: "Memorial Match", icon: "\uD83D\uDC99", nav: "more", group: "Supporters", render: viewMemorial },
+
+  /* Two games rather than one buried among the notices. Poppies Daily is five
+     questions once a day; Who Played More is endless. They belong together and
+     neither belongs in a list with the archive project. */
+  daily: { label: "Poppies Daily", short: "Daily", icon: "\uD83C\uDF3A",
+    nav: "more", group: "Games", render: viewDaily },
+  duel: { label: "Who Played More?", short: "Played More", icon: "\u2694\uFE0F",
+    nav: "more", group: "Games", render: viewDuel },
 
   /* About Kettering Town rather than about us. Nine things under one heading
      meant the Association sat in the same list as the club's video feed, and
@@ -7782,6 +7788,31 @@ function duelPair(pool) {
   return null;
 }
 
+/** The best runs anybody has managed. */
+function duelBoard() {
+  const box = el(`<div></div>`);
+  db.duelLeague().then((rows) => {
+    if (!rows.length) return;
+    const me = db.currentUser()?.id;
+    box.append(el(`<h2 class="section-title">Longest runs</h2>`));
+    const card = el(`<div class="card ladder"></div>`);
+    rows.slice(0, 10).forEach((r, i) => {
+      card.append(el(`
+        <div class="ladder__row${r.profile_id === me ? " ladder__row--me" : ""}">
+          <span class="ladder__pos">${i + 1}</span>
+          <span class="ladder__who">${namePlusTag(r.profile_id, r.display_name)}</span>
+          <span class="ladder__meta">${r.plays} game${r.plays === 1 ? "" : "s"}</span>
+          <span class="ladder__pts">${r.best}</span>
+        </div>`));
+    });
+    card.append(el(`<p class="hint">${db.currentUser()
+      ? "Your best is saved when a run ends."
+      : "Sign in and your best run gets on the board. Playing works either way."}</p>`));
+    box.append(card);
+  }).catch(() => { /* the game works without a board */ });
+  return box;
+}
+
 function viewDuel() {
   const wrap = el(`
     <div>
@@ -7867,6 +7898,9 @@ function viewDuel() {
             feedback.append(el(`<p class="duel-feedback__ok">Correct. ${esc(picked.name)} made
               ${picked.apps} to ${other.apps}.</p>`));
           } else {
+            /* Recorded when the run ends rather than on every answer: one write
+               per game instead of one per tap. */
+            db.recordDuel(streak);
             streak = 0;
             paintScore();
             feedback.append(el(`<p class="duel-feedback__no">Not this time. ${esc(other.name)} made
@@ -7885,6 +7919,7 @@ function viewDuel() {
     };
 
     draw();
+    wrap.append(duelBoard());
     slot.append(el(`<p class="note" style="margin-top:14px">Appearances are counted from league
       team sheets held in the player archive, which begins in 2018/19. Anybody who played before
       that, or who only ever came off the bench without being listed, will be short.</p>`));

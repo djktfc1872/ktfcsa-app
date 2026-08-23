@@ -128,6 +128,11 @@ export async function setPassword(password) {
   await backend.setPassword(password);
 }
 
+export const recordDuel = (streak) =>
+  (backend?.recordDuel ? backend.recordDuel(streak) : Promise.resolve());
+export const duelLeague = () =>
+  (backend?.duelLeague ? backend.duelLeague() : Promise.resolve([]));
+
 export const supporterTags = () =>
   (backend?.supporterTags ? backend.supporterTags() : Promise.resolve(null));
 export const upsertTag = (key, label, sort) => backend.upsertTag(key, label, sort);

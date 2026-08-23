@@ -488,6 +488,18 @@ class Backend {
     return retry.error ? [] : (retry.data || []);
   }
 
+  /* Fire and forget: a streak that fails to record is not worth an error in
+     front of somebody mid-game. */
+  async recordDuel(streak) {
+    try { await this.sb.rpc("record_duel", { p_streak: streak }); } catch { /* never mind */ }
+  }
+
+  async duelLeague() {
+    const { data, error } = await this.sb.from("duel_league").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
   async supporterTags() {
     const { data, error } = await this.sb
       .from("supporter_tags").select("key, label, sort").order("sort");

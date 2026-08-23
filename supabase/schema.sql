@@ -1971,3 +1971,72 @@ revoke all on function upsert_tag(text, text, int) from public;
 revoke all on function delete_tag(text) from public;
 grant execute on function upsert_tag(text, text, int) to authenticated;
 grant execute on function delete_tag(text) to authenticated;
+
+-- ===========================================================================
+-- Who Played More: best streaks
+-- ===========================================================================
+--
+-- One row per supporter, holding their best run and how many they have played.
+-- Poppies Daily keeps every result because streaks are worked out from the
+-- dates; this game has no dates worth keeping, so it keeps the number and
+-- nothing else. Nobody needs a record of every wrong guess anybody has made.
+
+create table if not exists duel_scores (
+  profile_id uuid primary key references profiles on delete cascade,
+  best       int not null default 0 check (best between 0 and 500),
+  plays      int not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+comment on table duel_scores is
+  'Best Who Played More streak per supporter. One row each, overwritten upwards.';
+
+alter table duel_scores enable row level security;
+
+-- Readable by everyone: it is a leaderboard.
+drop policy if exists "duel scores readable" on duel_scores;
+create policy "duel scores readable" on duel_scores for select using (true);
+
+-- No insert or update policy. The function below is the only way in, so a
+-- supporter cannot simply post a streak of four hundred to the table.
+create or replace function record_duel(p_streak int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  s int := greatest(0, least(coalesce(p_streak, 0), 500));
+begin
+  if auth.uid() is null then
+    return;   /* playing signed out is fine, it just does not count */
+  end if;
+  insert into duel_scores (profile_id, best, plays, updated_at)
+  values (auth.uid(), s, 1, now())
+  on conflict (profile_id) do update
+    set best = greatest(duel_scores.best, excluded.best),
+        plays = duel_scores.plays + 1,
+        updated_at = now();
+end;
+$$;
+
+revoke all on function record_duel(int) from public;
+grant execute on function record_duel(int) to authenticated;
+
+-- The board. Names come from profiles, which is why this runs as owner: the
+-- rows themselves are public but profiles is not readable row by row.
+drop view if exists duel_league cascade;
+create view duel_league as
+select
+  d.profile_id,
+  p.display_name,
+  d.best,
+  d.plays
+from duel_scores d
+join profiles p on p.id = d.profile_id
+where d.best > 0
+order by d.best desc, d.plays asc
+limit 50;
+
+alter view duel_league set (security_invoker = false);
+grant select on duel_league to anon, authenticated;
