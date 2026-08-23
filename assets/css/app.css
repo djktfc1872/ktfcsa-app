@@ -6100,3 +6100,16 @@ button,
 }
 .park-said b { display: block; font-size: 12px; margin-bottom: 3px; }
 .park-said span { font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
+
+/* Whether away shirts get a welcome. Green and red carry meaning here rather
+   than decoration, so they are the only two pills that are coloured. */
+.pill--ok {
+  background: color-mix(in srgb, #6aa84f 18%, transparent);
+  color: #8fc776;
+  border: 1px solid color-mix(in srgb, #6aa84f 38%, transparent);
+}
+.pill--stop {
+  background: color-mix(in srgb, var(--red-400) 18%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--red-400) 40%, transparent);
+}

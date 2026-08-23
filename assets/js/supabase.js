@@ -891,7 +891,7 @@ class Backend {
     return { pubs: pubs || [], mine: new Set((mine || []).map((v) => v.pub_id)) };
   }
 
-  async addPub(clubSlug, { name, postcode, notes }) {
+  async addPub(clubSlug, { name, postcode, notes, awayFriendly }) {
     const { error } = await this.sb.from("pubs").insert({
       club_slug: clubSlug,
       profile_id: this.profile.id,
@@ -899,6 +899,7 @@ class Backend {
       name,
       postcode,
       notes,
+      away_friendly: awayFriendly || null,
     });
     if (error) throw new Error(friendly(error));
   }

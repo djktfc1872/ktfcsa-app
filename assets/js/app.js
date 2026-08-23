@@ -1810,7 +1810,7 @@ function viewClub({ id, from }) {
                   rel="noopener">${ICON.globe} Ground guide</a>` : ""}
         </div>
       </div>`));
-    const ask = groundPrompt(t, awayTrip) || parkingPrompt(t, awayTrip);
+    const ask = groundPrompt(t, awayTrip) || parkingPrompt(t, awayTrip) || pubPrompt(t, awayTrip);
     if (ask) box.append(ask);
     box.append(groundNotes(t));
     return box;
@@ -2482,6 +2482,58 @@ function accessForm(team) {
 
 /* --------------------------------------------------- supporter pub board */
 
+/* Short enough for a pill. The full wording is on the form where somebody is
+   choosing; here it only has to be recognisable at a glance. */
+const PUB_WELCOME = { yes: "Away fans welcome", mixed: "Keep it quiet", no: "Home fans only" };
+
+/**
+ * Asks somebody who has just been where they drank.
+ *
+ * Same reasoning as the parking prompt: the board fills up with suggestions
+ * from people planning a trip, which is the wrong end of it. The useful
+ * verdict comes from somebody who walked in wearing a Kettering shirt on
+ * Saturday, and the app knows who did.
+ */
+function pubPrompt(team, fixture) {
+  if (!db.currentUser() || !team) return null;
+  if (fixture && fixture.venue !== "Away") return null;
+  if (db.read(`pubAsked:${team.id}`, false)) return null;
+
+  const box = el(`<div class="card ask"></div>`);
+  const done = (msg) => box.replaceChildren(el(`<p class="ask__done">${esc(msg)}</p>`));
+  const stop = () => db.write(`pubAsked:${team.id}`, true);
+
+  const known = db.pubsFor(team.id);
+
+  box.append(el(`
+    <div class="ask__head">
+      <b>Did you go anywhere for a pint?</b>
+      <span>Near ${esc(team.stadium)}. Whether away shirts got a welcome is the bit nobody can
+        find out from a website.</span>
+    </div>`));
+
+  const row = el(`<div class="chips__row"></div>`);
+  known.slice(0, 4).forEach((pub) => {
+    const b = el(`<button class="chip">${esc(pub.name)}</button>`);
+    b.addEventListener("click", () => {
+      /* Already on the board, so this is a vote for it rather than a duplicate. */
+      if (!db.votedForPub(pub.id)) db.votePub(pub.id);
+      stop();
+      done(`Noted, that is a vote for ${pub.name}.`);
+    });
+    row.append(b);
+  });
+  const other = el(`<button class="chip">${known.length ? "Somewhere else" : "Add the place"}</button>`);
+  other.addEventListener("click", () => { stop(); box.remove(); pubForm(team); });
+  row.append(other);
+  box.append(row);
+
+  const no = el(`<button class="link-btn" style="margin-top:10px">Not this time</button>`);
+  no.addEventListener("click", () => { stop(); done("No bother."); });
+  box.append(no);
+  return box;
+}
+
 function pubBoard(team) {
   const box = el(`<div></div>`);
   const user = db.currentUser();
@@ -2509,6 +2561,9 @@ function pubBoard(team) {
       <div class="post">
         <div class="post__head">
           <span class="post__who">${esc(p.name)}</span>
+          ${p.away_friendly ? `<span class="pill ${
+            p.away_friendly === "yes" ? "pill--ok" : p.away_friendly === "no" ? "pill--stop" : "pill--muted"
+          }">${esc(PUB_WELCOME[p.away_friendly] || "")}</span>` : ""}
           ${p.postcode ? `<span class="pill pill--muted">${esc(p.postcode)}</span>` : ""}
           <span class="post__when">${esc(p.author_name)}</span>
         </div>
@@ -2544,6 +2599,15 @@ function pubForm(team) {
       <input id="pb-pc" maxlength="12" placeholder="B48 7LG"></div>
     <div class="field"><label for="pb-notes">Why is it worth a visit</label>
       <textarea id="pb-notes" maxlength="400" placeholder="Ten minutes from the ground, proper beer, no bother with away shirts."></textarea></div>
+    <div class="field">
+      <label for="pb-welcome">Away shirts</label>
+      <select id="pb-welcome">
+        <option value="">Not sure</option>
+        <option value="yes">Welcome, no bother</option>
+        <option value="mixed">Fine if you keep it quiet</option>
+        <option value="no">Home fans only, give it a miss</option>
+      </select>
+    </div>
     <div class="btn-row">
       <button class="btn btn--full" id="pb-save">Add recommendation</button>
       <button class="btn btn--ghost" id="pb-cancel">Cancel</button>
@@ -2558,7 +2622,10 @@ function pubForm(team) {
     if (!check.ok) return toast(check.reason, "bad");
     const limit = db.rateLimit("pub", { max: 4, windowMs: 300000 });
     if (!limit.ok) return toast(limit.reason, "bad");
-    db.addPub(team.id, { name, postcode: $("#pb-pc", node).value.trim().toUpperCase(), notes });
+    db.addPub(team.id, {
+      name, postcode: $("#pb-pc", node).value.trim().toUpperCase(), notes,
+      awayFriendly: $("#pb-welcome", node).value || null,
+    });
     close();
     toast("Thanks, that is on the board.", "good");
   });
@@ -7165,9 +7232,12 @@ function viewThread({ id }) {
       if (ask) wrap.append(ask);
       /* Only one prompt at a time. Two questionnaires under a match thread is
          a form, not a conversation. */
+      /* One prompt at a time, in order of how hard the answer is to get
+         anywhere else. Three questionnaires under a match thread is a form. */
       if (!ask) {
-        const park = parkingPrompt(t.fixture.team, t.fixture);
-        if (park) wrap.append(park);
+        const next = parkingPrompt(t.fixture.team, t.fixture)
+          || pubPrompt(t.fixture.team, t.fixture);
+        if (next) wrap.append(next);
       }
     }
   }

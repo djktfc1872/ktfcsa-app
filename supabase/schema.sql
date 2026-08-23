@@ -2167,3 +2167,20 @@ where hidden = false
 group by club_slug;
 
 grant select on parking_summary to anon, authenticated;
+
+-- ===========================================================================
+-- Whether away fans are actually welcome
+-- ===========================================================================
+--
+-- The one thing a travelling supporter wants to know about a pub near an away
+-- ground, and the one thing the existing free-text note was the wrong shape
+-- for. Some places are glad to see you, some would rather you walked on, and
+-- finding out at the door is how away days go wrong.
+--
+-- Three values rather than a rating: this is not a review of the beer.
+
+alter table pubs add column if not exists away_friendly text
+  check (away_friendly is null or away_friendly in ('yes', 'mixed', 'no'));
+
+comment on column pubs.away_friendly is
+  'Whether away supporters are made welcome. Set by whoever suggested it, corrected by anybody who goes.';
