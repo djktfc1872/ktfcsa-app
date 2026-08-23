@@ -1,30 +1,110 @@
 {
   "checked": "2026-08-23",
-  "note": "Read off each club's own website, one at a time. Fourteen of the twenty two publish nothing about parking anywhere we could find, and those say so rather than carrying a guess. Anything here can be corrected by a supporter who has just been.",
+  "note": "Club websites were read one at a time: eight publish something about parking and fourteen publish nothing. Where a club says nothing, OpenStreetMap fills in what is physically nearby. Supporters who have been correct both.",
   "clubs": {
     "kettering-town": {
       "atGround": true,
       "price": "Free, or reserve a space",
       "text": "There is a car park at Latimer Park. The club also lets you reserve a space for the season if you would rather not chance it on the day.",
-      "source": "https://www.ketteringtownfc.com/match-day-hospitality/"
+      "source": "https://www.ketteringtownfc.com/match-day-hospitality/",
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 71
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 246
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 273
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 307
+        }
+      ]
     },
     "peterborough-sports": {
       "atGround": true,
       "price": "Free",
       "text": "Free parking for home and away supporters at the clubhouse. Drive in through the Medical Centre car park and follow it all the way round. The turnstiles are in the car park itself.",
-      "source": "https://www.psfc.co.uk/matchday-information"
+      "source": "https://www.psfc.co.uk/matchday-information",
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 84
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 301
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 346
+        }
+      ]
     },
     "racing-club-warwick": {
       "atGround": true,
       "price": "Free for 2 hours",
       "text": "Large car park directly next to the ground. Two hours are free, but you must still take a ticket from the machine or you will be caught out.",
-      "source": "https://www.rcwfc.co.uk/ground"
+      "source": "https://www.rcwfc.co.uk/ground",
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 166
+        }
+      ]
     },
     "rushall-olympic": {
       "atGround": true,
       "price": "£3",
       "text": "Large private car park, stewarded on a matchday. Three pounds. Disabled parking by prior arrangement with the club.",
-      "source": "https://www.rofc.co.uk/club-info/club-stadium"
+      "source": "https://www.rofc.co.uk/club-info/club-stadium",
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 101
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 155
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 205
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 289
+        }
+      ]
     },
     "real-bedford": {
       "atGround": true,
@@ -36,19 +116,416 @@
       "atGround": false,
       "price": "£2 at the ground if lucky, or £1 to £1.30 an hour in town",
       "text": "Limited at the ground. The front car park is officials, disabled and VIPs only; the rear is mainly staff and players, with spectator spaces at £2 that go quickly. The club points visiting fans at the Stourbridge Road council car park (B61 0AB), with Parkside, Market Street by Asda, Recreation Road and School Drive as backups. Council pay and display, and they enforce it strictly.",
-      "source": "https://www.bromsgrovesporting.co.uk/matchday-parking"
+      "source": "https://www.bromsgrovesporting.co.uk/matchday-parking",
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 104
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 107
+        },
+        {
+          "name": "Stourbridge Road Car Park",
+          "fee": "yes",
+          "capacity": 71,
+          "metres": 163
+        },
+        {
+          "name": "Parkside",
+          "fee": "yes",
+          "capacity": 94,
+          "metres": 295
+        }
+      ]
     },
     "needham-market": {
       "atGround": true,
       "price": "Free",
       "text": "Free parking on site at Bloomfields.",
-      "source": "http://www.needhammarketfc.co.uk/"
+      "source": "http://www.needhammarketfc.co.uk/",
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 45
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 171
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 222
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 334
+        }
+      ]
     },
     "bishops-stortford": {
       "atGround": null,
       "price": null,
       "text": "The club warned in August 2026 that parking enforcement is now in place outside the Seko Unit on Woodside Park. Worth reading the signs before you leave the car.",
-      "source": "http://www.bsfc.co.uk/"
+      "source": "http://www.bsfc.co.uk/",
+      "nearby": [
+        {
+          "name": "Bishop’s Stortford Football Club Parking",
+          "fee": null,
+          "capacity": null,
+          "metres": 66
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 133
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 230
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 270
+        }
+      ]
+    },
+    "alvechurch": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 67
+        }
+      ]
+    },
+    "anstey-nomads": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": 28,
+          "metres": 123
+        }
+      ]
+    },
+    "banbury-united": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 112
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 141
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 217
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 218
+        }
+      ]
+    },
+    "bury-town": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": "Ram Meadow",
+          "fee": "yes",
+          "capacity": null,
+          "metres": 145
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 254
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 305
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 380
+        }
+      ]
+    },
+    "halesowen-town": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": "Tesco Car park",
+          "fee": null,
+          "capacity": null,
+          "metres": 361
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 384
+        }
+      ]
+    },
+    "hitchin-town": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 83
+        },
+        {
+          "name": null,
+          "fee": "yes",
+          "capacity": null,
+          "metres": 204
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 295
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 340
+        }
+      ]
+    },
+    "leamington": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 323
+        }
+      ]
+    },
+    "leighton-town": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 158
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 176
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 189
+        },
+        {
+          "name": "Duncombe Drive Car Park",
+          "fee": "yes",
+          "capacity": 139,
+          "metres": 282
+        }
+      ]
+    },
+    "leiston": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 116
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 136
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 155
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 232
+        }
+      ]
+    },
+    "redditch-united": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 137
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 159
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 230
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 237
+        }
+      ]
+    },
+    "stamford": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 79
+        }
+      ]
+    },
+    "stourbridge": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 104
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 250
+        },
+        {
+          "name": null,
+          "fee": "no",
+          "capacity": null,
+          "metres": 319
+        },
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 362
+        }
+      ]
+    },
+    "stratford-town": {
+      "atGround": null,
+      "price": null,
+      "text": null,
+      "source": null,
+      "nearby": [
+        {
+          "name": null,
+          "fee": null,
+          "capacity": null,
+          "metres": 92
+        }
+      ]
     }
+  },
+  "osm": {
+    "checked": "2026-08-23",
+    "attribution": "Car parks near each ground are from OpenStreetMap, © OpenStreetMap contributors, ODbL.",
+    "note": "Anyone can map a car park, and plenty are on there without a name or a price, so this says what is there and how far rather than what it costs. It is a starting point for a ground the club says nothing about, not a promise of a space."
   }
 }

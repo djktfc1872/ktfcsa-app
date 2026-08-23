@@ -1519,6 +1519,59 @@ function leaveBy(f) {
   return { at: out, drive, miles };
 }
 
+/**
+ * What we can tell somebody about leaving the car, in the order it is worth
+ * hearing: what the club says, then what is physically there, then who to tell
+ * if it is wrong.
+ *
+ * Fourteen of the twenty two clubs publish nothing about parking at all. That
+ * used to mean an invented price range, then it meant a shrug. OpenStreetMap
+ * knows where the car parks are even where the club will not say, and "three
+ * public car parks within three hundred metres, nearest seventy" is a great
+ * deal more use on a wet Tuesday than nothing.
+ */
+function parkingCard(t) {
+  const park = state.parking?.clubs?.[t.id];
+  const card = el(`<div class="card"></div>`);
+  card.append(el(`<div class="info__label">${ICON.car} Parking</div>`));
+
+  if (park?.text) {
+    card.append(el(`<div class="info__value" style="margin-bottom:2px">${esc(park.price || "See below")}</div>`));
+    card.append(el(`<div class="hint">${esc(park.text)}</div>`));
+    if (park.source) {
+      card.append(el(`<a class="map-link" href="${esc(park.source)}" target="_blank"
+        rel="noopener">${ICON.globe} The club's own words</a>`));
+    }
+  } else {
+    card.append(el(`<div class="info__value" style="margin-bottom:2px">Not published</div>`));
+    card.append(el(`<div class="hint">${esc(t.name)} do not say anything about parking.</div>`));
+  }
+
+  const lots = park?.nearby || [];
+  if (lots.length) {
+    const near = lots.filter((l) => l.metres <= 300).length;
+    card.append(el(`<div class="park-near"></div>`));
+    const list = $(".park-near", card);
+    list.append(el(`<div class="park-near__head">${lots.length} public car park${
+      lots.length === 1 ? "" : "s"} mapped nearby${near ? `, ${near} within 300m` : ""}</div>`));
+    lots.forEach((l) => {
+      const bits = [];
+      if (l.fee === "no") bits.push("free");
+      else if (l.fee === "yes") bits.push("pay and display");
+      if (l.capacity) bits.push(`${l.capacity} spaces`);
+      list.append(el(`
+        <div class="park-lot">
+          <span class="park-lot__name">${esc(l.name || "Unnamed car park")}</span>
+          <span class="park-lot__meta">${bits.length ? `${esc(bits.join(", "))} &middot; ` : ""}${
+            l.metres}m</span>
+        </div>`));
+    });
+    list.append(el(`<p class="park-near__src">From OpenStreetMap, which anyone can add to. Plenty
+      are on there without a name or a price, so this is what is there rather than what it costs.</p>`));
+  }
+  return card;
+}
+
 function viewPlan({ id }) {
   const f = fixtures().find((x) => String(x.id) === String(id));
   const wrap = el(`<div></div>`);
@@ -1556,7 +1609,6 @@ function viewPlan({ id }) {
 
   /* --- what it costs and where to leave the car ---------------------- */
   if (t) {
-    const park = state.parking?.clubs?.[t.id];
     wrap.append(el(`<h2 class="section-title">On the day</h2>`));
     const card = el(`
       <div class="card">
@@ -1574,13 +1626,7 @@ function viewPlan({ id }) {
     wrap.append(card);
 
     const bits = el(`<div class="grid grid--2"></div>`);
-    bits.append(el(`
-      <div class="card">
-        <div class="info__label">${ICON.car} Parking</div>
-        <div class="info__value" style="margin-bottom:2px">${esc(park?.price || "Not published")}</div>
-        <div class="hint">${esc(park?.text
-          || `${t.name} do not publish anything about parking. If you have been, tell us.`)}</div>
-      </div>`));
+    bits.append(parkingCard(t));
     bits.append(el(`
       <div class="card">
         <div class="info__label">${ICON.pint} Pub</div>
@@ -1809,42 +1855,18 @@ function viewClub({ id, from }) {
   const parkingAndPub = () => {
     const box = group();
     box.append(el(`<h2 class="section-title">Parking and the pub at ${esc(t.stadium)}</h2>`));
-    box.append(el(`
-      <div class="grid grid--2">
-        ${(() => {
-          /* What the club itself says, where it says anything. The hourly and
-             daily figures underneath were never sourced: twenty of the twenty
-             two "car parks" were just the ground's own name and eighteen of
-             the prices were invented ranges, which is worse than an empty
-             space because it looks like it was checked. */
-          const park = state.parking?.clubs?.[t.id];
-          if (park) {
-            return `
-        <div class="card">
-          <div class="info__label">${ICON.car} Parking</div>
-          <div class="info__value" style="margin-bottom:2px">${esc(park.price || "See below")}</div>
-          <div class="hint">${esc(park.text)}</div>
-          <a class="map-link" href="${esc(park.source)}" target="_blank" rel="noopener">${
-            ICON.globe} What the club says</a>
-        </div>`;
-          }
-          return `
-        <div class="card">
-          <div class="info__label">${ICON.car} Parking</div>
-          <div class="info__value" style="margin-bottom:2px">Not published</div>
-          <div class="hint">${esc(t.name)} do not say anything about parking on their website, so
-            neither do we. If you have just been, tell us and it goes on here for the next person.</div>
-          <a class="map-link" href="${placeUrl(t.stadium, t.postcode)}" target="_blank" rel="noopener">${
-            ICON.pin} ${esc(t.postcode)}</a>
-        </div>`;
-        })()}
+    /* One parking card, shared with the matchday plan, so the away guide and
+       the plan cannot drift apart on the same question. */
+    const pair = el(`<div class="grid grid--2"></div>`);
+    pair.append(parkingCard(t));
+    pair.append(el(`
         <div class="card">
           <div class="info__label">${ICON.pint} Nearby pub</div>
           <div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>
           <div class="hint">Worth a check before you set off. Away support is not always welcome everywhere.</div>
           <a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank" rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>
-        </div>
-      </div>`));
+        </div>`));
+    box.append(pair);
     box.append(el(`<h2 class="section-title">Supporter recommendations</h2>`));
     box.append(pubBoard(t));
     return box;
