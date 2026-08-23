@@ -209,10 +209,10 @@
       ]
     },
     "alvechurch": {
-      "atGround": null,
-      "price": null,
-      "text": null,
-      "source": null,
+      "atGround": true,
+      "price": "At the ground",
+      "text": "There is a car park at Lye Meadow, with the entrance just before the ground itself. M42 junction 2, A441 towards Redditch, then the B4120 to Alvechurch and it is about a mile on the right.",
+      "source": "https://www.alvechurchfc.club/information",
       "nearby": [
         {
           "name": null,

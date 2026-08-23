@@ -2184,3 +2184,59 @@ alter table pubs add column if not exists away_friendly text
 
 comment on column pubs.away_friendly is
   'Whether away supporters are made welcome. Set by whoever suggested it, corrected by anybody who goes.';
+
+-- ===========================================================================
+-- Grounds visited
+-- ===========================================================================
+--
+-- Attendance already records which of this season's fixtures somebody went to,
+-- which gives a grounds list for one season. Supporters have been going for
+-- decades, and a groundhopper list that starts in August 2026 is not their
+-- list. So a ground can be ticked directly as well, and the two are merged.
+--
+-- One row per supporter per ground rather than per visit: the question is
+-- "have you been", and a first date is enough colour for the ones who care.
+
+create table if not exists ground_visits (
+  profile_id uuid not null references profiles on delete cascade,
+  club_slug  text not null,
+  first_seen date,
+  note       text check (note is null or char_length(note) <= 200),
+  created_at timestamptz not null default now(),
+  primary key (profile_id, club_slug)
+);
+
+comment on table ground_visits is
+  'Grounds a supporter has ticked off. Merged with attendance, which covers the current season.';
+
+alter table ground_visits enable row level security;
+
+-- Your own list, and nobody else's. There is no leaderboard here on purpose:
+-- who has been where is a collection, not a competition, and publishing it
+-- would tell anybody who cared which grounds a named person travels to.
+drop policy if exists "read your own visits" on ground_visits;
+create policy "read your own visits" on ground_visits
+  for select using (auth.uid() = profile_id);
+
+drop policy if exists "tick off a ground" on ground_visits;
+create policy "tick off a ground" on ground_visits
+  for insert with check (auth.uid() = profile_id);
+
+drop policy if exists "amend your own visit" on ground_visits;
+create policy "amend your own visit" on ground_visits
+  for update using (auth.uid() = profile_id);
+
+drop policy if exists "untick a ground" on ground_visits;
+create policy "untick a ground" on ground_visits
+  for delete using (auth.uid() = profile_id);
+
+-- How many grounds have been ticked across everybody, with no names attached.
+-- Enough to say "eleven supporters have been to Leiston" without saying who.
+drop view if exists ground_visit_counts cascade;
+create view ground_visit_counts as
+select club_slug, count(*)::int as supporters
+from ground_visits
+group by club_slug;
+
+alter view ground_visit_counts set (security_invoker = false);
+grant select on ground_visit_counts to anon, authenticated;
