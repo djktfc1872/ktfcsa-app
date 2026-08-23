@@ -5896,3 +5896,53 @@ button,
 .ground__name { font-size: 14px; color: var(--text-3); }
 .ground--been .ground__name { color: var(--text); font-weight: 600; }
 .ground__where { font-size: 11.5px; color: var(--text-3); }
+
+/* ------------------------------------------------------ who played more? */
+
+.duel-score {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--text-2);
+}
+.duel-score b { font-size: 19px; color: var(--gold-400); font-variant-numeric: tabular-nums; }
+.duel-score__best { font-size: 12px; color: var(--text-3); }
+
+/* Two sides with the word between them. Stacked on a phone, side by side
+   once there is room, and the divider moves with it. */
+.duel { position: relative; display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 560px) { .duel { grid-template-columns: 1fr 1fr; } }
+
+.duel__side {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 20px 16px; min-height: 104px;
+  justify-content: center;
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface); font: inherit; color: inherit;
+  text-align: left; cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.duel__side:hover { border-color: var(--gold-400); }
+.duel__name { font-size: 17px; font-weight: 700; line-height: 1.25; }
+.duel__meta { font-size: 12px; color: var(--text-3); }
+.duel__apps {
+  margin-top: 4px; font-size: 26px; font-weight: 800;
+  color: var(--gold-400); font-variant-numeric: tabular-nums; line-height: 1;
+}
+.duel__apps span { margin-left: 5px; font-size: 12px; font-weight: 600; color: var(--text-3); }
+
+.duel__side--more { border-color: #6aa84f; background: color-mix(in srgb, #6aa84f 10%, transparent); }
+.duel__side--more .duel__apps { color: #6aa84f; }
+.duel__side--less { opacity: 0.72; }
+
+.duel__v {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  padding: 3px 9px; border-radius: var(--r-pill);
+  background: var(--bg); border: 1px solid var(--line);
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+}
+@media (max-width: 559px) { .duel__v { display: none; } }
+
+.duel-feedback { margin-top: 14px; }
+.duel-feedback p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
+.duel-feedback__ok { color: #6aa84f; }
+.duel-feedback__no { color: var(--red-400); }

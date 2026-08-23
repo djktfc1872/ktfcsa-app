@@ -336,6 +336,8 @@ const ROUTES = {
     nav: "more", group: "Supporters", render: viewAssociation },
   wall: { label: "Fan Wall", icon: "\uD83D\uDCAC", nav: "tab", group: "Supporters", render: viewWall },
   daily: { label: "Poppies Daily", short: "Daily", icon: "\uD83C\uDF3A", nav: "more", group: "Supporters", render: viewDaily },
+  duel: { label: "Who Played More?", short: "Played More", icon: "\u2694\uFE0F",
+    nav: "more", group: "Supporters", render: viewDuel },
   heritage: { label: "Archive Project", icon: "\uD83D\uDCFC", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "\uD83C\uDF99\uFE0F", nav: "more", group: "Supporters", render: viewPodcast },
   memorial: { label: "Memorial Match", icon: "\uD83D\uDC99", nav: "more", group: "Supporters", render: viewMemorial },
@@ -7746,6 +7748,152 @@ function buildArchiveIndex(a) {
     }
   }
   return out;
+}
+
+/* ==================================================== who played more? */
+
+/**
+ * A second game, deliberately unlike the first.
+ *
+ * Poppies Daily is five questions once a day and then it is gone. This is the
+ * opposite: endless, quick, and about the players rather than the trivia. Two
+ * names, pick whichever made more appearances, keep going until you are wrong.
+ *
+ * Built entirely from the archive already loaded for On This Day and the
+ * player pages, so it costs one file that was being fetched anyway.
+ */
+const DUEL_MIN_APPS = 5;
+
+function duelPool() {
+  if (!state.archiveIndex) return [];
+  return [...state.archiveIndex.values()]
+    .filter((p) => p.apps >= DUEL_MIN_APPS)
+    .map((p) => ({ name: p.name, apps: p.apps, seasons: p.seasons.size,
+                   first: p.first, last: p.last }));
+}
+
+/** Two players with different totals, so there is always a right answer. */
+function duelPair(pool) {
+  for (let tries = 0; tries < 40; tries += 1) {
+    const a = pool[Math.floor(Math.random() * pool.length)];
+    const b = pool[Math.floor(Math.random() * pool.length)];
+    if (a && b && a.name !== b.name && a.apps !== b.apps) return [a, b];
+  }
+  return null;
+}
+
+function viewDuel() {
+  const wrap = el(`
+    <div>
+      <div class="page-head page-head--airy">
+        <h1>Who played more?</h1>
+        <p>Two Poppies, one question. Pick whoever made more appearances since 2018, and keep
+           going until you get one wrong.</p>
+      </div>
+      <div class="duel-slot"></div>
+    </div>`);
+
+  const slot = $(".duel-slot", wrap);
+  slot.append(el(`<div class="card"><p class="note" style="margin:0">Loading the archive.</p></div>`));
+
+  ensureArchive().then(() => {
+    const pool = duelPool();
+    if (pool.length < 4) {
+      slot.replaceChildren();
+      slot.append(el(`<div class="empty"><b>Not enough in the archive yet</b>This needs a few more
+        seasons of team sheets before it can ask anything sensible.</div>`));
+      return;
+    }
+
+    let streak = 0;
+    let best = db.read("duel-best", 0);
+    let pair = duelPair(pool);
+    let answered = false;
+
+    const draw = () => {
+      slot.replaceChildren();
+      if (!pair) {
+        slot.append(el(`<div class="empty"><b>Ran out of players</b>Try again in a moment.</div>`));
+        return;
+      }
+
+      const score = el(`
+        <div class="duel-score">
+          <span><b>${streak}</b> in a row</span>
+          <span class="duel-score__best">Best ${best}</span>
+        </div>`);
+      /* Repainted the moment an answer lands. Leaving it until the next pair
+         meant the score always read one behind, which looks like a bug. */
+      const paintScore = () => {
+        score.replaceChildren(
+          el(`<span><b>${streak}</b> in a row</span>`),
+          el(`<span class="duel-score__best">Best ${best}</span>`));
+      };
+      slot.append(score);
+
+      const board = el(`<div class="duel"></div>`);
+      pair.forEach((p, i) => {
+        const card = el(`
+          <button class="duel__side" data-side="${i}">
+            <span class="duel__name">${esc(p.name)}</span>
+            <span class="duel__meta">${p.seasons} season${p.seasons === 1 ? "" : "s"}</span>
+            <span class="duel__apps" hidden>${p.apps}<span>apps</span></span>
+          </button>`);
+        board.append(card);
+      });
+      board.append(el(`<span class="duel__v" aria-hidden="true">or</span>`));
+      slot.append(board);
+
+      const feedback = el(`<div class="duel-feedback"></div>`);
+      slot.append(feedback);
+
+      board.querySelectorAll("[data-side]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (answered) return;
+          answered = true;
+          const picked = pair[Number(btn.dataset.side)];
+          const other = pair[1 - Number(btn.dataset.side)];
+          const right = picked.apps > other.apps;
+
+          board.querySelectorAll(".duel__apps").forEach((n) => { n.hidden = false; });
+          board.querySelectorAll("[data-side]").forEach((b, i) => {
+            b.classList.add(pair[i].apps > pair[1 - i].apps ? "duel__side--more" : "duel__side--less");
+          });
+
+          if (right) {
+            streak += 1;
+            if (streak > best) { best = streak; db.write("duel-best", best); }
+            paintScore();
+            feedback.append(el(`<p class="duel-feedback__ok">Correct. ${esc(picked.name)} made
+              ${picked.apps} to ${other.apps}.</p>`));
+          } else {
+            streak = 0;
+            paintScore();
+            feedback.append(el(`<p class="duel-feedback__no">Not this time. ${esc(other.name)} made
+              ${other.apps} to ${picked.apps}.</p>`));
+          }
+
+          const next = el(`<button class="btn btn--sm">${right ? "Next pair" : "Start again"}</button>`);
+          next.addEventListener("click", () => {
+            answered = false;
+            pair = duelPair(pool);
+            draw();
+          });
+          feedback.append(next);
+        });
+      });
+    };
+
+    draw();
+    slot.append(el(`<p class="note" style="margin-top:14px">Appearances are counted from league
+      team sheets held in the player archive, which begins in 2018/19. Anybody who played before
+      that, or who only ever came off the bench without being listed, will be short.</p>`));
+  }).catch(() => {
+    slot.replaceChildren();
+    slot.append(el(`<div class="empty"><b>The archive did not load</b>Try again shortly.</div>`));
+  });
+
+  return wrap;
 }
 
 /** The five for today, or null when the game has not started or has run out. */
