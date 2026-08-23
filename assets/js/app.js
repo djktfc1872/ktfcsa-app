@@ -384,6 +384,9 @@ const ROUTES = {
      do once inside is decided section by section, not by hiding the door. */
   admin: { label: "Admin", icon: "🛠️", nav: "more", group: "You", adminOnly: true, render: viewAdmin },
   match: { label: "Match", icon: "⚽", nav: "hidden", render: viewMatch },
+  /* Reached from a fixture rather than the nav: it is always about one game,
+     so a menu entry would have to ask which, and the fixture already knows. */
+  plan: { label: "The plan", icon: "🗓️", nav: "hidden", render: viewPlan },
 };
 
 function go(view, params = {}) {
@@ -752,10 +755,13 @@ function viewHome() {
           ${t && next.venue === "Away" ? `<span class="pill pill--muted">${t.distanceMiles} miles</span>` : ""}
         </div>
         ${countdown(next)}
-        ${t && next.venue === "Away"
-          ? `<div class="hero__row"><button class="btn btn--sm" data-club="${esc(t.id)}">Away day guide</button>
-             <a class="btn btn--sm btn--ghost" href="${directionsUrl(t)}" target="_blank" rel="noopener">Directions</a></div>`
-          : ""}
+        <div class="hero__row">
+          <button class="btn btn--sm" data-plan="${esc(String(next.id))}">${
+            next.venue === "Away" ? "Plan the away day" : "Matchday plan"}</button>
+          ${t && next.venue === "Away"
+            ? `<a class="btn btn--sm btn--ghost" href="${directionsUrl(t)}" target="_blank"
+                  rel="noopener">Directions</a>` : ""}
+        </div>
       </div>`));
 
     /* Predictions sit with the game they belong to rather than in a tab of
@@ -1483,6 +1489,147 @@ function concessionNote(t) {
   return ages
     ? `Concessions at ${t.name} cover ${ages.toLowerCase()}. Take proof with you.`
     : `${t.name} has not published who qualifies for a concession. At this level it is usually over 65s and students, and often under 18s in full time education, but check on the gate.`;
+}
+
+/* ============================================================== the plan */
+
+/**
+ * One screen for one game: the matchday hub, and for an away game the away day
+ * planner, which turned out to be the same screen with the travel section
+ * filled in.
+ *
+ * Everything on it already existed somewhere: kick-off on the fixture list,
+ * prices and parking and the pub in the away guide, the thread on the wall,
+ * the prediction under the fixture. Spread across four screens it is a list of
+ * facts; gathered on one it is a plan for a Saturday.
+ */
+
+/* Rough door to door. Non-league away trips are mostly A roads and ring roads,
+   so 40mph is nearer the truth than a motorway average, and there is no point
+   pretending this is a routing engine: it says roughly, and it says why. */
+const travelMinutes = (miles) => Math.round((miles / 40) * 60);
+
+function leaveBy(f) {
+  const ko = kickoffTime(f);
+  const miles = f.team?.distanceMiles;
+  if (!ko || f.venue !== "Away" || typeof miles !== "number") return null;
+  const drive = travelMinutes(miles);
+  const beforeKo = 30;                    /* parking, turnstile, a pie */
+  const out = new Date(ko.getTime() - (drive + beforeKo) * 60000);
+  return { at: out, drive, miles };
+}
+
+function viewPlan({ id }) {
+  const f = fixtures().find((x) => String(x.id) === String(id));
+  const wrap = el(`<div></div>`);
+  if (!f) {
+    wrap.append(el(`<div class="empty"><b>No such game</b>It may have been rearranged.</div>`));
+    return wrap;
+  }
+
+  const t = f.team;
+  const away = f.venue === "Away";
+  const ko = kickoffTime(f);
+  const hhmm = (d) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <h1>${esc(clubName(f.opponent))}</h1>
+      <p>${esc(fmtDate(f.date))} &middot; ${esc(f.kickoff || "")} &middot;
+         ${away ? `away at ${esc(t?.stadium || "their place")}` : "at Latimer Park"}${
+           f.competition ? ` &middot; ${esc(f.competition)}` : ""}</p>
+    </div>`));
+
+  /* --- when to set off ---------------------------------------------- */
+  const trip = leaveBy(f);
+  if (trip) {
+    wrap.append(el(`<h2 class="section-title">Getting there</h2>`));
+    wrap.append(el(`
+      <div class="card plan-leave">
+        <div class="plan-leave__big">${esc(hhmm(trip.at))}</div>
+        <div class="plan-leave__sub">is roughly when to leave Kettering</div>
+        <p class="hint">${trip.miles} miles each way, about ${trip.drive} minutes on the road at
+          A-road speeds, plus half an hour at the other end for parking and the turnstile. It is an
+          estimate from the distance, not a route: check the traffic before you go.</p>
+      </div>`));
+  }
+
+  /* --- what it costs and where to leave the car ---------------------- */
+  if (t) {
+    const park = state.parking?.clubs?.[t.id];
+    wrap.append(el(`<h2 class="section-title">On the day</h2>`));
+    const card = el(`
+      <div class="card">
+        <div class="info-grid info-grid--3">
+          <div class="info"><div class="info__label">Adult</div>
+            <div class="info__value" style="color:var(--accent)">${money(t.adultPrice)}</div></div>
+          <div class="info"><div class="info__label">Concession</div>
+            <div class="info__value">${money(t.concessionPrice)}</div></div>
+          <div class="info"><div class="info__label">Capacity</div>
+            <div class="info__value">${typeof t.capacity === "number"
+              ? t.capacity.toLocaleString("en-GB") : esc(t.capacity)}</div></div>
+        </div>
+        ${t.ticketNotes ? `<p class="hint">${esc(t.ticketNotes)}</p>` : ""}
+      </div>`);
+    wrap.append(card);
+
+    const bits = el(`<div class="grid grid--2"></div>`);
+    bits.append(el(`
+      <div class="card">
+        <div class="info__label">${ICON.car} Parking</div>
+        <div class="info__value" style="margin-bottom:2px">${esc(park?.price || "Not published")}</div>
+        <div class="hint">${esc(park?.text
+          || `${t.name} do not publish anything about parking. If you have been, tell us.`)}</div>
+      </div>`));
+    bits.append(el(`
+      <div class="card">
+        <div class="info__label">${ICON.pint} Pub</div>
+        <div class="info__value" style="margin-bottom:2px">${esc(t.pub)}</div>
+        <a class="map-link" href="${placeUrl(t.pub, t.pubPostcode)}" target="_blank"
+           rel="noopener">${ICON.pin} ${esc(t.pubPostcode)}</a>
+      </div>`));
+    wrap.append(bits);
+
+    const links = el(`<div class="btn-row" style="margin-top:12px"></div>`);
+    links.append(el(`<a class="btn btn--sm" href="${directionsUrl(t)}" target="_blank"
+      rel="noopener">${ICON.route} Directions</a>`));
+    if (streetViewUrl(t)) {
+      links.append(el(`<a class="btn btn--sm btn--ghost" href="${streetViewUrl(t)}" target="_blank"
+        rel="noopener">${ICON.pin} Street View</a>`));
+    }
+    if (groundGuideUrl(t)) {
+      links.append(el(`<a class="btn btn--sm btn--ghost" href="${esc(groundGuideUrl(t))}"
+        target="_blank" rel="noopener">${ICON.globe} Ground guide</a>`));
+    }
+    const guide = el(`<button class="btn btn--sm btn--ghost">Full away guide</button>`);
+    guide.addEventListener("click", () => go("club", { id: t.id, from: away ? "away" : "home" }));
+    links.append(guide);
+    wrap.append(links);
+  }
+
+  /* --- predict it, and talk about it -------------------------------- */
+  if (f.status !== "played") {
+    wrap.append(el(`<h2 class="section-title">Your prediction</h2>`));
+    wrap.append(predictionCard(f));
+  }
+
+  const threads = threadsFor(f);
+  if (threads.length) {
+    wrap.append(el(`<h2 class="section-title">Talking about it</h2>`));
+    const list = el(`<div class="card"></div>`);
+    threads.forEach((th) => {
+      const b = el(`
+        <button class="talk-btn">
+          <span>${esc(th.title)}</span>
+          <span class="talk-btn__go" aria-hidden="true">\u203A</span>
+        </button>`);
+      b.addEventListener("click", () => go("thread", { id: th.id }));
+      list.append(b);
+    });
+    wrap.append(list);
+  }
+
+  return wrap;
 }
 
 function viewClub({ id, from }) {
@@ -10387,6 +10534,11 @@ function wireGlobalClicks() {
     const match = e.target.closest("[data-match]");
     if (match && match.dataset.match) {
       go("match", { id: match.dataset.match });
+      return;
+    }
+    const plan = e.target.closest("[data-plan]");
+    if (plan && plan.dataset.plan) {
+      go("plan", { id: plan.dataset.plan });
       return;
     }
     const club = e.target.closest("[data-club]");

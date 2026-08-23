@@ -6057,3 +6057,14 @@ button,
 .sent-slip__row b {
   min-width: 0; text-align: right; font-size: 13.5px; overflow-wrap: anywhere;
 }
+
+/* ---------------------------------------------------------------- the plan */
+
+.plan-leave { text-align: center; }
+.plan-leave__big {
+  font-size: 42px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--accent); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.plan-leave__sub { margin-top: 6px; font-size: 13.5px; color: var(--text-2); }
+.plan-leave .hint { margin-top: 12px; text-align: left; }
