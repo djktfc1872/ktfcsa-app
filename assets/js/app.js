@@ -7862,16 +7862,33 @@ function ensureArchive() {
 /** Everyone who has played since 2018, reduced once rather than per render. */
 function buildArchiveIndex(a) {
   const out = new Map();
+  const add = (name, season, shirt, date) => {
+    if (!name) return;
+    if (!out.has(name)) {
+      out.set(name, { name, apps: 0, seasons: new Set(), shirts: new Set(), first: date, last: date });
+    }
+    const r = out.get(name);
+    r.apps += 1;
+    r.seasons.add(season);
+    if (shirt != null) r.shirts.add(shirt);
+    if (date < r.first) r.first = date;
+    if (date > r.last) r.last = date;
+  };
+
   for (const m of a.matches) {
-    for (const [pi, shirt] of m.lineup) {
-      const name = a.players[pi];
-      if (!out.has(name)) out.set(name, { name, apps: 0, seasons: new Set(), shirts: new Set(), first: m.date, last: m.date });
-      const r = out.get(name);
-      r.apps += 1;
-      r.seasons.add(m.season);
-      if (shirt != null) r.shirts.add(shirt);
-      if (m.date < r.first) r.first = m.date;
-      if (m.date > r.last) r.last = m.date;
+    for (const [pi, shirt] of m.lineup) add(a.players[pi], m.season, shirt, m.date);
+  }
+
+  /* The archive stops where the current season starts, which is right for the
+     file and wrong for a player's record: it meant this season's appearances
+     counted nowhere, so anybody playing now looked like they had stopped.
+     league.json has the same team sheets in a different shape, so the current
+     season is folded in here rather than duplicated on disk. */
+  const league = state.league;
+  if (league?.fixtures?.length) {
+    for (const f of league.fixtures) {
+      if (!Array.isArray(f.lineup) || !f.lineup.length) continue;
+      for (const p of f.lineup) add(p.name, league.season, p.number ?? null, f.date);
     }
   }
   return out;
@@ -10102,6 +10119,9 @@ async function loadLeague(force = false) {
     const res = await fetch(`data/league.json${force ? `?t=${Date.now()}` : ""}`, { cache: force ? "reload" : "default" });
     if (!res.ok) throw new Error(String(res.status));
     state.league = await res.json();
+    /* The index folds this season in, so it has to be rebuilt if the archive
+       got here first. Whichever order they land in, the answer is the same. */
+    if (state.archive) state.archiveIndex = buildArchiveIndex(state.archive);
   } catch {
     state.league = null; /* the app falls back to the spreadsheet fixture list */
   }
