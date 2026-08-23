@@ -732,6 +732,9 @@ function viewHome() {
   if (promo) $(".daily-slot", wrap).append(promo);
   $(".otd-slot", wrap).append(onThisDayCard());
 
+  /* Where the league stands, on the page people actually open. */
+  if (db.isOnline()) $(".otd-slot", wrap).append(predictionSnapshot());
+
   const more = el(`
     <button class="ql ql--wide" data-nav="fixtures" style="margin-top:4px">
       <span class="ql__icon" aria-hidden="true">\u{1F4C5}</span>
@@ -1092,6 +1095,52 @@ function predictionCard(f, { settled = false, compact = false } = {}) {
   return card;
 }
 
+/**
+ * The top of the prediction league, on the home page.
+ *
+ * The table was one tap away and nobody taps. A league nobody can see the top
+ * of is not a league, and the point of it is that people know where they are.
+ * Your own row is pulled in underneath if you are not already in the five, so
+ * it always says something about you rather than only about the leaders.
+ */
+function predictionSnapshot() {
+  const box = el(`<div></div>`);
+  db.predictionLeague().then((rows) => {
+    if (!rows.length) return;
+    const me = db.currentUser()?.id;
+    const top = rows.slice(0, 5);
+    const mineAt = rows.findIndex((r) => r.profile_id === me);
+    const alsoMe = mineAt >= 5 ? rows[mineAt] : null;
+
+    const card = el(`
+      <div class="card ladder">
+        <div class="ladder__head">
+          <span>Prediction league</span>
+          <button class="link-btn" data-nav="predict">Full table ›</button>
+        </div>
+      </div>`);
+
+    const row = (r, pos) => el(`
+      <button class="ladder__row${r.profile_id === me ? " ladder__row--me" : ""}" data-nav="predict">
+        <span class="ladder__pos">${pos}</span>
+        <span class="ladder__who">${namePlusTag(r.profile_id, r.display_name)}</span>
+        <span class="ladder__meta">${r.exact_scores} exact</span>
+        <span class="ladder__pts">${r.points}</span>
+      </button>`);
+
+    top.forEach((r, i) => card.append(row(r, i + 1)));
+    if (alsoMe) {
+      card.append(el(`<div class="ladder__gap" aria-hidden="true">···</div>`));
+      card.append(row(alsoMe, mineAt + 1));
+    }
+    card.append(el(`<p class="hint">${
+      me ? "Predictions close at kick-off." : "Join to get on the table. Predicting works without an account."
+    }</p>`));
+    box.append(card);
+  }).catch(() => { /* the home page is fine without it */ });
+  return box;
+}
+
 function predictionTable() {
   const box = el(`<div><div class="skeleton" style="height:120px"></div></div>`);
   db.predictionLeague()
@@ -1125,6 +1174,89 @@ function predictionTable() {
 }
 
 /* ================================================================ my season */
+
+/**
+ * Grounds ticked off, out of the division.
+ *
+ * Built entirely from attendance that is already recorded, so it costs nothing
+ * to keep: an away game you were at means you have been to that ground, and a
+ * home game means Latimer Park. Non-league supporters count grounds the way
+ * other people count countries, and the app had every piece of this and was
+ * showing none of it.
+ *
+ * This season only, and it says so. Attendance is not recorded for earlier
+ * seasons and quietly implying otherwise would make the number a lie.
+ */
+function groundsVisited() {
+  const wrap = el(`<div></div>`);
+  const gone = fixtures().filter((f) => f.date <= todayISO());
+
+  /* One row per ground, not per fixture: two trips to the same place is still
+     one ground. */
+  const seen = new Map();
+  let homeVisits = 0;
+  gone.forEach((f) => {
+    if (!db.didAttend(f.id)) return;
+    if (f.venue !== "Away") { homeVisits += 1; return; }
+    if (!f.team) return;
+    const prev = seen.get(f.team.id);
+    if (!prev || f.date < prev.date) seen.set(f.team.id, { team: f.team, date: f.date });
+  });
+
+  const away = TEAMS.filter((t) => typeof t.distanceMiles === "number");
+  const total = away.length + 1;                 /* every away ground, plus ours */
+  const done = seen.size + (homeVisits ? 1 : 0);
+
+  wrap.append(el(`<h2 class="section-title">Grounds ticked off</h2>`));
+  const card = el(`<div class="card"></div>`);
+
+  card.append(el(`
+    <div class="grounds__top">
+      <div>
+        <div class="grounds__count">${done}<span>of ${total}</span></div>
+        <div class="grounds__sub">${done === total
+          ? "The whole division. Every ground in it, this season."
+          : `${total - done} to go for the full set this season`}</div>
+      </div>
+      <div class="grounds__ring" style="--pct:${Math.round((done / total) * 100)}"
+           role="img" aria-label="${done} of ${total} grounds visited"></div>
+    </div>`));
+
+  const list = el(`<div class="grounds__list"></div>`);
+  const rows = [
+    { team: { id: "kettering-town", name: KTFC.name, stadium: KTFC.ground },
+      date: homeVisits ? "home" : null, home: true },
+    ...away
+      .map((t) => ({ team: t, date: seen.get(t.id)?.date || null }))
+      .sort((a, b) => {
+        if (Boolean(a.date) !== Boolean(b.date)) return a.date ? -1 : 1;
+        return a.team.name.localeCompare(b.team.name);
+      }),
+  ];
+
+  rows.forEach((r) => {
+    const been = Boolean(r.date);
+    const when = r.home
+      ? `${homeVisits} game${homeVisits === 1 ? "" : "s"} at home`
+      : been ? `First visit ${fmtDate(r.date, "short")}` : `${r.team.distanceMiles} miles away`;
+    const row = el(`
+      <button class="ground${been ? " ground--been" : ""}"${
+        r.home ? ' data-nav="poppies"' : ` data-club="${esc(r.team.id)}"`}>
+        <span class="ground__tick" aria-hidden="true">${been ? "\u2713" : ""}</span>
+        <span class="ground__who">
+          <span class="ground__name">${esc(r.team.name)}</span>
+          <span class="ground__where">${esc(r.team.stadium)} &middot; ${esc(when)}</span>
+        </span>
+      </button>`);
+    list.append(row);
+  });
+  card.append(list);
+  card.append(el(`<p class="hint">Counted from the games you have ticked off above, so it fills in
+    as you go. This season only: nothing before it was recorded.</p>`));
+
+  wrap.append(card);
+  return wrap;
+}
 
 function viewSeason() {
   const wrap = el(`<div>
@@ -1195,6 +1327,9 @@ function viewSeason() {
     row.addEventListener("click", () => db.setAttendance(f.id, !on));
     wrap.append(row);
   });
+
+  /* Before the leaderboard: what you have done, then how it compares. */
+  wrap.append(groundsVisited());
 
   wrap.append(el(`<h2 class="section-title">Who has been where</h2>`));
   const board = el(`<div><div class="skeleton" style="height:100px"></div></div>`);
