@@ -11317,9 +11317,17 @@ function viewLetter() {
       <p>Written on behalf of the supporters who took part in the consultation, and published in
          full. What they said, and what we have asked the club.</p>
     </div>`));
-  wrap.append(openLetterSection());
+  wrap.append(openLetterSection({ openNewest: true }));
+
+  /* The letters carry the questions inside them, folded, which meant this page
+     was two "read it in full" buttons and nothing else. The questions and how
+     long each has gone unanswered are the point of the letters, so they are on
+     the page rather than one tap behind it. */
+  wrap.append(questionsSection());
+
   wrap.append(el(`<p class="hint" style="margin-top:18px">
-    <button class="link-btn" data-nav="consult">Read the full consultation report</button></p>`));
+    <button class="link-btn" data-nav="consult">Read the full consultation report, with what
+    supporters said</button></p>`));
   return wrap;
 }
 
@@ -11347,7 +11355,7 @@ function replyDue(L) {
     .sort()[0] || null;
 }
 
-function openLetterSection() {
+function openLetterSection({ openNewest = false } = {}) {
   /* Given an id so the letter page and the report can both anchor to it. */
   const box = el(`<div id="letter"></div>`);
   loadLetter().then((L) => {
@@ -11362,12 +11370,13 @@ function openLetterSection() {
         sent, and none of them has been edited since.</p>`));
     }
 
-    letters.forEach((x, i) => box.append(oneLetter(x, i === 0 && letters.length > 1)));
+    letters.forEach((x, i) => box.append(
+      oneLetter(x, i === 0 && letters.length > 1, openNewest && i === 0)));
   }).catch(() => { /* the report stands on its own without it */ });
   return box;
 }
 
-function oneLetter(L, newest) {
+function oneLetter(L, newest, openByDefault = false) {
   const wrap = el(`<div class="letter-block"></div>`);
 
   if (L.title) {
@@ -11417,9 +11426,151 @@ function oneLetter(L, newest) {
     });
     if (L.note) card.append(el(`<p class="note" style="margin-top:14px">${esc(L.note)}</p>`));
     return card;
-  }));
+  }, { open: openByDefault }));
 
   return wrap;
+}
+
+/**
+ * The questions put to the club, and where each one stands.
+ *
+ * Lives on the consultation report and on the letters page. The letters page
+ * had the letters and nothing else: two collapsed folds and nineteen hundred
+ * characters, which is a poor thing to land on when the whole fanbase is being
+ * pointed at it from the home page.
+ */
+function questionsSection() {
+/* The merged questions. Ninety-five raw questions would be a wall nobody
+   reads and a club answers none of; a dozen with a count against each is
+   the thing that is hard to leave alone. */
+const qbox = el(`<div></div>`);
+db.publishedQuestions().then((qs) => {
+  state.hasFinalGroups = qs.length > 0;
+  if (!qs.length) return;
+  /* Two lists, not one numbered run. The ten came out of the consultation
+     and carry a count of how many supporters asked; the working group's
+     did not, and a skim reader taking all twelve as coming from 199
+     supporters is exactly the misreading this page cannot afford. */
+  const fromFans = qs.filter((q) => q.origin !== "working_group");
+  const fromGroup = qs.filter((q) => q.origin === "working_group");
+
+  qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
+  qbox.append(el(`<p class="hint">A question counts as answered when the club has written back
+    with an answer to it. A reply that does not answer it is recorded as a reply and the
+    question keeps running, and something quietly being put right is not the same as being
+    told.</p>`));
+
+  /* The commitment, stated before the list rather than under it. Once the
+     email has gone the promise becomes a date, because a page still
+     promising to send something a week later reads as a page nobody is
+     keeping up. */
+  /* Taken from the first question, which was fine while every question went
+     in one email. Two more went on 24 August, so a single date here would
+     have told supporters something untrue about when the club got them. */
+  const sentDays = [...new Set(fromFans.filter((q) => q.asked_at)
+    .map((q) => String(q.asked_at).slice(0, 10)))].sort();
+  const sentAt = sentDays[0] || null;
+  const alsoLater = sentDays.length > 1 ? sentDays[sentDays.length - 1] : null;
+  qbox.append(el(`
+    <div class="card pledge">
+      <p class="club-overview" style="margin:0">${sentAt
+        ? `These ${fromFans.length} questions were put to Kettering Town FC in writing, word for
+           word as they appear here, along with every question that did not fall under one of
+           them. ${alsoLater
+             ? `Most went on <b>${esc(fmtDate(sentAt))}</b> and the rest on
+                <b>${esc(fmtDate(alsoLater))}</b>; each one below says which.`
+             : `They went on <b>${esc(fmtDate(sentAt))}</b>.`} Each one below shows how long it
+           has gone without an answer.`
+        : `These ${fromFans.length} questions will be put to Kettering Town FC in writing
+           <b>within 24 hours</b>, word for word as they appear here, along with every question
+           that did not fall under one of them. Nothing is softened, and nothing is left out.
+           Each one below will then show how long it has gone without an answer.`}</p>
+    </div>`));
+
+  /* `offset` continues the numbering rather than restarting it: these were
+     sent to the club as two more on top of the ten, and numbering them 1
+     and 2 again would lose that. `attributed` is off inside the working
+     group's own block, where the heading above already says whose they
+     are and repeating it on every line is noise. */
+  const questionCard = (list, { offset = 0, attributed = true } = {}) => {
+  const card = el(`<div class="card"></div>`);
+  list.forEach((q, i) => {
+    const days = q.asked_at && !q.answered_at
+      ? Math.floor((Date.now() - new Date(q.asked_at).getTime()) / 86400000) : null;
+    const item = el(`
+      <div class="qitem">
+        <span class="qitem__n">${offset + i + 1}</span>
+        <div>
+          <p>${esc(q.label)}</p>
+          <p class="hint">${attributed ? `<b>${
+            q.origin === "working_group"
+              ? "Asked by the working group"
+              : `Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}`}</b>` : ""}${
+            q.answered_at
+              ? `${attributed ? " · " : ""}<b>Answered ${
+                  esc(fmtDate(String(q.answered_at).slice(0, 10)))}.</b>` :
+            q.replied_at
+              /* Written back, but not answered. Left running, because it
+                 is still outstanding, and said plainly, because a reply is
+                 not nothing and pretending otherwise is unfair to them. */
+              ? `${attributed ? " · " : ""}Replied ${
+                  esc(fmtDate(String(q.replied_at).slice(0, 10)))} · <b>Not answered${
+                  days !== null && days >= 1
+                    ? `, ${days} day${days === 1 ? "" : "s"} since we asked` : ""
+                }.</b>` :
+            days !== null ? `${attributed ? " · " : ""}Sent ${
+              esc(fmtDate(String(q.asked_at).slice(0, 10)))} · <b>${days < 1
+                ? "Awaiting a reply."
+                : `Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.`}</b>` :
+            `${attributed ? " · " : ""}To be sent to the club.`}</p>
+          ${q.reply_note ? `<p class="qitem__reply">${esc(q.reply_note)}</p>` : ""}
+
+          ${(q.samples || []).length ? `
+            <details class="qitem__src">
+              <summary>See how ${q.samples.length === 1 ? "one supporter" :
+                `${q.samples.length} supporters`} put it${
+                q.asked_by > q.samples.length ? `, of the ${q.asked_by} who asked` : ""
+              }</summary>
+              ${q.samples.map((w) => `<p>${esc(w)}</p>`).join("")}
+              ${q.asked_by > q.samples.length ? `<p class="hint">The other ${
+                q.asked_by - q.samples.length
+              } who asked this did not tick the box saying we could publish their wording. They
+              are still counted above, and their question still went to the club.</p>` : ""}
+            </details>` : `
+            ${q.origin === "working_group" ? "" : `
+              <p class="hint">Nobody who asked this ticked the box saying we could publish
+              their wording, so only the count is shown.</p>`}`}
+        </div>
+      </div>`);
+    card.append(item);
+  });
+  return card;
+  };
+
+  const fanCard = questionCard(fromFans);
+  fanCard.append(el(`<p class="hint">Where several supporters asked the same thing in different
+    words, we merged it and said how many asked. The wording is ours; theirs is under each
+    one.</p>`));
+  qbox.append(fanCard);
+
+  /* Below the survey's questions, under its own heading, so nothing here
+     can be read as something 199 supporters asked for. */
+  if (fromGroup.length) {
+    qbox.append(el(`<h2 class="section-title">Also asked, by the working group</h2>`));
+    qbox.append(el(`
+      <div class="card pledge">
+        <p class="club-overview" style="margin:0">${fromGroup.length === 1
+          ? "This question did not"
+          : `These ${fromGroup.length} questions did not`} come out of the consultation.
+          ${fromGroup.length === 1 ? "It was" : "They were"} agreed by the KTFCSA working group
+          and sent to the club alongside the others, and ${
+          fromGroup.length === 1 ? "it is" : "they are"} counted here for the same reason:
+          so the wait for an answer is on the record.</p>
+      </div>`));
+    qbox.append(questionCard(fromGroup, { offset: fromFans.length, attributed: false }));
+  }
+}).catch(() => {});
+return qbox;
 }
 
 function consultResults() {
@@ -11616,137 +11767,7 @@ function consultResults() {
         </div>`));
     }
 
-    /* The merged questions. Ninety-five raw questions would be a wall nobody
-       reads and a club answers none of; a dozen with a count against each is
-       the thing that is hard to leave alone. */
-    const qbox = el(`<div></div>`);
-    db.publishedQuestions().then((qs) => {
-      state.hasFinalGroups = qs.length > 0;
-      if (!qs.length) return;
-      /* Two lists, not one numbered run. The ten came out of the consultation
-         and carry a count of how many supporters asked; the working group's
-         did not, and a skim reader taking all twelve as coming from 199
-         supporters is exactly the misreading this page cannot afford. */
-      const fromFans = qs.filter((q) => q.origin !== "working_group");
-      const fromGroup = qs.filter((q) => q.origin === "working_group");
-
-      qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
-      qbox.append(el(`<p class="hint">A question counts as answered when the club has written back
-        with an answer to it. A reply that does not answer it is recorded as a reply and the
-        question keeps running, and something quietly being put right is not the same as being
-        told.</p>`));
-
-      /* The commitment, stated before the list rather than under it. Once the
-         email has gone the promise becomes a date, because a page still
-         promising to send something a week later reads as a page nobody is
-         keeping up. */
-      /* Taken from the first question, which was fine while every question went
-         in one email. Two more went on 24 August, so a single date here would
-         have told supporters something untrue about when the club got them. */
-      const sentDays = [...new Set(fromFans.filter((q) => q.asked_at)
-        .map((q) => String(q.asked_at).slice(0, 10)))].sort();
-      const sentAt = sentDays[0] || null;
-      const alsoLater = sentDays.length > 1 ? sentDays[sentDays.length - 1] : null;
-      qbox.append(el(`
-        <div class="card pledge">
-          <p class="club-overview" style="margin:0">${sentAt
-            ? `These ${fromFans.length} questions were put to Kettering Town FC in writing, word for
-               word as they appear here, along with every question that did not fall under one of
-               them. ${alsoLater
-                 ? `Most went on <b>${esc(fmtDate(sentAt))}</b> and the rest on
-                    <b>${esc(fmtDate(alsoLater))}</b>; each one below says which.`
-                 : `They went on <b>${esc(fmtDate(sentAt))}</b>.`} Each one below shows how long it
-               has gone without an answer.`
-            : `These ${fromFans.length} questions will be put to Kettering Town FC in writing
-               <b>within 24 hours</b>, word for word as they appear here, along with every question
-               that did not fall under one of them. Nothing is softened, and nothing is left out.
-               Each one below will then show how long it has gone without an answer.`}</p>
-        </div>`));
-
-      /* `offset` continues the numbering rather than restarting it: these were
-         sent to the club as two more on top of the ten, and numbering them 1
-         and 2 again would lose that. `attributed` is off inside the working
-         group's own block, where the heading above already says whose they
-         are and repeating it on every line is noise. */
-      const questionCard = (list, { offset = 0, attributed = true } = {}) => {
-      const card = el(`<div class="card"></div>`);
-      list.forEach((q, i) => {
-        const days = q.asked_at && !q.answered_at
-          ? Math.floor((Date.now() - new Date(q.asked_at).getTime()) / 86400000) : null;
-        const item = el(`
-          <div class="qitem">
-            <span class="qitem__n">${offset + i + 1}</span>
-            <div>
-              <p>${esc(q.label)}</p>
-              <p class="hint">${attributed ? `<b>${
-                q.origin === "working_group"
-                  ? "Asked by the working group"
-                  : `Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}`}</b>` : ""}${
-                q.answered_at
-                  ? `${attributed ? " · " : ""}<b>Answered ${
-                      esc(fmtDate(String(q.answered_at).slice(0, 10)))}.</b>` :
-                q.replied_at
-                  /* Written back, but not answered. Left running, because it
-                     is still outstanding, and said plainly, because a reply is
-                     not nothing and pretending otherwise is unfair to them. */
-                  ? `${attributed ? " · " : ""}Replied ${
-                      esc(fmtDate(String(q.replied_at).slice(0, 10)))} · <b>Not answered${
-                      days !== null && days >= 1
-                        ? `, ${days} day${days === 1 ? "" : "s"} since we asked` : ""
-                    }.</b>` :
-                days !== null ? `${attributed ? " · " : ""}Sent ${
-                  esc(fmtDate(String(q.asked_at).slice(0, 10)))} · <b>${days < 1
-                    ? "Awaiting a reply."
-                    : `Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.`}</b>` :
-                `${attributed ? " · " : ""}To be sent to the club.`}</p>
-              ${q.reply_note ? `<p class="qitem__reply">${esc(q.reply_note)}</p>` : ""}
-
-              ${(q.samples || []).length ? `
-                <details class="qitem__src">
-                  <summary>See how ${q.samples.length === 1 ? "one supporter" :
-                    `${q.samples.length} supporters`} put it${
-                    q.asked_by > q.samples.length ? `, of the ${q.asked_by} who asked` : ""
-                  }</summary>
-                  ${q.samples.map((w) => `<p>${esc(w)}</p>`).join("")}
-                  ${q.asked_by > q.samples.length ? `<p class="hint">The other ${
-                    q.asked_by - q.samples.length
-                  } who asked this did not tick the box saying we could publish their wording. They
-                  are still counted above, and their question still went to the club.</p>` : ""}
-                </details>` : `
-                ${q.origin === "working_group" ? "" : `
-                  <p class="hint">Nobody who asked this ticked the box saying we could publish
-                  their wording, so only the count is shown.</p>`}`}
-            </div>
-          </div>`);
-        card.append(item);
-      });
-      return card;
-      };
-
-      const fanCard = questionCard(fromFans);
-      fanCard.append(el(`<p class="hint">Where several supporters asked the same thing in different
-        words, we merged it and said how many asked. The wording is ours; theirs is under each
-        one.</p>`));
-      qbox.append(fanCard);
-
-      /* Below the survey's questions, under its own heading, so nothing here
-         can be read as something 199 supporters asked for. */
-      if (fromGroup.length) {
-        qbox.append(el(`<h2 class="section-title">Also asked, by the working group</h2>`));
-        qbox.append(el(`
-          <div class="card pledge">
-            <p class="club-overview" style="margin:0">${fromGroup.length === 1
-              ? "This question did not"
-              : `These ${fromGroup.length} questions did not`} come out of the consultation.
-              ${fromGroup.length === 1 ? "It was" : "They were"} agreed by the KTFCSA working group
-              and sent to the club alongside the others, and ${
-              fromGroup.length === 1 ? "it is" : "they are"} counted here for the same reason:
-              so the wait for an answer is on the record.</p>
-          </div>`));
-        qbox.append(questionCard(fromGroup, { offset: fromFans.length, attributed: false }));
-      }
-    }).catch(() => {});
-    box.append(qbox);
+    box.append(questionsSection());
 
     /* Directly under the questions, because it is the covering note to them. */
     box.append(openLetterSection());
