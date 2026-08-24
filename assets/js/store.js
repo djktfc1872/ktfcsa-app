@@ -158,6 +158,8 @@ export const supporterSummary = (id) =>
 
 export const recordWordle = (d, len, g, solved, marks) =>
   (backend?.recordWordle ? backend.recordWordle(d, len, g, solved, marks) : Promise.resolve());
+export const groundBoard = () =>
+  (backend?.groundBoard ? backend.groundBoard() : Promise.resolve([]));
 export const wordleLeague = () =>
   (backend?.wordleLeague ? backend.wordleLeague() : Promise.resolve([]));
 

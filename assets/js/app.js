@@ -272,6 +272,7 @@ const state = {
   pubsNearby: null,   // pubs mapped near each ground, from data/pubs-nearby.json
   topics: null,       // fan-started conversations, from topic_list
   topicCat: "",       // which category the list is filtered to, "" for all
+  pointsInfo: null,   // the explainer's own copy of the weights, data/points.json
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -365,6 +366,10 @@ const ROUTES = {
     nav: "more", group: "Games", render: viewDaily },
   duel: { label: "Who Played More?", short: "Played More", icon: "\u2694\uFE0F",
     nav: "more", group: "Games", render: viewDuel },
+  /* The boards live with the games rather than under You, because they are the
+     reason to play one. */
+  standing: { label: "Standing", icon: "\uD83C\uDFC5", nav: "more", group: "Games",
+    render: viewStanding },
 
   /* About Kettering Town rather than about us. Nine things under one heading
      meant the Association sat in the same list as the club's video feed, and
@@ -384,6 +389,7 @@ const ROUTES = {
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   topic: { label: "Topic", icon: "\uD83D\uDDE8\uFE0F", nav: "hidden", render: viewTopic },
   supporter: { label: "Supporter", icon: "\uD83D\uDC64", nav: "hidden", render: viewSupporter },
+  points: { label: "How points work", icon: "\u2139\uFE0F", nav: "hidden", render: viewPoints },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   /* adminOnly now means "a moderator or better". What a moderator may actually
      do once inside is decided section by section, not by hiding the door. */
@@ -7513,6 +7519,126 @@ function replyInbox() {
   }).catch(() => { /* the wall is fine without it */ });
 
   return box;
+}
+
+/* ------------------------------------------------------------- standing */
+
+/**
+ * The boards.
+ *
+ * Deliberately several rather than one. A single all-time table is owned by
+ * whoever joined first and a newcomer can never catch them, so it stops being
+ * a reason to do anything. Six boards means six people are top of something,
+ * and the ones that reward being at games rather than being on a keyboard sit
+ * as high as the rest.
+ */
+function viewStanding() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Standing</h1>
+      <p>Who is top of what, this season. Everything resets on 1 July so it stays winnable.</p>
+    </div>
+  </div>`);
+
+  const me = db.currentUser();
+  if (me) {
+    const card = el(`<div class="card"></div>`);
+    card.append(el(`<div class="info__label">Your points</div>`));
+    const n = el(`<div class="info__value" style="color:var(--accent);font-size:30px">&hellip;</div>`);
+    card.append(n);
+    card.append(el(`<p class="hint">
+      <button class="link-btn" data-supporter="${esc(String(me.id))}">Your card</button> &middot;
+      <button class="link-btn" data-nav="points">How points work</button></p>`));
+    wrap.append(card);
+    db.contributorBoard().then((rows) => {
+      const mine = rows.find((r) => String(r.profile_id) === String(me.id));
+      n.textContent = mine ? String(mine.points) : "0";
+    }).catch(() => { n.textContent = "\u2014"; });
+  }
+
+  const boards = [
+    { title: "Contributors", sub: "Poppies Points this season",
+      get: () => db.contributorBoard(), col: (r) => r.points },
+    { title: "Prediction League", sub: "Points from called results",
+      get: () => db.predictionLeague(), col: (r) => r.points },
+    { title: "Grounds visited", sub: "Of the 22 in the division",
+      get: () => db.groundBoard(), col: (r) => r.grounds },
+    { title: "Poppies Daily", sub: "Current streak",
+      get: () => db.quizLeague(), col: (r) => r.streak },
+    { title: "Poppies Wordle", sub: "Current streak",
+      get: () => db.wordleLeague(), col: (r) => r.streak },
+    { title: "Who Played More?", sub: "Best run",
+      get: () => db.duelLeague(), col: (r) => r.best },
+  ];
+
+  boards.forEach((b) => {
+    wrap.append(el(`<h2 class="section-title">${esc(b.title)}</h2>`));
+    const card = el(`<div class="card"><p class="hint">${esc(b.sub)}</p></div>`);
+    const body = el(`<div class="stand"></div>`);
+    card.append(body);
+    wrap.append(card);
+
+    Promise.resolve(b.get()).then((rows) => {
+      body.textContent = "";
+      const live = (rows || []).filter((r) => Number(b.col(r)) > 0).slice(0, 10);
+      if (!live.length) {
+        body.append(el(`<p class="hint">Nothing on this one yet.</p>`));
+        return;
+      }
+      live.forEach((r, i) => {
+        body.append(el(`
+          <div class="stand__row">
+            <span class="stand__rank${i === 0 ? " stand__rank--1" : ""}">${i + 1}</span>
+            <button class="stand__who" data-supporter="${esc(String(r.profile_id))}"
+              >${esc(r.display_name)}</button>
+            <span class="stand__n">${esc(String(b.col(r)))}</span>
+          </div>`));
+      });
+    }).catch(() => { body.textContent = ""; body.append(el(`<p class="hint">That board did not load.</p>`)); });
+  });
+
+  return wrap;
+}
+
+/* ------------------------------------------------------- how points work */
+
+function viewPoints() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>How points work</h1>
+      <p>What earns them, and what they are deliberately not for.</p>
+    </div>
+  </div>`);
+
+  const d = state.pointsInfo;
+  if (!d) {
+    wrap.append(el(`<div class="card"><p class="hint">Loading&hellip;</p></div>`));
+    if (state.pointsInfo === null) {
+      state.pointsInfo = undefined;    /* one fetch, not one a render */
+      readJSON("data/points.json").then((r) => { state.pointsInfo = r || false; render(); });
+    }
+    return wrap;
+  }
+
+  wrap.append(el(`<div class="card"><p class="hint">${esc(d.season)}</p></div>`));
+
+  d.groups.forEach((g) => {
+    wrap.append(el(`<h2 class="section-title">${esc(g.title)}</h2>`));
+    const card = el(`<div class="card"></div>`);
+    if (g.why) card.append(el(`<p class="hint" style="margin-top:0">${esc(g.why)}</p>`));
+    g.items.forEach((it) => card.append(el(`
+      <div class="pts-row">
+        <span>${esc(it.what)}${it.per ? ` <span class="pts-row__per">${esc(it.per)}</span>` : ""}</span>
+        <span class="pts-row__n">${it.pts === null ? "varies" : (it.pts > 0 ? `+${it.pts}` : it.pts)}</span>
+      </div>`)));
+    wrap.append(card);
+  });
+
+  wrap.append(el(`<h2 class="section-title">What points are not</h2>`));
+  const box = el(`<div class="card"></div>`);
+  d.notPoints.forEach((t) => box.append(el(`<p class="club-overview">${esc(t)}</p>`)));
+  wrap.append(box);
+  return wrap;
 }
 
 /* ------------------------------------------------------- supporter profile */

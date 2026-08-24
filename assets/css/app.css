@@ -6214,3 +6214,41 @@ button,
 }
 .pts-row + .pts-row { border-top: 1px solid var(--line-soft); }
 .pts-row__n { flex: 0 0 auto; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+/* ---- the standing boards -------------------------------------------------
+   Named .stand rather than .board: .board is already the consultation's
+   six-column status grid, and rows dropped into it were laid out side by side
+   instead of stacking. Its own grid rather than .lb, too, which is the
+   prediction league's row and carries four columns this does not have. */
+
+.stand { margin-top: 6px; }
+
+.stand__row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.stand__row:first-child { border-top: 0; }
+
+.stand__rank {
+  font-size: 12px; font-weight: 600; color: var(--text-3);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.stand__rank--1 {
+  background: var(--accent); color: var(--ink-950);
+  border-radius: 999px; text-align: center; font-weight: 800;
+}
+.stand__who {
+  background: none; border: 0; padding: 0; font: inherit; text-align: left;
+  color: var(--text); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stand__who:hover { color: var(--accent); }
+.stand__n {
+  font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent);
+}
+
+.pts-row__per { color: var(--text-3); font-size: 12px; }

@@ -1,0 +1,59 @@
+{
+  "note": "The weights here mirror supporter_points and my_points() in supabase/schema.sql. If one changes, all three change, or a supporter reads one thing and sees another.",
+  "season": "Everything resets on 1 July, so a board is always winnable by somebody who joined in January.",
+  "groups": [
+    {
+      "title": "Telling other supporters something they could not find out",
+      "why": "The most work, and the only things on this list that are still useful to somebody three years from now.",
+      "items": [
+        { "what": "Offering something to the archive project", "pts": 15 },
+        { "what": "A ground, access, parking or price report", "pts": 10 },
+        { "what": "Answering the consultation", "pts": 10 }
+      ]
+    },
+    {
+      "title": "Getting other people to games",
+      "why": "Organising is worth more than turning up, because it is harder and somebody else benefits.",
+      "items": [
+        { "what": "Putting a coach on", "pts": 8 },
+        { "what": "Adding a pub other fans can find", "pts": 8 },
+        { "what": "Offering or asking for a lift", "pts": 5 },
+        { "what": "Rating the players after a game", "pts": 5, "per": "per match, not per player" }
+      ]
+    },
+    {
+      "title": "Being there and joining in",
+      "items": [
+        { "what": "A game logged as attended", "pts": 3 },
+        { "what": "Starting a topic on the wall", "pts": 3 },
+        { "what": "A ground ticked off", "pts": 2 },
+        { "what": "A prediction", "pts": 2 },
+        { "what": "Poppies Daily", "pts": 2 },
+        { "what": "Poppies Wordle", "pts": 2 },
+        { "what": "Telling us something is broken", "pts": 2, "per": "the first five" },
+        { "what": "Voting in a poll, or backing a pub", "pts": 1 }
+      ]
+    },
+    {
+      "title": "On the wall",
+      "why": "Posting counts, but a long argument is not a scoring opportunity. What other people made of a post is worth more than having written it.",
+      "items": [
+        { "what": "A like from another supporter", "pts": 3 },
+        { "what": "A post or a reply", "pts": 1, "per": "up to ten a day" },
+        { "what": "A post hidden by a moderator", "pts": -10 }
+      ]
+    },
+    {
+      "title": "Work done away from the app",
+      "why": "Some of the biggest contributions never touch a form. Darren Young wrote the pen pics for all nineteen players, and nothing here could have seen it.",
+      "items": [
+        { "what": "Awarded by hand, with the reason recorded", "pts": null }
+      ]
+    }
+  ],
+  "notPoints": [
+    "Points count for nothing anywhere it matters. Not the consultation, not a poll, not anything the Association puts to the club. Nobody's say counts for more than anybody else's, and that is not a slogan: no part of this app reads your points when it is working out what supporters think.",
+    "They are not a measure of being a supporter either. Somebody at every game for forty years who has never filled in a form is not mid-table. This counts what people have put into the app, which is a much smaller thing than what they have put into the club.",
+    "There is no prize. It is a way of showing the people doing the unglamorous jobs that somebody noticed."
+  ]
+}

@@ -598,6 +598,12 @@ class Backend {
     } catch { /* a result that fails to record is not worth an error mid-game */ }
   }
 
+  async groundBoard() {
+    const { data, error } = await this.sb.from("ground_board").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
   async wordleLeague() {
     const { data, error } = await this.sb.from("wordle_league").select("*");
     if (error) return [];

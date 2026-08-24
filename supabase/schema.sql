@@ -3063,3 +3063,29 @@ limit 50;
 
 alter view wordle_league set (security_invoker = false);
 grant select on wordle_league to anon, authenticated;
+
+-- ===========================================================================
+-- Grounds visited, by supporter
+-- ===========================================================================
+--
+-- ground_visit_counts already exists but groups the other way, by club, which
+-- answers "how many of us have been to Leiston" rather than "who has been to
+-- the most grounds". The Standing page needs the second question, and it is a
+-- board a lot of people can top without ever touching a keyboard.
+
+drop view if exists ground_board cascade;
+create view ground_board as
+select
+  g.profile_id,
+  p.display_name,
+  count(*)::int as grounds
+from ground_visits g
+join profiles p on p.id = g.profile_id
+where p.dormant = false
+group by g.profile_id, p.display_name
+having count(*) > 0
+order by grounds desc, p.display_name
+limit 50;
+
+alter view ground_board set (security_invoker = false);
+grant select on ground_board to anon, authenticated;
