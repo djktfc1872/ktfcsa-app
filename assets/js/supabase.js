@@ -923,6 +923,10 @@ class Backend {
         label: g.label, topic: g.topic || null, members: g.members || [],
         sort: i, status: g.status || "draft",
         asked_at: g.asked_at || null, answered_at: g.answered_at || null,
+        replied_at: g.replied_at || null, reply_note: g.reply_note || null,
+        /* Carried through a rewrite, or a question the working group asked
+           would come back as one supporters asked, with a count of nought. */
+        origin: g.origin || "supporters",
       })));
     if (error) throw new Error(friendly(error));
   }

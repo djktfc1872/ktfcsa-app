@@ -6430,3 +6430,26 @@ button,
 }
 .letter-head b { color: var(--text); font-size: 15px; }
 .letter-head span { color: var(--text-3); font-size: 12.5px; }
+
+/* What the club said, under the question it was about. */
+.qitem__reply {
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-line);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* ---- marking where a question stands ------------------------------------- */
+
+.qgroup__reply {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+.qgroup__reply-head {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+}
+.qgroup__note { width: 100%; margin-top: 8px; }
+.qgroup__reply .hint { margin-top: 6px; }

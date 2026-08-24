@@ -5111,7 +5111,10 @@ function questionWorkbench(rows) {
             members: Array.isArray(r.members) ? r.members : [],
             wording: [],
             asked_at: r.asked_at,
+            replied_at: r.replied_at,
+            reply_note: r.reply_note || "",
             answered_at: r.answered_at,
+            origin: r.origin || "supporters",
           }));
       }
       draw();
@@ -5282,6 +5285,22 @@ function questionWorkbench(rows) {
             <button class="btn btn--sm btn--ghost" data-act="empty">Unfile all</button>
             <button class="btn btn--sm btn--ghost" data-act="drop">Delete</button>
           </div>
+          ${g.asked_at ? `
+            <div class="qgroup__reply">
+              <div class="qgroup__reply-head">Where this one stands</div>
+              <div class="btn-row">
+                <button class="btn btn--sm${g.replied_at && !g.answered_at ? "" : " btn--ghost"}"
+                  data-act="replied">${g.replied_at ? "Replied" : "Mark replied"}</button>
+                <button class="btn btn--sm${g.answered_at ? "" : " btn--ghost"}"
+                  data-act="answered">${g.answered_at ? "Answered" : "Mark answered"}</button>
+                ${g.replied_at || g.answered_at
+                  ? `<button class="link-btn" data-act="clear-reply">Still waiting</button>` : ""}
+              </div>
+              <input class="input qgroup__note" maxlength="400" placeholder="One line on what they said, published under the question"
+                value="${esc(g.reply_note || "")}">
+              <p class="hint">Answered means they wrote back with an answer to it. A reply that
+                does not answer it is a reply, and the question keeps counting.</p>
+            </div>` : ""}
         </div>`);
       card.querySelector(".qgroup__label").addEventListener("input", (e) => {
         g.label = e.target.value;
@@ -5297,6 +5316,30 @@ function questionWorkbench(rows) {
       });
       card.querySelector('[data-act="empty"]').addEventListener("click", () => {
         g.members = []; draw();
+      });
+
+      /* Answering implies they replied, so marking answered stamps both rather
+         than leaving a question that was answered but apparently never
+         replied to. */
+      card.querySelector('[data-act="replied"]')?.addEventListener("click", () => {
+        g.replied_at = g.replied_at ? null : new Date().toISOString();
+        if (!g.replied_at) g.answered_at = null;
+        draw();
+      });
+      card.querySelector('[data-act="answered"]')?.addEventListener("click", () => {
+        if (g.answered_at) {
+          g.answered_at = null;
+        } else {
+          g.answered_at = new Date().toISOString();
+          g.replied_at = g.replied_at || g.answered_at;
+        }
+        draw();
+      });
+      card.querySelector('[data-act="clear-reply"]')?.addEventListener("click", () => {
+        g.replied_at = null; g.answered_at = null; draw();
+      });
+      card.querySelector(".qgroup__note")?.addEventListener("input", (e) => {
+        g.reply_note = e.target.value;
       });
       card.querySelector('[data-act="drop"]').addEventListener("click", () => {
         /* Deleting a question must not delete what was filed under it: those
@@ -11588,6 +11631,10 @@ function consultResults() {
       const fromGroup = qs.filter((q) => q.origin === "working_group");
 
       qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
+      qbox.append(el(`<p class="hint">A question counts as answered when the club has written back
+        with an answer to it. A reply that does not answer it is recorded as a reply and the
+        question keeps running, and something quietly being put right is not the same as being
+        told.</p>`));
 
       /* The commitment, stated before the list rather than under it. Once the
          email has gone the promise becomes a date, because a page still
@@ -11635,12 +11682,24 @@ function consultResults() {
                 q.origin === "working_group"
                   ? "Asked by the working group"
                   : `Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}`}</b>` : ""}${
-                q.answered_at ? `${attributed ? " · " : ""}Answered.` :
+                q.answered_at
+                  ? `${attributed ? " · " : ""}<b>Answered ${
+                      esc(fmtDate(String(q.answered_at).slice(0, 10)))}.</b>` :
+                q.replied_at
+                  /* Written back, but not answered. Left running, because it
+                     is still outstanding, and said plainly, because a reply is
+                     not nothing and pretending otherwise is unfair to them. */
+                  ? `${attributed ? " · " : ""}Replied ${
+                      esc(fmtDate(String(q.replied_at).slice(0, 10)))} · <b>Not answered${
+                      days !== null && days >= 1
+                        ? `, ${days} day${days === 1 ? "" : "s"} since we asked` : ""
+                    }.</b>` :
                 days !== null ? `${attributed ? " · " : ""}Sent ${
                   esc(fmtDate(String(q.asked_at).slice(0, 10)))} · <b>${days < 1
                     ? "Awaiting a reply."
                     : `Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.`}</b>` :
                 `${attributed ? " · " : ""}To be sent to the club.`}</p>
+              ${q.reply_note ? `<p class="qitem__reply">${esc(q.reply_note)}</p>` : ""}
 
               ${(q.samples || []).length ? `
                 <details class="qitem__src">

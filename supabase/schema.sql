@@ -1705,6 +1705,37 @@ create table if not exists consultation_question_groups (
 -- would have worked today and quietly broken the first time somebody created a
 -- group and filled it in afterwards.
 
+-- ===========================================================================
+-- Replied, and answered, are not the same thing
+-- ===========================================================================
+--
+-- Danny's standard, stated on 24 August: answered means the club wrote back
+-- with a satisfactory answer. Not that they replied, and not that the thing
+-- quietly got fixed.
+--
+-- With only `answered_at` there was nowhere to put the likeliest outcome of
+-- all: a reply that arrives and does not answer the question. Marking that
+-- answered would be untrue, and leaving it running says the club ignored it,
+-- which is also untrue. Both misrepresent them, and this page cannot afford to
+-- misrepresent anybody.
+--
+-- So: `replied_at` is when they wrote back at all, `answered_at` is when they
+-- actually answered it, and `reply_note` is room to say in a line what they
+-- said. A question can carry a replied_at and no answered_at for as long as
+-- that is the honest description of where it stands.
+
+alter table consultation_question_groups add column if not exists replied_at timestamptz;
+alter table consultation_question_groups add column if not exists reply_note text
+  check (reply_note is null or char_length(reply_note) <= 400);
+
+comment on column consultation_question_groups.replied_at is
+  'When the club wrote back about this at all. Not the same as answering it.';
+comment on column consultation_question_groups.answered_at is
+  'When the club answered it satisfactorily. The bar is a written, satisfactory
+   answer: not a reply that says nothing, and not the thing being quietly fixed.';
+comment on column consultation_question_groups.reply_note is
+  'One line, published, on what they said. Shown under the question.';
+
 alter table consultation_question_groups add column if not exists origin text
   not null default 'supporters'
   check (origin in ('supporters', 'working_group'));
@@ -1752,6 +1783,8 @@ select
   coalesce(sample.wording, '{}')              as samples,
   coalesce(sample.n, 0)                       as samples_total,
   g.asked_at,
+  g.replied_at,
+  g.reply_note,
   g.answered_at
 from consultation_question_groups g
 -- Every approved wording behind the question, not a token three: the promise on
