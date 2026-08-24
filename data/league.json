@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-24T08:03:46.714Z",
+  "updated": "2026-08-24T14:32:24.969Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1109,6 +1109,27 @@
       "opponentCrest": "assets/crests/stamford.png",
       "competition": "Premier Central",
       "competitionType": "league",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6a8c359f36e2cd2b199661a2",
+      "date": "2026-09-05",
+      "kickoff": "15:00",
+      "venue": "Away",
+      "opponent": "Wellingborough Town",
+      "opponentCrest": "https://www.southern-football-league.co.uk/img/teams/wellingborough_town_logo-bfe6d2b6-6a83-4ff7-87dc-3b031e5ff8ff.png",
+      "competition": "Emirates FA Cup",
+      "competitionType": "cup",
       "ground": "",
       "status": "upcoming",
       "rawStatus": "NotKickedOff",
