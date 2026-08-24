@@ -11586,14 +11586,23 @@ function consultResults() {
          email has gone the promise becomes a date, because a page still
          promising to send something a week later reads as a page nobody is
          keeping up. */
-      const sentAt = qs.find((q) => q.asked_at)?.asked_at;
+      /* Taken from the first question, which was fine while every question went
+         in one email. Two more went on 24 August, so a single date here would
+         have told supporters something untrue about when the club got them. */
+      const sentDays = [...new Set(qs.filter((q) => q.asked_at)
+        .map((q) => String(q.asked_at).slice(0, 10)))].sort();
+      const sentAt = sentDays[0] || null;
+      const alsoLater = sentDays.length > 1 ? sentDays[sentDays.length - 1] : null;
       qbox.append(el(`
         <div class="card pledge">
           <p class="club-overview" style="margin:0">${sentAt
-            ? `These ${qs.length} questions were put to Kettering Town FC in writing on
-               <b>${esc(fmtDate(String(sentAt).slice(0, 10)))}</b>, word for word as they appear
-               here, along with every question that did not fall under one of them. Each one below
-               shows how long it has gone without an answer.`
+            ? `These ${qs.length} questions were put to Kettering Town FC in writing, word for
+               word as they appear here, along with every question that did not fall under one of
+               them. ${alsoLater
+                 ? `Most went on <b>${esc(fmtDate(sentAt))}</b> and the rest on
+                    <b>${esc(fmtDate(alsoLater))}</b>; each one below says which.`
+                 : `They went on <b>${esc(fmtDate(sentAt))}</b>.`} Each one below shows how long it
+               has gone without an answer.`
             : `These ${qs.length} questions will be put to Kettering Town FC in writing
                <b>within 24 hours</b>, word for word as they appear here, along with every question
                that did not fall under one of them. Nothing is softened, and nothing is left out.
@@ -11609,10 +11618,17 @@ function consultResults() {
             <span class="qitem__n">${i + 1}</span>
             <div>
               <p>${esc(q.label)}</p>
-              <p class="hint"><b>Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}</b>${
+              <p class="hint"><b>${
+                q.origin === "working_group"
+                  ? "Asked by the working group"
+                  : `Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}`}</b>${
                 q.answered_at ? " · Answered." :
-                days !== null ? ` · <b>Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.</b>` :
+                days !== null ? ` · Sent ${esc(fmtDate(String(q.asked_at).slice(0, 10)))} · <b>Awaiting
+                  a reply, ${days} day${days === 1 ? "" : "s"} so far.</b>` :
                 " · To be sent to the club."}</p>
+              ${q.origin === "working_group" ? `
+                <p class="hint">Not from the consultation. The working group agreed this one and
+                sent it to the club alongside the others.</p>` : ""}
               ${(q.samples || []).length ? `
                 <details class="qitem__src">
                   <summary>See how ${q.samples.length === 1 ? "one supporter" :
@@ -11625,15 +11641,18 @@ function consultResults() {
                   } who asked this did not tick the box saying we could publish their wording. They
                   are still counted above, and their question still went to the club.</p>` : ""}
                 </details>` : `
-                <p class="hint">Nobody who asked this ticked the box saying we could publish their
-                wording, so only the count is shown.</p>`}
+                ${q.origin === "working_group" ? "" : `
+                  <p class="hint">Nobody who asked this ticked the box saying we could publish
+                  their wording, so only the count is shown.</p>`}`}
             </div>
           </div>`);
         card.append(item);
       });
       card.append(el(`<p class="hint">Where several supporters asked the same thing in different
         words, we merged it and said how many asked. The wording is ours; theirs is under each
-        one.</p>`));
+        one.${qs.some((q) => q.origin === "working_group")
+          ? " Anything marked as the working group's did not come from the consultation, and says so."
+          : ""}</p>`));
       qbox.append(card);
     }).catch(() => {});
     box.append(qbox);

@@ -1686,6 +1686,33 @@ create table if not exists consultation_question_groups (
   updated_at timestamptz not null default now()
 );
 
+-- ===========================================================================
+-- Where a question came from
+-- ===========================================================================
+--
+-- Every question on the public page was a merged group of things supporters
+-- actually wrote, and the page says so. Two questions sent to the club on
+-- 24 August were not: they were agreed by the working group after another
+-- inappropriate post from the club's account, and Danny said so plainly in the
+-- letter.
+--
+-- Those two have no members, so `asked_by` is zero, and the page would have
+-- rendered "Asked by 0 supporters" and "nobody ticked the box saying we could
+-- publish their wording". Both untrue, on a page being used in a dispute with
+-- the club, which is the worst possible place to be loose about attribution.
+--
+-- It is declared rather than inferred from an empty member list. Inference
+-- would have worked today and quietly broken the first time somebody created a
+-- group and filled it in afterwards.
+
+alter table consultation_question_groups add column if not exists origin text
+  not null default 'supporters'
+  check (origin in ('supporters', 'working_group'));
+
+comment on column consultation_question_groups.origin is
+  'supporters = merged from consultation responses. working_group = agreed by
+   the working group and sent alongside them, with no survey answers behind it.';
+
 comment on table consultation_question_groups is
   'Questions merged for the club. label is the volunteer-agreed wording; members are the responses it covers.';
 
@@ -1721,6 +1748,7 @@ select
   g.topic,
   g.sort,
   cardinality(g.members)                      as asked_by,
+  g.origin,
   coalesce(sample.wording, '{}')              as samples,
   coalesce(sample.n, 0)                       as samples_total,
   g.asked_at,
