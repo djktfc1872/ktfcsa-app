@@ -7335,23 +7335,22 @@ const EM_BALL = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="tr
     <path fill="${EM_D}" d="M12 2.9l2.2 1.6-.7 1.2h-3l-.7-1.2zM4.5 8.6l2.4 1.8-.6 1.9-1.9.3-.9-1.6zM19.5 8.6l.9 2.4-.9 1.6-1.9-.3-.6-1.9zM7.5 17.4l1.6.5.9 2.3-1.6.9-2-1.7zM16.5 17.4l1 2 -2 1.7-1.6-.9.9-2.3z"/>
   </svg>`;
 
+/* Held up rather than hanging. The draped version's loop swallowed its own
+   tails at picker size and read as a horseshoe; held up it is one strong
+   shape, and the tilt is what keeps it from reading as the ticket. */
 const EM_SCARF = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
-    <path fill="${EM_GD}" d="M12 2.4a6.6 6.6 0 0 1 6.6 6.6v1.2h-3.8V9a2.8 2.8 0 0 0-5.6 0v1.2H5.4V9A6.6 6.6 0 0 1 12 2.4z"/>
-    <rect x="5.4" y="9.6" width="4.2" height="10.2" rx="0.6" fill="${EM_G}"/>
-    <rect x="14.4" y="9.6" width="4.2" height="10.2" rx="0.6" fill="${EM_G}"/>
-    <g fill="${EM_C}">
-      <rect x="5.4" y="12" width="4.2" height="2"/>
-      <rect x="14.4" y="12" width="4.2" height="2"/>
-      <rect x="5.4" y="16" width="4.2" height="2"/>
-      <rect x="14.4" y="16" width="4.2" height="2"/>
-    </g>
-    <g fill="${EM_C}">
-      <rect x="5.6" y="19.8" width="1" height="1.9" rx="0.5"/>
-      <rect x="7" y="19.8" width="1" height="1.9" rx="0.5"/>
-      <rect x="8.4" y="19.8" width="1" height="1.9" rx="0.5"/>
-      <rect x="14.6" y="19.8" width="1" height="1.9" rx="0.5"/>
-      <rect x="16" y="19.8" width="1" height="1.9" rx="0.5"/>
-      <rect x="17.4" y="19.8" width="1" height="1.9" rx="0.5"/>
+    <g transform="rotate(-11 12 12)">
+      <rect x="3.2" y="8.8" width="17.6" height="6.4" rx="1" fill="${EM_G}"/>
+      <rect x="7.6" y="8.8" width="3.1" height="6.4" fill="${EM_C}"/>
+      <rect x="13.9" y="8.8" width="3.1" height="6.4" fill="${EM_C}"/>
+      <g fill="${EM_C}">
+        <rect x="1.3" y="9.3" width="1.9" height="1.3" rx="0.55"/>
+        <rect x="1.3" y="11.35" width="1.9" height="1.3" rx="0.55"/>
+        <rect x="1.3" y="13.4" width="1.9" height="1.3" rx="0.55"/>
+        <rect x="20.8" y="9.3" width="1.9" height="1.3" rx="0.55"/>
+        <rect x="20.8" y="11.35" width="1.9" height="1.3" rx="0.55"/>
+        <rect x="20.8" y="13.4" width="1.9" height="1.3" rx="0.55"/>
+      </g>
     </g>
   </svg>`;
 
@@ -7407,16 +7406,22 @@ const EM_FLAG = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="tr
     <path fill="${EM_G}" d="M6.9 3.4h12.8l-3 4.3 3 4.3H6.9z"/>
   </svg>`;
 
+/* Side on, and the third attempt. Front on with tension lugs turned into a
+   starburst at thirty two pixels, which is the star already in this set; two
+   crossed sticks over a drum head read as a cancel symbol. This is the
+   conventional shape, with the ropes bold enough to carry it and the skin
+   showing on the near end so it is not a barrel. */
 const EM_DRUM = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
-    <rect x="3.6" y="8.6" width="16.8" height="9.6" fill="${EM_G}"/>
-    <ellipse cx="3.6" cy="13.4" rx="2.2" ry="4.8" fill="${EM_GD}"/>
-    <ellipse cx="20.4" cy="13.4" rx="2.2" ry="4.8" fill="${EM_C}"/>
-    <ellipse cx="20.4" cy="13.4" rx="1" ry="2.6" fill="${EM_GD}"/>
+    <rect x="4.6" y="9.4" width="14.8" height="9.2" fill="${EM_G}"/>
+    <ellipse cx="4.6" cy="14" rx="2.3" ry="4.6" fill="${EM_GD}"/>
     <g fill="${EM_D}">
-      <path d="M6.6 8.8l2.6 4.6-2.6 4.6-1.1-.6 2.3-4-2.3-4z"/>
-      <path d="M12.4 8.8l2.6 4.6-2.6 4.6-1.1-.6 2.3-4-2.3-4z"/>
+      <path d="M7.6 9.6l2.9 4.4-2.9 4.4-1.5 0 2.9-4.4-2.9-4.4z"/>
+      <path d="M12.4 9.6l2.9 4.4-2.9 4.4-1.5 0 2.9-4.4-2.9-4.4z"/>
     </g>
-    <rect x="14.4" y="1.8" width="1.6" height="7.2" rx="0.8" transform="rotate(28 15.2 5.4)" fill="${EM_C}"/>
+    <ellipse cx="19.4" cy="14" rx="2.4" ry="4.6" fill="${EM_C}"/>
+    <ellipse cx="19.4" cy="14" rx="1.2" ry="3" fill="${EM_GD}"/>
+    <rect x="12.6" y="1.4" width="1.9" height="8.6" rx="0.95"
+      transform="rotate(34 13.5 5.7)" fill="${EM_C}"/>
   </svg>`;
 
 const EM_STAR = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
