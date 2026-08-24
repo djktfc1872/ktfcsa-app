@@ -6353,3 +6353,10 @@ button,
 .fold[open] > summary { border-bottom: 1px solid var(--line-soft); }
 .fold__body { padding: 4px 0 14px; }
 .fold__body .card { background: var(--surface-2); }
+
+/* A supporter's name in a table is tappable. Kept looking like a name rather
+   than a link until you are on it, so the tables stay readable. */
+.named__link { cursor: pointer; }
+.named__link:hover, .named__link:focus-visible { color: var(--accent); text-decoration: underline; }
+
+.ticker--letter .ticker__tag { background: var(--accent); color: var(--ink-950); }

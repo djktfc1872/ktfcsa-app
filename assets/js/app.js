@@ -341,7 +341,12 @@ const ROUTES = {
   /* Declared first so it opens its own group at the top of the sidebar and the
      More screen, rather than sitting fifth under Supporters. It is on for five
      days and then the route stops advertising itself entirely. */
-  consult: { label: "Have Your Say", short: "Say", icon: "📣", nav: "more", group: "Happening now", render: viewConsult },
+  /* Was "Have Your Say" while the survey was open. It closed on 21 August and
+     the page is now the report, the questions and how long each has gone
+     unanswered, so the name says that instead of inviting people to answer
+     something they cannot. */
+  consult: { label: "Consultation Report", short: "Report", icon: "📣", nav: "more",
+    group: "Happening now", render: viewConsult },
   home: { label: "Home", short: "Home", icon: ICON.poppy, nav: "tab", group: "Matchday", render: viewHome },
   fixtures: { label: "All Fixtures", short: "Fixtures", icon: "⚽", nav: "more", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
@@ -398,6 +403,8 @@ const ROUTES = {
   topic: { label: "Topic", icon: "\uD83D\uDDE8\uFE0F", nav: "hidden", render: viewTopic },
   supporter: { label: "Supporter", icon: "\uD83D\uDC64", nav: "hidden", render: viewSupporter },
   points: { label: "How points work", icon: "\u2139\uFE0F", nav: "hidden", render: viewPoints },
+  letter: { label: "Our Open Letter", short: "Letter", icon: "\u2709\uFE0F", nav: "more",
+    group: "Happening now", render: viewLetter },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   /* adminOnly now means "a moderator or better". What a moderator may actually
      do once inside is decided section by section, not by hiding the door. */
@@ -6269,7 +6276,7 @@ function buildAdmin() {
         const row = el(`
           <div class="offer-row">
             <div class="offer-row__head">
-              <span class="person__name">${namePlusTag(r.profile_id, r.display_name)}</span>
+              <span class="person__name">${namePlusTag(r.profile_id, r.display_name, { link: false })}</span>
               <span class="person__meta">${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
             </div>
             <div class="person__badges" style="justify-content:flex-start;max-width:none">${
@@ -6504,7 +6511,7 @@ function buildAdmin() {
             <div class="person">
               <button class="person__row" type="button" aria-expanded="false">
                 <span class="person__who">
-                  <span class="person__name">${namePlusTag(r.id, r.display_name)}</span>
+                  <span class="person__name">${namePlusTag(r.id, r.display_name, { link: false })}</span>
                   <span class="person__meta">Joined ${esc(fmtDate(String(r.created_at).slice(0, 10), "short"))}</span>
                 </span>
                 <span class="person__badges">${badges}</span>
@@ -6767,11 +6774,27 @@ const TAG_SPECIAL = new Set(["top-contributor", "legend"]);
  * leaderboards, the admin lists, the archive offers. A tag that only shows up
  * on the fan wall is not much of a tag.
  */
-function namePlusTag(profileId, name) {
+/**
+ * A supporter's name wherever it appears in a table, with whatever they have
+ * earned next to it.
+ *
+ * The name opens their card. This one function feeds the prediction league,
+ * the attendance table, the quiz ladder and the rest, so making it tappable
+ * here made every table tappable at once.
+ *
+ * `link: false` for the admin People list, where the name already sits inside
+ * the button that expands the row: a button inside a button is invalid, and
+ * the two would fight over the click.
+ */
+function namePlusTag(profileId, name, { link = true } = {}) {
   const shown = esc(name || "A supporter");
   const vol = profileId && db.isVolunteer(profileId)
     ? `<span class="pill pill--vol" title="Runs this site">Admin</span>` : "";
-  return `<span class="named">${shown}${vol}${supporterTag(profileId)}</span>`;
+  const who = link && profileId
+    ? `<span class="named__link" data-supporter="${esc(String(profileId))}"
+         role="link" tabindex="0">${shown}</span>`
+    : shown;
+  return `<span class="named">${who}${vol}${supporterTag(profileId)}</span>`;
 }
 
 function supporterTag(profileId) {
@@ -10504,30 +10527,16 @@ function consultCount({ compact = false } = {}) {
 }
 
 function viewConsult() {
-  /* Asked once and remembered, so the page can tell "closed" from "published"
-     without a round trip on every render. */
-  /* Only asked once the backend exists. Asked earlier, the store answers
-     "not published" because there is nothing to ask, and that answer used to
-     be cached for the life of the page: anyone whose first paint of this page
-     beat the connection saw "the results are being checked" and never stopped
-     seeing it, however long they waited or however often they came back. */
-  if (!state.publishedPromise && db.isOnline()) {
-    state.publishedPromise = db.consultationPublished().then((p) => {
-      const on = Boolean(p?.results_public);
-      if (on !== state.resultsPublic) { state.resultsPublic = on; render(); }
-      return p;
-    }).catch(() => {
-      state.publishedPromise = null;   /* a failed ask is not an answer */
-      return null;
-    });
-  }
+
+  askIfPublished();
 
   const wrap = el(`
     <div>
       <div class="page-head page-head--airy">
-        <h1>Have your say</h1>
-        <p>An independent consultation by the Kettering Town FC Supporters' Association on how
-           the club is being run. Open to every Poppies supporter, account or not.</p>
+        <h1>The consultation report</h1>
+        <p>An independent consultation by the Kettering Town FC Supporters' Association on how the
+           club is being run. It closed on 21 August. Everything supporters said is below, along
+           with what we have put to the club and how long each question has gone unanswered.</p>
       </div>
     </div>`);
 
@@ -10907,8 +10916,37 @@ function verdictBar(name, counts) {
  * The ten questions are not repeated inside it. They are already on this page
  * with their counts and their day counters, and two copies would drift.
  */
+/**
+ * The open letter on its own.
+ *
+ * It began as a deep link into the consultation report, and that report is a
+ * hundred and eighty thousand pixels tall with the letter ninety thousand down
+ * it. Every async load on that page rebuilds the DOM and puts the scroll back
+ * to the top, so a link into the middle was racing resets it could not see,
+ * and even winning it dropped somebody into the middle of a document with no
+ * idea where they were.
+ *
+ * A letter to the club is a thing in its own right. It gets a page.
+ */
+function viewLetter() {
+  const wrap = el(`<div></div>`);
+  wrap.append(el(`<button class="back-link" data-nav="home">\u2190 Home</button>`));
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <h1>Our open letter to the club</h1>
+      <p>Written on behalf of the supporters who took part in the consultation, and published in
+         full. What they said, and what we have asked the club.</p>
+    </div>`));
+  wrap.append(openLetterSection());
+  wrap.append(el(`<p class="hint" style="margin-top:18px">
+    <button class="link-btn" data-nav="consult">Read the full consultation report</button></p>`));
+  return wrap;
+}
+
 function openLetterSection() {
-  const box = el(`<div></div>`);
+  /* Given an id so #/consult/letter can be linked to from the home page and
+     land on the letter rather than the top of a long report. */
+  const box = el(`<div id="letter"></div>`);
   loadLetter().then((L) => {
     if (!L) return;
     box.append(el(`<h2 class="section-title">The letter we sent</h2>`));
@@ -11313,8 +11351,56 @@ function consultResults() {
  * rather than scrolling for ever, because a permanent crawl is an advert and
  * this is a deadline. Honours prefers-reduced-motion by simply sitting still.
  */
+/**
+ * Has the report been published?
+ *
+ * Asked once and remembered, so a page can tell "closed" from "published"
+ * without a round trip on every render, and only once the backend exists:
+ * asked earlier, the store answers "not published" because there is nothing to
+ * ask, and that answer used to be cached for the life of the page. Anyone
+ * whose first paint beat the connection saw "the results are being checked"
+ * and never stopped seeing it.
+ *
+ * The home page ticker needs this as much as the consultation page does, which
+ * is why it is no longer buried inside viewConsult.
+ */
+function askIfPublished() {
+  if (state.publishedPromise || !db.isOnline()) return;
+  state.publishedPromise = db.consultationPublished().then((p) => {
+    const on = Boolean(p?.results_public);
+    if (on !== state.resultsPublic) { state.resultsPublic = on; render(); }
+    return p;
+  }).catch(() => {
+    state.publishedPromise = null;   /* a failed ask is not an answer */
+    return null;
+  });
+}
+
 function consultTicker() {
-  if (consultState() !== "open") return null;
+  askIfPublished();
+  /* Second act. The consultation is closed and the report and the letter are
+     out, which is the thing worth pointing at now: a survey nobody can answer
+     any more is not news, and a letter to the club with a reply date on it is.
+     It goes straight to the letter rather than the top of a long report. */
+  if (consultState() !== "open") {
+    if (!state.resultsPublic) return null;
+    /* The reply date lives in the letter file, which the home page has no
+       other reason to fetch. Pulled once, and the line reads fine without it
+       in the meantime rather than holding up the paint. */
+    if (!state.letter) loadLetter().then((r) => { if (r) render(); }).catch(() => {});
+    const l = state.letter;
+    const by = l?.replyBy ? fmtDate(l.replyBy) : null;
+    const line = `Our open letter to the club is published${
+      by ? ` · We have asked for a reply by ${by}` : ""
+    } · Read what supporters said and what we put to them`;
+    return el(`
+      <button class="ticker ticker--letter" data-nav="letter"
+        aria-label="Our open letter to the club. ${esc(line)}">
+        <span class="ticker__tag">Open letter</span>
+        <span class="ticker__track"><span class="ticker__line">${esc(line)}</span></span>
+        <span class="ticker__go" aria-hidden="true">\u203A</span>
+      </button>`);
+  }
   if (db.hasAnswered()) return null;
   const line = `Independent fan consultation on how the club is being run · Open to every supporter, no account needed · Closes ${CLOSES_WORDS} · Have your say`;
   /* The running total is appended once it arrives rather than held for, so the
@@ -11708,7 +11794,9 @@ function wireGlobalClicks() {
   document.addEventListener("click", (e) => {
     const nav = e.target.closest("[data-nav]");
     if (nav) {
-      go(nav.dataset.nav);
+      /* data-nav-id lets a plain nav button land on a section rather than the
+         top of a page: the home ticker uses it to open the open letter. */
+      go(nav.dataset.nav, nav.dataset.navId ? { id: nav.dataset.navId } : {});
       return;
     }
     /* Player names open their profile. Checked before the club handler because
