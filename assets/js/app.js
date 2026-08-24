@@ -1730,7 +1730,7 @@ function viewPlan({ id }) {
     <div class="page-head page-head--airy">
       <h1>${esc(clubName(f.opponent))}</h1>
       <p>${esc(fmtDate(f.date))} &middot; ${esc(f.kickoff || "")} &middot;
-         ${away ? `away at ${esc(t?.stadium || "their place")}` : "at Latimer Park"}${
+         ${away ? `away at ${esc(t?.stadium || `${clubName(f.opponent)}'s ground`)}` : "at Latimer Park"}${
            f.competition ? ` &middot; ${esc(f.competition)}` : ""}</p>
     </div>`));
 
@@ -1746,6 +1746,29 @@ function viewPlan({ id }) {
           A-road speeds, plus half an hour at the other end for parking and the turnstile. It is an
           estimate from the distance, not a route: check the traffic before you go.</p>
       </div>`));
+  }
+
+  /* A cup draw brings opponents from outside the division, and none of the
+     away day detail exists for them: no ground, no postcode, no prices, no
+     parking, no pub. Saying nothing at all is the wrong answer for the one
+     game everybody travels to, so say what we do not know and point at
+     something that does. */
+  if (away && !t) {
+    wrap.append(el(`<h2 class="section-title">Getting there</h2>`));
+    const card = el(`
+      <div class="card">
+        <div class="info__label">Not one of ours</div>
+        <p class="club-overview">${esc(clubName(f.opponent))} are not in our division, so we have
+          no ground details, prices, parking or pub for them yet. If you are going and you find
+          out, the away guide gets better for everybody next time.</p>
+      </div>`);
+    card.append(el(`<a class="map-link" target="_blank" rel="noopener"
+      href="https://www.google.com/search?q=${encodeURIComponent(clubName(f.opponent) + " FC ground address")}"
+      >${ICON.pin} Look up their ground</a>`));
+    card.append(el(`<a class="map-link" target="_blank" rel="noopener"
+      href="https://footballgroundguide.com/?s=${encodeURIComponent(clubName(f.opponent))}"
+      >${ICON.pin} Football Ground Guide</a>`));
+    wrap.append(card);
   }
 
   /* --- what it costs and where to leave the car ---------------------- */
