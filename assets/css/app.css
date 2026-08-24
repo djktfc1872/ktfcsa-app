@@ -6290,3 +6290,10 @@ button,
 .winput { flex: 1; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; }
 .wclue { margin-top: 6px; }
 .wdone { font-size: 16px; font-weight: 600; margin: 10px 0 6px; }
+
+/* ---- awarding points by hand --------------------------------------------- */
+
+.credit-row { gap: 6px; margin: 6px 0; align-items: center; }
+.credit-why { flex: 1; min-width: 140px; }
+.credit-list { margin-top: 4px; }
+.credit-list .pts-row { gap: 10px; align-items: center; }

@@ -6542,6 +6542,89 @@ function buildAdmin() {
               panel.append(eye);
             }
 
+            /* Work done away from the app. Darren Young wrote the pen pics
+               for all nineteen players and no form on this site could ever
+               have counted it. The reason is shown to the supporter on their
+               own card, so it is written to be read by them, not by us. */
+            if (canRunThings) {
+              panel.append(el(`<div class="person__field">Points for work off the app</div>`));
+              const give = el(`
+                <div class="row row--wrap credit-row">
+                  <input class="input credit-why" maxlength="120" placeholder="What for, in their words">
+                  <input class="input credit-n" type="number" min="-500" max="500" step="5"
+                    value="40" style="max-width:90px" aria-label="Points">
+                  <button class="btn btn--sm" type="button">Award</button>
+                </div>`);
+              const why = give.querySelector(".credit-why");
+              const num = give.querySelector(".credit-n");
+              give.querySelector("button").addEventListener("click", async (e) => {
+                const btn = e.currentTarget;
+                const reason = why.value.trim();
+                const pts = Number(num.value);
+                if (reason.length < 3) { toast("Say what it is for.", "bad"); return; }
+                if (!Number.isFinite(pts) || !pts) { toast("How many points?", "bad"); return; }
+                btn.disabled = true;
+                try {
+                  await db.awardPoints(r.id, reason, pts);
+                  toast(`${r.display_name} credited ${pts > 0 ? "+" : ""}${pts}.`, "good");
+                  why.value = "";
+                  paintPeople();
+                } catch (err) {
+                  btn.disabled = false;
+                  toast(err.message || "That did not save.", "bad");
+                }
+              });
+              panel.append(give);
+
+              const held = el(`<div class="credit-list"></div>`);
+              panel.append(held);
+              db.pointsCredits(r.id).then((rows) => {
+                if (!rows.length) return;
+                rows.forEach((c) => {
+                  const line = el(`
+                    <div class="pts-row">
+                      <span>${esc(c.reason)}</span>
+                      <span class="pts-row__n">${c.points > 0 ? "+" : ""}${c.points}</span>
+                      <button class="link-btn" type="button">Withdraw</button>
+                    </div>`);
+                  line.querySelector("button").addEventListener("click", async () => {
+                    try {
+                      await db.withdrawPoints(c.id);
+                      toast("Withdrawn.", "good");
+                      paintPeople();
+                    } catch (err) { toast(err.message || "That did not save.", "bad"); }
+                  });
+                  held.append(line);
+                });
+              }).catch(() => {});
+            }
+
+            /* A spare account somebody signed up with twice. Hidden rather
+               than deleted: the sign-in still belongs to them, and hiding
+               undoes. It drops off every board and out of the people list. */
+            if (canRunThings && !r.is_admin) {
+              const off = Boolean(r.dormant);
+              panel.append(el(`<div class="person__field">Duplicate or abandoned account</div>`));
+              const d = el(`<button class="tag-btn${off ? " is-on" : ""}" type="button">${
+                off ? "\u2713 Hidden as dormant" : "Hide as dormant"}</button>`);
+              d.addEventListener("click", async () => {
+                d.disabled = true;
+                try {
+                  await db.setDormant(r.id, !off);
+                  r.dormant = !off;
+                  toast(off ? `${r.display_name} is listed again.`
+                            : `${r.display_name} is hidden from the boards.`, "good");
+                  paintPeople();
+                } catch (err) {
+                  d.disabled = false;
+                  toast(err.message || "That did not save.", "bad");
+                }
+              });
+              panel.append(d);
+              panel.append(el(`<p class="hint">They keep their sign-in and lose nothing. This only
+                takes them off the boards and out of this list.</p>`));
+            }
+
             panel.append(el(`<div class="person__field">Tag</div>`));
             const picker = el(`<div class="person__tags"${canRunThings ? "" : " aria-disabled=\"true\""}></div>`);
             [["", "None"], ...TAG_ORDER.map((k) => [k, TAG_LABEL[k]])].forEach(([key, label]) => {

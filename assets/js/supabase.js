@@ -477,7 +477,7 @@ class Backend {
   async adminPeople() {
     const { data, error } = await this.sb
       .from("profiles")
-      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator")
+      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator, dormant")
       .order("created_at", { ascending: false });
     if (!error) return data || [];
     /* Same reason as loadAvatars: usable before the schema catches up. */
@@ -596,6 +596,40 @@ class Backend {
       await this.sb.rpc("record_wordle", {
         p_date: date, p_len: len, p_guesses: guesses, p_solved: solved, p_marks: marks });
     } catch { /* a result that fails to record is not worth an error mid-game */ }
+  }
+
+  /* ---- points awarded by hand ------------------------------------------- */
+
+  async awardPoints(profileId, reason, points) {
+    const me = this.profile;
+    const { error } = await this.sb.from("points_credits").insert({
+      profile_id: profileId,
+      reason: String(reason).trim(),
+      points: Math.round(Number(points)),
+      awarded_by: me?.id || null,
+    });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async withdrawPoints(id) {
+    const { error } = await this.sb.from("points_credits").delete().eq("id", id);
+    if (error) throw new Error(friendly(error));
+  }
+
+  async pointsCredits(profileId) {
+    const { data, error } = await this.sb
+      .from("points_credits")
+      .select("id, reason, points, created_at")
+      .eq("profile_id", profileId)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return data || [];
+  }
+
+  async setDormant(profileId, hidden) {
+    const { error } = await this.sb.rpc("set_dormant",
+      { target: profileId, hidden: Boolean(hidden) });
+    if (error) throw new Error(friendly(error));
   }
 
   async groundBoard() {

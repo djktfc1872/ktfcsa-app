@@ -158,6 +158,17 @@ export const supporterSummary = (id) =>
 
 export const recordWordle = (d, len, g, solved, marks) =>
   (backend?.recordWordle ? backend.recordWordle(d, len, g, solved, marks) : Promise.resolve());
+export const awardPoints = (id, reason, pts) =>
+  (backend?.awardPoints ? backend.awardPoints(id, reason, pts)
+    : Promise.reject(new Error("Not connected.")));
+export const withdrawPoints = (id) =>
+  (backend?.withdrawPoints ? backend.withdrawPoints(id) : Promise.resolve());
+export const pointsCredits = (id) =>
+  (backend?.pointsCredits ? backend.pointsCredits(id) : Promise.resolve([]));
+export const setDormant = (id, hidden) =>
+  (backend?.setDormant ? backend.setDormant(id, hidden)
+    : Promise.reject(new Error("Not connected.")));
+
 export const groundBoard = () =>
   (backend?.groundBoard ? backend.groundBoard() : Promise.resolve([]));
 export const wordleLeague = () =>
