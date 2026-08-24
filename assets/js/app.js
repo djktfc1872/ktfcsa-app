@@ -347,6 +347,8 @@ const ROUTES = {
      something they cannot. */
   consult: { label: "Consultation Report", short: "Report", icon: "📣", nav: "more",
     group: "Happening now", render: viewConsult },
+  letter: { label: "Our Open Letter", short: "Letter", icon: "\u2709\uFE0F", nav: "more",
+    group: "Happening now", render: viewLetter },
   home: { label: "Home", short: "Home", icon: ICON.poppy, nav: "tab", group: "Matchday", render: viewHome },
   fixtures: { label: "All Fixtures", short: "Fixtures", icon: "⚽", nav: "more", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
@@ -403,8 +405,6 @@ const ROUTES = {
   topic: { label: "Topic", icon: "\uD83D\uDDE8\uFE0F", nav: "hidden", render: viewTopic },
   supporter: { label: "Supporter", icon: "\uD83D\uDC64", nav: "hidden", render: viewSupporter },
   points: { label: "How points work", icon: "\u2139\uFE0F", nav: "hidden", render: viewPoints },
-  letter: { label: "Our Open Letter", short: "Letter", icon: "\u2709\uFE0F", nav: "more",
-    group: "Happening now", render: viewLetter },
   player: { label: "Player", icon: "⭐", nav: "hidden", render: viewPlayer },
   /* adminOnly now means "a moderator or better". What a moderator may actually
      do once inside is decided section by section, not by hiding the door. */
