@@ -7697,7 +7697,22 @@ function nextTier(points) {
   return up ? { ...up, needs: up.at - n } : null;
 }
 
-const tierPill = (points) => {
+/**
+ * The rung somebody has reached, worn next to their name.
+ *
+ * Admin wins outright. Whoever runs the site is going to sit near the top of a
+ * board they built the scoring for, and "Danny · Legend" reads as marking your
+ * own homework however the number was earned. supporterTag() already stands
+ * aside for a volunteer for exactly this reason; this now does the same, so a
+ * name carries one badge and it is the one that matters.
+ *
+ * Pass no profileId where there is nobody to check, such as the key in the
+ * explainer that lists what each rung takes.
+ */
+const tierPill = (points, profileId = null) => {
+  if (profileId && db.isVolunteer(profileId)) {
+    return `<span class="pill pill--vol" title="Runs this site">Admin</span>`;
+  }
   const t = tierFor(points);
   return t ? `<span class="tier tier--${t.at}">${esc(t.name)}</span>` : "";
 };
@@ -7736,8 +7751,10 @@ function viewStanding() {
       const mine = rows.find((r) => String(r.profile_id) === String(me.id));
       const pts = mine ? mine.points : 0;
       n.textContent = String(pts);
-      const up = nextTier(pts);
-      badge.innerHTML = `${tierPill(pts)}${up
+      /* No rung to climb if the badge is Admin, or the card would show "Admin"
+         and under it how far to Superstar Contributor. */
+      const up = db.isVolunteer(me.id) ? null : nextTier(pts);
+      badge.innerHTML = `${tierPill(pts, me.id)}${up
         ? `<span class="tier-next">${up.needs} more to ${esc(up.name)}</span>` : ""}`;
     }).catch(() => { n.textContent = "\u2014"; });
   }
@@ -7791,7 +7808,7 @@ function viewStanding() {
           <div class="stand__row">
             <span class="stand__rank${i === 0 ? " stand__rank--1" : ""}">${i + 1}</span>
             <button class="stand__who" data-supporter="${esc(String(r.profile_id))}"
-              >${esc(r.display_name)}${b.tiers ? tierPill(b.col(r)) : ""}</button>
+              >${esc(r.display_name)}${b.tiers ? tierPill(b.col(r), r.profile_id) : ""}</button>
             <span class="stand__n">${esc(String(b.col(r)))}</span>
           </div>`));
       });
@@ -7889,23 +7906,40 @@ function viewSupporter({ id, from }) {
 
   wrap.append(el(`
     <div class="page-head page-head--airy sup-head">
-      ${avatarHtml(name, id)}
+      ${avatarHtml(name, id, "width:56px;height:56px;font-size:20px")}
       <div>
-        <h1>${esc(name)}${tierPill(state.supporters?.[id]?.points || 0)}</h1>
+        <h1>${esc(name)}${tierPill(state.supporters?.[id]?.points || 0, id)}</h1>
         <p>${db.isVolunteer(id) ? "Runs this site &middot; " : ""}${
           db.isModeratorId?.(id) ? "Moderator &middot; " : ""}${
           mine ? "This is you" : "Poppies supporter"}</p>
       </div>
     </div>`));
 
-  const sum = state.supporters?.[id];
+  /* Three states, not two. `null` means the request is in flight, `false`
+     means it came back with nothing. Both used to fall through the same `!sum`
+     test, so anybody opening this page by its address rather than by tapping a
+     name watched it say "nothing to show yet" while the answer was still on
+     its way.
+  
+     A failure is not cached. It clears the slot so the next render asks again,
+     which matters on a cold open where the first paint can beat the backend
+     connecting: cache the "no" you get before you are connected and it is the
+     only answer that supporter ever gets. */
+  state.supporters = state.supporters || {};
+  const sum = state.supporters[id];
+
   if (sum === undefined) {
+    if (db.isOnline()) {
+      state.supporters[id] = null;                     /* stops a second fetch */
+      db.supporterSummary(id)
+        .then((r) => { state.supporters[id] = r || false; render(); })
+        .catch(() => { delete state.supporters[id]; render(); });
+    }
     wrap.append(el(`<div class="card"><p class="hint">Looking that up\u2026</p></div>`));
-    state.supporters = state.supporters || {};
-    state.supporters[id] = null;                       /* stops a second fetch */
-    db.supporterSummary(id)
-      .then((r) => { state.supporters[id] = r || false; render(); })
-      .catch(() => { state.supporters[id] = false; render(); });
+    return wrap;
+  }
+  if (sum === null) {
+    wrap.append(el(`<div class="card"><p class="hint">Looking that up\u2026</p></div>`));
     return wrap;
   }
   if (!sum) {
@@ -7916,7 +7950,10 @@ function viewSupporter({ id, from }) {
   /* The headline numbers, only the ones that are actually something. */
   const stats = [];
   if (sum.points) {
-    const t = tierFor(sum.points);
+    /* Admin outranks the rung here as well. The badge by the name already says
+       Admin, and a tile underneath calling the same person Legend contradicts
+       it on the same screen. */
+    const t = db.isVolunteer(id) ? null : tierFor(sum.points);
     stats.push(["Poppies Points", sum.points, t ? t.name : "this season"]);
   }
   if (sum.grounds?.length) stats.push(["Grounds visited", sum.grounds.length, "of 22"]);
@@ -7930,7 +7967,11 @@ function viewSupporter({ id, from }) {
       mine ? "Log a game, make a prediction, play the daily, and this fills up."
            : "They have not played along yet."}</div>`));
   } else {
-    const grid = el(`<div class="info-grid info-grid--3"></div>`);
+    /* Not info-grid--3. There are between one and six of these depending on
+       what somebody has actually done, and a fixed three columns left the
+       fourth sitting alone on a row of its own with a hole beside it. This
+       fits as many as will go and keeps them even. */
+    const grid = el(`<div class="sup-stats"></div>`);
     stats.forEach(([label, value, sub]) => grid.append(el(`
       <div class="info">
         <div class="info__label">${esc(label)}</div>

@@ -6360,3 +6360,24 @@ button,
 .named__link:hover, .named__link:focus-visible { color: var(--accent); text-decoration: underline; }
 
 .ticker--letter .ticker__tag { background: var(--accent); color: var(--ink-950); }
+
+/* ---- the supporter card --------------------------------------------------
+   Between one and six tiles depending on what somebody has done, so they fit
+   as many per row as the width allows rather than sitting in a fixed three
+   and leaving the last one alone. */
+
+.sup-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+}
+.sup-stats .info {
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.sup-head { margin-bottom: 4px; }
+.sup-head h1 { line-height: 1.15; }
