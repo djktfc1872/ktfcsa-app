@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-23T22:55:41.140Z",
+  "updated": "2026-08-24T08:03:46.714Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -100,8 +100,8 @@
       "drawn": 2,
       "lost": 0,
       "for": 6,
-      "against": 3,
-      "goalDifference": 3,
+      "against": 4,
+      "goalDifference": 2,
       "points": 8,
       "deduction": 0,
       "form": "DDWW"
@@ -176,6 +176,23 @@
     },
     {
       "position": 11,
+      "name": "Leighton Town",
+      "short": "Leighton",
+      "slug": "leighton-town",
+      "crest": "assets/crests/leighton-town.png",
+      "played": 4,
+      "won": 1,
+      "drawn": 2,
+      "lost": 1,
+      "for": 5,
+      "against": 5,
+      "goalDifference": 0,
+      "points": 5,
+      "deduction": 0,
+      "form": "DDWL"
+    },
+    {
+      "position": 12,
       "name": "Racing Club Warwick",
       "short": "RC Warwick",
       "slug": "racing-club-warwick",
@@ -190,23 +207,6 @@
       "points": 5,
       "deduction": 0,
       "form": "DLWD"
-    },
-    {
-      "position": 12,
-      "name": "Leighton Town",
-      "short": "Leighton",
-      "slug": "leighton-town",
-      "crest": "assets/crests/leighton-town.png",
-      "played": 4,
-      "won": 1,
-      "drawn": 2,
-      "lost": 1,
-      "for": 4,
-      "against": 5,
-      "goalDifference": -1,
-      "points": 5,
-      "deduction": 0,
-      "form": "DDWL"
     },
     {
       "position": 13,
