@@ -11580,6 +11580,13 @@ function consultResults() {
     db.publishedQuestions().then((qs) => {
       state.hasFinalGroups = qs.length > 0;
       if (!qs.length) return;
+      /* Two lists, not one numbered run. The ten came out of the consultation
+         and carry a count of how many supporters asked; the working group's
+         did not, and a skim reader taking all twelve as coming from 199
+         supporters is exactly the misreading this page cannot afford. */
+      const fromFans = qs.filter((q) => q.origin !== "working_group");
+      const fromGroup = qs.filter((q) => q.origin === "working_group");
+
       qbox.append(el(`<h2 class="section-title">What supporters want answered</h2>`));
 
       /* The commitment, stated before the list rather than under it. Once the
@@ -11589,46 +11596,52 @@ function consultResults() {
       /* Taken from the first question, which was fine while every question went
          in one email. Two more went on 24 August, so a single date here would
          have told supporters something untrue about when the club got them. */
-      const sentDays = [...new Set(qs.filter((q) => q.asked_at)
+      const sentDays = [...new Set(fromFans.filter((q) => q.asked_at)
         .map((q) => String(q.asked_at).slice(0, 10)))].sort();
       const sentAt = sentDays[0] || null;
       const alsoLater = sentDays.length > 1 ? sentDays[sentDays.length - 1] : null;
       qbox.append(el(`
         <div class="card pledge">
           <p class="club-overview" style="margin:0">${sentAt
-            ? `These ${qs.length} questions were put to Kettering Town FC in writing, word for
+            ? `These ${fromFans.length} questions were put to Kettering Town FC in writing, word for
                word as they appear here, along with every question that did not fall under one of
                them. ${alsoLater
                  ? `Most went on <b>${esc(fmtDate(sentAt))}</b> and the rest on
                     <b>${esc(fmtDate(alsoLater))}</b>; each one below says which.`
                  : `They went on <b>${esc(fmtDate(sentAt))}</b>.`} Each one below shows how long it
                has gone without an answer.`
-            : `These ${qs.length} questions will be put to Kettering Town FC in writing
+            : `These ${fromFans.length} questions will be put to Kettering Town FC in writing
                <b>within 24 hours</b>, word for word as they appear here, along with every question
                that did not fall under one of them. Nothing is softened, and nothing is left out.
                Each one below will then show how long it has gone without an answer.`}</p>
         </div>`));
 
+      /* `offset` continues the numbering rather than restarting it: these were
+         sent to the club as two more on top of the ten, and numbering them 1
+         and 2 again would lose that. `attributed` is off inside the working
+         group's own block, where the heading above already says whose they
+         are and repeating it on every line is noise. */
+      const questionCard = (list, { offset = 0, attributed = true } = {}) => {
       const card = el(`<div class="card"></div>`);
-      qs.forEach((q, i) => {
+      list.forEach((q, i) => {
         const days = q.asked_at && !q.answered_at
           ? Math.floor((Date.now() - new Date(q.asked_at).getTime()) / 86400000) : null;
         const item = el(`
           <div class="qitem">
-            <span class="qitem__n">${i + 1}</span>
+            <span class="qitem__n">${offset + i + 1}</span>
             <div>
               <p>${esc(q.label)}</p>
-              <p class="hint"><b>${
+              <p class="hint">${attributed ? `<b>${
                 q.origin === "working_group"
                   ? "Asked by the working group"
-                  : `Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}`}</b>${
-                q.answered_at ? " · Answered." :
-                days !== null ? ` · Sent ${esc(fmtDate(String(q.asked_at).slice(0, 10)))} · <b>Awaiting
-                  a reply, ${days} day${days === 1 ? "" : "s"} so far.</b>` :
-                " · To be sent to the club."}</p>
-              ${q.origin === "working_group" ? `
-                <p class="hint">Not from the consultation. The working group agreed this one and
-                sent it to the club alongside the others.</p>` : ""}
+                  : `Asked by ${q.asked_by} supporter${q.asked_by === 1 ? "" : "s"}`}</b>` : ""}${
+                q.answered_at ? `${attributed ? " · " : ""}Answered.` :
+                days !== null ? `${attributed ? " · " : ""}Sent ${
+                  esc(fmtDate(String(q.asked_at).slice(0, 10)))} · <b>${days < 1
+                    ? "Awaiting a reply."
+                    : `Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.`}</b>` :
+                `${attributed ? " · " : ""}To be sent to the club.`}</p>
+
               ${(q.samples || []).length ? `
                 <details class="qitem__src">
                   <summary>See how ${q.samples.length === 1 ? "one supporter" :
@@ -11648,12 +11661,31 @@ function consultResults() {
           </div>`);
         card.append(item);
       });
-      card.append(el(`<p class="hint">Where several supporters asked the same thing in different
+      return card;
+      };
+
+      const fanCard = questionCard(fromFans);
+      fanCard.append(el(`<p class="hint">Where several supporters asked the same thing in different
         words, we merged it and said how many asked. The wording is ours; theirs is under each
-        one.${qs.some((q) => q.origin === "working_group")
-          ? " Anything marked as the working group's did not come from the consultation, and says so."
-          : ""}</p>`));
-      qbox.append(card);
+        one.</p>`));
+      qbox.append(fanCard);
+
+      /* Below the survey's questions, under its own heading, so nothing here
+         can be read as something 199 supporters asked for. */
+      if (fromGroup.length) {
+        qbox.append(el(`<h2 class="section-title">Also asked, by the working group</h2>`));
+        qbox.append(el(`
+          <div class="card pledge">
+            <p class="club-overview" style="margin:0">${fromGroup.length === 1
+              ? "This question did not"
+              : `These ${fromGroup.length} questions did not`} come out of the consultation.
+              ${fromGroup.length === 1 ? "It was" : "They were"} agreed by the KTFCSA working group
+              and sent to the club alongside the others, and ${
+              fromGroup.length === 1 ? "it is" : "they are"} counted here for the same reason:
+              so the wait for an answer is on the record.</p>
+          </div>`));
+        qbox.append(questionCard(fromGroup, { offset: fromFans.length, attributed: false }));
+      }
     }).catch(() => {});
     box.append(qbox);
 
