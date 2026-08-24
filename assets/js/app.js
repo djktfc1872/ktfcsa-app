@@ -273,6 +273,8 @@ const state = {
   topics: null,       // fan-started conversations, from topic_list
   topicCat: "",       // which category the list is filtered to, "" for all
   pointsInfo: null,   // the explainer's own copy of the weights, data/points.json
+  wordleBank: null,   // the word list, from data/wordle-bank.json
+  wordleTab: "play",
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
   squad: null,    // the squad the club confirmed, from data/squad.json
   priceSources: {},   // club id -> the page the checker read its prices from
@@ -368,6 +370,8 @@ const ROUTES = {
     nav: "more", group: "Games", render: viewDuel },
   /* The boards live with the games rather than under You, because they are the
      reason to play one. */
+  wordle: { label: "Poppies Wordle", short: "Wordle", icon: "\uD83D\uDFE5",
+    nav: "more", group: "Games", render: viewWordle },
   standing: { label: "Standing", icon: "\uD83C\uDFC5", nav: "more", group: "Games",
     render: viewStanding },
 
@@ -9178,13 +9182,213 @@ function shareResult(date, marks) {
   const text = shareText(date, marks);
   copyText(text).then((ok) => {
     if (ok) return toast("Copied. Paste it into the group.");
-    /* Never claim it copied when it did not - show it so they can take it. */
-    modal("Your result", el(`
-      <div>
-        <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
-        <textarea readonly rows="5" style="width:100%">${esc(text)}</textarea>
-      </div>`));
+    /* Never claim it copied when it did not - show it so they can take it.
+       modal() takes an HTML string and ignores anything after it, so passing a
+       title and a node meant the dialog opened saying "Your result" with
+       nothing in it to copy: the one job the fallback had. */
+    modal(`
+      <h3 style="margin:0 0 8px">Your result</h3>
+      <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
+      <textarea readonly rows="5" style="width:100%">${esc(text)}</textarea>`);
   });
+}
+
+/* --------------------------------------------------------- Poppies Wordle */
+
+const WORDLE_TRIES = 6;
+
+/** The day's word. Same for everybody, and no repeat until the list is done. */
+function wordleFor(iso) {
+  const bank = state.wordleBank?.words;
+  if (!bank?.length) return null;
+  const n = dayNumber(iso);
+  return bank[((n - 1) % bank.length + bank.length) % bank.length];
+}
+
+/**
+ * Mark a guess against the answer.
+ *
+ * Two passes, which is the bit everybody gets wrong first time: exact matches
+ * are taken out before the misplaced ones are counted, or a word with two of a
+ * letter marks both amber when only one belongs.
+ */
+function markGuess(guess, answer) {
+  const g = guess.toUpperCase().split("");
+  const a = answer.toUpperCase().split("");
+  const out = new Array(g.length).fill(0);
+  const left = {};
+
+  g.forEach((ch, i) => {
+    if (ch === a[i]) out[i] = 2;
+    else left[a[i]] = (left[a[i]] || 0) + 1;
+  });
+  g.forEach((ch, i) => {
+    if (out[i] === 2) return;
+    if (left[ch] > 0) { out[i] = 1; left[ch] -= 1; }
+  });
+  return out.join("");
+}
+
+const wordleKey = (iso) => `wordle:${iso}`;
+
+function wordleState(iso) {
+  const saved = db.read(wordleKey(iso), null);
+  if (saved && Array.isArray(saved.guesses)) return saved;
+  return { guesses: [], done: false, solved: false };
+}
+
+function viewWordle() {
+  const wrap = el(`
+    <div>
+      <div class="page-head">
+        <h1>Poppies Wordle</h1>
+        <p>One word a day about Kettering Town, the same word for everybody. The
+           length changes, so count the boxes before you start.</p>
+      </div>
+    </div>`);
+
+  const tabs = [["play", "Today"], ["board", "Leaderboard"]];
+  const tab = state.wordleTab || "play";
+  const bar = el(`
+    <div class="segmented" style="margin-bottom:16px" role="group" aria-label="Poppies Wordle">
+      ${tabs.map(([k, l]) => `<button data-wtab="${k}" class="${tab === k ? "is-active" : ""}">${l}</button>`).join("")}
+    </div>`);
+  bar.querySelectorAll("[data-wtab]").forEach((b) =>
+    b.addEventListener("click", () => { state.wordleTab = b.dataset.wtab; render(); }));
+  wrap.append(bar);
+
+  if (tab === "board") { wrap.append(wordleBoard()); return wrap; }
+
+  if (!state.wordleBank) {
+    wrap.append(el(`<div class="card"><p class="hint">Loading today's word&hellip;</p></div>`));
+    if (state.wordleBank === null) {
+      state.wordleBank = undefined;
+      readJSON("data/wordle-bank.json").then((r) => { state.wordleBank = r || false; render(); });
+    }
+    return wrap;
+  }
+
+  const iso = londonToday();
+  const entry = wordleFor(iso);
+  if (!entry) {
+    wrap.append(el(`<div class="empty"><b>No word today</b>Something went wrong loading it.</div>`));
+    return wrap;
+  }
+
+  const answer = entry.word;
+  const st = wordleState(iso);
+  const rows = [];
+
+  const grid = el(`<div class="wgrid" style="--wlen:${answer.length}"></div>`);
+  const drawGrid = () => {
+    grid.textContent = "";
+    for (let r = 0; r < WORDLE_TRIES; r++) {
+      const guess = st.guesses[r];
+      for (let c = 0; c < answer.length; c++) {
+        const ch = guess ? guess[c] : "";
+        const mark = guess ? markGuess(guess, answer)[c] : "";
+        grid.append(el(`<div class="wcell${
+          mark === "2" ? " wcell--right" : mark === "1" ? " wcell--near" : guess ? " wcell--no" : ""
+        }">${esc(ch)}</div>`));
+      }
+    }
+  };
+  drawGrid();
+
+  const card = el(`<div class="card"></div>`);
+  card.append(el(`<div class="info__label">${answer.length} letters &middot; ${
+    WORDLE_TRIES - st.guesses.length} ${st.guesses.length === WORDLE_TRIES - 1 ? "go" : "goes"} left</div>`));
+  card.append(grid);
+
+  /* The clue is not there to be read first. It appears once somebody is two
+     wrong, which is the point at which a cryptic word stops being fun. */
+  if (entry.clue && st.guesses.length >= 2 && !st.done) {
+    card.append(el(`<p class="hint wclue">Clue: ${esc(entry.clue)}</p>`));
+  }
+
+  const say = el(`<p class="hint" data-role="say"></p>`);
+
+  if (!st.done) {
+    const inputRow = el(`
+      <div class="row" style="margin-top:10px">
+        <input class="input winput" maxlength="${answer.length}" autocapitalize="characters"
+          autocomplete="off" spellcheck="false" placeholder="${answer.length} letters">
+        <button class="btn" data-act="guess">Guess</button>
+      </div>`);
+    const box = inputRow.querySelector(".winput");
+    const submit = () => {
+      const g = box.value.toUpperCase().replace(/[^A-Z]/g, "");
+      if (g.length !== answer.length) {
+        say.textContent = `It is ${answer.length} letters.`;
+        return;
+      }
+      st.guesses.push(g);
+      st.solved = g === answer;
+      st.done = st.solved || st.guesses.length >= WORDLE_TRIES;
+      db.write(wordleKey(iso), st);
+
+      if (st.done) {
+        const marks = st.guesses.map((x) => markGuess(x, answer)).join("");
+        db.recordWordle(iso, answer.length, st.guesses.length, st.solved, marks);
+      }
+      render();
+    };
+    inputRow.querySelector('[data-act="guess"]').addEventListener("click", submit);
+    box.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+    card.append(inputRow);
+    card.append(say);
+    setTimeout(() => box.focus(), 0);
+  } else {
+    card.append(el(`<p class="wdone">${
+      st.solved
+        ? `Got it in ${st.guesses.length}. ${esc(answer)}.`
+        : `Not today. It was <b>${esc(answer)}</b>.`}</p>`));
+    if (entry.clue) card.append(el(`<p class="hint">${esc(entry.clue)}</p>`));
+    const share = el(`<button class="btn btn--sm">Share your grid</button>`);
+    share.addEventListener("click", () => shareWordle(iso, st, answer));
+    card.append(share);
+    if (!db.currentUser()) {
+      card.append(el(`<p class="hint">Sign in and your streak counts on the board.</p>`));
+    }
+  }
+
+  wrap.append(card);
+  return wrap;
+}
+
+/** The grid as squares, which is the bit people paste into the group. */
+function shareWordle(iso, st, answer) {
+  const n = dayNumber(iso);
+  const rows = st.guesses.map((g) =>
+    markGuess(g, answer).split("").map((m) =>
+      (m === "2" ? "\uD83D\uDFE8" : m === "1" ? "\uD83D\uDFE7" : "\u2B1B")).join(""));
+  const head = `Poppies Wordle #${n} \u2014 ${st.solved ? st.guesses.length : "X"}/${WORDLE_TRIES} (${answer.length} letters)`;
+  const text = `${head}\n${rows.join("\n")}\nfans.ktfcsa.com`;
+  copyText(text).then((ok) => {
+    if (ok) return toast("Copied. Paste it into the group.");
+    modal(`
+      <h3 style="margin:0 0 8px">Your grid</h3>
+      <p class="hint" style="margin-bottom:10px">Press and hold to copy.</p>
+      <textarea readonly rows="8" style="width:100%">${esc(text)}</textarea>`);
+  });
+}
+
+function wordleBoard() {
+  const card = el(`<div class="card"><p class="hint">Longest run of days solved. A missed day ends it.</p></div>`);
+  const body = el(`<div class="stand"></div>`);
+  card.append(body);
+  db.wordleLeague().then((rows) => {
+    body.textContent = "";
+    const live = (rows || []).filter((r) => Number(r.streak) > 0).slice(0, 20);
+    if (!live.length) { body.append(el(`<p class="hint">Nobody has a streak going yet.</p>`)); return; }
+    live.forEach((r, i) => body.append(el(`
+      <div class="stand__row">
+        <span class="stand__rank${i === 0 ? " stand__rank--1" : ""}">${i + 1}</span>
+        <button class="stand__who" data-supporter="${esc(String(r.profile_id))}">${esc(r.display_name)}</button>
+        <span class="stand__n">${esc(String(r.streak))}</span>
+      </div>`)));
+  }).catch(() => { body.textContent = ""; body.append(el(`<p class="hint">That did not load.</p>`)); });
+  return card;
 }
 
 function viewDaily() {

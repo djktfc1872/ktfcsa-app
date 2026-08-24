@@ -6252,3 +6252,41 @@ button,
 }
 
 .pts-row__per { color: var(--text-3); font-size: 12px; }
+
+/* ---- Poppies Wordle ------------------------------------------------------
+   The grid sizes itself to the day's word: --wlen is set inline, which is the
+   whole reason this is not stuck on five letters like the original. Cells
+   shrink rather than the row wrapping, so a nine-letter word still fits a
+   phone. */
+
+.wgrid {
+  display: grid;
+  grid-template-columns: repeat(var(--wlen, 5), minmax(0, 1fr));
+  gap: 5px;
+  margin: 12px 0 4px;
+  max-width: 420px;
+}
+
+.wcell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: clamp(13px, 4.2vw, 22px);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface-2);
+}
+/* Right place is filled; in-the-word-wrong-place is the same gold as an
+   outline. Two shades of gold read as the same colour at a glance, and about
+   one man in twelve could not tell them apart at all. Differing by form rather
+   than hue costs nothing and works for everybody. */
+.wcell--right { background: var(--accent); border-color: var(--accent); color: var(--ink-950); }
+.wcell--near  { background: transparent; border-color: var(--accent); color: var(--accent); }
+.wcell--no    { background: var(--surface-3); border-color: var(--line); color: var(--text-3); }
+
+.winput { flex: 1; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; }
+.wclue { margin-top: 6px; }
+.wdone { font-size: 16px; font-weight: 600; margin: 10px 0 6px; }
