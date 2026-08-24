@@ -150,6 +150,7 @@ class Backend {
        back to four columns took early sight of the consultation results away
        from the people who had been given it, for as long as that gap lasted. */
     const TRIES = [
+      "id, avatar, avatar_kit, avatar_pattern, is_admin, tag, email_opt_in, results_viewer, is_moderator",
       "id, avatar, is_admin, tag, email_opt_in, results_viewer, is_moderator",
       "id, avatar, is_admin, tag, email_opt_in, results_viewer",
       "id, avatar, is_admin, tag, email_opt_in",
@@ -159,12 +160,16 @@ class Backend {
       const { data, error } = await this.sb.from("profiles").select(cols);
       if (!error) return this.shapePeople(data || []);
     }
-    return { avatars: {}, admins: [], tags: {}, optIn: {}, resultsViewers: [], moderators: [] };
+    return { avatars: {}, kits: {}, patterns: {}, admins: [], tags: {},
+             optIn: {}, resultsViewers: [], moderators: [] };
   }
 
   shapePeople(rows) {
     return {
       avatars: Object.fromEntries(rows.filter((r) => r.avatar).map((r) => [r.id, r.avatar])),
+      kits: Object.fromEntries(rows.filter((r) => r.avatar_kit).map((r) => [r.id, r.avatar_kit])),
+      patterns: Object.fromEntries(
+        rows.filter((r) => r.avatar_pattern).map((r) => [r.id, r.avatar_pattern])),
       admins: rows.filter((r) => r.is_admin).map((r) => r.id),
       tags: Object.fromEntries(rows.filter((r) => r.tag).map((r) => [r.id, r.tag])),
       optIn: Object.fromEntries(rows.map((r) => [r.id, !!r.email_opt_in])),
@@ -185,6 +190,17 @@ class Backend {
     const { error } = await this.sb
       .from("profiles").update({ avatar: emblem }).eq("id", this.profile.id);
     if (error) throw new Error("Badges are not set up in the database yet.");
+  }
+
+  /* Colour and pattern together, because they are picked together and two
+     round trips to set one look is one too many. Null for either means "go
+     back to working it out from the name". */
+  async setAvatarStyle(kit, pattern) {
+    const { error } = await this.sb
+      .from("profiles")
+      .update({ avatar_kit: kit || null, avatar_pattern: pattern || null })
+      .eq("id", this.profile.id);
+    if (error) throw new Error("Kit colours are not set up in the database yet.");
   }
 
   async rename(displayName) {

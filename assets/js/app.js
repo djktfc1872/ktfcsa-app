@@ -7268,6 +7268,24 @@ function seasonStats() {
 const AVATAR_KITS = 10;
 const AVATAR_PATTERNS = ["plain", "stripes", "hoops", "halves", "quarters", "sash"];
 
+const PATTERN_LABEL = {
+  plain: "Plain", stripes: "Stripes", hoops: "Hoops",
+  halves: "Halves", quarters: "Quarters", sash: "Sash",
+};
+
+/* The ten built-in kits, as offered in the picker. These are the same colours
+   as .avatar--t0 to --t9 in the stylesheet, which is where they are used when
+   nobody has chosen: change one and change both, or the swatch a supporter
+   taps will not be the avatar they get.
+   
+   Every one was measured to carry white lettering at 5.27 to 1 or better. A
+   colour off the picker below them has not been, which is why the lettering
+   flips to dark on anything light rather than trusting it. */
+const KIT_TONES = [
+  "#8e1420", "#5c1030", "#14432c", "#16294d", "#1a3f8f",
+  "#3d2263", "#0f3d3a", "#4a1414", "#26303a", "#6b3d09",
+];
+
 const initialsFor = (name) => {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
@@ -7328,6 +7346,7 @@ const EM_G = "#ddc084";   // gold, the form
 const EM_GD = "#a3803f";  // deep gold, shading
 const EM_C = "#f4f2ee";   // cream, highlight
 const EM_D = "#1b1b1f";   // near black, the holes
+const EM_R = "#c8323f";   // poppy red, for the scarf and nothing else
 
 const EM_BALL = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
     <circle cx="12" cy="12" r="9.2" fill="${EM_C}"/>
@@ -7337,10 +7356,14 @@ const EM_BALL = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="tr
 
 /* Held up rather than hanging. The draped version's loop swallowed its own
    tails at picker size and read as a horseshoe; held up it is one strong
-   shape, and the tilt is what keeps it from reading as the ticket. */
+   shape, and the tilt is what keeps it from reading as the ticket.
+   
+   Red rather than gold, in the poppy's own red. A Kettering scarf is red, and
+   with the poppy that makes two of the fourteen that are, which is enough for
+   them to look deliberate rather than like a mistake. */
 const EM_SCARF = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
     <g transform="rotate(-11 12 12)">
-      <rect x="3.2" y="8.8" width="17.6" height="6.4" rx="1" fill="${EM_G}"/>
+      <rect x="3.2" y="8.8" width="17.6" height="6.4" rx="1" fill="${EM_R}"/>
       <rect x="7.6" y="8.8" width="3.1" height="6.4" fill="${EM_C}"/>
       <rect x="13.9" y="8.8" width="3.1" height="6.4" fill="${EM_C}"/>
       <g fill="${EM_C}">
@@ -7460,15 +7483,99 @@ const EMBLEM_LABEL = {
 const ADMIN_ONLY_EMBLEMS = new Set(["lion", "admin"]);
 
 /** One avatar: their badge if they picked one, otherwise initials in colour. */
+/* ---- kit colours a supporter picked, rather than ones we guessed --------- */
+
+const hex2rgb = (h) => {
+  const v = String(h).replace("#", "");
+  return [0, 2, 4].map((i) => parseInt(v.slice(i, i + 2), 16));
+};
+
+/** WCAG relative luminance, which is what decides light or dark lettering. */
+function luminance(hex) {
+  const f = (c) => (c / 255 <= 0.03928
+    ? c / 255 / 12.92
+    : ((c / 255 + 0.055) / 1.055) ** 2.4);
+  const [r, g, b] = hex2rgb(hex);
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+const contrastWith = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** Dark or white lettering, whichever reads better on this colour. */
+const inkFor = (hex) =>
+  (contrastWith(hex, "#14140f") >= contrastWith(hex, "#ffffff") ? "dark" : "light");
+
+/**
+ * Nudge a chosen colour until the lettering on it is readable.
+ *
+ * There is a band in the middle where neither white nor near-black clears 4.5
+ * to 1: a bright red like #e13c2d tops out at 4.30 whichever you use. Refusing
+ * the colour would be the wrong answer to somebody who just wants their own
+ * shade, so it is darkened a step at a time until it clears. Nothing outside
+ * that band is touched, which is every one of the ten built-in kits and almost
+ * anything anybody would actually pick.
+ */
+function readableKit(hex) {
+  let out = hex;
+  for (let i = 0; i < 12; i++) {
+    if (Math.max(contrastWith(out, "#14140f"), contrastWith(out, "#ffffff")) >= 4.5) return out;
+    const [r, g, b] = hex2rgb(out).map((c) => Math.round(c * 0.9));
+    out = `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+  }
+  return out;
+}
+
+/** The second tone in a striped or hooped kit, from the one that was chosen. */
+function partnerTone(hex) {
+  const light = luminance(hex) > 0.3;   /* which way to shift, not a text choice */
+  const mix = (c) => Math.max(0, Math.min(255, Math.round(
+    light ? c * 0.72 : c + (255 - c) * 0.28)));
+  const [r, g, b] = hex2rgb(hex).map(mix);
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * A supporter's avatar.
+ *
+ * Colour and pattern are theirs if they have chosen, and worked out from their
+ * name if they have not, which is what everybody has until they open the
+ * picker. Nobody's avatar changes underneath them.
+ *
+ * A chosen colour cannot be trusted to carry white lettering: the ten built-in
+ * kits were all measured, a colour off a picker was not. The initials flip to
+ * near-black on anything light, and the scrim behind an emblem deepens to
+ * match, because the emblems are drawn in gold and cream and both disappear on
+ * a pale kit.
+ */
 function avatarHtml(name, profileId, style = "") {
   const emblem = profileId ? db.avatarOf(profileId) : null;
   const badge = emblem && EMBLEMS[emblem];
+  let kit = profileId ? db.kitOf(profileId) : null;
+  const pattern = (profileId && db.patternOf(profileId)) || patternFor(name);
+
   /* A chosen emblem still sits on that supporter's kit rather than on a flat
      grey square, so the two kinds of avatar look like they belong together. */
-  const cls = `avatar avatar--t${toneFor(name)} avatar--${patternFor(name)}${
+  const cls = `avatar${kit ? "" : ` avatar--t${toneFor(name)}`} avatar--${pattern}${
     badge ? " avatar--emblem" : ""}`;
+
+  let own = "";
+  if (kit) {
+    kit = readableKit(kit);
+    /* Whichever of the two actually wins, not whichever a threshold guesses.
+       A fixed cut-off put white lettering on mid grey at 4.00, under the 4.5
+       body text needs, when dark on the same grey managed 4.75. */
+    const light = inkFor(kit) === "dark";
+    own = `--kit-a:${kit};--kit-b:${partnerTone(kit)};` +
+          `color:${light ? "#14140f" : "#fff"};` +
+          `--scrim:rgba(0,0,0,${light ? 0.5 : 0.34});`;
+    if (light) own += "text-shadow:0 1px 2px rgba(255,255,255,0.5);";
+  }
+
   return `<span class="${cls}" title="${esc(name || "")}"${
-    style ? ` style="${style}"` : ""}><span class="avatar__mark">${
+    own || style ? ` style="${own}${style}"` : ""}><span class="avatar__mark">${
     badge || esc(initialsFor(name))}</span></span>`;
 }
 
@@ -8875,6 +8982,11 @@ function viewAccount() {
         <div class="emblem-pick__label">Your badge</div>
         <div class="emblem-pick__row"></div>
       </div>
+      <div class="emblem-pick kit-pick">
+        <div class="emblem-pick__label">Your kit</div>
+        <div class="kit-pick__patterns"></div>
+        <div class="kit-pick__colours"></div>
+      </div>
 
       <div class="btn-row">
         <button class="btn btn--ghost btn--sm" id="ac-rename">Change name</button>
@@ -8934,6 +9046,71 @@ function viewAccount() {
     });
   };
   paintEmblems();
+
+  /* The kit behind the badge. Both were worked out from a hash of the name,
+     which gave everybody something but let nobody change theirs. */
+  const patRow = $(".kit-pick__patterns", idCard);
+  const colRow = $(".kit-pick__colours", idCard);
+
+  const paintKit = () => {
+    const kit = db.kitOf(user.id);
+    const pattern = db.patternOf(user.id) || patternFor(user.name);
+    const shown = readableKit(kit || KIT_TONES[toneFor(user.name)]);
+
+    patRow.replaceChildren();
+    AVATAR_PATTERNS.forEach((key) => {
+      const on = pattern === key;
+      const b = el(`
+        <button class="kit-swatch avatar avatar--${key}${on ? " is-mine" : ""}" type="button"
+          aria-pressed="${on}" title="${esc(PATTERN_LABEL[key] || key)}"
+          style="--kit-a:${shown};--kit-b:${partnerTone(shown)}"></button>`);
+      b.addEventListener("click", () => {
+        db.setAvatarStyle(kit, key);
+        toast(`Kit set to ${(PATTERN_LABEL[key] || key).toLowerCase()}.`);
+        paintKit();
+      });
+      patRow.append(b);
+    });
+
+    colRow.replaceChildren();
+    KIT_TONES.forEach((hex) => {
+      const on = (kit || "").toLowerCase() === hex.toLowerCase();
+      const b = el(`
+        <button class="kit-swatch kit-swatch--flat${on ? " is-mine" : ""}" type="button"
+          aria-pressed="${on}" title="${esc(hex)}" style="background:${hex}"></button>`);
+      b.addEventListener("click", () => {
+        db.setAvatarStyle(hex, pattern);
+        paintKit();
+      });
+      colRow.append(b);
+    });
+
+    /* Anything at all, for anybody the ten do not suit. The lettering flips to
+       dark on a light colour, so a pale pick is still readable rather than
+       being refused. */
+    const any = el(`
+      <label class="kit-any" title="Any colour you like">
+        <input type="color" value="${esc(shown)}" aria-label="Any colour">
+        <span>Any colour</span>
+      </label>`);
+    any.querySelector("input").addEventListener("change", (e) => {
+      db.setAvatarStyle(e.target.value, pattern);
+      paintKit();
+    });
+    colRow.append(any);
+
+    if (kit || db.patternOf(user.id)) {
+      const back = el(`<button class="link-btn kit-reset" type="button">Back to the one from my name</button>`);
+      back.addEventListener("click", () => {
+        db.setAvatarStyle(null, null);
+        toast("Back to your original kit.");
+        paintKit();
+      });
+      colRow.append(back);
+    }
+  };
+  paintKit();
+
   wrap.append(idCard);
 
   $("#ac-rename", wrap).addEventListener("click", () => {

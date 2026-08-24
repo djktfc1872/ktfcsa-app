@@ -3089,3 +3089,36 @@ limit 50;
 
 alter view ground_board set (security_invoker = false);
 grant select on ground_board to anon, authenticated;
+
+-- ===========================================================================
+-- Choosing your own kit
+-- ===========================================================================
+--
+-- The avatar's colour and pattern were both worked out from a hash of the
+-- supporter's display name. That gave everybody something rather than a row of
+-- identical grey circles, but it also meant nobody could change theirs, and
+-- two people who liked the look of a kit could not both have it.
+--
+-- Both are now a choice, stored per profile. Null means "work it out from the
+-- name", which is what everybody has until they pick, so nothing changes for
+-- anybody who never opens the picker.
+--
+-- avatar_kit holds a hex colour rather than an index into a list. An index
+-- would have tied every supporter's choice to the order of an array in the
+-- browser, and reordering that array would have quietly restyled the fanbase.
+
+alter table profiles add column if not exists avatar_kit text
+  check (avatar_kit is null or avatar_kit ~ '^#[0-9a-fA-F]{6}$');
+
+alter table profiles add column if not exists avatar_pattern text
+  check (avatar_pattern is null or avatar_pattern in
+    ('plain', 'stripes', 'hoops', 'halves', 'quarters', 'sash'));
+
+comment on column profiles.avatar_kit is
+  'Chosen avatar colour as #rrggbb. Null means derive it from the name.';
+comment on column profiles.avatar_pattern is
+  'Chosen avatar pattern. Null means derive it from the name.';
+
+-- The existing "own profile update" policy already covers these: a supporter
+-- may change their own row and nobody else's. No new policy, and deliberately
+-- no function, because there is nothing here worth guarding beyond that.

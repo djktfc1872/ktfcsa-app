@@ -63,6 +63,8 @@ const live = {
   ground: [],
   prices: [],               // what supporters say they actually paid
   avatars: {},              // profileId -> emblem key
+  kits: {},                 // profileId -> chosen avatar colour, #rrggbb
+  patterns: {},             // profileId -> chosen avatar pattern
   admins: new Set(),        // profileIds of KTFCSA volunteers
   tags: {},                 // profileId -> a tag a volunteer handed out
   supporters: null,         // how many accounts there are, for the join prompts
@@ -286,6 +288,8 @@ export async function refresh() {
     try {
       const people = await backend.loadAvatars();
     live.avatars = people.avatars;
+    live.kits = people.kits || {};
+    live.patterns = people.patterns || {};
     live.admins = new Set(people.admins);
     live.tags = people.tags || {};
     live.optIn = people.optIn || {};
@@ -816,6 +820,10 @@ export function addPriceReport(clubSlug, report) {
 
 /** The badge a supporter picked, or null if they are still on their initials. */
 export const avatarOf = (profileId) => live.avatars[profileId] || null;
+/* Null from either of these means the avatar is still worked out from the
+   name, which is what everybody has until they open the picker. */
+export const kitOf = (profileId) => (live.kits || {})[profileId] || null;
+export const patternOf = (profileId) => (live.patterns || {})[profileId] || null;
 
 /** True when a profile belongs to a KTFCSA volunteer, so posts can say so. */
 export const isVolunteer = (profileId) => live.admins.has(profileId);
@@ -894,6 +902,26 @@ export function setAvatar(emblem) {
   if (me) live.avatars = { ...live.avatars, [me]: emblem };
   onChange();
   attempt(backend.setAvatar(emblem).then(refresh), "That badge did not save.");
+}
+
+/**
+ * The kit an avatar is drawn on: colour and pattern together.
+ *
+ * Painted locally first so the picker responds on the tap rather than on the
+ * round trip. Null for either means go back to working it out from the name.
+ */
+export function setAvatarStyle(kit, pattern) {
+  if (!backend) {
+    onError("Choosing a kit needs an account.");
+    return;
+  }
+  const me = backend.profile?.id;
+  if (me) {
+    live.kits = { ...live.kits, [me]: kit || undefined };
+    live.patterns = { ...live.patterns, [me]: pattern || undefined };
+  }
+  onChange();
+  attempt(backend.setAvatarStyle(kit, pattern).then(refresh), "That kit did not save.");
 }
 
 /* --------------------------------------------------------- player ratings */

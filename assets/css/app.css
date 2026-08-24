@@ -3653,7 +3653,9 @@ button,
 .avatar--emblem { font-size: 15px; }
 .avatar--emblem::after {
   content: ""; position: absolute; inset: 0;
-  background: rgba(0, 0, 0, 0.34);
+  /* Deepens on a light kit, set inline by avatarHtml. The emblems are drawn in
+     gold and cream and both vanish on a pale colour without it. */
+  background: var(--scrim, rgba(0, 0, 0, 0.34));
 }
 
 .emblem-pick { margin: 4px 0 14px; }
@@ -6381,3 +6383,39 @@ button,
 
 .sup-head { margin-bottom: 4px; }
 .sup-head h1 { line-height: 1.15; }
+
+/* ---- picking your own kit ------------------------------------------------ */
+
+.kit-pick { margin-top: 4px; }
+.kit-pick__patterns, .kit-pick__colours {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.kit-pick__patterns { margin-bottom: 10px; }
+
+.kit-swatch {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--line); cursor: pointer; padding: 0;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+.kit-swatch:hover { transform: translateY(-1px); border-color: var(--accent); }
+.kit-swatch.is-mine {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+/* The pattern swatches reuse .avatar for their backgrounds but are empty, so
+   they must not inherit its inline-flex letter centring or its inset ring. */
+.kit-swatch.avatar { box-shadow: none; display: block; }
+.kit-swatch.avatar.is-mine { box-shadow: 0 0 0 2px var(--accent); }
+
+.kit-any {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-3); cursor: pointer;
+}
+.kit-any input[type="color"] {
+  width: 34px; height: 34px; padding: 0; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 50%; background: none;
+}
+.kit-any input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.kit-any input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+
+.kit-reset { margin-left: 4px; font-size: 12px; }
