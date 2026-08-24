@@ -6419,3 +6419,14 @@ button,
 .kit-any input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
 
 .kit-reset { margin-left: 4px; font-size: 12px; }
+
+/* ---- more than one open letter ------------------------------------------- */
+
+.letter-block + .letter-block { margin-top: 26px; }
+
+.letter-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  margin: 0 0 8px;
+}
+.letter-head b { color: var(--text); font-size: 15px; }
+.letter-head span { color: var(--text-3); font-size: 12.5px; }

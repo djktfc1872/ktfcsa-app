@@ -11270,7 +11270,7 @@ function viewLetter() {
   wrap.append(el(`<button class="back-link" data-nav="home">\u2190 Home</button>`));
   wrap.append(el(`
     <div class="page-head page-head--airy">
-      <h1>Our open letter to the club</h1>
+      <h1>Our open letters to the club</h1>
       <p>Written on behalf of the supporters who took part in the consultation, and published in
          full. What they said, and what we have asked the club.</p>
     </div>`));
@@ -11280,48 +11280,103 @@ function viewLetter() {
   return wrap;
 }
 
+/**
+ * Every letter the Association has sent the club, newest first.
+ *
+ * There was one, and the file and this renderer both assumed there would only
+ * ever be one. There are two now and there will be more, so `letters` is a
+ * list. A file still holding a single letter is wrapped rather than rejected,
+ * because a data file and the code that reads it do not deploy at the same
+ * instant.
+ */
+function lettersOf(L) {
+  if (!L) return [];
+  if (Array.isArray(L.letters)) return L.letters;
+  return L.body ? [L] : [];      /* the old single-letter shape */
+}
+
+/** The soonest reply date still outstanding, for the home page ticker. */
+function replyDue(L) {
+  const today = londonToday();
+  return lettersOf(L)
+    .map((x) => x.replyBy)
+    .filter((d) => d && d >= today)
+    .sort()[0] || null;
+}
+
 function openLetterSection() {
-  /* Given an id so #/consult/letter can be linked to from the home page and
-     land on the letter rather than the top of a long report. */
+  /* Given an id so the letter page and the report can both anchor to it. */
   const box = el(`<div id="letter"></div>`);
   loadLetter().then((L) => {
-    if (!L) return;
-    box.append(el(`<h2 class="section-title">The letter we sent</h2>`));
+    const letters = lettersOf(L);
+    if (!letters.length) return;
 
-    /* Who it went to and when, in the open, before anybody has to unfold
-       anything. A letter published without its address and its timestamp is
-       an article about a letter. */
-    box.append(el(`
-      <div class="card sent-slip">
-        <div class="sent-slip__row"><span>To</span><b>${esc(L.to || "the club")}</b></div>
-        <div class="sent-slip__row"><span>Sent</span><b>${esc(L.sentWords)}</b></div>
-        <div class="sent-slip__row"><span>Reply asked for by</span><b>${
-          esc(fmtDate(L.replyBy))}</b></div>
-      </div>`));
+    box.append(el(`<h2 class="section-title">${
+      letters.length > 1 ? "The letters we have sent" : "The letter we sent"}</h2>`));
 
-    box.append(foldable(`Read it in full, as sent on ${L.sentWords}`, () => {
-      const card = el(`<div class="card letter"></div>`);
-      L.body.forEach((b) => {
-        if (b.t === "h") {
-          card.append(el(`<h3 class="letter__h">${esc(b.x)}</h3>`));
-        } else if (b.t === "p") {
-          card.append(el(`<p class="letter__p">${esc(b.x)}</p>`));
-        } else if (b.t === "list") {
-          card.append(el(`<ul class="letter__list">${
-            b.x.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>`));
-        } else if (b.t === "quotes") {
-          b.x.forEach((q) => card.append(el(`<blockquote class="letter__q">${esc(q)}</blockquote>`)));
-        } else if (b.t === "ref") {
-          card.append(el(`<p class="letter__ref">${esc(b.x)}</p>`));
-        } else if (b.t === "sign") {
-          card.append(el(`<p class="letter__sign">${b.x.map(esc).join("<br>")}</p>`));
-        }
-      });
-      card.append(el(`<p class="note" style="margin-top:14px">${esc(L.note)}</p>`));
-      return card;
-    }));
+    if (letters.length > 1) {
+      box.append(el(`<p class="hint">Newest first. Each one is reproduced exactly as it was
+        sent, and none of them has been edited since.</p>`));
+    }
+
+    letters.forEach((x, i) => box.append(oneLetter(x, i === 0 && letters.length > 1)));
   }).catch(() => { /* the report stands on its own without it */ });
   return box;
+}
+
+function oneLetter(L, newest) {
+  const wrap = el(`<div class="letter-block"></div>`);
+
+  if (L.title) {
+    wrap.append(el(`<div class="letter-head">
+      ${newest ? `<span class="pill pill--gold">Latest</span>` : ""}
+      <b>${esc(L.title)}</b>
+      ${L.subject ? `<span>${esc(L.subject)}</span>` : ""}
+    </div>`));
+  }
+
+  /* Who it went to and when, in the open, before anybody has to unfold
+     anything. A letter published without its address and its timestamp is an
+     article about a letter. */
+  wrap.append(el(`
+    <div class="card sent-slip">
+      <div class="sent-slip__row"><span>To</span><b>${esc(L.to || "the club")}</b></div>
+      <div class="sent-slip__row"><span>Sent</span><b>${esc(L.sentWords)}</b></div>
+      <div class="sent-slip__row"><span>Reply asked for by</span><b>${
+        L.replyBy ? esc(fmtDate(L.replyBy)) : "No date set"}</b></div>
+      ${(() => {
+        /* How long it has gone unanswered, which is the number that matters.
+           Counted from the day it was sent, not from the reply date. */
+        const days = Math.floor((Date.now() - new Date(L.sentAt).getTime()) / 86400000);
+        if (!Number.isFinite(days) || days < 1) return "";
+        return `<div class="sent-slip__row"><span>Unanswered for</span><b>${days} day${
+          days === 1 ? "" : "s"}</b></div>`;
+      })()}
+    </div>`));
+
+  wrap.append(foldable(`Read it in full, as sent on ${L.sentWords}`, () => {
+    const card = el(`<div class="card letter"></div>`);
+    L.body.forEach((b) => {
+      if (b.t === "h") {
+        card.append(el(`<h3 class="letter__h">${esc(b.x)}</h3>`));
+      } else if (b.t === "p") {
+        card.append(el(`<p class="letter__p">${esc(b.x)}</p>`));
+      } else if (b.t === "list") {
+        card.append(el(`<ul class="letter__list">${
+          b.x.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>`));
+      } else if (b.t === "quotes") {
+        b.x.forEach((q) => card.append(el(`<blockquote class="letter__q">${esc(q)}</blockquote>`)));
+      } else if (b.t === "ref") {
+        card.append(el(`<p class="letter__ref">${esc(b.x)}</p>`));
+      } else if (b.t === "sign") {
+        card.append(el(`<p class="letter__sign">${b.x.map(esc).join("<br>")}</p>`));
+      }
+    });
+    if (L.note) card.append(el(`<p class="note" style="margin-top:14px">${esc(L.note)}</p>`));
+    return card;
+  }));
+
+  return wrap;
 }
 
 function consultResults() {
@@ -11725,15 +11780,16 @@ function consultTicker() {
        other reason to fetch. Pulled once, and the line reads fine without it
        in the meantime rather than holding up the paint. */
     if (!state.letter) loadLetter().then((r) => { if (r) render(); }).catch(() => {});
-    const l = state.letter;
-    const by = l?.replyBy ? fmtDate(l.replyBy) : null;
-    const line = `Our open letter to the club is published${
-      by ? ` · We have asked for a reply by ${by}` : ""
-    } · Read what supporters said and what we put to them`;
+    const many = lettersOf(state.letter).length;
+    const due = replyDue(state.letter);
+    const line = `Our open letter${many > 1 ? "s" : ""} to the club ${
+      many > 1 ? "are" : "is"} published${
+      due ? ` \u00B7 We have asked for a reply by ${fmtDate(due)}` : ""
+    } \u00B7 Read what supporters said and what we put to them`;
     return el(`
       <button class="ticker ticker--letter" data-nav="letter"
-        aria-label="Our open letter to the club. ${esc(line)}">
-        <span class="ticker__tag">Open letter</span>
+        aria-label="Our open letter${many > 1 ? 's' : ''} to the club. ${esc(line)}">
+        <span class="ticker__tag">Open letter${many > 1 ? "s" : ""}</span>
         <span class="ticker__track"><span class="ticker__line">${esc(line)}</span></span>
         <span class="ticker__go" aria-hidden="true">\u203A</span>
       </button>`);
