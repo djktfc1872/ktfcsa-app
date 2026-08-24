@@ -273,6 +273,7 @@ const state = {
   topics: null,       // fan-started conversations, from topic_list
   topicCat: "",       // which category the list is filtered to, "" for all
   pointsInfo: null,   // the explainer's own copy of the weights, data/points.json
+  pointsOpen: false,  // is the how-points-work fold open on the leaderboards
   wordleBank: null,   // the word list, from data/wordle-bank.json
   wordleTab: "play",
   bios: null,     // Darren Young's pen pics, from data/player-bios.json
@@ -372,7 +373,10 @@ const ROUTES = {
      reason to play one. */
   wordle: { label: "Poppies Wordle", short: "Wordle", icon: "\uD83D\uDFE5",
     nav: "more", group: "Games", render: viewWordle },
-  standing: { label: "Standing", icon: "\uD83C\uDFC5", nav: "more", group: "Games",
+  /* The route key stays `standing` so any link already shared still opens.
+     "Standing" on its own read like a league position; this page is six
+     boards and a points total, so it says so. */
+  standing: { label: "Leaderboards", icon: "\uD83C\uDFC5", nav: "more", group: "Games",
     render: viewStanding },
 
   /* About Kettering Town rather than about us. Nine things under one heading
@@ -7631,6 +7635,47 @@ function replyInbox() {
   return box;
 }
 
+/* ------------------------------------------------------------------ tiers */
+
+/**
+ * Four rungs, set against what supporters had actually scored three weeks into
+ * the season rather than against round numbers.
+ *
+ * The spread at the time was one account on 279 and then 51, 50, 34, 33, 26,
+ * with a median of about eight among everybody scoring at all. Thresholds are
+ * pitched so the first rung is within reach of anybody who turns up and joins
+ * in for a few weeks, and the top one takes a season. Points reset every 1 July
+ * and so do these: a tier is what you have done this season, not a rank you
+ * keep.
+ *
+ * Below the first rung there is no badge at all, deliberately. A label meaning
+ * "has done almost nothing" helps nobody.
+ */
+const TIERS = [
+  { at: 250, name: "Legend",                 short: "Legend" },
+  { at: 120, name: "Superstar Contributor",  short: "Superstar" },
+  { at: 50,  name: "Top Contributor",        short: "Top" },
+  { at: 15,  name: "Contributor",            short: "Contributor" },
+];
+
+/** The tier a total earns, or null below the bottom rung. */
+function tierFor(points) {
+  const n = Number(points) || 0;
+  return TIERS.find((t) => n >= t.at) || null;
+}
+
+/** How far to the next one up, for the nudge on somebody's own card. */
+function nextTier(points) {
+  const n = Number(points) || 0;
+  const up = [...TIERS].reverse().find((t) => n < t.at);
+  return up ? { ...up, needs: up.at - n } : null;
+}
+
+const tierPill = (points) => {
+  const t = tierFor(points);
+  return t ? `<span class="tier tier--${t.at}">${esc(t.name)}</span>` : "";
+};
+
 /* ------------------------------------------------------------- standing */
 
 /**
@@ -7645,7 +7690,7 @@ function replyInbox() {
 function viewStanding() {
   const wrap = el(`<div>
     <div class="page-head">
-      <h1>Standing</h1>
+      <h1>Leaderboards</h1>
       <p>Who is top of what, this season. Everything resets on 1 July so it stays winnable.</p>
     </div>
   </div>`);
@@ -7656,18 +7701,38 @@ function viewStanding() {
     card.append(el(`<div class="info__label">Your points</div>`));
     const n = el(`<div class="info__value" style="color:var(--accent);font-size:30px">&hellip;</div>`);
     card.append(n);
+    const badge = el(`<div></div>`);
+    card.append(badge);
     card.append(el(`<p class="hint">
-      <button class="link-btn" data-supporter="${esc(String(me.id))}">Your card</button> &middot;
-      <button class="link-btn" data-nav="points">How points work</button></p>`));
+      <button class="link-btn" data-supporter="${esc(String(me.id))}">Your card</button></p>`));
     wrap.append(card);
     db.contributorBoard().then((rows) => {
       const mine = rows.find((r) => String(r.profile_id) === String(me.id));
-      n.textContent = mine ? String(mine.points) : "0";
+      const pts = mine ? mine.points : 0;
+      n.textContent = String(pts);
+      const up = nextTier(pts);
+      badge.innerHTML = `${tierPill(pts)}${up
+        ? `<span class="tier-next">${up.needs} more to ${esc(up.name)}</span>` : ""}`;
     }).catch(() => { n.textContent = "\u2014"; });
   }
 
+  /* Folded shut, because most visits are to look at a board rather than to
+     read the rules. Open once and it stays open for the session. */
+  const fold = el(`
+    <details class="fold"${state.pointsOpen ? " open" : ""}>
+      <summary>How Poppies Points work</summary>
+      <div class="fold__body"></div>
+    </details>`);
+  fold.addEventListener("toggle", () => { state.pointsOpen = fold.open; });
+  const foldBody = fold.querySelector(".fold__body");
+  const info = withPointsInfo((d) => foldBody.append(pointsExplainer(d)));
+  if (info === null && !foldBody.childElementCount) {
+    foldBody.append(el(`<p class="hint">Loading&hellip;</p>`));
+  }
+  wrap.append(fold);
+
   const boards = [
-    { title: "Contributors", sub: "Poppies Points this season",
+    { title: "Contributors", sub: "Poppies Points this season", tiers: true,
       get: () => db.contributorBoard(), col: (r) => r.points },
     { title: "Prediction League", sub: "Points from called results",
       get: () => db.predictionLeague(), col: (r) => r.points },
@@ -7700,7 +7765,7 @@ function viewStanding() {
           <div class="stand__row">
             <span class="stand__rank${i === 0 ? " stand__rank--1" : ""}">${i + 1}</span>
             <button class="stand__who" data-supporter="${esc(String(r.profile_id))}"
-              >${esc(r.display_name)}</button>
+              >${esc(r.display_name)}${b.tiers ? tierPill(b.col(r)) : ""}</button>
             <span class="stand__n">${esc(String(b.col(r)))}</span>
           </div>`));
       });
@@ -7708,6 +7773,57 @@ function viewStanding() {
   });
 
   return wrap;
+}
+
+/**
+ * The explainer itself, built once and used twice: folded shut on the
+ * leaderboards page, and open on its own page. Two copies of this would drift
+ * within a month.
+ */
+function pointsExplainer(d, { tiers = true } = {}) {
+  const box = el(`<div></div>`);
+  box.append(el(`<p class="hint">${esc(d.season)}</p>`));
+
+  if (tiers) {
+    const t = el(`<div class="card" style="margin-top:10px"></div>`);
+    t.append(el(`<div class="info__label">The rungs</div>`));
+    [...TIERS].reverse().forEach((x) => t.append(el(`
+      <div class="pts-row">
+        <span>${tierPill(x.at)}</span>
+        <span class="pts-row__n">${x.at}+</span>
+      </div>`)));
+    t.append(el(`<p class="hint">They reset with everything else on 1 July. A rung is what you
+      have put in this season, not a rank you keep.</p>`));
+    box.append(t);
+  }
+
+  d.groups.forEach((g) => {
+    const card = el(`<div class="card" style="margin-top:10px"></div>`);
+    card.append(el(`<div class="info__label">${esc(g.title)}</div>`));
+    if (g.why) card.append(el(`<p class="hint" style="margin-top:4px">${esc(g.why)}</p>`));
+    g.items.forEach((it) => card.append(el(`
+      <div class="pts-row">
+        <span>${esc(it.what)}${it.per ? ` <span class="pts-row__per">${esc(it.per)}</span>` : ""}</span>
+        <span class="pts-row__n">${it.pts === null ? "varies" : (it.pts > 0 ? `+${it.pts}` : it.pts)}</span>
+      </div>`)));
+    box.append(card);
+  });
+
+  const nots = el(`<div class="card" style="margin-top:10px"></div>`);
+  nots.append(el(`<div class="info__label">What points are not</div>`));
+  d.notPoints.forEach((t) => nots.append(el(`<p class="club-overview">${esc(t)}</p>`)));
+  box.append(nots);
+  return box;
+}
+
+/** Fetches data/points.json once and hands it back. */
+function withPointsInfo(then) {
+  if (state.pointsInfo && state.pointsInfo !== true) return then(state.pointsInfo);
+  if (state.pointsInfo === null) {
+    state.pointsInfo = true;   /* one fetch, not one a render */
+    readJSON("data/points.json").then((r) => { state.pointsInfo = r || false; render(); });
+  }
+  return null;
 }
 
 /* ------------------------------------------------------- how points work */
@@ -7719,35 +7835,10 @@ function viewPoints() {
       <p>What earns them, and what they are deliberately not for.</p>
     </div>
   </div>`);
-
-  const d = state.pointsInfo;
-  if (!d) {
+  const d = withPointsInfo((info) => wrap.append(pointsExplainer(info)));
+  if (d === null && wrap.children.length === 1) {
     wrap.append(el(`<div class="card"><p class="hint">Loading&hellip;</p></div>`));
-    if (state.pointsInfo === null) {
-      state.pointsInfo = undefined;    /* one fetch, not one a render */
-      readJSON("data/points.json").then((r) => { state.pointsInfo = r || false; render(); });
-    }
-    return wrap;
   }
-
-  wrap.append(el(`<div class="card"><p class="hint">${esc(d.season)}</p></div>`));
-
-  d.groups.forEach((g) => {
-    wrap.append(el(`<h2 class="section-title">${esc(g.title)}</h2>`));
-    const card = el(`<div class="card"></div>`);
-    if (g.why) card.append(el(`<p class="hint" style="margin-top:0">${esc(g.why)}</p>`));
-    g.items.forEach((it) => card.append(el(`
-      <div class="pts-row">
-        <span>${esc(it.what)}${it.per ? ` <span class="pts-row__per">${esc(it.per)}</span>` : ""}</span>
-        <span class="pts-row__n">${it.pts === null ? "varies" : (it.pts > 0 ? `+${it.pts}` : it.pts)}</span>
-      </div>`)));
-    wrap.append(card);
-  });
-
-  wrap.append(el(`<h2 class="section-title">What points are not</h2>`));
-  const box = el(`<div class="card"></div>`);
-  d.notPoints.forEach((t) => box.append(el(`<p class="club-overview">${esc(t)}</p>`)));
-  wrap.append(box);
   return wrap;
 }
 
@@ -7774,7 +7865,7 @@ function viewSupporter({ id, from }) {
     <div class="page-head page-head--airy sup-head">
       ${avatarHtml(name, id)}
       <div>
-        <h1>${esc(name)}</h1>
+        <h1>${esc(name)}${tierPill(state.supporters?.[id]?.points || 0)}</h1>
         <p>${db.isVolunteer(id) ? "Runs this site &middot; " : ""}${
           db.isModeratorId?.(id) ? "Moderator &middot; " : ""}${
           mine ? "This is you" : "Poppies supporter"}</p>
@@ -7798,7 +7889,10 @@ function viewSupporter({ id, from }) {
 
   /* The headline numbers, only the ones that are actually something. */
   const stats = [];
-  if (sum.points) stats.push(["Poppies Points", sum.points, "this season"]);
+  if (sum.points) {
+    const t = tierFor(sum.points);
+    stats.push(["Poppies Points", sum.points, t ? t.name : "this season"]);
+  }
   if (sum.grounds?.length) stats.push(["Grounds visited", sum.grounds.length, "of 22"]);
   if (sum.predictPlace) stats.push(["Prediction league", `${ordinal(sum.predictPlace)}`, `of ${sum.predictOf}`]);
   if (sum.quiz?.streak) stats.push(["Poppies Daily", sum.quiz.streak, "day streak"]);
@@ -11316,36 +11410,36 @@ function wirePosters(node) {
 const memorialUpcoming = () => londonToday() <= MEMORIAL.date;
 
 function viewMemorial() {
+  /* The match has been played. The page stays, because the fund does not stop
+     when the game does and this is the only place on the site that explains
+     what it is for. What changed is the emphasis: it led on a fixture to turn
+     up to, and it now leads on a charity you can give to any week of the year. */
   const wrap = wirePosters(el(`
     <div>
       <div class="page-head page-head--airy">
-        <h1>A memorial match for Dylan Cecil</h1>
-        <p>Angry Birds against the Sonics, at Latimer Park, with everything raised going to the
-           Dylan Cecil Memorial Fund.</p>
-      </div>
-
-      <!-- The organisers' own poster. The painted band below is the fallback:
-           if the file is missing the page still shows the fixture rather than a
-           broken image box. -->
-      <figure class="poster">
-        <img src="${MEMORIAL.poster}" data-poster="hero" alt="Poster for the memorial match for Dylan Cecil: Angry Birds v Sonics, Sunday 23rd August, kick-off 2.30pm, Latimer Park, Kettering NN15 5PS. All proceeds to the Dylan Cecil Memorial Fund."
-             loading="eager" decoding="async">
-      </figure>
-
-      <div class="derby">
-        <div class="derby__side derby__side--red"><span>Angry Birds</span></div>
-        <div class="derby__vs">v</div>
-        <div class="derby__side derby__side--blue"><span>Sonics</span></div>
+        <h1>The Dylan Cecil Memorial Fund</h1>
+        <p>A Kettering charity that sends families on holiday when they are going through the
+           worst of it. The memorial match at Latimer Park is one of the reasons it can.</p>
       </div>
 
       <div class="card">
-        <div class="info-grid info-grid--3">
-          <div class="info"><div class="info__label">When</div><div class="info__value" style="font-size:17px;color:var(--accent)">Sun 23 Aug</div></div>
-          <div class="info"><div class="info__label">Kick-off</div><div class="info__value" style="font-size:17px">2.30pm</div></div>
-          <div class="info"><div class="info__label">Where</div><div class="info__value" style="font-size:17px">Latimer Park</div></div>
-        </div>
-        <div class="hint">Latimer Park, Polwell Lane, Burton Latimer, Kettering NN15 5PS.
-        Everyone is welcome, whether you want to play or just stand and watch.</div>
+        <p class="club-overview"><b>The 2026 match has been played.</b> Angry Birds against the
+        Sonics at Latimer Park on Sunday 23 August, and thank you to everybody who turned up,
+        played, ran the gate or put something in a bucket. The fund takes donations all year
+        round, and the match comes back next August.</p>
+      </div>
+
+      <h2 class="section-title">What the fund does</h2>
+      <div class="card">
+        <p class="club-overview">The Dylan Cecil Memorial Fund has been a registered charity since
+        2014. It pays for holidays for families with children who have life-limiting illnesses, and
+        for children who have been through the loss of someone close to them. Families are put
+        forward by other people and other charities, and the trustees choose who is helped.</p>
+        <p class="club-overview" style="margin-top:12px">It has arranged <b>32 holidays</b> so far.
+        Five families were helped in 2025 and another five are already paid for or arranged for
+        2026.</p>
+        <p class="club-overview" style="margin-top:12px">The charity's own words for what that
+        means are better than any of ours: <i>making memories that last forever</i>.</p>
       </div>
 
       <h2 class="section-title">Dylan</h2>
@@ -11363,28 +11457,33 @@ function viewMemorial() {
         <a href="${MEMORIAL.site}dylan" target="_blank" rel="noopener">read about Dylan</a>.</p>
       </div>
 
-      <h2 class="section-title">What the fund does</h2>
+      <h2 class="section-title">How to help, any time of year</h2>
       <div class="card">
-        <p class="club-overview">The Dylan Cecil Memorial Fund has been a registered charity since
-        2014. It pays for holidays for families with children who have life-limiting illnesses, and
-        for children who have been through the loss of someone close to them. Families are put
-        forward by other people and other charities, and the trustees choose who is helped.</p>
-        <p class="club-overview" style="margin-top:12px">It has arranged <b>32 holidays</b> so far.
-        Five families were helped in 2025 and another five are already paid for or arranged for
-        2026. This match is one of the main reasons the fund can keep doing it.</p>
-        <p class="club-overview" style="margin-top:12px">The charity's own words for what that
-        means are better than any of ours: <i>making memories that last forever</i>.</p>
+        <p class="club-overview"><b>Give something.</b> Every holiday the fund pays for is
+        somebody's family. The quickest way is to contact the fund directly through its own site.
+        John Cecil is usually around the ground on a Saturday too, if you would rather hand
+        something over in person.</p>
+        <p class="club-overview" style="margin-top:12px"><b>Put an event on.</b> The match is the
+        biggest thing in the fund's year, but it is not the only one, and the trustees will talk to
+        anybody who wants to run something.</p>
+        <p class="club-overview" style="margin-top:12px"><b>Come next August.</b> The memorial
+        match is an annual fixture at Latimer Park. It will be back, and everyone is welcome
+        whether you want to play or just stand and watch.</p>
       </div>
 
-      <h2 class="section-title">How to help</h2>
-      <div class="card">
-        <p class="club-overview"><b>Come along on Sunday.</b> That is the main thing. It is a
-        friendly between friends, family and supporters, and the more people through the gate the
-        better it does.</p>
-        <p class="club-overview" style="margin-top:12px"><b>Give what you like, or nothing at
-        all.</b> There is a collection on the day, and the fund takes donations through its own
-        website. John Cecil is usually around the ground on a Saturday too, if you would rather
-        hand something over in person.</p>
+      <!-- The organisers' poster from this year's match, kept as a record of it.
+           The painted band below is the fallback: if the file is missing the
+           page still shows what the game was rather than a broken image box. -->
+      <h2 class="section-title">This year's match</h2>
+      <figure class="poster">
+        <img src="${MEMORIAL.poster}" data-poster="hero" alt="Poster for the 2026 memorial match for Dylan Cecil: Angry Birds v Sonics, Sunday 23rd August, kick-off 2.30pm, Latimer Park, Kettering NN15 5PS. All proceeds to the Dylan Cecil Memorial Fund."
+             loading="lazy" decoding="async">
+      </figure>
+
+      <div class="derby">
+        <div class="derby__side derby__side--red"><span>Angry Birds</span></div>
+        <div class="derby__vs">v</div>
+        <div class="derby__side derby__side--blue"><span>Sonics</span></div>
       </div>
     </div>`));
 
@@ -11392,6 +11491,14 @@ function viewMemorial() {
   links.append(el(`
     <a class="btn btn--sm" href="${esc(MEMORIAL.site)}" target="_blank" rel="noopener">
       ${ICON.globe} The Dylan Cecil Memorial Fund</a>`));
+  /* Only pages that exist. The fund's site has no /donate and no /events,
+     whatever you would expect a charity site to have. */
+  links.append(el(`
+    <a class="btn btn--sm" href="${esc(MEMORIAL.site)}holidays" target="_blank" rel="noopener">
+      The holidays it has paid for</a>`));
+  links.append(el(`
+    <a class="btn btn--sm btn--ghost" href="${esc(MEMORIAL.site)}contact-us" target="_blank" rel="noopener">
+      Get in touch with the fund</a>`));
   links.append(el(`
     <a class="btn btn--sm btn--ghost" href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/${esc(MEMORIAL.charityNo)}"
        target="_blank" rel="noopener">Charity no. ${esc(MEMORIAL.charityNo)}</a>`));
