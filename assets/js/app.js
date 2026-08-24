@@ -367,7 +367,10 @@ const ROUTES = {
 
   heritage: { label: "Archive Project", icon: "\uD83D\uDCFC", nav: "more", group: "Supporters", render: viewHeritage },
   podcast: { label: "Poppycast", icon: "\uD83C\uDF99\uFE0F", nav: "more", group: "Supporters", render: viewPodcast },
-  memorial: { label: "Memorial Match", icon: "\uD83D\uDC99", nav: "more", group: "Supporters", render: viewMemorial },
+  /* Was "Memorial Match" while there was a match to come. The page is about
+     the charity now, and the charity is there all year. */
+  memorial: { label: "Dylan Cecil Memorial Fund", short: "Memorial Fund", icon: "\uD83D\uDC99",
+    nav: "more", group: "Supporters", render: viewMemorial },
 
   /* Two games rather than one buried among the notices. Poppies Daily is five
      questions once a day; Who Played More is endless. They belong together and
