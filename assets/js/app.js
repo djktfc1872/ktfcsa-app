@@ -7312,19 +7312,130 @@ const POPPY_SVG = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="
 const LION_IMG = `<img class="emblem-img" src="assets/img/lion.png" alt="" width="19" height="19">`;
 const ADMIN_IMG = `<img class="emblem-img" src="assets/img/admin-badge.png" alt="" width="19" height="19">`;
 
+/* The emblem set, drawn rather than borrowed.
+ *
+ * These were emoji. Emoji are drawn by the operating system, so the same
+ * choice was a different picture on every phone, none of them in the app's
+ * colours, and several of them unreadable at nineteen pixels sitting on a kit.
+ *
+ * Flat shapes, no strokes, three tones: gold carries the form, deep gold does
+ * the shading, cream is the highlight that keeps a shape apart from the kit
+ * behind it. Same construction as the poppy above. Every one was checked at
+ * nineteen pixels, which is where they actually live, rather than only at the
+ * size they were drawn.
+ */
+const EM_G = "#ddc084";   // gold, the form
+const EM_GD = "#a3803f";  // deep gold, shading
+const EM_C = "#f4f2ee";   // cream, highlight
+const EM_D = "#1b1b1f";   // near black, the holes
+
+const EM_BALL = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <circle cx="12" cy="12" r="9.2" fill="${EM_C}"/>
+    <path fill="${EM_D}" d="M12 6.6l3.4 2.5-1.3 4h-4.2l-1.3-4z"/>
+    <path fill="${EM_D}" d="M12 2.9l2.2 1.6-.7 1.2h-3l-.7-1.2zM4.5 8.6l2.4 1.8-.6 1.9-1.9.3-.9-1.6zM19.5 8.6l.9 2.4-.9 1.6-1.9-.3-.6-1.9zM7.5 17.4l1.6.5.9 2.3-1.6.9-2-1.7zM16.5 17.4l1 2 -2 1.7-1.6-.9.9-2.3z"/>
+  </svg>`;
+
+const EM_SCARF = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_GD}" d="M12 2.4a6.6 6.6 0 0 1 6.6 6.6v1.2h-3.8V9a2.8 2.8 0 0 0-5.6 0v1.2H5.4V9A6.6 6.6 0 0 1 12 2.4z"/>
+    <rect x="5.4" y="9.6" width="4.2" height="10.2" rx="0.6" fill="${EM_G}"/>
+    <rect x="14.4" y="9.6" width="4.2" height="10.2" rx="0.6" fill="${EM_G}"/>
+    <g fill="${EM_C}">
+      <rect x="5.4" y="12" width="4.2" height="2"/>
+      <rect x="14.4" y="12" width="4.2" height="2"/>
+      <rect x="5.4" y="16" width="4.2" height="2"/>
+      <rect x="14.4" y="16" width="4.2" height="2"/>
+    </g>
+    <g fill="${EM_C}">
+      <rect x="5.6" y="19.8" width="1" height="1.9" rx="0.5"/>
+      <rect x="7" y="19.8" width="1" height="1.9" rx="0.5"/>
+      <rect x="8.4" y="19.8" width="1" height="1.9" rx="0.5"/>
+      <rect x="14.6" y="19.8" width="1" height="1.9" rx="0.5"/>
+      <rect x="16" y="19.8" width="1" height="1.9" rx="0.5"/>
+      <rect x="17.4" y="19.8" width="1" height="1.9" rx="0.5"/>
+    </g>
+  </svg>`;
+
+const EM_SHIRT = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_G}" d="M8.8 3.2h6.4l5.2 2.6-2 4.6-2.2-1v11.4H6.8V9.4l-2.2 1-2-4.6z"/>
+    <path fill="${EM_D}" d="M8.8 3.2h6.4l-.5 1.4A3.6 3.6 0 0 1 12 6a3.6 3.6 0 0 1-2.7-1.4z"/>
+    <rect x="10.7" y="10.6" width="2.6" height="10.2" fill="${EM_D}"/>
+  </svg>`;
+
+const EM_BOOTS = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_G}" d="M3.4 4.6h4.2v7.2l9 2.6a3.4 3.4 0 0 1 2.4 3.2v1.2H3.4z"/>
+    <path fill="${EM_C}" d="M8.6 12.2l8 2.3-.4 1.5-8-2.3z"/>
+    <rect x="2.4" y="18.8" width="18.6" height="1.9" rx="0.95" fill="${EM_D}"/>
+    <g fill="${EM_D}">
+      <rect x="4.6" y="20.7" width="2.3" height="1.5" rx="0.6"/>
+      <rect x="10" y="20.7" width="2.3" height="1.5" rx="0.6"/>
+      <rect x="15.4" y="20.7" width="2.3" height="1.5" rx="0.6"/>
+    </g>
+  </svg>`;
+
+const EM_TROPHY = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_G}" d="M7 3h10v5.6a5 5 0 0 1-10 0z"/>
+    <path fill="${EM_GD}" d="M17 4.2h3.2v2.2a3.4 3.4 0 0 1-3.2 3.4V8zM7 4.2H3.8v2.2A3.4 3.4 0 0 0 7 9.8V8z"/>
+    <rect x="10.6" y="13.2" width="2.8" height="4" fill="${EM_GD}"/>
+    <rect x="7" y="17" width="10" height="2.2" rx="0.8" fill="${EM_G}"/>
+    <rect x="5.6" y="19.2" width="12.8" height="2.2" rx="0.9" fill="${EM_GD}"/>
+  </svg>`;
+
+const EM_BUS = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <rect x="2.4" y="4.4" width="19.2" height="13" rx="2.6" fill="${EM_G}"/>
+    <rect x="4.4" y="6.6" width="6.4" height="4.6" rx="1" fill="${EM_D}"/>
+    <rect x="13.2" y="6.6" width="6.4" height="4.6" rx="1" fill="${EM_D}"/>
+    <rect x="4.4" y="13" width="15.2" height="1.8" rx="0.9" fill="${EM_GD}"/>
+    <circle cx="6.8" cy="18.6" r="2.4" fill="${EM_D}"/>
+    <circle cx="17.2" cy="18.6" r="2.4" fill="${EM_D}"/>
+  </svg>`;
+
+const EM_PINT = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_G}" d="M6 7.6h9.6l-1.1 12.2a1.6 1.6 0 0 1-1.6 1.4H8.7a1.6 1.6 0 0 1-1.6-1.4z"/>
+    <path fill="${EM_C}" d="M5.8 4.6a2.3 2.3 0 0 1 2.4-1.8 2.4 2.4 0 0 1 4 0 2.3 2.3 0 0 1 2.5 1.8 2 2 0 0 1-.4 3.4H6.2a2 2 0 0 1-.4-3.4z"/>
+    <path fill="${EM_GD}" d="M16.2 9.4h2a2.6 2.6 0 0 1 0 5.2h-2.4l.2-2h2.2a.6.6 0 0 0 0-1.2h-2.2z"/>
+  </svg>`;
+
+const EM_TICKET = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_G}" d="M2.6 6.4h18.8v3.2a2.4 2.4 0 0 0 0 4.8v3.2H2.6v-3.2a2.4 2.4 0 0 0 0-4.8z"/>
+    <rect x="9.4" y="8.6" width="1.8" height="6.8" rx="0.9" fill="${EM_D}"/>
+    <rect x="13.6" y="10" width="4.4" height="1.5" rx="0.75" fill="${EM_D}"/>
+    <rect x="13.6" y="12.6" width="4.4" height="1.5" rx="0.75" fill="${EM_D}"/>
+  </svg>`;
+
+const EM_FLAG = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <rect x="4" y="2.4" width="2.2" height="19.2" rx="1.1" fill="${EM_C}"/>
+    <path fill="${EM_G}" d="M6.9 3.4h12.8l-3 4.3 3 4.3H6.9z"/>
+  </svg>`;
+
+const EM_DRUM = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <rect x="3.6" y="8.6" width="16.8" height="9.6" fill="${EM_G}"/>
+    <ellipse cx="3.6" cy="13.4" rx="2.2" ry="4.8" fill="${EM_GD}"/>
+    <ellipse cx="20.4" cy="13.4" rx="2.2" ry="4.8" fill="${EM_C}"/>
+    <ellipse cx="20.4" cy="13.4" rx="1" ry="2.6" fill="${EM_GD}"/>
+    <g fill="${EM_D}">
+      <path d="M6.6 8.8l2.6 4.6-2.6 4.6-1.1-.6 2.3-4-2.3-4z"/>
+      <path d="M12.4 8.8l2.6 4.6-2.6 4.6-1.1-.6 2.3-4-2.3-4z"/>
+    </g>
+    <rect x="14.4" y="1.8" width="1.6" height="7.2" rx="0.8" transform="rotate(28 15.2 5.4)" fill="${EM_C}"/>
+  </svg>`;
+
+const EM_STAR = `<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+    <path fill="${EM_G}" d="M12 2.4l2.9 6.1 6.7.9-4.9 4.7 1.2 6.6-5.9-3.2-5.9 3.2 1.2-6.6L2.4 9.4l6.7-.9z"/>
+  </svg>`;
+
 const EMBLEMS = {
   poppy: POPPY_SVG,
-  ball: "\u26BD",
-  scarf: "\u{1F9E3}",
-  shirt: "\u{1F455}",
-  boots: "\u{1F45F}",
-  trophy: "\u{1F3C6}",
-  bus: "\u{1F68C}",
-  pint: "\u{1F37A}",
-  ticket: "\u{1F39F}\u{FE0F}",
-  flag: "\u{1F6A9}",
-  drum: "\u{1F941}",
-  star: "\u2B50",
+  ball: EM_BALL,
+  scarf: EM_SCARF,
+  shirt: EM_SHIRT,
+  boots: EM_BOOTS,
+  trophy: EM_TROPHY,
+  bus: EM_BUS,
+  pint: EM_PINT,
+  ticket: EM_TICKET,
+  flag: EM_FLAG,
+  drum: EM_DRUM,
+  star: EM_STAR,
   lion: LION_IMG,
   admin: ADMIN_IMG,
 };
