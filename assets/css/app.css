@@ -6453,3 +6453,26 @@ button,
 }
 .qgroup__note { width: 100%; margin-top: 8px; }
 .qgroup__reply .hint { margin-top: 6px; }
+
+/* ---- the club's channel, credited ---------------------------------------- */
+
+.yt-credit {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 18px;
+}
+.yt-credit:hover { border-color: var(--accent-line); }
+.yt-credit__mark {
+  flex: 0 0 auto;
+  color: var(--accent);
+  display: inline-flex;
+  margin-top: 1px;
+}
+.yt-credit__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.yt-credit__body b { color: var(--text); font-size: 15px; }
+.yt-credit__body span { color: var(--text-3); font-size: 13px; line-height: 1.55; }
+.yt-credit__go { flex: 0 0 auto; color: var(--text-3); font-size: 15px; }
+.yt-credit:hover .yt-credit__go { color: var(--accent); }

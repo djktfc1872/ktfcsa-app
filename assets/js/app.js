@@ -141,6 +141,10 @@ const clubName = (name) => (/kettering/i.test(name) ? KTFC.name : teamByName(nam
    no font or network request. */
 const ICON = {
   pin: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>`,
+  /* Drawn rather than the YouTube wordmark: their brand rules are strict about
+     how the logo may be used, and a play glyph credits the channel without
+     borrowing a trademark to do it. */
+  play: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2 12a29 29 0 0 0 .4 4.8 2.8 2.8 0 0 0 2 2c1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4a2.8 2.8 0 0 0 2-2A29 29 0 0 0 22 12a29 29 0 0 0-.4-4.8ZM10.2 15.1V8.9l5.4 3.1Z"/></svg>`,
   /* A navigation arrow. The previous winding-route glyph collapsed into
      something like a helicopter at thirteen pixels. */
   route: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2.2a1 1 0 0 1 .92.6l7.2 16.8a1 1 0 0 1-1.33 1.3L12 17.83l-6.79 3.07a1 1 0 0 1-1.33-1.3l7.2-16.8a1 1 0 0 1 .92-.6Z"/></svg>`,
@@ -263,6 +267,7 @@ const state = {
   clubInfo: {},   // background notes and official sites, from data/clubs.json
   overviews: {},  // our own club write-ups, from data/club-overviews.json
   videos: [],     // the club's YouTube uploads, from data/videos.json
+  videoChannel: null, // the club's channel URL, so the page can credit it
   facts: null,    // researched club history, from data/club-facts.json
   association: null,  // who we are and what we stand for, from data/association.json
   valueReview: null,  // season ticket and gate price review, from data/value-review.json
@@ -6975,6 +6980,23 @@ function viewVideos() {
     </div>
   </div>`);
 
+  /* Above the videos, not buried under them. These are the club's, made by the
+     club, and the page should say so before it shows a single one of them. */
+  if (state.videoChannel) {
+    const credit = el(`
+      <a class="card yt-credit" href="${esc(state.videoChannel)}" target="_blank" rel="noopener">
+        <span class="yt-credit__mark" aria-hidden="true">${ICON.play}</span>
+        <span class="yt-credit__body">
+          <b>Kettering Town FC on YouTube</b>
+          <span>Every video here is the club's own, made and posted by them. This page gathers
+            them and ties them to the game they belong to. Subscribe to the channel for
+            everything as it goes up.</span>
+        </span>
+        <span class="yt-credit__go" aria-hidden="true">\u2197</span>
+      </a>`);
+    wrap.append(credit);
+  }
+
   if (!state.videos.length) {
     wrap.append(el(`
       <div class="empty">
@@ -7016,7 +7038,12 @@ function viewVideos() {
     wrap.append(card);
   }
 
-  wrap.append(el(`<p class="note">Straight from the club's YouTube channel. Videos are matched to a game by their title, so the odd one may sit under Everything else.</p>`));
+  wrap.append(el(`<p class="note">Straight from
+    ${state.videoChannel
+      ? `<a href="${esc(state.videoChannel)}" target="_blank" rel="noopener">the club's YouTube
+         channel</a>`
+      : "the club's YouTube channel"}, and theirs rather than ours. Videos are matched to a game
+    by their title, so the odd one may sit under Everything else.</p>`));
   return wrap;
 }
 
@@ -9465,7 +9492,11 @@ async function loadClubInfo() {
    to this list by the fixture sync, so the app can trust the spellings. */
 async function loadSquad() {
   state.squad = await readJSON("data/squad.json");
-  state.videos = (await readJSON("data/videos.json"))?.videos || [];
+  const vids = await readJSON("data/videos.json");
+  state.videos = vids?.videos || [];
+  /* The channel the videos came from. Kept so the page can credit and link it
+     rather than quietly presenting the club's work as the app's. */
+  state.videoChannel = vids?.channel || null;
   state.facts = await readJSON("data/club-facts.json");
   state.bios = await readJSON("data/player-bios.json");
   /* null is fine: the ratings still work from team sheets alone */
