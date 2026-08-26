@@ -12385,8 +12385,36 @@ function wireGlobalClicks() {
   });
 }
 
+/**
+ * A band across the top of anything that is not the live site.
+ *
+ * Somebody testing needs to know which one they are looking at without
+ * checking the address bar, and so does anybody reading a screenshot of it. It
+ * says which database is behind the page, because that is the thing that
+ * actually differs and the thing that matters if you are about to click
+ * something destructive.
+ */
+function previewBanner() {
+  const prod = CONFIG.productionHosts || [];
+  if (!prod.length || prod.includes(location.hostname)) return;
+
+  const onPreviewDb = Boolean(CONFIG.preview?.url && CONFIG.preview?.anonKey);
+  const bar = el(`
+    <div class="testbar${onPreviewDb ? "" : " testbar--warn"}">
+      <b>Test site</b>
+      <span>${onPreviewDb
+        ? "Nothing here touches the live app. Post, break and undo whatever you like."
+        : "Careful: no test database is configured, so this is writing to the live data."
+      }</span>
+      <a href="https://fans.ktfcsa.com/">Go to the live site</a>
+    </div>`);
+  document.body.prepend(bar);
+  document.body.classList.add("has-testbar");
+}
+
 async function boot() {
   document.documentElement.dataset.theme = db.read("theme", "dark");
+  previewBanner();
   readHash();
   countView();
   wireGlobalClicks();

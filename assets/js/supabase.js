@@ -20,12 +20,36 @@ export const TABLES = {
   poll: "polls",
 };
 
+/**
+ * Which database this copy of the app talks to.
+ *
+ * Decided by the address it is served from, not by a build flag: the same files
+ * are deployed to both, and a flag baked in at build time is the sort of thing
+ * that ends up pointing the live site at a test database because somebody
+ * deployed the wrong branch.
+ *
+ * No preview project configured means production, everywhere, which is how it
+ * worked before any of this existed.
+ */
+export function backendFor(host = location.hostname) {
+  const preview = CONFIG.preview || {};
+  const prod = CONFIG.productionHosts || [];
+  const isProd = !prod.length || prod.includes(host);
+  if (!isProd && preview.url && preview.anonKey) {
+    return { ...preview, isPreview: true };
+  }
+  return { ...CONFIG.supabase, isPreview: false };
+}
+
 export async function connect() {
   const { createClient } = await import(SDK);
-  const client = createClient(CONFIG.supabase.url, CONFIG.supabase.anonKey, {
+  const target = backendFor();
+  const client = createClient(target.url, target.anonKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   });
-  return new Backend(client);
+  const backend = new Backend(client);
+  backend.isPreview = target.isPreview;
+  return backend;
 }
 
 class Backend {

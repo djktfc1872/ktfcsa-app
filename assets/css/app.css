@@ -6476,3 +6476,30 @@ button,
 .yt-credit__body span { color: var(--text-3); font-size: 13px; line-height: 1.55; }
 .yt-credit__go { flex: 0 0 auto; color: var(--text-3); font-size: 15px; }
 .yt-credit:hover .yt-credit__go { color: var(--accent); }
+
+/* ---- the test site band --------------------------------------------------
+   Deliberately loud. Somebody doing UAT is trying to break things, and the one
+   thing they must never be unsure of is which site they are breaking. */
+
+.testbar {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 7px 14px;
+  background: var(--accent);
+  color: var(--ink-950);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.testbar b { font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.testbar span { flex: 1; min-width: 180px; }
+.testbar a { color: var(--ink-950); font-weight: 700; }
+
+/* No test database configured means it is writing to the live data, which is
+   the one case where this must not look like a friendly notice. */
+.testbar--warn { background: var(--red-300); color: #17140c; }
+.testbar--warn a { color: #17140c; }

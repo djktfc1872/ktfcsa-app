@@ -11,6 +11,31 @@ export const CONFIG = {
     anonKey: "sb_publishable_hGdWCAq4JkzLn---P185Iw_TDSjtzTg",
   },
 
+  /* The test instance.
+  
+     The same code runs on both, and which database it talks to is decided by
+     the address it is served from. Anything not on one of `productionHosts`
+     uses the preview project instead, so somebody testing cannot post to the
+     real fan wall, award real points, or unpublish the real consultation.
+  
+     Leave `url` blank and there is no test instance: every host falls back to
+     production, which is exactly how it behaved before this existed. Fill it in
+     with a second Supabase project, run supabase/schema.sql against it, and the
+     preview site picks it up with no code change.
+  
+     Add the production domains here as they come. ktfcsa.com is listed ahead of
+     the move so the switch does not silently point the main site at a test
+     database on the day it goes live. */
+  productionHosts: [
+    "fans.ktfcsa.com",
+    "ktfcsa.com",
+    "www.ktfcsa.com",
+  ],
+  preview: {
+    url: "",
+    anonKey: "",
+  },
+
   /* Shown in the footer. */
   credit: {
     name: "Danny Jordan",
