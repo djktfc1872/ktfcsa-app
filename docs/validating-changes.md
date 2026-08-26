@@ -27,10 +27,13 @@ Straight to `main`. No sign-off.
 Anything a supporter touches: a new page, a form, a game, a change to the fan
 wall, anything that saves what somebody typed.
 
-Goes out, and Ed gets told what to look at. If he flags it, it is fixed the
-same day or backed out. Shipping first is the right call here because the app
-has one of everything and no realistic way to reproduce four hundred people on
-a Saturday.
+Goes out, and the change is added to the test run as a batch: what shipped, and
+what each check should look like when it is right. Ed clears it, the batch comes
+off, and the page goes quiet until the next one. It only ever lists new work, so
+it is never a backlog of things nobody is going to look at.
+
+Shipping first is the right call here because the app has one of everything and
+no realistic way to reproduce four hundred people on a Saturday.
 
 ### Lane 3 — validated before it goes near the live site
 

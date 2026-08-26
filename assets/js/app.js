@@ -8187,6 +8187,13 @@ function viewPoints() {
  * One supporter's card, reached by tapping their name anywhere they have
  * posted.
  *
+ * It used to print "Moderator" here for anybody carrying the permission, which
+ * leaked a permission bit into a public identity. Being able to hide a post is
+ * a job somebody does, not a label they wear, and the two want separating:
+ * whoever should be publicly badged gets a tag saying so, on purpose. It also
+ * meant somebody given the rights to test them was announced to the fanbase as
+ * a moderator, which they are not.
+ *
  * Everything on it is already public somewhere else: the boards, the grounds
  * map, the prediction league. Nothing new is exposed by gathering it, and
  * gathering it is the point, because a name on a wall post tells you nothing
@@ -8206,7 +8213,6 @@ function viewSupporter({ id, from }) {
       <div>
         <h1>${esc(name)}${tierPill(state.supporters?.[id]?.points || 0, id)}</h1>
         <p>${db.isVolunteer(id) ? "Runs this site &middot; " : ""}${
-          db.isModeratorId?.(id) ? "Moderator &middot; " : ""}${
           mine ? "This is you" : "Poppies supporter"}</p>
       </div>
     </div>`));
