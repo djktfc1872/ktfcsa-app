@@ -6810,6 +6810,9 @@ const TAG_WHY = {
   historian: "Knows the club's past better than anyone",
   groundhopper: "Does the away days, all of them",
   legend: "One of the good ones",
+  /* Explains an odd-looking post rather than leaving other supporters to
+     wonder why somebody is talking about buttons. */
+  tester: "Tries the app before everyone else, and tells us what is broken",
 };
 
 /* A couple of these are meant to stand out from the rest. */
