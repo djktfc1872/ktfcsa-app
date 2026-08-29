@@ -2345,16 +2345,25 @@ grant select on ground_visit_counts to anon, authenticated;
 -- therefore reset every post on the wall to zero, and supporters would watch
 -- their posts lose likes overnight for no reason they could see.
 --
--- So the old total is kept as a floor and new likes count on top of it. The
--- seed runs once: after it, legacy_likes is non-zero and the guard skips it, so
--- running this file again does not double anything.
+-- So the old total is kept as a floor and new likes count on top of it.
+--
+-- The guard was "legacy_likes = 0 and likes > 0", which read as "has not been
+-- seeded yet" and is not the same thing. A post liked once since the new system
+-- went in has likes = 1 and legacy_likes = 0, so re-running this file would
+-- have turned that real like into a floor and then counted it again on top:
+-- one like showing as two. One post on the live wall was already in exactly
+-- that state.
+--
+-- The real question is whether a post's likes could have come from wall_likes,
+-- and the way to ask it is to look. A post with no rows there has nothing but
+-- old likes, and is the only kind that needs a floor.
 alter table wall_posts add column if not exists legacy_likes int not null default 0;
 
 comment on column wall_posts.legacy_likes is
   'Likes from before wall_likes existed. Nobody owns them, so they are a floor
-   under the real count rather than rows. Never written again after the seed.';
+   under the real count rather than rows. Only ever set on posts with no rows
+   in wall_likes, which is what makes re-running this file safe.';
 
-update wall_posts set legacy_likes = likes where legacy_likes = 0 and likes > 0;
 
 create table if not exists wall_likes (
   post_id    uuid not null references wall_posts on delete cascade,
@@ -2403,6 +2412,15 @@ $$;
 
 revoke all on function like_post(uuid, boolean) from public;
 grant execute on function like_post(uuid, boolean) to authenticated;
+
+-- The seed, down here because it reads wall_likes and that table is created
+-- above. Put next to the column it fills, it referenced a table that does not
+-- exist yet and would have failed on any fresh database.
+update wall_posts p
+   set legacy_likes = p.likes
+ where p.legacy_likes = 0
+   and p.likes > 0
+   and not exists (select 1 from wall_likes l where l.post_id = p.id);
 
 -- Reporting lost its blanket update policy along with liking, so it needs the
 -- same treatment: anyone signed in may flag a post, and only that.
