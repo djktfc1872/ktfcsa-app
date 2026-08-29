@@ -11357,6 +11357,20 @@ function viewLetter() {
       <p>Written on behalf of the supporters who took part in the consultation, and published in
          full. What they said, and what we have asked the club.</p>
     </div>`));
+  /* The clock before the letters. It is the one thing on this page that is
+     different from the last time somebody looked. */
+  const slot = el(`<div></div>`);
+  wrap.append(slot);
+  loadLetter().then((L) => {
+    const c = replyClock(L);
+    if (c) slot.replaceWith(c);
+  }).catch((err) => {
+    /* A swallowed catch here hid a broken clock completely: no clock, no error,
+       nothing to go on. The page is fine without it, so it still fails quietly
+       for the supporter, but it says so where somebody can see it. */
+    console.warn("The reply clock did not render:", err);
+  });
+
   wrap.append(openLetterSection({ openNewest: true }));
 
   /* The letters carry the questions inside them, folded, which meant this page
@@ -11393,6 +11407,131 @@ function replyDue(L) {
     .map((x) => x.replyBy)
     .filter((d) => d && d >= today)
     .sort()[0] || null;
+}
+
+/**
+ * The clock on the reply.
+ *
+ * Two letters have gone and a date was asked for. Between those facts sits the
+ * thing supporters actually want to know and the thing the club would rather
+ * nobody counted: how long it has been, and how long is left. A date on a page
+ * is a fact nobody feels. A number that moves while you look at it is harder to
+ * put down.
+ *
+ * It has to survive the deadline passing, which is nine days away, because the
+ * state after it is the one that carries the argument. Nothing here says the
+ * club has done anything wrong: it counts, and it stops counting the moment
+ * they answer.
+ */
+function replyClock(L) {
+  const letters = lettersOf(L).filter((x) => x.sentAt);
+  if (!letters.length) return null;
+
+  const sent = letters.map((x) => new Date(x.sentAt).getTime()).sort((a, b) => a - b);
+  const first = sent[0];
+
+  /* The earliest date asked for across the letters, whether or not it has
+     passed. replyDue() only returns ones still ahead, which is right for the
+     home page and useless the day after a deadline. */
+  const dates = letters.map((x) => x.replyBy).filter(Boolean).sort();
+  const dueISO = dates[0] || null;
+  /* End of the day asked for, not the start of it: a reply at five in the
+     afternoon on the fourth is not late. */
+  const due = dueISO ? new Date(`${dueISO}T23:59:59+01:00`).getTime() : null;
+
+  const box = el(`<div class="clock"></div>`);
+
+  const head = el(`
+    <div class="clock__head">
+      <span class="clock__label"></span>
+      <span class="clock__big"></span>
+      <span class="clock__sub"></span>
+    </div>`);
+  box.append(head);
+
+  /* The track runs from the first letter to the deadline, with a mark for each
+     letter and one for now. */
+  const track = el(`
+    <div class="clock__track" role="img">
+      <div class="clock__fill"></div>
+      <div class="clock__marks"></div>
+      <div class="clock__now"></div>
+    </div>`);
+  box.append(track);
+
+  const ends = el(`<div class="clock__ends"></div>`);
+  box.append(ends);
+
+  const marks = $(".clock__marks", track);
+  letters.forEach((x) => {
+    const t = new Date(x.sentAt).getTime();
+    const at = due && due > first ? ((t - first) / (due - first)) * 100 : 0;
+    marks.append(el(`
+      <span class="clock__mark" style="left:${Math.max(0, Math.min(100, at))}%"
+        title="${esc(x.sentWords || "")}"></span>`));
+  });
+
+  const label = $(".clock__label", head);
+  const big = $(".clock__big", head);
+  const sub = $(".clock__sub", head);
+  const fill = $(".clock__fill", track);
+  const now = $(".clock__now", track);
+
+  const two = (n) => String(n).padStart(2, "0");
+
+  /* Declared before tick, and null until the interval exists. tick runs once
+     synchronously to draw the thing, and reaching for `timer` in that first
+     call is a reference to a const that has not been initialised yet. */
+  let timer = null;
+
+  const tick = () => {
+    /* Every render of this page builds a new node and drops the old one. Left
+       to itself the old timer keeps running against a node in no document, and
+       a few visits later there are five of them.
+    
+       Only once it has been running, though: on the first call the node is
+       still detached, because el() builds it and the caller appends it
+       afterwards. Checking document.contains before that is asking whether a
+       thing that was never put on the page is still on the page. */
+    if (timer && !document.contains(box)) { clearInterval(timer); return; }
+
+    const t = Date.now();
+
+    if (!due) {
+      const days = Math.floor((t - first) / 86400000);
+      label.textContent = "Since we wrote";
+      big.textContent = `${days} day${days === 1 ? "" : "s"}`;
+      sub.textContent = "No reply date was asked for on this one.";
+      fill.style.width = "100%";
+      return;
+    }
+
+    const left = due - t;
+    const late = left < 0;
+    const span = Math.abs(late ? t - due : left);
+
+    const d = Math.floor(span / 86400000);
+    const h = Math.floor((span % 86400000) / 3600000);
+    const m = Math.floor((span % 3600000) / 60000);
+    const sec = Math.floor((span % 60000) / 1000);
+
+    box.classList.toggle("clock--late", late);
+    label.textContent = late ? "No reply, and the date has passed" : "Time left to reply";
+    big.innerHTML = `${d}<small>d</small> <span class="clock__hms">${
+      two(h)}:${two(m)}:${two(sec)}</span>`;
+    sub.textContent = `We asked for a reply by ${fmtDate(dueISO)}.`;
+
+    const pct = late ? 100 : Math.max(0, Math.min(100, ((t - first) / (due - first)) * 100));
+    fill.style.width = pct + "%";
+    now.style.left = pct + "%";
+  };
+
+  ends.append(el(`<span>${esc(fmtDate(new Date(first).toISOString().slice(0, 10)))}</span>`));
+  ends.append(el(`<span>${dueISO ? esc(fmtDate(dueISO)) : ""}</span>`));
+
+  tick();
+  timer = setInterval(tick, 1000);
+  return box;
 }
 
 function openLetterSection({ openNewest = false } = {}) {

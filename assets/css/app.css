@@ -6503,3 +6503,101 @@ button,
    the one case where this must not look like a friendly notice. */
 .testbar--warn { background: var(--red-300); color: #17140c; }
 .testbar--warn a { color: #17140c; }
+
+/* ---- the clock on the reply ----------------------------------------------
+   From the first letter to the date we asked for one by, with a mark for each
+   letter and one for now. Turns red and counts the other way once the date has
+   gone, because that state is the point of showing it at all. */
+
+.clock {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card, 10px);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clock__head { display: flex; flex-direction: column; gap: 3px; }
+
+.clock__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.clock__big {
+  font-size: clamp(28px, 8vw, 38px);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.clock__big small { font-size: 0.46em; font-weight: 700; color: var(--text-3); margin-left: -4px; }
+.clock__hms { font-size: 0.62em; font-weight: 700; letter-spacing: 0.01em; }
+
+.clock__sub { font-size: 13px; color: var(--text-3); }
+
+.clock__track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  overflow: visible;
+}
+.clock__fill {
+  position: absolute; inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 1s linear;
+}
+.clock__marks { position: absolute; inset: 0; }
+.clock__mark {
+  position: absolute;
+  top: 50%;
+  width: 3px; height: 16px;
+  margin-left: -1.5px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--text);
+  opacity: 0.75;
+}
+.clock__now {
+  position: absolute;
+  top: 50%;
+  width: 13px; height: 13px;
+  margin-left: -6.5px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--surface);
+  transition: left 1s linear;
+}
+
+.clock__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock--late .clock__big,
+.clock--late .clock__fill,
+.clock--late .clock__now { color: var(--red-300); }
+.clock--late .clock__fill,
+.clock--late .clock__now { background: var(--red-300); }
+.clock--late .clock__label { color: var(--red-300); }
+
+@media (prefers-reduced-motion: reduce) {
+  .clock__fill, .clock__now { transition: none; }
+}
