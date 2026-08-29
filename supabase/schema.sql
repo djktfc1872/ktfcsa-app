@@ -3183,3 +3183,43 @@ comment on column profiles.avatar_pattern is
 -- The existing "own profile update" policy already covers these: a supporter
 -- may change their own row and nobody else's. No new policy, and deliberately
 -- no function, because there is nothing here worth guarding beyond that.
+
+-- ===========================================================================
+-- Who called it exactly
+-- ===========================================================================
+--
+-- Getting a scoreline spot on is rare and worth saying out loud. The prediction
+-- league already counts them, but a total on a table three taps away is not the
+-- same as your name on the front page the morning after.
+--
+-- Forty eight hours from kick-off and then it goes, which is the point: it is a
+-- shout, not a monument. Anyone dormant is left out, the same as every board.
+
+drop view if exists exact_calls cascade;
+create view exact_calls as
+select
+  p.profile_id,
+  pr.display_name,
+  f.id                as fixture_id,
+  f.opponent,
+  f.venue,
+  f.home_score,
+  f.away_score,
+  f.kickoff_at
+from predictions p
+join fixtures f  on f.id = p.fixture_id
+join profiles pr on pr.id = p.profile_id
+where f.status = 'played'
+  and f.home_score is not null
+  and f.away_score is not null
+  and p.home_score = f.home_score
+  and p.away_score = f.away_score
+  and pr.dormant = false
+  -- Counted from kick-off rather than from when the result was typed in, so a
+  -- score entered late does not hand somebody a fresh two days of glory.
+  and f.kickoff_at is not null
+  and f.kickoff_at > now() - interval '48 hours'
+order by f.kickoff_at desc, pr.display_name;
+
+alter view exact_calls set (security_invoker = false);
+grant select on exact_calls to anon, authenticated;

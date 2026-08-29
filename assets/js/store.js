@@ -171,6 +171,8 @@ export const setDormant = (id, hidden) =>
   (backend?.setDormant ? backend.setDormant(id, hidden)
     : Promise.reject(new Error("Not connected.")));
 
+export const exactCalls = () =>
+  (backend?.exactCalls ? backend.exactCalls() : Promise.resolve([]));
 export const groundBoard = () =>
   (backend?.groundBoard ? backend.groundBoard() : Promise.resolve([]));
 export const wordleLeague = () =>

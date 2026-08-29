@@ -672,6 +672,14 @@ class Backend {
     if (error) throw new Error(friendly(error));
   }
 
+  /* Supporters who called a scoreline exactly, for games in the last 48 hours.
+     The view does the window, so this cannot drift from it. */
+  async exactCalls() {
+    const { data, error } = await this.sb.from("exact_calls").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
   async groundBoard() {
     const { data, error } = await this.sb.from("ground_board").select("*");
     if (error) return [];

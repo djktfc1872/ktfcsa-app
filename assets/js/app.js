@@ -680,6 +680,7 @@ function viewHome() {
     </div>
 
     <div class="live-slot"></div>
+    <div class="called-slot"></div>
     <div class="hero-slot"></div>
     <div class="daily-slot"></div>
     <div class="otd-slot"></div>
@@ -806,6 +807,9 @@ function viewHome() {
   /* The list itself is its own page now. Home says what is next and where to
      go; it does not also try to be a forty-two row fixture list. */
   if (liveNow) $(".live-slot", wrap).append(liveNow);
+  /* Above the next fixture, for the two days after a game when the last result
+     is still the thing on everybody's mind. */
+  $(".called-slot", wrap).append(exactCallout());
   const tick = consultTicker();
   if (tick) $(".ticker-slot", wrap).append(tick);
   const mem = memorialPromo();
@@ -9836,6 +9840,62 @@ function shareResult(date, marks) {
   });
 }
 
+/**
+ * Supporters who called the last score exactly, on the home page for two days.
+ *
+ * The prediction league already counts these, but a number in a column three
+ * taps away is not the same as your name on the front page the morning after.
+ * It is a shout rather than a monument, so it goes when the game does: the
+ * window lives in the view, counted from kick-off, so a result typed in late
+ * does not hand anybody a fresh two days.
+ */
+function exactCallout() {
+  const box = el(`<div></div>`);
+  db.exactCalls().then((rows) => {
+    if (!rows.length) return;
+
+    /* One game at a time. If two have been played inside the window, the
+       newest is the one people are still talking about. */
+    const newest = rows[0].fixture_id;
+    const called = rows.filter((r) => r.fixture_id === newest);
+    const g = called[0];
+
+    const home = g.venue === "Home";
+    const score = home
+      ? `${g.home_score}-${g.away_score}`
+      : `${g.away_score}-${g.home_score}`;
+    const line = home
+      ? `Kettering ${g.home_score}-${g.away_score} ${clubName(g.opponent)}`
+      : `${clubName(g.opponent)} ${g.home_score}-${g.away_score} Kettering`;
+
+    const names = called.map((r) => r.display_name);
+    const who = names.length === 1
+      ? `<b>${esc(names[0])}</b>`
+      : names.length === 2
+        ? `<b>${esc(names[0])}</b> and <b>${esc(names[1])}</b>`
+        : `${names.slice(0, -1).map((n) => `<b>${esc(n)}</b>`).join(", ")} and <b>${
+            esc(names[names.length - 1])}</b>`;
+
+    const card = el(`
+      <div class="called">
+        <div class="called__score">${esc(score)}</div>
+        <div class="called__body">
+          <div class="called__label">Called it exactly</div>
+          <p>${who} ${names.length === 1 ? "predicted" : "predicted"} ${esc(line)} on the nose.</p>
+        </div>
+      </div>`);
+
+    /* Their names open their cards, the same as everywhere else names appear. */
+    called.forEach((r, i) => {
+      const b = card.querySelectorAll(".called__body b")[i];
+      if (b) { b.dataset.supporter = String(r.profile_id); b.classList.add("called__who"); }
+    });
+
+    box.append(card);
+  }).catch((err) => { console.warn("Exact calls did not load:", err); });
+  return box;
+}
+
 /* --------------------------------------------------------- Poppies Wordle */
 
 const WORDLE_TRIES = 6;
@@ -11528,6 +11588,27 @@ function replyClock(L) {
 
   ends.append(el(`<span>${esc(fmtDate(new Date(first).toISOString().slice(0, 10)))}</span>`));
   ends.append(el(`<span>${dueISO ? esc(fmtDate(dueISO)) : ""}</span>`));
+
+  /* Whether anything has come back, worked out rather than typed. A sentence
+     saying "no reply yet" is true until the day it is not, and on that day
+     nobody remembers to change it. This reads the questions: mark one replied
+     or answered in the workbench and this line changes itself. */
+  const said = el(`<p class="clock__said">Checking&hellip;</p>`);
+  box.append(said);
+  db.publishedQuestions().then((qs) => {
+    const replied = qs.filter((q) => q.replied_at || q.answered_at);
+    const answered = qs.filter((q) => q.answered_at);
+    if (!qs.length) { said.remove(); return; }
+    if (!replied.length) {
+      said.innerHTML = `<b>As of now, no response to either letter.</b> Nothing has come back on
+        any of the ${qs.length} questions.`;
+      return;
+    }
+    said.classList.add("clock__said--some");
+    said.innerHTML = `The club has come back on <b>${replied.length} of ${qs.length}</b>
+      question${qs.length === 1 ? "" : "s"}${
+      answered.length ? `, and answered <b>${answered.length}</b>` : ", without answering any"}.`;
+  }).catch(() => { said.remove(); });
 
   tick();
   timer = setInterval(tick, 1000);

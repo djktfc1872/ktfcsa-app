@@ -6601,3 +6601,58 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .clock__fill, .clock__now { transition: none; }
 }
+
+/* Whether anything has come back. Worked out from the questions, so it is
+   never a stale sentence somebody forgot to edit. */
+.clock__said {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+.clock__said b { color: var(--text); }
+.clock__said--some b { color: var(--accent); }
+
+/* ---- called it exactly ----------------------------------------------------
+   Two days on the home page after a game, then gone. The scoreline carries it,
+   so it is set as a scoreboard rather than as body copy. */
+
+.called {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-card, 10px);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.called__score {
+  flex: 0 0 auto;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink-950);
+  background: var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.called__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.called__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.called__body p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text-2); }
+.called__body b { color: var(--text); font-weight: 600; }
+
+.called__who { cursor: pointer; }
+.called__who:hover { color: var(--accent); text-decoration: underline; }
