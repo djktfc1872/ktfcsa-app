@@ -1,8 +1,15 @@
 {
-  "updated": "2026-08-29T19:58:13.846Z",
+  "updated": "2026-08-29T22:21:21.040Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "OppSoPS8E2s",
+      "title": "Post Match Interview | Hitchin Town 1-1 Kettering Town (29/08/2026)",
+      "published": "2026-08-29T20:21:13+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a19f7ce9ef452b61f420d"
+    },
     {
       "videoId": "8-Lx8LJNzYQ",
       "title": "My Broadcast",
