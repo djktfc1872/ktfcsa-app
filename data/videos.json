@@ -1,8 +1,15 @@
 {
-  "updated": "2026-08-29T13:09:46.229Z",
+  "updated": "2026-08-29T17:27:02.923Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "8-Lx8LJNzYQ",
+      "title": "My Broadcast",
+      "published": "2026-08-29T16:44:02+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a19f7ce9ef452b61f420d"
+    },
     {
       "videoId": "X7Di56m-vac",
       "title": "The lads are training hard for their upcoming bout",
