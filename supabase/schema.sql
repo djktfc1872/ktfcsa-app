@@ -853,17 +853,21 @@ alter table profiles add column if not exists tag text;
 -- different things and people do one, the other, or both. One label for both
 -- flattened that, and the distinction matters most right now.
 --
--- The constraint is dropped and rebuilt by name rather than declared inline,
--- because "add column if not exists" does nothing at all on a database that
--- already has the column, so an inline list would never be updated on the one
--- database that counts.
+-- One rename that predates the tags table, kept because a database that has
+-- never been through it still holds the old value.
 update profiles set tag = 'ktfcsa-volunteer' where tag = 'volunteer';
 
+-- There was a CHECK constraint here listing every allowed tag. It is gone, and
+-- deliberately not replaced in place: further down, supporter_tags becomes the
+-- list and this column gets a foreign key to it.
+--
+-- Leaving the CHECK here broke the file outright. A tag created through the
+-- admin panel, exactly as intended, is not in a list hard-coded above the table
+-- that is supposed to hold the list, so re-running this file failed on the
+-- first supporter wearing one and never reached the foreign key that would have
+-- accepted it. A tester tag created on Tuesday stopped the schema running on
+-- Wednesday.
 alter table profiles drop constraint if exists profiles_tag_check;
-alter table profiles add constraint profiles_tag_check
-  check (tag is null or tag in ('contributor', 'top-contributor', 'ktfcsa-volunteer',
-                    'club-volunteer', 'reporter', 'photographer',
-                    'commentator', 'historian', 'groundhopper', 'legend'));
 
 /* Setting a tag is separated out rather than done through a policy that lets
    an admin update any profile row. A broad update policy would also let one
