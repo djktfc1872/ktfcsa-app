@@ -524,10 +524,69 @@ function renderNav() {
     : `<span class="btn btn--sm">Sign in</span>`;
 }
 
+/* Text size.
+ *
+ * A supporter told us it was hard to read. Every font size in this app was in
+ * pixels, which meant somebody who had already turned text up on their phone
+ * got nothing from it: the app quietly overrode their own setting. They are in
+ * rem now, so the browser's size carries, and this sits on top for anybody who
+ * has never found that setting.
+ *
+ * Percentages of the root rather than a class per size, so one number moves
+ * everything and nothing has to be kept in step. */
+const TEXT_SIZES = [
+  { key: "normal",  label: "Normal",  pct: 100 },
+  { key: "large",   label: "Large",   pct: 115 },
+  { key: "larger",  label: "Larger",  pct: 130 },
+  { key: "largest", label: "Largest", pct: 150 },
+];
+
+const textSize = () => db.read("textSize", "normal");
+
+function applyTextSize(key = textSize()) {
+  const found = TEXT_SIZES.find((x) => x.key === key) || TEXT_SIZES[0];
+  /* Left alone at Normal so the browser's own setting is what applies. Writing
+     100% here would pin the page to sixteen pixels and undo exactly the thing
+     this is meant to respect. */
+  document.documentElement.style.fontSize = found.pct === 100 ? "" : `${found.pct}%`;
+  document.documentElement.dataset.text = found.key;
+}
+
+function textSizePanel() {
+  const box = el(`
+    <div class="card a11y">
+      <div class="info__label">Text size</div>
+      <p class="hint" style="margin:2px 0 10px">Makes everything bigger, not just this page. If
+        you have already made text larger on your phone, the app now follows that too.</p>
+      <div class="a11y__row" role="group" aria-label="Text size"></div>
+    </div>`);
+  const row = $(".a11y__row", box);
+  const paint = () => {
+    row.textContent = "";
+    TEXT_SIZES.forEach((sz) => {
+      const on = textSize() === sz.key;
+      const b = el(`<button class="a11y__btn${on ? " is-on" : ""}" type="button"
+        aria-pressed="${on}" style="font-size:${sz.pct}%">${esc(sz.label)}</button>`);
+      b.addEventListener("click", () => {
+        db.write("textSize", sz.key);
+        applyTextSize(sz.key);
+        paint();
+      });
+      row.append(b);
+    });
+  };
+  paint();
+  return box;
+}
+
 function viewMore() {
   const wrap = el(`<div>
     <div class="page-head"><h1>More</h1><p>Everything else in the app.</p></div>
   </div>`);
+  /* Above the list rather than buried behind Account, which needs signing in.
+     Somebody who cannot read the app is not going to find a setting inside it. */
+  wrap.append(textSizePanel());
+
   let seen = null;
   routesWhere("more").forEach(([key, r]) => {
     if (r.group && r.group !== seen) {
@@ -536,7 +595,7 @@ function viewMore() {
     }
     wrap.append(el(`
       <button class="club-row${key === "consult" && consultState() === "open" ? " club-row--urgent" : ""}" data-nav="${key}">
-        <span style="font-size:19px;width:26px;text-align:center" aria-hidden="true">${r.icon}</span>
+        <span style="font-size:1.1875rem;width:26px;text-align:center" aria-hidden="true">${r.icon}</span>
         <div style="flex:1;min-width:0"><div class="club-row__name">${r.label}${
           key === "consult" && consultState() === "open"
             ? `<span class="club-row__sub">Closes ${CLOSES_WORDS}</span>` : ""}</div></div>
@@ -3483,8 +3542,8 @@ function viewPodcast() {
     <div class="pod-hero">
       ${p.image ? `<img class="pod-hero__art" src="${esc(p.image)}" alt="The Poppycast artwork">` : ""}
       <div class="pod-hero__text">
-        <h2 style="margin:0 0 6px;font-size:19px;font-weight:780">${esc(p.title)}</h2>
-        <p style="margin:0;color:var(--text-2);font-size:13px;line-height:1.55">${esc((p.description || "").slice(0, 260))}</p>
+        <h2 style="margin:0 0 6px;font-size:1.1875rem;font-weight:780">${esc(p.title)}</h2>
+        <p style="margin:0;color:var(--text-2);font-size:0.8125rem;line-height:1.55">${esc((p.description || "").slice(0, 260))}</p>
         <div class="btn-row" style="margin-top:12px">
           ${p.link ? `<a class="btn btn--sm btn--ghost" href="${esc(p.link)}" target="_blank" rel="noopener">Show page</a>` : ""}
           <a class="btn btn--sm btn--ghost" href="${esc(p.feed)}" target="_blank" rel="noopener">RSS feed</a>
@@ -6053,8 +6112,8 @@ function buildAdmin() {
       compare.append(el(`
         <div class="card" style="margin-bottom:14px">
           <div class="info-grid info-grid--dense">
-            <div class="info"><div class="info__label">Now</div><div class="info__value" style="color:var(--accent)">${now}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
-            <div class="info"><div class="info__label">May survey</div><div class="info__value">${was}<span style="font-size:13px;color:var(--text-3)">/10</span></div></div>
+            <div class="info"><div class="info__label">Now</div><div class="info__value" style="color:var(--accent)">${now}<span style="font-size:0.8125rem;color:var(--text-3)">/10</span></div></div>
+            <div class="info"><div class="info__label">May survey</div><div class="info__value">${was}<span style="font-size:0.8125rem;color:var(--text-3)">/10</span></div></div>
             <div class="info"><div class="info__label">Change</div><div class="info__value" style="color:${now < was ? "var(--red-400)" : "var(--ok)"}">${delta > 0 ? "+" : ""}${delta}</div></div>
           </div>
           <div class="hint">May asked about confidence in the incoming consortium and drew 189
@@ -8088,7 +8147,7 @@ function viewStanding() {
   if (me) {
     const card = el(`<div class="card"></div>`);
     card.append(el(`<div class="info__label">Your points</div>`));
-    const n = el(`<div class="info__value" style="color:var(--accent);font-size:30px">&hellip;</div>`);
+    const n = el(`<div class="info__value" style="color:var(--accent);font-size:1.875rem">&hellip;</div>`);
     card.append(n);
     const badge = el(`<div></div>`);
     card.append(badge);
@@ -9096,7 +9155,7 @@ function viewAccount() {
       <div class="post__head" style="margin-bottom:12px">
         ${avatarHtml(user.name, user.id, "width:44px;height:44px;font-size:15px")}
         <div>
-          <div class="post__who" style="font-size:16px">${esc(user.name)}</div>
+          <div class="post__who" style="font-size:1rem">${esc(user.name)}</div>
           <div class="hint" style="margin:0">${(() => {
             /* Was hardcoded to "Supporter" for everybody who is not an admin,
                so a tag a volunteer had handed out showed up on the fan wall and
@@ -9313,7 +9372,7 @@ function viewAccount() {
         <div class="info"><div class="info__label">Games</div><div class="info__value">${s.games}</div></div>
         <div class="info"><div class="info__label">Away</div><div class="info__value">${s.away_games}</div></div>
         <div class="info"><div class="info__label">Miles</div><div class="info__value" style="color:var(--accent)">${s.miles.toLocaleString("en-GB")}</div></div>
-        <div class="info"><div class="info__label">See all</div><div class="info__value"><button class="link-btn" data-nav="season" style="font-size:13px;color:var(--accent)">My Season ›</button></div></div>
+        <div class="info"><div class="info__label">See all</div><div class="info__value"><button class="link-btn" data-nav="season" style="font-size:0.8125rem;color:var(--accent)">My Season ›</button></div></div>
       </div>`));
   }
 
@@ -10513,7 +10572,7 @@ function viewValue() {
       <div class="info"><div class="info__label">Division average</div>
         <div class="info__value">${pounds(mean)}</div></div>
       <div class="info"><div class="info__label">Dearest</div>
-        <div class="info__value">${rank}<span style="font-size:13px;color:var(--text-3)"> of ${all.length}</span></div></div>
+        <div class="info__value">${rank}<span style="font-size:0.8125rem;color:var(--text-3)"> of ${all.length}</span></div></div>
     </div>`));
   gate.append(el(`
     <p class="club-overview" style="margin-top:12px">An adult at Latimer Park is
@@ -11935,7 +11994,7 @@ function consultResults() {
       <div class="card">
         <div class="info-grid info-grid--4">
           <div class="info"><div class="info__label">Responses</div><div class="info__value" style="color:var(--accent)">${s.responses}</div></div>
-          <div class="info"><div class="info__label">Confidence</div><div class="info__value">${s.confidence_avg}<span style="font-size:14px;color:var(--text-3)">/10</span></div></div>
+          <div class="info"><div class="info__label">Confidence</div><div class="info__value">${s.confidence_avg}<span style="font-size:0.875rem;color:var(--text-3)">/10</span></div></div>
           <div class="info"><div class="info__label">Wrong direction</div><div class="info__value">${pct(s.direction_wrong)}%</div></div>
           <div class="info"><div class="info__label">Would attend a meeting</div><div class="info__value">${s.meeting_any}</div></div>
         </div>
@@ -12697,6 +12756,7 @@ function previewBanner() {
 
 async function boot() {
   document.documentElement.dataset.theme = db.read("theme", "dark");
+  applyTextSize();
   previewBanner();
   readHash();
   countView();
