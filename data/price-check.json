@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-30T12:55:35+00:00",
+  "checked": "2026-08-30T17:54:01+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -48,20 +48,6 @@
       }
     },
     {
-      "club": "real-bedford",
-      "name": "Real Bedford",
-      "source": "https://www.realbedford.com/tickets/e/w-2026-08-30-swindontown",
-      "found": {
-        "adultPrice": 8
-      },
-      "differences": {
-        "adultPrice": {
-          "site": 8,
-          "ours": 14
-        }
-      }
-    },
-    {
       "club": "rushall-olympic",
       "name": "Rushall Olympic",
       "source": "https://www.rofc.co.uk/club-info/online-tickets",
@@ -96,20 +82,6 @@
   ],
   "drift": [
     {
-      "club": "real-bedford",
-      "name": "Real Bedford",
-      "source": "https://www.realbedford.com/tickets/e/w-2026-08-30-swindontown",
-      "found": {
-        "adultPrice": 8
-      },
-      "differences": {
-        "adultPrice": {
-          "site": 8,
-          "ours": 14
-        }
-      }
-    },
-    {
       "club": "stourbridge",
       "name": "Stourbridge",
       "source": "http://www.stourbridgefc.com/news/this-tuesday-night-stourbridge-v-leamingtonfc--book-your-tickets-online-now-2994582.html",
@@ -134,6 +106,7 @@
     "leiston",
     "needham-market",
     "racing-club-warwick",
+    "real-bedford",
     "redditch-united",
     "stamford",
     "stratford-town"
