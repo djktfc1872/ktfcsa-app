@@ -9779,6 +9779,9 @@ function careerDetail(r) {
   }
 
   const facts = [];
+  if (r.captain) {
+    facts.push(`Captained the side <b>${r.captain} time${r.captain === 1 ? "" : "s"}</b>`);
+  }
   if (r.league || r.cup) {
     facts.push(`${r.league} league game${r.league === 1 ? "" : "s"}${
       r.cup ? ` and ${r.cup} in cup competitions` : ""}`);
@@ -9836,6 +9839,7 @@ function buildArchiveIndex(a) {
         league: 0, cup: 0,
         goals: 0,
         bestCrowd: 0, bestCrowdWhere: null,
+        captain: 0,
         withPlayers: new Map(),
       });
     }
@@ -9857,6 +9861,8 @@ function buildArchiveIndex(a) {
 
     if (ctx.venue === "Home") r.home += 1; else if (ctx.venue === "Away") r.away += 1;
     if (ctx.cup) r.cup += 1; else r.league += 1;
+
+    if (ctx.captain) r.captain += 1;
 
     if (ctx.att && ctx.att > r.bestCrowd) {
       r.bestCrowd = ctx.att;
@@ -9890,7 +9896,10 @@ function buildArchiveIndex(a) {
       result: resultOf(m.us, m.them),
       mates: names,
     };
-    for (const [pi, shirt] of m.lineup) add(a.players[pi], m.season, shirt, m.date, ctx);
+    for (const row of m.lineup) {
+      const [pi, shirt, cap] = row;
+      add(a.players[pi], m.season, shirt, m.date, { ...ctx, captain: Boolean(cap) });
+    }
   }
 
   /* The archive stops where the current season starts, which is right for the
@@ -9915,7 +9924,9 @@ function buildArchiveIndex(a) {
         result: f.status === "played" ? resultOf(us, them) : null,
         mates: names,
       };
-      for (const p of f.lineup) add(p.name, league.season, p.number ?? null, f.date, ctx);
+      for (const p of f.lineup) {
+        add(p.name, league.season, p.number ?? null, f.date, { ...ctx, captain: Boolean(p.captain) });
+      }
 
       /* Goals, this season only. Every season before it has the scorer down as
          "N/A" in the feed, so there is nothing to count. */

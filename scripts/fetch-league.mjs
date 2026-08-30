@@ -465,7 +465,14 @@ function toArchiveMatch(m, intern) {
       /* A surname on its own ("LEWER", one appearance) is a half-written
          record, not somebody anyone could be asked to identify. */
       .filter((p) => tidyName(p.personName).includes(" "))
-      .map((p) => [intern(p.personName), p.number ?? null])
+      /* A third slot only when they wore the armband, so a row stays two long
+         for almost everybody and anything already reading [index, shirt] keeps
+         working untouched. Unlike hasStartedMatch, this flag holds up: twelve
+         in 2018/19, forty in 2023/24, forty two the season after, forty three
+         last season. That is roughly one a game, which is what it should be. */
+      .map((p) => (p.isCaptain
+        ? [intern(p.personName), p.number ?? null, 1]
+        : [intern(p.personName), p.number ?? null]))
       /* The same player twice in one sheet happens; keep the first. */
       .filter((row, i, all) => all.findIndex((o) => o[0] === row[0]) === i),
     /* Incomplete: in a quarter of the matches that have any goal records at
