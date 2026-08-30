@@ -874,6 +874,10 @@ function viewHome() {
   if (tick) $(".ticker-slot", wrap).append(tick);
   const mem = memorialPromo();
   if (mem) $(".daily-slot", wrap).append(mem);
+  /* Below the next fixture and the daily, not above them. The ticker at the top
+     is the announcement; this is the state of it, and the state of something
+     belongs further down than the news of it. */
+  $(".otd-slot", wrap).before(replyWaitCard());
   const arch = archivePromo();
   if (arch) $(".daily-slot", wrap).append(arch);
   const promo = dailyPromo();
@@ -10715,7 +10719,8 @@ function viewArchive() {
           <table class="league arch">
             <thead><tr>
               <th>Player</th><th>Apps</th><th>W</th><th>D</th><th>L</th>
-              <th>Won</th><th class="arch__seasons">Seasons</th>
+              <th>Won</th><th title="Times they captained the side">Capt</th>
+              <th class="arch__seasons">Seasons</th>
             </tr></thead>
             <tbody>
               ${rows.map((r) => {
@@ -10731,6 +10736,7 @@ function viewArchive() {
                   <td>${r.drew}</td>
                   <td>${r.lost}</td>
                   <td>${pct === null ? "&mdash;" : `${pct}%`}</td>
+                  <td class="${r.captain ? "arch__capt" : "hint"}">${r.captain || "&mdash;"}</td>
                   <td class="hint arch__seasons">${[...r.seasons].sort().join(", ")}</td>
                 </tr>`; }).join("")}
             </tbody>
@@ -11853,6 +11859,95 @@ function replyDue(L) {
  * club has done anything wrong: it counts, and it stops counting the moment
  * they answer.
  */
+/**
+ * The same wait, in one quiet line on the home page.
+ *
+ * The letters page has the clock, ticking to the second, which is right there
+ * and would be shouting here. This says what was sent, that nothing has come
+ * back, and how long is left, in days. It stops updating below the minute
+ * because nobody on a home page needs a second hand.
+ *
+ * It goes when the wait does: answer the questions and this disappears on its
+ * own rather than sitting there out of date.
+ */
+function replyWaitCard() {
+  const box = el(`<div></div>`);
+
+  loadLetter().then((L) => {
+    const letters = lettersOf(L).filter((x) => x.sentAt);
+    if (!letters.length) return;
+
+    const dates = letters.map((x) => x.replyBy).filter(Boolean).sort();
+    const dueISO = dates[0] || null;
+    const due = dueISO ? new Date(`${dueISO}T23:59:59+01:00`).getTime() : null;
+    const sent = letters.map((x) => new Date(x.sentAt).getTime()).sort((a, b) => a - b);
+
+    const card = el(`
+      <button class="replycard" data-nav="letter">
+        <span class="replycard__body">
+          <span class="replycard__label">Our open letter${letters.length > 1 ? "s" : ""} to the club</span>
+          <span class="replycard__what"></span>
+          <span class="replycard__state"></span>
+        </span>
+        <span class="replycard__go" aria-hidden="true">\u203A</span>
+      </button>`);
+
+    const what = $(".replycard__what", card);
+    const state_ = $(".replycard__state", card);
+
+    const days = Math.max(0, Math.floor((Date.now() - sent[0]) / 86400000));
+    what.textContent = letters.length > 1
+      ? `Two letters, sent ${fmtDate(new Date(sent[0]).toISOString().slice(0, 10), "short")} and ${
+          fmtDate(new Date(sent[sent.length - 1]).toISOString().slice(0, 10), "short")}.`
+      : `Sent ${fmtDate(new Date(sent[0]).toISOString().slice(0, 10), "short")}, ${days} day${
+          days === 1 ? "" : "s"} ago.`;
+
+    const tick = () => {
+      /* `timer &&` matters: the first call happens before setInterval has
+         returned anything, and on that call the card may not be on the page
+         yet. Without it the guard fires immediately, the card renders with an
+         empty line, and nothing ever fills it in. The clock on the letters page
+         had the same bug and the fix was not carried across. */
+      if (timer && !document.contains(card)) { clearInterval(timer); return; }
+      if (!due) { state_.textContent = "No reply date was asked for."; return; }
+
+      const left = due - Date.now();
+      if (left < 0) {
+        const over = Math.floor(-left / 86400000);
+        card.classList.add("replycard--late");
+        state_.innerHTML = `<b>No reply.</b> The date we asked for passed ${
+          over < 1 ? "today" : `${over} day${over === 1 ? "" : "s"} ago`}.`;
+        return;
+      }
+      const d = Math.floor(left / 86400000);
+      const h = Math.floor((left % 86400000) / 3600000);
+      state_.innerHTML = `<b>${d > 0 ? `${d} day${d === 1 ? "" : "s"}` : `${h} hour${
+        h === 1 ? "" : "s"}`} left</b> to the date we asked for a reply by.`;
+    };
+
+    let timer = null;
+
+    /* On the page before the first tick, so the guard above is asking a
+       question that has a real answer. */
+    box.append(card);
+    tick();
+    /* Once a minute. A second hand belongs on the letters page, not here. */
+    timer = setInterval(tick, 60000);
+
+    /* Only while there is still nothing back. The moment a question is marked
+       replied in the workbench this stops being true, and a card that has to
+       be remembered is a card that goes stale. */
+    db.publishedQuestions().then((qs) => {
+      if (qs.length && qs.some((q) => q.replied_at || q.answered_at)) {
+        clearInterval(timer);
+        card.remove();
+      }
+    }).catch(() => {});
+  }).catch((err) => { console.warn("The reply card did not render:", err); });
+
+  return box;
+}
+
 function replyClock(L) {
   const letters = lettersOf(L).filter((x) => x.sentAt);
   if (!letters.length) return null;

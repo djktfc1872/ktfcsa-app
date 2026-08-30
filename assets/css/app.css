@@ -6801,6 +6801,10 @@ button,
   font-weight: 700;
 }
 
+/* Whoever led the side is worth picking out of a column that is mostly
+   dashes. */
+.arch__capt { color: var(--accent); font-weight: 700; }
+
 @media (max-width: 480px) {
   .arch__seasons { display: none; }
 }
@@ -6809,3 +6813,46 @@ button,
 .career { margin: 12px 0 0; padding: 0 0 0 18px; }
 .career li { margin: 5px 0; color: var(--text-2); font-size: 0.875rem; line-height: 1.55; }
 .career li b { color: var(--text); }
+
+/* ---- waiting on the club, on the home page -------------------------------
+   Deliberately quiet. The letters page has the clock; this is the state of
+   the thing, sitting in the flow rather than announcing itself. Bordered
+   rather than filled, so it reads as a note and not another banner. */
+
+.replycard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-line);
+  border-radius: var(--r);
+  padding: 13px 14px;
+  margin-bottom: var(--gap);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.replycard:hover { border-color: var(--accent); }
+.replycard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.replycard__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.replycard__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.replycard__what { font-size: 0.875rem; color: var(--text-2); }
+.replycard__state { font-size: 0.9375rem; color: var(--text-2); }
+.replycard__state b { color: var(--text); font-weight: 600; }
+
+.replycard__go { margin-left: auto; color: var(--text-3); font-size: 1.0625rem; }
+.replycard:hover .replycard__go { color: var(--accent); }
+
+.replycard--late { border-left-color: var(--red-300); }
+.replycard--late .replycard__state b { color: var(--red-300); }
