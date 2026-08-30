@@ -6656,3 +6656,27 @@ button,
 
 .called__who { cursor: pointer; }
 .called__who:hover { color: var(--accent); text-decoration: underline; }
+
+/* ---- what they drew when we came -----------------------------------------
+   The club's own average is a fact about them. The gap between it and the day
+   we visited is a fact about us, which is the one worth setting apart. */
+
+.gate-swing {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 14px;
+  color: var(--text-2);
+}
+.gate-swing b { font-size: 17px; color: var(--text); font-variant-numeric: tabular-nums; }
+.gate-swing span {
+  margin-left: auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.gate-swing--up span { color: var(--accent); }

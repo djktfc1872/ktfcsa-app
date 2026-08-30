@@ -275,6 +275,7 @@ const state = {
   groundLinks: null,  // verified outbound ground guides, from data/ground-links.json
   parking: null,      // what each club says about parking, from data/parking.json
   pubsNearby: null,   // pubs mapped near each ground, from data/pubs-nearby.json
+  attendances: null,  // last season's gates by club, from data/attendances.json
   topics: null,       // fan-started conversations, from topic_list
   topicCat: "",       // which category the list is filtered to, "" for all
   pointsInfo: null,   // the explainer's own copy of the weights, data/points.json
@@ -1611,6 +1612,49 @@ function leaveBy(f) {
  * welcome is not in any map and only supporters can say, which is what the
  * board below it and the prompt after a game are for.
  */
+/**
+ * What a club normally draws, and what they drew when we came.
+ *
+ * The second number is the one supporters actually want. A club's average is a
+ * fact about them; the gap between it and the day Kettering visited is a fact
+ * about us, and it is the only stat on this site that answers "do we take a
+ * decent following". It cuts both ways and is shown either way: three of the
+ * grounds we went to last season were quieter with us there.
+ */
+function gateCard(t) {
+  const a = state.attendances?.clubs?.find((c) => c.slug === t.id);
+  if (!a) return null;
+
+  const card = el(`<div class="card"></div>`);
+  card.append(el(`<div class="info__label">Their crowd, ${
+    esc(state.attendances.season)}</div>`));
+
+  if (a.elsewhere || !a.average) {
+    card.append(el(`<p class="hint" style="margin:2px 0 0">${esc(t.name)} were in a different
+      league last season, and the Southern League's figures do not cover it.</p>`));
+    return card;
+  }
+
+  card.append(el(`<div class="info__value" style="color:var(--accent)">${
+    a.average.toLocaleString("en-GB")}</div>`));
+  card.append(el(`<div class="info__sub">on average across ${a.games} home league game${
+    a.games === 1 ? "" : "s"}${a.division && a.division !== "Premier Central"
+      ? `, in the ${esc(a.division)}` : ""}</div>`));
+
+  if (a.ktfcAverage) {
+    const up = a.sway > 0;
+    card.append(el(`
+      <div class="gate-swing${up ? " gate-swing--up" : ""}">
+        <b>${a.ktfcAverage.toLocaleString("en-GB")}</b> when we visited
+        <span>${up ? "+" : ""}${a.sway}%</span>
+      </div>`));
+  }
+
+  card.append(el(`<p class="hint">Home league games only. Cups and play-offs are left out;
+    neither is a normal Saturday.</p>`));
+  return card;
+}
+
 function pubCard(t) {
   const near = state.pubsNearby?.clubs?.[t.id] || [];
   const anyName = state.pubsNearby?.verified?.[t.id]?.name
@@ -1972,6 +2016,10 @@ function viewClub({ id, from }) {
                   rel="noopener">${ICON.globe} Ground guide</a>` : ""}
         </div>
       </div>`));
+
+    /* Under the ground card, because a crowd belongs beside the size of the
+       place that holds it. */
+    { const g = gateCard(t); if (g) box.append(g); }
     const ask = groundPrompt(t, awayTrip) || parkingPrompt(t, awayTrip) || pubPrompt(t, awayTrip);
     if (ask) box.append(ask);
     box.append(groundNotes(t));
@@ -12476,6 +12524,12 @@ async function loadLeague(force = false) {
   }
 }
 
+async function loadAttendances() {
+  if (state.attendances) return state.attendances;
+  state.attendances = await readJSON("data/attendances.json");
+  return state.attendances;
+}
+
 async function loadPubsNearby() {
   if (state.pubsNearby) return state.pubsNearby;
   state.pubsNearby = await readJSON("data/pubs-nearby.json");
@@ -12655,7 +12709,7 @@ async function boot() {
   /* Outbound ground links. Small, and only affects a couple of buttons, so it
      never holds up a paint: the page renders without them and gains them a
      moment later. */
-  Promise.all([loadGroundLinks(), loadParking(), loadPubsNearby()]).then(() => {
+  Promise.all([loadGroundLinks(), loadParking(), loadPubsNearby(), loadAttendances()]).then(() => {
     if (state.view === "club" || state.view === "clubs") render();
   }).catch(() => {});
 
