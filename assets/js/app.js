@@ -683,6 +683,37 @@ function fixtureCard(f, { isNext = false } = {}) {
   return card;
 }
 
+/**
+ * Run something now, then on an interval, for as long as its node is on the
+ * page.
+ *
+ * This exists because the same bug was written three times in one week. A
+ * function builds a node, sets a timer to keep it up to date, and guards that
+ * timer with "stop if the node has gone" - which is right, and which is wrong
+ * on the very first call, because el() builds a node detached and the caller
+ * appends it afterwards. At that moment the guard is asking whether something
+ * that was never added is still there, and the honest answer stops the clock
+ * before it starts.
+ *
+ * Fixing it each time meant remembering it each time: append before ticking,
+ * or write `timer &&`, or both. Neither is visible in the shape of the code, so
+ * neither survived being copied.
+ *
+ * Here the first run happens outside the guard entirely and the guard only ever
+ * applies to later ones, by which time the node is either on the page or gone
+ * for good. There is nothing left to remember and no order to get right.
+ *
+ * Returns a stop function, for callers that finish before their node does.
+ */
+function tickWhileOnPage(node, fn, everyMs) {
+  fn();
+  const timer = setInterval(() => {
+    if (!document.contains(node)) { clearInterval(timer); return; }
+    fn();
+  }, everyMs);
+  return () => clearInterval(timer);
+}
+
 function countdown(f) {
   const d = parseDate(f.date);
   if (!d) return "";
@@ -11903,12 +11934,6 @@ function replyWaitCard() {
           days === 1 ? "" : "s"} ago.`;
 
     const tick = () => {
-      /* `timer &&` matters: the first call happens before setInterval has
-         returned anything, and on that call the card may not be on the page
-         yet. Without it the guard fires immediately, the card renders with an
-         empty line, and nothing ever fills it in. The clock on the letters page
-         had the same bug and the fix was not carried across. */
-      if (timer && !document.contains(card)) { clearInterval(timer); return; }
       if (!due) { state_.textContent = "No reply date was asked for."; return; }
 
       const left = due - Date.now();
@@ -11925,21 +11950,16 @@ function replyWaitCard() {
         h === 1 ? "" : "s"}`} left</b> to the date we asked for a reply by.`;
     };
 
-    let timer = null;
-
-    /* On the page before the first tick, so the guard above is asking a
-       question that has a real answer. */
     box.append(card);
-    tick();
     /* Once a minute. A second hand belongs on the letters page, not here. */
-    timer = setInterval(tick, 60000);
+    const stop = tickWhileOnPage(card, tick, 60000);
 
     /* Only while there is still nothing back. The moment a question is marked
        replied in the workbench this stops being true, and a card that has to
        be remembered is a card that goes stale. */
     db.publishedQuestions().then((qs) => {
       if (qs.length && qs.some((q) => q.replied_at || q.answered_at)) {
-        clearInterval(timer);
+        stop();
         card.remove();
       }
     }).catch(() => {});
@@ -12004,22 +12024,7 @@ function replyClock(L) {
 
   const two = (n) => String(n).padStart(2, "0");
 
-  /* Declared before tick, and null until the interval exists. tick runs once
-     synchronously to draw the thing, and reaching for `timer` in that first
-     call is a reference to a const that has not been initialised yet. */
-  let timer = null;
-
   const tick = () => {
-    /* Every render of this page builds a new node and drops the old one. Left
-       to itself the old timer keeps running against a node in no document, and
-       a few visits later there are five of them.
-    
-       Only once it has been running, though: on the first call the node is
-       still detached, because el() builds it and the caller appends it
-       afterwards. Checking document.contains before that is asking whether a
-       thing that was never put on the page is still on the page. */
-    if (timer && !document.contains(box)) { clearInterval(timer); return; }
-
     const t = Date.now();
 
     if (!due) {
@@ -12075,8 +12080,9 @@ function replyClock(L) {
       answered.length ? `, and answered <b>${answered.length}</b>` : ", without answering any"}.`;
   }).catch(() => { said.remove(); });
 
-  tick();
-  timer = setInterval(tick, 1000);
+  /* Every render of this page builds a new clock and drops the old one, so the
+     old timer has to stop when its node goes. tickWhileOnPage owns that. */
+  tickWhileOnPage(box, tick, 1000);
   return box;
 }
 

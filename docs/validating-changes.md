@@ -70,24 +70,32 @@ bug here, which is why it is on the list and nothing else is.
    stat grid that landed in the head-to-head panel. Both were invisible in the
    code and obvious in the diff.
 
-3. **Run it and look at it.** Not "it should render" — open the page. Half the
+3. **If a check keeps being needed, put it in the shape of the code instead.**
+   A node built by `el()` is detached until the caller appends it, so a timer
+   that guards itself with "stop if my node has gone" stops before it starts.
+   That was written three times in a week and fixed three times by remembering
+   to. It is now `tickWhileOnPage(node, fn, ms)`, where the first run happens
+   outside the guard and there is nothing left to remember. A rule nobody can
+   forget beats a rule on this list.
+
+4. **Run it and look at it.** Not "it should render" — open the page. Half the
    problems this month were things that rendered without error and were wrong:
    a scarf that read as a horseshoe, a fourth stat tile orphaned on its own row,
    a fold containing nothing.
 
-4. **Check it against real data, not a happy path.** A test row is not a
+5. **Check it against real data, not a happy path.** A test row is not a
    supporter. The letters page looked finished until it was opened with two
    letters in it and turned out to be two collapsed folds and nothing else.
 
-5. **Check the empty state and the loading state.** They are different things
+6. **Check the empty state and the loading state.** They are different things
    and they were rendered identically on the profile page, so anybody opening a
    profile by its link was told there was nothing to show while it loaded.
 
-6. **For schema: is the `alter table` above the view that reads the column?**
+7. **For schema: is the `alter table` above the view that reads the column?**
    The file runs top to bottom. It works on your database because the column is
    already there from last time, and fails on a fresh one. Three times.
 
-7. **After deploying, fetch the live file and grep it.** Not the browser, which
+8. **After deploying, fetch the live file and grep it.** Not the browser, which
    lies via its cache. `curl` the deployed asset and check the thing you changed
    is in it.
 
