@@ -1,13 +1,13 @@
 {
-  "built": "2026-08-29T23:58:37.997Z",
+  "built": "2026-08-30T00:11:05.772Z",
   "season": "2025/26",
   "source": "Southern League (southern-football-league.co.uk)",
   "note": "Home league games only: cups, the FA Trophy, county cups and play-offs are left out, because none of them is a normal Saturday. Clubs promoted or relegated into this division are measured in the league they actually played in last season, which is named against each one. Two came down from National League North, whose matches this feed does not carry, so they have no figure at all rather than a misleading one.",
   "swing": {
     "grounds": 14,
-    "theirAverage": 602,
+    "theirAverage": 595,
     "withKettering": 765,
-    "percent": 27.1
+    "percent": 28.6
   },
   "clubs": [
     {
@@ -19,11 +19,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 1358,
+      "averageWithoutUs": 1374,
       "low": 885,
       "high": 3143,
       "ktfcGames": 1,
       "ktfcAverage": 1018,
-      "sway": -25
+      "sway": -25.9
     },
     {
       "name": "Kettering Town",
@@ -34,6 +35,7 @@
       "missing": 1,
       "dropped": 0,
       "average": 1047,
+      "averageWithoutUs": 1047,
       "low": 645,
       "high": 2091,
       "ktfcGames": 0,
@@ -49,11 +51,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 918,
+      "averageWithoutUs": 909,
       "low": 650,
       "high": 2360,
       "ktfcGames": 1,
       "ktfcAverage": 1112,
-      "sway": 21.1
+      "sway": 22.3
     },
     {
       "name": "Bury Town",
@@ -64,11 +67,12 @@
       "missing": 2,
       "dropped": 0,
       "average": 783,
+      "averageWithoutUs": 754,
       "low": 457,
       "high": 1372,
       "ktfcGames": 1,
       "ktfcAverage": 1372,
-      "sway": 75.2
+      "sway": 82
     },
     {
       "name": "Hitchin Town",
@@ -79,6 +83,7 @@
       "missing": 0,
       "dropped": 0,
       "average": 716,
+      "averageWithoutUs": 716,
       "low": 320,
       "high": 1499,
       "ktfcGames": 0,
@@ -94,11 +99,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 703,
+      "averageWithoutUs": 707,
       "low": 227,
       "high": 1847,
       "ktfcGames": 1,
       "ktfcAverage": 610,
-      "sway": -13.2
+      "sway": -13.7
     },
     {
       "name": "Stratford Town",
@@ -109,11 +115,12 @@
       "missing": 1,
       "dropped": 0,
       "average": 673,
+      "averageWithoutUs": 650,
       "low": 247,
       "high": 1634,
       "ktfcGames": 1,
       "ktfcAverage": 1224,
-      "sway": 81.9
+      "sway": 88.3
     },
     {
       "name": "Stourbridge FC",
@@ -124,11 +131,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 644,
+      "averageWithoutUs": 631,
       "low": 325,
       "high": 1402,
       "ktfcGames": 1,
       "ktfcAverage": 929,
-      "sway": 44.3
+      "sway": 47.2
     },
     {
       "name": "Bromsgrove Sporting",
@@ -139,11 +147,12 @@
       "missing": 1,
       "dropped": 0,
       "average": 635,
+      "averageWithoutUs": 638,
       "low": 352,
       "high": 1641,
       "ktfcGames": 1,
       "ktfcAverage": 560,
-      "sway": -11.8
+      "sway": -12.2
     },
     {
       "name": "Leighton Town",
@@ -154,6 +163,7 @@
       "missing": 0,
       "dropped": 0,
       "average": 583,
+      "averageWithoutUs": 583,
       "low": 278,
       "high": 1358,
       "ktfcGames": 0,
@@ -169,11 +179,12 @@
       "missing": 1,
       "dropped": 0,
       "average": 534,
+      "averageWithoutUs": 532,
       "low": 345,
       "high": 722,
       "ktfcGames": 1,
       "ktfcAverage": 574,
-      "sway": 7.5
+      "sway": 7.9
     },
     {
       "name": "Real Bedford",
@@ -184,11 +195,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 444,
+      "averageWithoutUs": 414,
       "low": 182,
       "high": 1133,
       "ktfcGames": 1,
       "ktfcAverage": 1084,
-      "sway": 144.1
+      "sway": 161.8
     },
     {
       "name": "Stamford",
@@ -199,11 +211,12 @@
       "missing": 1,
       "dropped": 0,
       "average": 414,
+      "averageWithoutUs": 416,
       "low": 243,
       "high": 950,
       "ktfcGames": 1,
       "ktfcAverage": 390,
-      "sway": -5.8
+      "sway": -6.2
     },
     {
       "name": "Anstey Nomads",
@@ -214,6 +227,7 @@
       "missing": 0,
       "dropped": 0,
       "average": 409,
+      "averageWithoutUs": 409,
       "low": 212,
       "high": 1347,
       "ktfcGames": 0,
@@ -229,11 +243,12 @@
       "missing": 1,
       "dropped": 0,
       "average": 394,
+      "averageWithoutUs": 393,
       "low": 248,
       "high": 1105,
       "ktfcGames": 1,
       "ktfcAverage": 408,
-      "sway": 3.6
+      "sway": 3.8
     },
     {
       "name": "Rushall Olympic",
@@ -244,6 +259,7 @@
       "missing": 1,
       "dropped": 1,
       "average": 379,
+      "averageWithoutUs": 379,
       "low": 301,
       "high": 677,
       "ktfcGames": 0,
@@ -259,11 +275,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 374,
+      "averageWithoutUs": 364,
       "low": 215,
       "high": 674,
       "ktfcGames": 1,
       "ktfcAverage": 591,
-      "sway": 58
+      "sway": 62.4
     },
     {
       "name": "Alvechurch",
@@ -274,11 +291,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 333,
+      "averageWithoutUs": 318,
       "low": 154,
       "high": 643,
       "ktfcGames": 1,
       "ktfcAverage": 643,
-      "sway": 93.1
+      "sway": 102.2
     },
     {
       "name": "Racing Club Warwick",
@@ -289,6 +307,7 @@
       "missing": 0,
       "dropped": 0,
       "average": 290,
+      "averageWithoutUs": 290,
       "low": 202,
       "high": 548,
       "ktfcGames": 0,
@@ -304,11 +323,12 @@
       "missing": 0,
       "dropped": 0,
       "average": 222,
+      "averageWithoutUs": 223,
       "low": 114,
       "high": 533,
       "ktfcGames": 1,
       "ktfcAverage": 201,
-      "sway": -9.5
+      "sway": -9.9
     },
     {
       "name": "Peterborough Sports",
@@ -319,6 +339,7 @@
       "missing": 0,
       "dropped": 0,
       "average": null,
+      "averageWithoutUs": null,
       "low": null,
       "high": null,
       "ktfcGames": 0,
@@ -334,6 +355,7 @@
       "missing": 0,
       "dropped": 0,
       "average": null,
+      "averageWithoutUs": null,
       "low": null,
       "high": null,
       "ktfcGames": 0,

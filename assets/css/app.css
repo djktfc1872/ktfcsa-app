@@ -6776,3 +6776,10 @@ button,
 }
 .following b { color: var(--text); font-weight: 600; }
 .following svg { vertical-align: -2px; margin-right: 3px; }
+
+/* The away following figure at the top of the guide. Set as a plain card, not
+   a banner: the numbers carry it and a banner would make them read as a boast. */
+.following-card { margin-bottom: 16px; }
+.following-card p { margin: 6px 0 0; line-height: 1.55; }
+.following-card b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.following-card .hint { margin-top: 8px; }

@@ -138,6 +138,20 @@ async function main() {
     const avg = mean(kept);
     const vsUs = mean(oursValues);
 
+    /* Their average with our visit taken out of it.
+    
+       A club's season average includes the day we came, so comparing our gate
+       against it compares it partly against itself. The effect is about one per
+       cent over twenty-odd home games, which is small enough to ignore and
+       exactly the kind of thing somebody checks when they do not like the
+       answer. The comparison is against what they draw when we are not there. */
+    const oursSet = new Set(ours.map((m) => m.id || m._id));
+    const withoutUs = withAtt
+      .filter((m) => !oursSet.has(m.id || m._id))
+      .map((m) => num(m.attendance))
+      .filter((v) => kept.includes(v) || !dropped.includes(v));
+    const avgWithoutUs = mean(withoutUs);
+
     if (oursValues.length && team.id !== KTFC) ktfcAwayTotal = ktfcAwayTotal.concat(oursValues);
 
     /* Two clubs came back with nothing, and a blank on a page invites the
@@ -156,21 +170,25 @@ async function main() {
       missing: home.length - withAtt.length,
       dropped: dropped.length,
       average: avg,
+      averageWithoutUs: avgWithoutUs,
       low: kept.length ? Math.min(...kept) : null,
       high: kept.length ? Math.max(...kept) : null,
       /* Only meaningful with a league average to compare against, and only
          where we actually went. */
       ktfcGames: oursValues.length,
       ktfcAverage: vsUs,
-      sway: avg && vsUs ? Math.round(((vsUs - avg) / avg) * 1000) / 10 : null,
+      sway: avgWithoutUs && vsUs
+        ? Math.round(((vsUs - avgWithoutUs) / avgWithoutUs) * 1000) / 10 : null,
     });
 
     console.log(
       `  ${team.name.padEnd(22)}${elsewhere ? " played outside this league" : ""} ${
         String(kept.length).padStart(2)} games  ` +
       `avg ${String(avg ?? "-").padStart(5)}` +
-      (vsUs ? `   vs KTFC ${String(vsUs).padStart(5)}  ${
-        avg ? (vsUs > avg ? "+" : "") + (Math.round(((vsUs - avg) / avg) * 1000) / 10) + "%" : ""}` : ""));
+      (vsUs ? `   without us ${String(avgWithoutUs).padStart(5)}  with us ${
+        String(vsUs).padStart(5)}  ${avgWithoutUs
+          ? (vsUs > avgWithoutUs ? "+" : "") +
+            (Math.round(((vsUs - avgWithoutUs) / avgWithoutUs) * 1000) / 10) + "%" : ""}` : ""));
 
     await new Promise((r) => setTimeout(r, 400));
   }
@@ -181,8 +199,8 @@ async function main() {
      across every away ground we visited, what did they draw with us there
      against what those same clubs normally draw. Comparing like with like
      means using only the clubs we actually visited. */
-  const visited = clubs.filter((c) => c.ktfcGames && c.average);
-  const theirNormal = mean(visited.map((c) => c.average));
+  const visited = clubs.filter((c) => c.ktfcGames && c.averageWithoutUs);
+  const theirNormal = mean(visited.map((c) => c.averageWithoutUs));
   const withUs = mean(ktfcAwayTotal);
 
   const payload = {

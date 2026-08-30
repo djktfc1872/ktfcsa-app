@@ -1557,15 +1557,53 @@ function earnedBadges(s) {
 
 /* =============================================================== away guide */
 
+/**
+ * Last season's away gates, in three sentences.
+ *
+ * Written flat on purpose. The numbers are good enough that dressing them up
+ * would make them read as a boast rather than a finding, and the sentence that
+ * matters most is the last one: it says where it did not happen. A stat that
+ * only ever points one way is a stat nobody outside the club will believe, and
+ * this app's whole argument to the club is that it does not do that.
+ */
+function awayFollowing() {
+  const a = state.attendances;
+  const sw = a?.swing;
+  if (!sw || !sw.percent || sw.percent <= 0) return null;
+
+  const quieter = (a.clubs || []).filter((c) => c.sway !== null && c.sway < 0).length;
+  const words = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+  const n = (x) => words[x] || String(x);
+
+  return el(`
+    <div class="card following-card">
+      <div class="info__label">Away gates, ${esc(a.season)}</div>
+      <p>The ${n(sw.grounds)} clubs we visited averaged <b>${
+        sw.theirAverage.toLocaleString("en-GB")}</b> at home without us there, and <b>${
+        sw.withKettering.toLocaleString("en-GB")}</b> on the day we came.</p>
+      <p class="hint">${quieter
+        ? `Not everywhere: ${n(quieter)} of the ${n(sw.grounds)} were quieter with us there than
+           without. `
+        : ""}Home league games only, from the Southern League's own figures. Each club's page has
+        its own.</p>
+    </div>`);
+}
+
 function viewClubs() {
   const wrap = el(`<div>
     <div class="page-head">
       <h1>Away Guide</h1>
       <p>Ground details, ticket prices, parking and a decent pub for all ${TEAMS.length} clubs.</p>
     </div>
+    <div class="following-slot"></div>
     <div class="field"><input type="search" id="club-search" placeholder="Search clubs" aria-label="Search clubs"></div>
     <div id="club-list"></div>
   </div>`);
+
+  loadAttendances().then(() => {
+    const f = awayFollowing();
+    if (f) $(".following-slot", wrap).append(f);
+  }).catch(() => { /* the guide is the point of this page, not the stat */ });
 
   const listEl = $("#club-list", wrap);
   const paint = (q = "") => {
