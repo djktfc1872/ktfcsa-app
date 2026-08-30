@@ -6783,3 +6783,29 @@ button,
 .following-card p { margin: 6px 0 0; line-height: 1.55; }
 .following-card b { color: var(--accent); font-variant-numeric: tabular-nums; }
 .following-card .hint { margin-top: 8px; }
+
+/* ---- the archive table ---------------------------------------------------
+   Seven columns is too many for a phone, so the seasons list drops off below
+   480px: it is the widest column and the least use at a glance. Everything
+   else is a number and stays. */
+
+.arch td, .arch th { font-variant-numeric: tabular-nums; }
+
+.arch__goals {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--gold-soft, color-mix(in srgb, var(--accent) 18%, transparent));
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .arch__seasons { display: none; }
+}
+
+/* A career in facts rather than a second table. */
+.career { margin: 12px 0 0; padding: 0 0 0 18px; }
+.career li { margin: 5px 0; color: var(--text-2); font-size: 0.875rem; line-height: 1.55; }
+.career li b { color: var(--text); }

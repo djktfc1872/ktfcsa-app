@@ -7300,9 +7300,9 @@ function viewPlayer({ id }) {
             <div class="info"><div class="info__label">Seasons</div><div class="info__value">${seasons.length}</div></div>
             <div class="info"><div class="info__label">Shirt</div><div class="info__value">${[...past.shirts].sort((a, b) => a - b).join(", ") || "Not known"}</div></div>
           </div>
-          <div class="hint">${esc(seasons.join(", "))}. First seen ${esc(fmtDate(past.first))}, last ${esc(fmtDate(past.last))}.
-          The league's records name no goalscorers before this season, so there are no goals here.</div>
+          <div class="hint">${esc(seasons.join(", "))}. First seen ${esc(fmtDate(past.first))}, last ${esc(fmtDate(past.last))}.</div>
         </div>`));
+      box.append(careerDetail(past));
     }).catch(() => {
       box.append(el(`<div class="empty"><b>Nothing to show yet</b>${esc(name)} has not appeared in a team sheet this season.</div>`));
     });
@@ -7347,6 +7347,17 @@ function viewPlayer({ id }) {
       </div>`));
   });
   wrap.append(card);
+
+  /* Somebody playing now was getting only this season, which is the thinnest
+     view of the players we know most about: their whole record is in the same
+     index, current season folded in. */
+  const older = el(`<div></div>`);
+  wrap.append(older);
+  ensureArchive().then(() => {
+    const past = state.archiveIndex?.get(name);
+    if (past) older.append(careerDetail(past));
+  }).catch(() => { /* this season stands on its own */ });
+
   return wrap;
 }
 
@@ -9727,24 +9738,159 @@ function ensureArchive() {
   return state.archivePromise;
 }
 
+/**
+ * The rest of a career, from the same team sheets.
+ *
+ * Appearances and a list of seasons is a record of turning up. What a
+ * supporter wants to know is whether the side won when they played, whether
+ * they were a cup player or a league one, the biggest crowd they stood in
+ * front of, and who they lined up beside week after week. None of that needed
+ * fetching: it was in the rows already.
+ */
+function careerDetail(r) {
+  const box = el(`<div></div>`);
+  const played = r.won + r.drew + r.lost;
+
+  /* The league records no position on any team sheet it has ever published, so
+     this is only known for the current squad, from the club's own list. Shown
+     where we have it rather than left off everywhere for consistency's sake. */
+  const squad = (state.squad?.players || []).find((x) => x.name === r.name);
+  if (squad?.position) {
+    box.append(el(`<h2 class="section-title">Position</h2>`));
+    box.append(el(`<div class="card"><div class="info__value">${esc(squad.position)}</div>
+      <p class="hint">From the club's squad list for this season.</p></div>`));
+  }
+
+  box.append(el(`<h2 class="section-title">Their record</h2>`));
+
+  const card = el(`<div class="card"></div>`);
+  if (played) {
+    const pct = Math.round((r.won / played) * 100);
+    card.append(el(`
+      <div class="info-grid info-grid--4">
+        <div class="info"><div class="info__label">Won</div>
+          <div class="info__value" style="color:var(--accent)">${r.won}</div></div>
+        <div class="info"><div class="info__label">Drawn</div><div class="info__value">${r.drew}</div></div>
+        <div class="info"><div class="info__label">Lost</div><div class="info__value">${r.lost}</div></div>
+        <div class="info"><div class="info__label">Win rate</div><div class="info__value">${pct}%</div></div>
+      </div>`));
+    card.append(el(`<p class="hint">Across ${played} game${played === 1 ? "" : "s"} with a
+      result recorded.</p>`));
+  }
+
+  const facts = [];
+  if (r.league || r.cup) {
+    facts.push(`${r.league} league game${r.league === 1 ? "" : "s"}${
+      r.cup ? ` and ${r.cup} in cup competitions` : ""}`);
+  }
+  if (r.home || r.away) facts.push(`${r.home} at Latimer Park, ${r.away} on the road`);
+  if (r.goals) facts.push(`<b>${r.goals} goal${r.goals === 1 ? "" : "s"}</b> this season`);
+  if (r.bestCrowd) {
+    facts.push(`Biggest crowd they played in front of: <b>${
+      r.bestCrowd.toLocaleString("en-GB")}</b> ${esc(r.bestCrowdWhere || "")}`);
+  }
+  if (r.mostWith && r.mostWithGames > 3) {
+    facts.push(`Lined up alongside <b>${esc(r.mostWith)}</b> more than anybody else, ${
+      r.mostWithGames} times`);
+  }
+  if (r.firstOpp) facts.push(`First seen against ${esc(r.firstOpp)}`);
+  if (r.lastOpp && r.last !== r.first) facts.push(`Last against ${esc(r.lastOpp)}`);
+
+  if (facts.length) {
+    const list = el(`<ul class="career"></ul>`);
+    facts.forEach((f) => list.append(el(`<li>${f}</li>`)));
+    card.append(list);
+  }
+
+  card.append(el(`<p class="note">Worked out from the league's team sheets. It names no
+    goalscorer before this season and records no positions or assists at all, so those are
+    missing rather than nought.</p>`));
+
+  box.append(card);
+  return box;
+}
+
 /** Everyone who has played since 2018, reduced once rather than per render. */
 function buildArchiveIndex(a) {
   const out = new Map();
-  const add = (name, season, shirt, date) => {
+
+  /* Everything below is worked out from team sheets we already hold, not
+     fetched. Appearances and a list of seasons was thin, and the rest of it was
+     sitting in the same rows the whole time: who won, who they played, what the
+     crowd was, who they lined up beside.
+  
+     What is genuinely not available, having gone looking: position and country
+     are null on every one of the 3,975 lineup entries the league has ever
+     published for us, there is no player endpoint to ask, and scorers read
+     "N/A" for every season before 2026/27. Assists are recorded nowhere. So
+     goals are this season only and there are no positions for players who have
+     left. Better a gap than a guess. */
+  const add = (name, season, shirt, date, ctx) => {
     if (!name) return;
     if (!out.has(name)) {
-      out.set(name, { name, apps: 0, seasons: new Set(), shirts: new Set(), first: date, last: date });
+      out.set(name, {
+        name, apps: 0, seasons: new Set(), shirts: new Set(), first: date, last: date,
+        firstOpp: ctx?.opponent || null, lastOpp: ctx?.opponent || null,
+        won: 0, drew: 0, lost: 0,
+        home: 0, away: 0,
+        league: 0, cup: 0,
+        goals: 0,
+        bestCrowd: 0, bestCrowdWhere: null,
+        withPlayers: new Map(),
+      });
     }
     const r = out.get(name);
     r.apps += 1;
     r.seasons.add(season);
     if (shirt != null) r.shirts.add(shirt);
-    if (date < r.first) r.first = date;
-    if (date > r.last) r.last = date;
+    /* <= and >= rather than < and >, because the first row through here already
+       set first and last to its own date: a strict comparison then never fired
+       and the opponent stayed null for anybody whose debut was their earliest
+       row, which is everybody. */
+    if (date <= r.first) { r.first = date; r.firstOpp = ctx?.opponent || r.firstOpp; }
+    if (date >= r.last) { r.last = date; r.lastOpp = ctx?.opponent || r.lastOpp; }
+    if (!ctx) return;
+
+    if (ctx.result === "W") r.won += 1;
+    else if (ctx.result === "D") r.drew += 1;
+    else if (ctx.result === "L") r.lost += 1;
+
+    if (ctx.venue === "Home") r.home += 1; else if (ctx.venue === "Away") r.away += 1;
+    if (ctx.cup) r.cup += 1; else r.league += 1;
+
+    if (ctx.att && ctx.att > r.bestCrowd) {
+      r.bestCrowd = ctx.att;
+      r.bestCrowdWhere = `${ctx.venue === "Home" ? "v" : "at"} ${ctx.opponent}, ${
+        String(ctx.season || "").trim()}`;
+    }
+    (ctx.mates || []).forEach((other) => {
+      if (other === name) return;
+      r.withPlayers.set(other, (r.withPlayers.get(other) || 0) + 1);
+    });
+  };
+
+  /* Same list the attendance work uses, and for the same reason: a cup tie is
+     not a league game and a player's record should say which. */
+  const isCup = (c) => /cup|trophy|play-?offs?|vase/i.test(c || "");
+
+  const resultOf = (us, them) => {
+    const a1 = Number(us), b1 = Number(them);
+    if (!Number.isFinite(a1) || !Number.isFinite(b1)) return null;
+    return a1 > b1 ? "W" : a1 === b1 ? "D" : "L";
   };
 
   for (const m of a.matches) {
-    for (const [pi, shirt] of m.lineup) add(a.players[pi], m.season, shirt, m.date);
+    const names = m.lineup.map(([pi]) => a.players[pi]).filter(Boolean);
+    const ctx = {
+      opponent: m.opponent,
+      venue: m.venue,
+      season: m.season,
+      att: Number(m.att) || 0,
+      cup: isCup(m.competition),
+      result: resultOf(m.us, m.them),
+      mates: names,
+    };
+    for (const [pi, shirt] of m.lineup) add(a.players[pi], m.season, shirt, m.date, ctx);
   }
 
   /* The archive stops where the current season starts, which is right for the
@@ -9756,9 +9902,40 @@ function buildArchiveIndex(a) {
   if (league?.fixtures?.length) {
     for (const f of league.fixtures) {
       if (!Array.isArray(f.lineup) || !f.lineup.length) continue;
-      for (const p of f.lineup) add(p.name, league.season, p.number ?? null, f.date);
+      const names = f.lineup.map((p) => p.name).filter(Boolean);
+      const home = f.venue === "Home";
+      const us = home ? f.homeScore : f.awayScore;
+      const them = home ? f.awayScore : f.homeScore;
+      const ctx = {
+        opponent: clubName(f.opponent),
+        venue: f.venue,
+        season: league.season,
+        att: 0,
+        cup: isCup(f.competition),
+        result: f.status === "played" ? resultOf(us, them) : null,
+        mates: names,
+      };
+      for (const p of f.lineup) add(p.name, league.season, p.number ?? null, f.date, ctx);
+
+      /* Goals, this season only. Every season before it has the scorer down as
+         "N/A" in the feed, so there is nothing to count. */
+      (f.events?.goals || []).forEach((g) => {
+        if (!g.ours || !g.name) return;
+        const r = out.get(g.name);
+        if (r) r.goals += 1;
+      });
     }
   }
+
+  /* Who they played alongside most, resolved once rather than on every render. */
+  out.forEach((r) => {
+    let best = null, n = 0;
+    r.withPlayers.forEach((count, other) => { if (count > n) { n = count; best = other; } });
+    r.mostWith = best;
+    r.mostWithGames = n;
+    delete r.withPlayers;
+  });
+
   return out;
 }
 
@@ -10519,17 +10696,32 @@ function viewArchive() {
       <input id="arch-q" placeholder="Search for a player" aria-label="Search the archive"></div>`);
     const list = el(`<div></div>`);
     const draw = (rows) => {
+      /* Apps and a list of seasons was thin. Won, drawn and lost put a career
+         in some sort of order, and the percentage is the column people will
+         actually sort by. Everything here comes off team sheets we already had. */
       list.innerHTML = rows.length ? `
         <div class="table-wrap">
-          <table class="league">
-            <thead><tr><th>Player</th><th>Apps</th><th>Seasons</th></tr></thead>
+          <table class="league arch">
+            <thead><tr>
+              <th>Player</th><th>Apps</th><th>W</th><th>D</th><th>L</th>
+              <th>Won</th><th class="arch__seasons">Seasons</th>
+            </tr></thead>
             <tbody>
-              ${rows.map((r) => `
+              ${rows.map((r) => {
+                const played = r.won + r.drew + r.lost;
+                const pct = played ? Math.round((r.won / played) * 100) : null;
+                return `
                 <tr data-player="${esc(r.name)}" style="cursor:pointer">
-                  <td><div class="club-cell"><span>${esc(r.name)}</span></div></td>
+                  <td><div class="club-cell"><span>${esc(r.name)}</span>${
+                    r.goals ? `<span class="arch__goals" title="Goals this season">${r.goals}</span>` : ""
+                  }</div></td>
                   <td>${r.apps}</td>
-                  <td class="hint">${[...r.seasons].sort().join(", ")}</td>
-                </tr>`).join("")}
+                  <td>${r.won}</td>
+                  <td>${r.drew}</td>
+                  <td>${r.lost}</td>
+                  <td>${pct === null ? "&mdash;" : `${pct}%`}</td>
+                  <td class="hint arch__seasons">${[...r.seasons].sort().join(", ")}</td>
+                </tr>`; }).join("")}
             </tbody>
           </table>
         </div>` : `<div class="empty"><b>Nobody by that name</b>Try a surname.</div>`;
