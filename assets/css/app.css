@@ -6761,3 +6761,18 @@ button,
   .ticker__line { animation: none; transform: none; white-space: normal; display: block; }
   .ticker__go { display: none; }
 }
+
+/* One line, where a whole card would be in the way. Quiet enough to skip and
+   specific enough to be worth reading. */
+.following {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--accent-line);
+  background: var(--surface);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.following b { color: var(--text); font-weight: 600; }
+.following svg { vertical-align: -2px; margin-right: 3px; }

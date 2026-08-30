@@ -1680,6 +1680,24 @@ function leaveBy(f) {
  * decent following". It cuts both ways and is shown either way: three of the
  * grounds we went to last season were quieter with us there.
  */
+/**
+ * One line: what we did to their gate last time we went.
+ *
+ * The full card lives on the club page. This is the same fact reduced to a
+ * sentence, for the places where a whole card would be in the way: the fixture
+ * row, the matchday plan, the away guide. It only appears where we actually
+ * lifted the crowd, which is not most of the point but is the version worth
+ * putting in front of somebody deciding whether to travel.
+ */
+function followingLine(t) {
+  const a = state.attendances?.clubs?.find((c) => c.slug === t?.id);
+  if (!a || !a.sway || a.sway <= 5 || !a.ktfcAverage) return null;
+  return el(`
+    <p class="following">${ICON.poppy} Last season ${esc(t.name)} averaged ${
+      a.average.toLocaleString("en-GB")}. <b>${a.ktfcAverage.toLocaleString("en-GB")} came when we
+      did</b>, ${a.sway}% up on their normal gate.</p>`);
+}
+
 function gateCard(t) {
   const a = state.attendances?.clubs?.find((c) => c.slug === t.id);
   if (!a) return null;
@@ -1859,6 +1877,9 @@ function viewPlan({ id }) {
          ${away ? `away at ${esc(t?.stadium || `${clubName(f.opponent)}'s ground`)}` : "at Latimer Park"}${
            f.competition ? ` &middot; ${esc(f.competition)}` : ""}</p>
     </div>`));
+
+  /* A reason to go, before the logistics of going. */
+  if (away && t) { const fl = followingLine(t); if (fl) wrap.append(fl); }
 
   /* --- when to set off ---------------------------------------------- */
   const trip = leaveBy(f);
@@ -2053,6 +2074,7 @@ function viewClub({ id, from }) {
 
   const ground = () => {
     const box = group();
+    { const fl = followingLine(t); if (fl) box.append(fl); }
     box.append(el(`<h2 class="section-title">Their ground</h2>`));
     box.append(el(`
       <div class="card">
