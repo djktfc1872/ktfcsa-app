@@ -371,6 +371,17 @@ as $$
   select coalesce((select is_admin from profiles where id = auth.uid()), false);
 $$;
 
+-- Columns bolted onto profiles after the fact. They all live here, above the
+-- policies that read them, because a policy is resolved as this file is read:
+-- one written three hundred lines above its column works on a database that
+-- already has it and fails on a fresh one. scripts/check-schema.mjs is what
+-- found these, having been written after the fourth time it happened.
+
+alter table profiles add column if not exists avatar text
+  check (avatar is null or char_length(avatar) <= 16);
+
+alter table profiles add column if not exists results_viewer boolean not null default false;
+
 alter table profiles add column if not exists is_moderator boolean not null default false;
 
 comment on column profiles.is_moderator is
@@ -746,8 +757,6 @@ grant select on match_ratings, season_ratings to anon, authenticated;
 -- there is nothing to host and nothing to moderate.
 -- ===========================================================================
 
-alter table profiles add column if not exists avatar text
-  check (avatar is null or char_length(avatar) <= 16);
 
 -- ===========================================================================
 -- Ticket price reports
@@ -1341,6 +1350,20 @@ grant select on archive_offer_list to authenticated;
 -- And anyone can answer, not just account holders, because a mandate that
 -- covers only the ninety-odd people with logins is not a mandate. Signed-in
 -- responses are marked so the report can say how many came from members.
+-- The one-row settings table, up here because a policy further down reads it
+-- and a policy is resolved as this file is read, not when it runs.
+create table if not exists consultation_settings (
+  id             boolean primary key default true check (id),  -- exactly one row
+  results_public boolean not null default false,
+  published_at   timestamptz,
+  updated_at     timestamptz not null default now()
+);
+
+insert into consultation_settings (id) values (true) on conflict (id) do nothing;
+
+comment on table consultation_settings is
+  'One row. results_public is the switch that puts the findings on the public page.';
+
 -- ===========================================================================
 
 create table if not exists consultation_responses (
@@ -1584,7 +1607,6 @@ grant select on pending_actions to authenticated;
 -- raw response. This is a view-only pass and nothing more.
 -- ===========================================================================
 
-alter table profiles add column if not exists results_viewer boolean not null default false;
 
 comment on column profiles.results_viewer is
   'Early, read-only sight of the consultation results. Not a moderator: grants no access to raw responses.';
@@ -1623,17 +1645,6 @@ grant execute on function set_results_viewer(uuid, boolean) to authenticated;
 -- had been read by lunchtime.
 -- ===========================================================================
 
-create table if not exists consultation_settings (
-  id             boolean primary key default true check (id),  -- exactly one row
-  results_public boolean not null default false,
-  published_at   timestamptz,
-  updated_at     timestamptz not null default now()
-);
-
-insert into consultation_settings (id) values (true) on conflict (id) do nothing;
-
-comment on table consultation_settings is
-  'One row. results_public is the switch that puts the findings on the public page.';
 
 alter table consultation_settings enable row level security;
 
@@ -2732,6 +2743,23 @@ $$;
 revoke all on function set_dormant(uuid, boolean) from public;
 grant execute on function set_dormant(uuid, boolean) to authenticated;
 
+-- The Wordle results table, up here because supporter_points counts plays from
+-- it and a view is resolved when it is created, not when it is read.
+create table if not exists wordle_results (
+  profile_id uuid not null references profiles on delete cascade,
+  play_date  date not null,
+  word_len   int  not null check (word_len between 4 and 9),
+  guesses    int  not null check (guesses between 1 and 7),
+  solved     boolean not null,
+  -- One character per guessed letter, in order: 2 right place, 1 wrong place,
+  -- 0 not in the word. Length is guesses * word_len.
+  marks      text not null check (marks ~ '^[012]+$' and char_length(marks) <= 63),
+  created_at timestamptz not null default now(),
+  primary key (profile_id, play_date)
+);
+
+create index if not exists wordle_date_idx on wordle_results (play_date desc);
+
 -- ===========================================================================
 -- Poppies Points
 -- ===========================================================================
@@ -3046,20 +3074,6 @@ grant execute on function my_points() to authenticated;
 -- trip. The word length varies day to day, which is why it is stored: a grid
 -- cannot be redrawn without knowing how wide it was.
 
-create table if not exists wordle_results (
-  profile_id uuid not null references profiles on delete cascade,
-  play_date  date not null,
-  word_len   int  not null check (word_len between 4 and 9),
-  guesses    int  not null check (guesses between 1 and 7),
-  solved     boolean not null,
-  -- One character per guessed letter, in order: 2 right place, 1 wrong place,
-  -- 0 not in the word. Length is guesses * word_len.
-  marks      text not null check (marks ~ '^[012]+$' and char_length(marks) <= 63),
-  created_at timestamptz not null default now(),
-  primary key (profile_id, play_date)
-);
-
-create index if not exists wordle_date_idx on wordle_results (play_date desc);
 
 comment on table wordle_results is
   'One Poppies Wordle per supporter per day. Streaks are worked out in the view

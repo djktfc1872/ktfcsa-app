@@ -91,9 +91,13 @@ bug here, which is why it is on the list and nothing else is.
    and they were rendered identically on the profile page, so anybody opening a
    profile by its link was told there was nothing to show while it loaded.
 
-7. **For schema: is the `alter table` above the view that reads the column?**
-   The file runs top to bottom. It works on your database because the column is
-   already there from last time, and fails on a fresh one. Three times.
+7. **For schema, run the check rather than reading the file.**
+   `node scripts/check-schema.mjs`. The file runs top to bottom, and on the one
+   database that matters everything it needs is already there from last time, so
+   an out-of-order file passes every run and fails only on a fresh project or a
+   restore. Reading for it caught four; writing the check found four more that
+   nobody had spotted, including a policy on `profiles.avatar` three hundred
+   lines above the column.
 
 8. **After deploying, fetch the live file and grep it.** Not the browser, which
    lies via its cache. `curl` the deployed asset and check the thing you changed
