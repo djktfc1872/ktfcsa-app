@@ -911,35 +911,6 @@ grant execute on function set_user_tag(uuid, text) to authenticated;
 
 -- What the people running the site can see at a glance. Counts only, no
 -- reading of anybody's messages.
--- Dropped first, not replaced. "create or replace view" cannot remove or
--- reorder columns, and this file defines admin_overview twice: a small version
--- here, and a fuller one at the end once the tables it counts exist. On a
--- database that already has the fuller one, replacing it with this shorter one
--- would be dropping seven columns, which Postgres refuses with 42P16. Dropping
--- makes re-running the file safe, which is the whole point of this file.
-drop view if exists admin_overview;
-create view admin_overview as
-select * from (
-select
-  (select count(*) from profiles)                                  as supporters,
-  (select count(*) from profiles where created_at > now() - interval '7 days') as supporters_this_week,
-  (select count(*) from wall_posts where hidden = false)           as posts,
-  (select count(*) from wall_posts where reply_to is not null and hidden = false) as replies,
-  (select count(*) from player_ratings)                            as ratings,
-  (select count(*) from predictions)                               as predictions,
-  (select count(*) from attendance)                                as attendances,
-  (select count(*) from ground_reports where hidden = false)       as ground_reports,
-  (select count(*) from access_reports where hidden = false)       as access_reports,
-  (select count(*) from price_reports where hidden = false)        as price_reports,
-  (select count(*) from pubs where hidden = false)                 as pubs,
-  (select count(*) from feedback where handled = false)            as feedback_waiting
-) counts
-/* Returns nothing at all to anyone who is not a volunteer, rather than
-   handing out most of the numbers and hiding one. */
-where is_admin();
-
-alter view admin_overview set (security_invoker = true);
-grant select on admin_overview to authenticated;
 
 -- ===========================================================================
 -- Email consent
@@ -1271,9 +1242,14 @@ grant select on archive_offer_counts to anon, authenticated;
 
 -- Replaces the definition further up this file, and has to live down here
 -- rather than being edited in place: it now counts quiz_results, archive_offers
--- and london_today(), none of which exist yet at that point in the file, so a
--- fresh database would fail on the way past. Postgres only lets a replacement
--- add columns at the end, which is why the original twelve keep their order.
+-- and london_today(), none of which exist until further down this file.
+--
+-- There used to be a second, shorter admin_overview three hundred and sixty
+-- lines above this one, written when those tables did not yet exist. Nothing
+-- ever read it: it was created, granted, then dropped and rebuilt here on every
+-- single run, and anybody reading the file had to count lines to work out which
+-- of the two was live. It is gone. Postgres only lets a replacement add columns
+-- at the end, which is why the original twelve keep their order.
 --
 -- Same all-or-nothing rule as before: a volunteer sees every number, or nobody
 -- sees any, rather than most of them with one quietly missing.
