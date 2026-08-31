@@ -8583,8 +8583,14 @@ function deckSlide(slide, i, total, facts) {
     const wait = el(`<div data-role="clock"></div>`);
     body.append(wait);
     const paint = () => {
-      const letters = lettersOf(state.letter);
-      const last = letters[letters.length - 1];
+      /* The letter that asked for a date, whichever it is. Not the last in the
+         array: the file is not in date order, and the one carrying the
+         deadline is the older of the two. Not replyDue() either, which drops
+         dates already past because the home page ticker wants that. Here the
+         deadline having passed is the entire point of the slide. */
+      const last = lettersOf(state.letter)
+        .filter((x) => x.replyBy && x.sentAt)
+        .sort((a, b) => (a.replyBy < b.replyBy ? 1 : -1))[0] || null;
       const due = last?.replyBy ? new Date(`${last.replyBy}T23:59:59`) : null;
       const sent = last?.sentAt ? new Date(last.sentAt) : null;
       const days = sent ? Math.floor((Date.now() - sent.getTime()) / 86400e3) : null;
