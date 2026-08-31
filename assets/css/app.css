@@ -7305,7 +7305,7 @@ body.presenting { overflow: hidden; }
 
 /* ---- the corporate picture ----------------------------------------------- */
 
-.slide__firms { display: flex; flex-direction: column; gap: 1.3cqw; width: 100%; }
+.slide__firms { display: flex; flex-direction: column; gap: 1cqw; width: 100%; }
 .slide__firm {
   display: grid;
   grid-template-columns: minmax(0, 17em) minmax(0, 1fr);
@@ -7319,9 +7319,22 @@ body.presenting { overflow: hidden; }
   display: block; margin-top: 0.25cqw;
   font-style: normal; font-size: 1.35cqw; font-weight: 400; color: var(--accent);
 }
-.slide__firm-note { font-size: 1.6cqw; line-height: 1.4; color: var(--text-2); }
+.slide__firm-note { font-size: 1.5cqw; line-height: 1.35; color: var(--text-2); }
 .slide__source { margin: 0; font-size: 1.25cqw; color: var(--text-3); }
 
 @media (max-width: 560px) {
   .slide__firm { grid-template-columns: 1fr; }
 }
+
+/* A slide carrying a list of six asks with their evidence, or three companies
+   with their filing history, is a different problem from a slide carrying one
+   number. It gets a step down rather than being allowed to run off the bottom
+   of the television. */
+.slide--dense .slide__title { font-size: 3.9cqw; }
+.slide--dense .slide__body { gap: 1.6cqw; }
+.slide--dense .slide__points { gap: 1cqw; }
+.slide--dense .slide__points li { font-size: 1.95cqw; }
+.slide--dense .slide__backs { font-size: 1.3cqw; }
+.slide--dense .slide__firms { gap: 0.9cqw; }
+.slide--dense .slide__firm-name { font-size: 1.7cqw; }
+.slide--dense .slide__firm-note { font-size: 1.4cqw; }

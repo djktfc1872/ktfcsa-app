@@ -8695,6 +8695,7 @@ function deckSlide(slide, i, total, facts) {
       than negatively.</p>`));
 
   } else if (slide.kind === "entities") {
+    if ((slide.rows || []).length >= 3) box.classList.add("slide--dense");
     heading(slide.title);
     const tbl = el(`<div class="slide__firms"></div>`);
     (slide.rows || []).forEach((r) => tbl.append(el(`
@@ -8861,6 +8862,10 @@ function deckSlide(slide, i, total, facts) {
     }).catch(() => {});
 
   } else if (slide.kind === "position") {
+    /* Six asks, each with a line of evidence, is the most words on any slide
+       here and it overflowed the stage. Rather than hand-tune this one, dense
+       slides get a size step down. */
+    if ((slide.points || []).length >= 5) box.classList.add("slide--dense");
     heading(slide.title);
     /* Each ask carries the number underneath it. The evidence is not there to
        be read out; it is there so that nobody in the room has to take the
