@@ -8652,8 +8652,11 @@ function deckSlide(slide, i, total, facts) {
     const total = facts.results?.summary?.responses || 199;
     const names = Object.fromEntries(CONSULT_ACTIONS);
     const acts = (facts.results?.choices || []).filter((x) => x.kind === "action");
+    /* Five, not six. Six bars plus a two line title plus the note underneath
+       overflowed a 16:9 stage and pushed the footer off the bottom of the
+       screen, which on a television is just a slide that looks cut off. */
     const rows = acts.filter((x) => x.choice !== "none")
-      .sort((a, b) => b.people - a.people).slice(0, 6);
+      .sort((a, b) => b.people - a.people).slice(0, 5);
     body.append(barsSlide(rows, names, total));
     /* Said plainly rather than left off. "Nothing, I would rather it was
        settled quietly" was on the form as a real answer, the people who chose
