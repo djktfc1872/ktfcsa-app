@@ -45,7 +45,7 @@
     },
     {
       "kind": "entities",
-      "eyebrow": "The bigger picture",
+      "eyebrow": "One thing we cannot see",
       "title": "Three companies, one football club.",
       "checked": "Companies House, public record, checked 31 August 2026",
       "draft": true,
@@ -54,26 +54,26 @@
           "name": "Kettering Town F.C. Management Ltd",
           "no": "02267071",
           "state": "Active",
-          "where": "Latimer Park, Burton Latimer",
-          "note": "Incorporated 1988. Accounts to 31 August 2025 filed on 27 July 2026, under the small-company exemption: nine pages, no income and no spending shown."
+          "where": "Latimer Park",
+          "note": "The company that runs the club. Its accounts are filed and up to date."
         },
         {
           "name": "Kettering Town FC 1872 Ltd",
           "no": "15689118",
           "state": "Active, dormant",
-          "where": "48 Fuller Gardens, Watford",
-          "note": "Incorporated April 2024. Has filed dormant accounts, meaning it has had no transactions at all."
+          "where": "Watford",
+          "note": "Registered in 2024. Has never traded."
         },
         {
           "name": "Kettering Town Football Club Ltd",
           "no": "04610155",
           "state": "Dissolved 2022",
           "where": "—",
-          "note": "The previous company. Last accounts made up to 2017."
+          "note": "The previous company."
         }
       ],
-      "foot": "None of this is unusual on its own, and none of it is an accusation. The question is simply which company holds what — the lease, the ground, the debts — and supporters cannot tell from the public record.",
-      "say": "Read the foot of this slide out loud, word for word, before you say anything else about it. This is public record and nothing more. The moment it sounds like an allegation you have lost the room's trust and handed the club an easy answer. The ask is 'explain the structure', not 'what are you hiding'."
+      "foot": "Nothing here is unusual and none of it is an accusation. We raise it once and leave it: supporters cannot tell which company holds the ground, the lease or the debts, and the filed accounts show neither income nor spending. We have asked. We are not going to spend tonight on it.",
+      "say": "Sixty seconds, then move on, and say the last sentence of the slide out loud. This is on the record and we have asked about it. It is not what tonight is for, and a room that spends an hour on company numbers has not built anything."
     },
     {
       "kind": "appetite",
@@ -113,23 +113,83 @@
           "backs": "Sent 22 August, with a reply asked for by 4 September"
         },
         {
-          "ask": "Publish accounts a supporter can read: income, where it comes from, and what it is spent on.",
-          "backs": "Financial sustainability 86%. The filed accounts show neither"
-        },
-        {
           "ask": "Name everyone on the board and any committee, with their role and the date they took it.",
           "backs": "71% say the board represents them badly or very badly"
+        },
+        {
+          "ask": "Meet a recognised supporters’ body regularly, on a set date, on the record.",
+          "backs": "83% say the ownership does not represent them; 97 asked for a public meeting"
         },
         {
           "ask": "Set out which company holds the ground, the lease and the debts.",
           "backs": "Three companies on the public record; supporters cannot tell"
         },
         {
-          "ask": "Meet a recognised supporters’ body regularly, on a set date, on the record.",
-          "backs": "83% say the ownership does not represent them; 97 asked for a public meeting"
+          "ask": "Publish accounts a supporter can read: income, where it comes from, and what it is spent on.",
+          "backs": "Financial sustainability 86%. The filed accounts show neither"
         }
       ],
-      "say": "Six asks, each already put to the club in writing or straight off the public record, each backed by a number. Read the ask and not the evidence line — the evidence is there so nobody has to take your word for it. Agree the wording with the working group before the night, not on the night."
+      "say": "Six asks, each already put to the club in writing and each backed by a number. Read the ask, not the evidence line. Agree the wording with the working group before the night."
+    },
+    {
+      "kind": "roles",
+      "eyebrow": "What we are actually trying to build",
+      "title": "An association that outlasts any one of us.",
+      "blurb": "Four jobs. None of them is full time, none needs an accountant, and none of them is currently filled by anybody who put their hand up for it.",
+      "points": [
+        {
+          "ask": "Someone to chair it",
+          "backs": "Runs the meetings, speaks for the room, and is the name on the letters."
+        },
+        {
+          "ask": "Someone to keep the record",
+          "backs": "Writes down what was agreed and publishes it, so nothing rests on anyone's memory."
+        },
+        {
+          "ask": "Someone to hold the money",
+          "backs": "A bank account, a float, and a list of what came in and what went out."
+        },
+        {
+          "ask": "Someone to talk to the club",
+          "backs": "One named person, so the club has somebody to answer and cannot say it did not know who to ask."
+        }
+      ],
+      "say": "Say plainly that none of these four is filled. Do not make it a plea — make it a job description, because people volunteer for jobs and back away from pleas."
+    },
+    {
+      "kind": "plan",
+      "eyebrow": "How we do it, and how fast",
+      "title": "Most of this can be settled tonight.",
+      "rows": [
+        {
+          "when": "Tonight",
+          "what": "Agree the Association exists, and elect an interim committee from the floor.",
+          "why": "Interim, so nobody is signing up for life and nobody has to have read a constitution to stand."
+        },
+        {
+          "when": "Tonight",
+          "what": "Name one person to write to the club as our representative.",
+          "why": "The club has told us it does not know who speaks for supporters. After tonight it does."
+        },
+        {
+          "when": "Within a month",
+          "what": "A short constitution — two pages, not twenty — published for everyone to read.",
+          "why": "It says who can join, how officers are chosen, and how they can be removed. That is most of it."
+        },
+        {
+          "when": "Within three months",
+          "what": "A proper election, open to every member, at a second meeting.",
+          "why": "Whoever steps up tonight stands again in the open. Nobody inherits anything."
+        }
+      ],
+      "say": "This is the slide the night turns on. Take it slowly. The word to lean on is interim: it is the thing that makes standing up feel survivable."
+    },
+    {
+      "kind": "statement",
+      "eyebrow": "Before anybody volunteers",
+      "title": "This should not be my association, and I would rather it was not.",
+      "body": "I built the app and I am happy being the person who builds the app. Somebody had to start this and nobody else was doing it, so I did — but a supporters' association that depends on one person is not an association, it is a hobby with a website. If nobody stands tonight it stays with me by default, and that is the worst outcome on offer, for you and for me.",
+      "say": "Your call whether to say this at all. If you do, say it once, without apology, and then be quiet and let the room answer. Do not soften it into a joke — the honesty is the whole reason it works."
     },
     {
       "kind": "asks",

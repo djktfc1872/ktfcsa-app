@@ -7443,3 +7443,26 @@ body.presenting { overflow: hidden; }
 
 .grant-find { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .grant-find .input { width: 100%; margin-top: 6px; }
+
+/* ---- how we get there, and by when --------------------------------------- */
+
+.slide__plan { display: flex; flex-direction: column; gap: 1.1cqw; width: 100%; }
+.slide__plan-row {
+  display: grid;
+  grid-template-columns: 11cqw minmax(0, 1fr);
+  gap: 2cqw;
+  align-items: baseline;
+}
+.slide__plan-row > b {
+  font-size: 1.5cqw; font-weight: 800; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--accent); white-space: nowrap;
+}
+.slide__plan-row span { display: block; font-size: 1.95cqw; line-height: 1.3; color: var(--text); }
+.slide__plan-row i {
+  display: block; margin-top: 0.3cqw;
+  font-style: normal; font-size: 1.4cqw; line-height: 1.35; color: var(--text-2);
+}
+
+@media (max-width: 560px) {
+  .slide__plan-row { grid-template-columns: 1fr; gap: 0.4cqw; }
+}

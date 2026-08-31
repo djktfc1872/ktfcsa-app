@@ -9281,6 +9281,29 @@ function deckSlide(slide, i, total, facts) {
           <span>${esc(r.what)}</span></div>`)));
     }).catch(() => {});
 
+  } else if (slide.kind === "roles") {
+    /* Same shape as the asks: a line, and a line under it saying what it means.
+       Written as job descriptions rather than as a plea, because people
+       volunteer for a job and back away from being begged. */
+    if ((slide.points || []).length >= 4) box.classList.add("slide--dense");
+    heading(slide.title);
+    if (slide.blurb) para(slide.blurb);
+    const roles = el(`<ol class="slide__points"></ol>`);
+    (slide.points || []).forEach((pt) => roles.append(el(
+      `<li><span>${esc(pt.ask)}</span><i class="slide__backs">${esc(pt.backs)}</i></li>`)));
+    body.append(roles);
+
+  } else if (slide.kind === "plan") {
+    box.classList.add("slide--dense");
+    heading(slide.title);
+    const rows = el(`<div class="slide__plan"></div>`);
+    (slide.rows || []).forEach((r) => rows.append(el(`
+      <div class="slide__plan-row">
+        <b>${esc(r.when)}</b>
+        <div><span>${esc(r.what)}</span><i>${esc(r.why)}</i></div>
+      </div>`)));
+    body.append(rows);
+
   } else if (slide.kind === "position") {
     /* Six asks, each with a line of evidence, is the most words on any slide
        here and it overflowed the stage. Rather than hand-tune this one, dense
