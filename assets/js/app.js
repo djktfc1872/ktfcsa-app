@@ -8232,9 +8232,13 @@ function meetingCard(m) {
   /* Where, when, and how many. Nulls are the normal state early on and say so
      rather than showing an empty row. */
   const rows = [
+    /* 7:30pm, not 19:30. Nobody arranging to meet in a pub says nineteen
+       thirty, and this is read by supporters rather than by a timetable. */
     ["When", m.held_at
       ? `${fmtDate(String(m.held_at).slice(0, 10))}, ${
-          new Date(m.held_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+          new Date(m.held_at).toLocaleTimeString("en-GB", {
+            hour: "numeric", minute: "2-digit", hour12: true })
+            .replace(":00", "").replace(" ", "")}`
       : "Not settled yet"],
     ["Where", m.venue ? `${esc(m.venue)}${m.address ? `, ${esc(m.address)}` : ""}` : "Not settled yet"],
   ];

@@ -6897,3 +6897,21 @@ button,
   color: var(--text-2);
 }
 .rsvp-list__group b { color: var(--text); display: block; }
+
+/* ---- the meeting's when and where ----------------------------------------
+   The same slip as the letters page, but that one lives in a narrow card where
+   pushing the value to the right edge reads as a form. Stretched across a
+   desktop the label and the value end up a screen apart with nothing between
+   them, so here the label gets a column and the value sits next to it. */
+
+.meeting .sent-slip__row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 14px;
+}
+.meeting .sent-slip__row b { text-align: left; font-size: 0.9375rem; }
+
+@media (max-width: 420px) {
+  .meeting .sent-slip__row { grid-template-columns: 1fr; gap: 2px; }
+}
