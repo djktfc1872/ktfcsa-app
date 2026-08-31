@@ -8878,7 +8878,6 @@ function runningOrder(m, when) {
           <b>${esc(row.what)}</b>
           <span>${esc(row.why)}</span>
         </div>
-        ${row.who ? `<div class="agenda__who">${esc(row.who)}</div>` : `<div></div>`}
       </div>`)));
   }).catch(() => {});
 
