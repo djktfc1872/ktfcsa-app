@@ -6077,6 +6077,25 @@ function buildAdmin() {
   ];
 
   if (atab === "overview") {
+    /* The pages that are not in the menu. The deck is unlisted until after the
+       meeting, which means the only way to it is a link somebody has kept, and
+       the person who needs it on the night is the one standing in the pub. */
+    wrap.append(el(`<h2 class="section-title">Pages not in the menu</h2>`));
+    const hidden = el(`
+      <div class="card">
+        <p class="hint">Reachable by link only. The slides go into the menu after the
+          meeting, as the record of what was said.</p>
+        <div class="btn-row" data-role="links"></div>
+      </div>`);
+    const links = $('[data-role="links"]', hidden);
+    [["The slides", "deck"], ["The meeting", "meeting"], ["The letters", "letter"]]
+      .forEach(([label, route], i) => {
+        const b = el(`<button class="btn btn--sm${i ? " btn--ghost" : ""}">${esc(label)}</button>`);
+        b.addEventListener("click", () => go(route));
+        links.append(b);
+      });
+    wrap.append(hidden);
+
     wrap.append(el(`<h2 class="section-title">Activity</h2>`));
     const statCard = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
     wrap.append(statCard);
