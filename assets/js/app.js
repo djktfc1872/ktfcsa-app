@@ -8511,8 +8511,13 @@ function viewDeck() {
     loadLetter().catch(() => null),
   ]).then(([deck, att, results, meeting]) => {
     const facts = { att, results, meeting };
+    /* Filtered before numbering, not during. Dropping a slide as it is drawn
+       left the public deck running 9, 11, 12 and still claiming twelve of
+       them, which looks like something has gone missing. It has; it just is
+       not supposed to be countable. */
+    const shown = deck.slides.filter(deckVisible);
     stack.replaceChildren();
-    deck.slides.forEach((slide, i) => stack.append(deckSlide(slide, i, deck.slides.length, facts)));
+    shown.forEach((slide, i) => stack.append(deckSlide(slide, i, shown.length, facts)));
     wireDeck(wrap, stack, bar);
   }).catch(() => {
     stack.replaceChildren();
@@ -8520,6 +8525,20 @@ function viewDeck() {
   });
 
   return wrap;
+}
+
+/**
+ * Is this slide for everybody yet?
+ *
+ * While the position slide is a draft, nobody but the site's admins sees it at
+ * all. Those five sentences speak for the Association, and the route is
+ * reachable by anyone with the link: a position the working group has not
+ * agreed must not be sitting on a public URL with the Association's name under
+ * it. Clear `draft` in data/deck.json once it is agreed and it goes live.
+ */
+function deckVisible(slide) {
+  if (slide.kind === "position" && slide.draft) return db.isAdmin();
+  return true;
 }
 
 /** One slide. A fixed 16:9 stage that scales itself to whatever it is shown on. */
@@ -8668,12 +8687,6 @@ function deckSlide(slide, i, total, facts) {
     }).catch(() => {});
 
   } else if (slide.kind === "position") {
-    /* While it is a draft, nobody but the site's admins sees it at all. These
-       five sentences speak for the Association, and the route is reachable by
-       anyone with the link; a position the working group has not agreed must
-       not be sitting on a public URL with the Association's name under it.
-       Clear `draft` in data/deck.json once it is agreed and it goes live. */
-    if (slide.draft && !db.isAdmin()) { box.remove(); return box; }
     heading(slide.title);
     const list = el(`<ol class="slide__points"></ol>`);
     (slide.points || []).forEach((pt) => list.append(el(`<li>${esc(pt)}</li>`)));
