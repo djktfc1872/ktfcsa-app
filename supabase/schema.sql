@@ -3399,3 +3399,97 @@ $$;
 
 revoke all on function rsvp_meeting(uuid, text, text, text) from public;
 grant execute on function rsvp_meeting(uuid, text, text, text) to anon, authenticated;
+
+-- ===========================================================================
+-- Telling people the meeting has moved
+-- ===========================================================================
+--
+-- Somebody can say they are coming without an account, which is deliberate:
+-- all 118 who said they would come in person answered the consultation without
+-- one, and asking them to sign up first would have lost most of them.
+--
+-- The cost of that is there is no way to reach them. If the room changes or the
+-- night moves, the people who most need telling are exactly the ones we cannot
+-- tell, and 31 of them asked in the consultation to be kept posted.
+--
+-- So: an optional email, given for one stated purpose. Not a mailing list, not
+-- carried over to anything else, and the wording on the form says so. Under
+-- UK GDPR this is a purpose limitation rather than a marketing consent, which
+-- is why it is a separate column from profiles.email_opt_in and must not be
+-- read as one.
+
+alter table meeting_rsvps add column if not exists email text
+  check (email is null or (char_length(email) between 5 and 120 and email like '%_@_%'));
+
+comment on column meeting_rsvps.email is
+  'Optional, and only for telling this person about this meeting: a change of
+   room, a change of night, a cancellation. Not a mailing list. Not to be
+   copied into profiles.email_opt_in, which is a different consent for a
+   different thing.';
+
+-- The counts view names nobody and now holds an email, so it stays as it is.
+-- Whoever books the room reads the list through meeting_rsvps itself, which is
+-- moderators only.
+
+create or replace function rsvp_meeting(
+  p_meeting uuid, p_coming text, p_key text, p_name text, p_email text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  mail text := nullif(btrim(lower(p_email)), '');
+begin
+  if p_coming not in ('in_person', 'online', 'cannot') then
+    raise exception 'Not one of the answers';
+  end if;
+
+  if mail is not null and mail not like '%_@_%' then
+    raise exception 'That does not look like an email address';
+  end if;
+
+  if uid is not null then
+    insert into meeting_rsvps (meeting_id, profile_id, coming, name, email)
+    values (p_meeting, uid, p_coming, nullif(btrim(p_name), ''), mail)
+    on conflict (meeting_id, profile_id) where profile_id is not null
+    do update set coming = excluded.coming, name = excluded.name,
+                  email = coalesce(excluded.email, meeting_rsvps.email),
+                  updated_at = now();
+    return;
+  end if;
+
+  if p_key is null or char_length(p_key) < 8 then
+    raise exception 'Tell us who you are, or sign in';
+  end if;
+
+  insert into meeting_rsvps (meeting_id, device_key, coming, name, email)
+  values (p_meeting, p_key, p_coming, nullif(btrim(p_name), ''), mail)
+  on conflict (meeting_id, device_key) where profile_id is null
+  do update set coming = excluded.coming, name = excluded.name,
+                email = coalesce(excluded.email, meeting_rsvps.email),
+                updated_at = now();
+end;
+$$;
+
+revoke all on function rsvp_meeting(uuid, text, text, text, text) from public;
+grant execute on function rsvp_meeting(uuid, text, text, text, text) to anon, authenticated;
+
+-- The four-argument version stays, delegating. Dropping it would have been
+-- tidier and would have broken a real supporter: a phone holding yesterday's
+-- app in its cache calls the old signature, and between the moment this file
+-- runs and the moment that phone picks up new code, its RSVP would fail
+-- outright. An old client simply not sending an email it never collected is
+-- the better failure.
+create or replace function rsvp_meeting(p_meeting uuid, p_coming text, p_key text, p_name text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  select rsvp_meeting(p_meeting, p_coming, p_key, p_name, null::text);
+$$;
+
+revoke all on function rsvp_meeting(uuid, text, text, text) from public;
+grant execute on function rsvp_meeting(uuid, text, text, text) to anon, authenticated;

@@ -688,9 +688,10 @@ class Backend {
     return data || [];
   }
 
-  async rsvpMeeting(id, coming, key, name) {
+  async rsvpMeeting(id, coming, key, name, email) {
     const { error } = await this.sb.rpc("rsvp_meeting", {
-      p_meeting: id, p_coming: coming, p_key: key || null, p_name: name || null });
+      p_meeting: id, p_coming: coming, p_key: key || null,
+      p_name: name || null, p_email: email || null });
     if (error) throw new Error(friendly(error));
   }
 

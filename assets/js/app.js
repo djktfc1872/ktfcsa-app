@@ -8306,6 +8306,14 @@ function rsvpPanel(m, total) {
       value="${esc(db.currentUser()?.name || "")}">`);
     box.append(name);
 
+    /* Optional, and for one thing only. Somebody who says they are coming
+       without an account leaves us no way to tell them the room has changed,
+       and 31 supporters asked in the consultation to be kept posted. Signed in,
+       we already have an address and do not ask twice. */
+    const mail = db.currentUser() ? null : el(`<input class="input rsvp__mail" type="email"
+      maxlength="120" placeholder="Email, only if you want telling of any change">`);
+    if (mail) box.append(mail);
+
     const row = el(`<div class="btn-row rsvp__row"></div>`);
     [["in_person", "I will be there"],
      ["online", "I would join online"],
@@ -8314,7 +8322,8 @@ function rsvpPanel(m, total) {
       b.addEventListener("click", async () => {
         row.querySelectorAll("button").forEach((x) => { x.disabled = true; });
         try {
-          await db.rsvpMeeting(m.id, key, db.consultDeviceKey(), name.value.trim());
+          await db.rsvpMeeting(m.id, key, db.consultDeviceKey(), name.value.trim(),
+            mail ? mail.value.trim() : null);
           db.write(`rsvp:${m.id}`, key);
           toast("Thank you. We will let you know.", "good");
           redraw();
@@ -8327,7 +8336,9 @@ function rsvpPanel(m, total) {
     });
     box.append(row);
     box.append(el(`<p class="hint">No account needed. Your name is seen only by whoever books
-      the room, and the numbers above are all anybody else sees.</p>`));
+      the room, and the numbers above are all anybody else sees. An email is optional and used
+      for one thing: telling you if the night or the room changes. It is not a mailing list and
+      it is not added to one.</p>`));
   };
 
   const redraw = () => { render(); };
