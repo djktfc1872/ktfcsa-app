@@ -8668,6 +8668,12 @@ function deckSlide(slide, i, total, facts) {
     }).catch(() => {});
 
   } else if (slide.kind === "position") {
+    /* While it is a draft, nobody but the site's admins sees it at all. These
+       five sentences speak for the Association, and the route is reachable by
+       anyone with the link; a position the working group has not agreed must
+       not be sitting on a public URL with the Association's name under it.
+       Clear `draft` in data/deck.json once it is agreed and it goes live. */
+    if (slide.draft && !db.isAdmin()) { box.remove(); return box; }
     heading(slide.title);
     const list = el(`<ol class="slide__points"></ol>`);
     (slide.points || []).forEach((pt) => list.append(el(`<li>${esc(pt)}</li>`)));
