@@ -1,0 +1,89 @@
+{
+  "note": "The slides for the first supporters meeting. Prose here is a draft for Danny to say in his own words; every number is pulled live from the app at render time and is never typed into this file. Anything in `say` is spoken, not shown: it is the note under the slide on the follow-along page, and it is not on the TV.",
+  "slides": [
+    {
+      "kind": "title",
+      "eyebrow": "Kettering Town FC Supporters’ Association",
+      "title": "The first supporters meeting",
+      "sub": "The Wayfarers Inn, Kettering"
+    },
+    {
+      "kind": "agenda",
+      "eyebrow": "How the night runs",
+      "title": "Roughly two hours, and most of it is yours.",
+      "say": "Ten seconds on this. Say the questions block is forty five minutes and that it is the point of the night, then move on."
+    },
+    {
+      "kind": "statement",
+      "eyebrow": "Why we are here",
+      "title": "199 supporters answered in five days.",
+      "body": "Nobody was paid, nobody was chased, and it was open for less than a week. That is the mandate for tonight, and it is the reason the club is being asked anything at all.",
+      "say": "Keep this short. The room already knows. The point of the slide is that the numbers behind you are theirs, not yours."
+    },
+    {
+      "kind": "stat",
+      "eyebrow": "What you told us",
+      "source": "consultation",
+      "say": "Read the middle number out loud and then stop talking for a second. It does the work on its own."
+    },
+    {
+      "kind": "statement",
+      "eyebrow": "What you asked for",
+      "title": "181 of you wanted a meeting.",
+      "body": "118 in a room, 71 online, and 31 who could not come but asked to be kept posted. This is us getting on with it.",
+      "say": "This is the answer to anyone who says the Association appointed itself."
+    },
+    {
+      "kind": "questions",
+      "eyebrow": "What we asked the club",
+      "title": "Twelve questions, in writing.",
+      "body": "Ten came straight out of what supporters wrote in the consultation. Two were added by the working group after the club’s reply to the first letter.",
+      "say": "Do not read all twelve out. Point at the page, say they are all on the app, and pick the two you most want the room thinking about."
+    },
+    {
+      "kind": "clock",
+      "eyebrow": "Where the club has got to",
+      "say": "This one updates itself. Whatever it says on the night is what you say: if they have replied, say so plainly and fairly. If they have not, let the number speak and do not editorialise."
+    },
+    {
+      "kind": "attendance",
+      "eyebrow": "One thing worth knowing",
+      "say": "Say it once, flatly, and move on. It lands harder without a speech attached."
+    },
+    {
+      "kind": "statement",
+      "eyebrow": "What we have built",
+      "title": "A free app, run by supporters.",
+      "body": "Fixtures, the table, the archive, away guides, the consultation, this meeting. No adverts, nothing behind a paywall, and no data sold. It costs about £200 a year and the working group has covered it so far.",
+      "say": "Do not sell it. Mention the bucket for the room and leave it."
+    },
+    {
+      "kind": "position",
+      "eyebrow": "What we think should happen",
+      "title": "Five things, and none of them are unreasonable.",
+      "body": "This is the one slide I should not draft for you. It is the Association’s position on what it wants from the club, and it has to be yours and the working group’s, agreed before the night. Tell me what it says and I will set it.",
+      "say": "This is the Association's position and it must be agreed by the working group before the night, not read off a screen for the first time. Every one of these five is already a question put to the club in writing, so nothing here is new and nothing here can be called a demand that came out of nowhere. If the working group wants it different, it changes.",
+      "points": [
+        "Answer the twelve questions in writing, and publish the answers.",
+        "File and publish the accounts, so supporters can see the club's position for themselves.",
+        "Name the board and any committee, with roles and dates.",
+        "Tell supporters about changes before they find out by noticing.",
+        "Meet a recognised supporters' body regularly, on a set date, on the record."
+      ],
+      "draft": true
+    },
+    {
+      "kind": "asks",
+      "eyebrow": "Your questions",
+      "title": "Put to the floor, in the order you backed them.",
+      "say": "Hand over here. This is the half of the night that matters."
+    },
+    {
+      "kind": "statement",
+      "eyebrow": "What happens next",
+      "title": "Nothing here works without people.",
+      "body": "Everything tonight was done by supporters in their own time. If you want to help — with the archive, away travel, the letters, or the app — say so before you leave.",
+      "say": "Finish on the ask. Then get out of the way and let people talk."
+    }
+  ]
+}

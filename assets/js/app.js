@@ -424,6 +424,11 @@ const ROUTES = {
   /* Reached from a fixture rather than the nav: it is always about one game,
      so a menu entry would have to ask which, and the fixture already knows. */
   plan: { label: "The plan", icon: "🗓️", nav: "hidden", render: viewPlan },
+  /* Unlisted until after the meeting, then it goes in the menu as the record
+     of what was said. Nothing on it is secret; it is just not finished being
+     argued over yet. */
+  deck: { label: "The case, in slides", short: "The case", icon: "\uD83D\uDCFD\uFE0F",
+    nav: "hidden", group: "Happening now", render: viewDeck },
 };
 
 function go(view, params = {}) {
@@ -8423,6 +8428,7 @@ function runningOrder(m, when) {
   const box = el(`
     <div class="agenda">
       <div class="info__label">How the night runs</div>
+      <p class="hint">Roughly. Nobody is going to be held to the minute.</p>
     </div>`);
 
   const at = (mins) => {
@@ -8432,18 +8438,324 @@ function runningOrder(m, when) {
       .replace(":00", "").replace(" ", "");
   };
 
-  [
-    [0,  "Doors and a drink", "Get there, get a pint, say hello."],
-    [15, "Where we are", "Where the Association has got to, and what the club has and has not said."],
-    [45, "Questions from the floor", "Anything you like. Put one in below beforehand if you would rather not stand up."],
-    [110, "Done by about", "Nobody is keeping you. The bar is not going anywhere."],
-  ].forEach(([mins, what, why]) => box.append(el(`
-    <div class="agenda__row">
-      <div class="agenda__at">${esc(at(mins)) || "&mdash;"}</div>
-      <div class="agenda__what"><b>${esc(what)}</b><span>${esc(why)}</span></div>
-    </div>`)));
+  /* From data/agenda.json rather than written out here, because the slides
+     read the same file. An agenda in two places is an agenda that disagrees
+     with itself by the night. */
+  readJSON("data/agenda.json").then((plan) => {
+    if (!plan || !document.contains(box)) return;
+    plan.rows.forEach((row) => box.append(el(`
+      <div class="agenda__row">
+        <div class="agenda__at">${esc(at(row.at)) || "&mdash;"}</div>
+        <div class="agenda__what">
+          <b>${esc(row.what)}</b>
+          <span>${esc(row.why)}</span>
+        </div>
+        ${row.who ? `<div class="agenda__who">${esc(row.who)}</div>` : `<div></div>`}
+      </div>`)));
+  }).catch(() => {});
 
   return box;
+}
+
+/**
+ * The slides for the meeting.
+ *
+ * One page, three jobs, and the order of them is the whole design:
+ *
+ *   1. **The record.** Most supporters will never be in the room. 199 answered
+ *      the consultation and 120 places exist, so whatever is said on the night
+ *      reaches more people as a page afterwards than it does as slides. The
+ *      scrolling version is therefore the real artefact and the presentation
+ *      is a mode of it, not the other way round.
+ *   2. **Follow along.** The stream is a phone in a pub and nobody will read a
+ *      television through it. Anyone watching can open this and read the
+ *      numbers themselves while they listen.
+ *   3. **The television.** Full screen, arrow keys, big enough to read from the
+ *      back of a function room.
+ *
+ * Every figure on it is pulled live rather than typed into data/deck.json, so
+ * a slide cannot quietly go stale between now and the seventh. That matters
+ * most for the one that counts the days the club has had: it is three days
+ * past the deadline on the night, and it would be embarrassing to stand in
+ * front of a number somebody had hard coded a fortnight earlier.
+ */
+function viewDeck() {
+  const wrap = el(`<div class="wrap deck-page"></div>`);
+
+  wrap.append(el(`
+    <div class="page-head">
+      <h1 class="page-title">The case, in slides</h1>
+      <p class="page-sub">What was put to the room at the first supporters meeting.
+        Every number on it is live, so this page says today what it said on the night.</p>
+    </div>`));
+
+  const bar = el(`
+    <div class="deck-bar">
+      <button class="btn btn--sm" data-act="present">Present on a screen</button>
+      <span class="hint deck-bar__hint">Arrow keys or tap to move. Escape to come back.</span>
+    </div>`);
+  wrap.append(bar);
+
+  const stack = el(`<div class="deck"></div>`);
+  wrap.append(stack);
+
+  Promise.all([
+    readJSON("data/deck.json"),
+    readJSON("data/attendances.json"),
+    db.consultationResults().catch(() => null),
+    db.meetings().then((rows) => rows[0] || null).catch(() => null),
+  ]).then(([deck, att, results, meeting]) => {
+    const facts = { att, results, meeting };
+    stack.replaceChildren();
+    deck.slides.forEach((slide, i) => stack.append(deckSlide(slide, i, deck.slides.length, facts)));
+    wireDeck(wrap, stack, bar);
+  }).catch(() => {
+    stack.replaceChildren();
+    stack.append(el(`<div class="empty"><b>Could not load the slides</b>Try again in a moment.</div>`));
+  });
+
+  return wrap;
+}
+
+/** One slide. A fixed 16:9 stage that scales itself to whatever it is shown on. */
+function deckSlide(slide, i, total, facts) {
+  const box = el(`<section class="slide" tabindex="-1"></section>`);
+  const stage = el(`<div class="slide__stage"></div>`);
+  box.append(stage);
+
+  if (slide.eyebrow) stage.append(el(`<div class="slide__eyebrow">${esc(slide.eyebrow)}</div>`));
+
+  const body = el(`<div class="slide__body"></div>`);
+  stage.append(body);
+
+  const heading = (t) => body.append(el(`<h2 class="slide__title">${esc(t)}</h2>`));
+  const para = (t) => body.append(el(`<p class="slide__text">${esc(t)}</p>`));
+
+  if (slide.kind === "title") {
+    body.append(el(`<h2 class="slide__title slide__title--big">${esc(slide.title)}</h2>`));
+    const m = facts.meeting;
+    const when = m?.held_at ? new Date(m.held_at) : null;
+    body.append(el(`<p class="slide__text slide__text--lead">${
+      when ? esc(`${fmtDate(String(m.held_at).slice(0, 10))}, ${
+        when.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
+          .replace(":00", "").replace(" ", "")}`) : ""
+    }${slide.sub ? ` &middot; ${esc(slide.sub)}` : ""}</p>`));
+
+  } else if (slide.kind === "stat") {
+    /* The consultation, in the three numbers that matter. Straight from the
+       same view the report page reads, so the two can never disagree. */
+    const r = facts.results?.summary;
+    if (!r) { heading("The consultation"); para("Numbers unavailable."); }
+    else {
+      body.append(el(`
+        <div class="slide__figures">
+          <div class="figure">
+            <b>${r.direction_wrong}</b>
+            <span>of ${r.responses} said the club is going in the wrong direction</span>
+          </div>
+          <div class="figure figure--small">
+            <b>${r.direction_right}</b><span>said it is going the right way</span>
+          </div>
+          <div class="figure figure--small">
+            <b>${Number(r.confidence_avg).toFixed(1)}<i>/5</i></b>
+            <span>average confidence in how the club is run</span>
+          </div>
+        </div>`));
+    }
+
+  } else if (slide.kind === "questions") {
+    heading(slide.title); if (slide.body) para(slide.body);
+    body.append(el(`<p class="slide__aside" data-role="qcount">&nbsp;</p>`));
+    db.publishedQuestions().then((rows) => {
+      const n = (rows || []).length;
+      const supp = (rows || []).filter((q) => (q.origin || "supporters") === "supporters").length;
+      $('[data-role="qcount"]', body).innerHTML =
+        n ? `${n} in total. ${supp} of them written by supporters.` : "&nbsp;";
+    }).catch(() => {});
+
+  } else if (slide.kind === "clock") {
+    /* Counts itself. On the night this is three days past the deadline. */
+    const wait = el(`<div data-role="clock"></div>`);
+    body.append(wait);
+    const paint = () => {
+      const letters = lettersOf(state.letter);
+      const last = letters[letters.length - 1];
+      const due = last?.replyBy ? new Date(`${last.replyBy}T23:59:59`) : null;
+      const sent = last?.sentAt ? new Date(last.sentAt) : null;
+      const days = sent ? Math.floor((Date.now() - sent.getTime()) / 86400e3) : null;
+      const over = due ? Date.now() > due.getTime() : false;
+      wait.replaceChildren(el(`
+        <div class="slide__figures">
+          <div class="figure">
+            <b>${days == null ? "&mdash;" : days}</b>
+            <span>days since we wrote, and asked for a reply${
+              due ? ` by ${esc(fmtDate(last.replyBy))}` : ""}</span>
+          </div>
+          <div class="figure figure--small">
+            <b data-role="replied">0</b><span>of the questions answered</span>
+          </div>
+        </div>
+        <p class="slide__text">${over
+          ? "That date has passed."
+          : "We will say so plainly either way."}</p>`));
+      db.publishedQuestions().then((rows) => {
+        const done = (rows || []).filter((q) => q.replied_at).length;
+        const n = $('[data-role="replied"]', wait);
+        if (n) n.textContent = String(done);
+      }).catch(() => {});
+    };
+    tickWhileOnPage(box, paint, 60000);
+
+  } else if (slide.kind === "attendance") {
+    const a = facts.att?.swing;
+    if (!a) { heading("Attendances"); }
+    else {
+      body.append(el(`
+        <div class="slide__figures">
+          <div class="figure">
+            <b>+${a.percent}<i>%</i></b>
+            <span>more through the gate at the grounds we visited last season</span>
+          </div>
+        </div>
+        <p class="slide__text">Those ${a.grounds} clubs average ${a.theirAverage} at home.
+          With Kettering there they had ${a.withKettering}. Their own figures, their own
+          season, our visit taken out of the comparison.</p>`));
+    }
+
+  } else if (slide.kind === "asks") {
+    heading(slide.title);
+    const list = el(`<div class="slide__asks" data-role="asks"></div>`);
+    body.append(list);
+    if (facts.meeting) {
+      db.meetingQuestions(facts.meeting.meeting_id).then((rows) => {
+        if (!rows || !rows.length) {
+          list.append(el(`<p class="slide__text">Whatever the room wants to ask.</p>`));
+          return;
+        }
+        rows.slice(0, 5).forEach((q) => list.append(el(
+          `<div class="slide__ask"><b>${q.backers}</b><span>${esc(q.body)}</span></div>`)));
+      }).catch(() => {});
+    }
+
+  } else if (slide.kind === "agenda") {
+    heading(slide.title);
+    const list = el(`<div class="slide__agenda"></div>`);
+    body.append(list);
+    const m = facts.meeting;
+    const start = m?.held_at ? new Date(m.held_at) : null;
+    readJSON("data/agenda.json").then((plan) => {
+      if (!plan || !document.contains(list)) return;
+      plan.rows.forEach((r) => {
+        const t = start
+          ? new Date(start.getTime() + r.at * 60000).toLocaleTimeString("en-GB",
+              { hour: "numeric", minute: "2-digit", hour12: true })
+              .replace(":00", "").replace(" ", "")
+          : "";
+        list.append(el(`<div class="slide__agenda-row"><b>${esc(t)}</b>
+          <span>${esc(r.what)}</span></div>`));
+      });
+    }).catch(() => {});
+
+  } else if (slide.kind === "position") {
+    heading(slide.title);
+    const list = el(`<ol class="slide__points"></ol>`);
+    (slide.points || []).forEach((pt) => list.append(el(`<li>${esc(pt)}</li>`)));
+    body.append(list);
+    /* Marked only for whoever runs the site. The room must never be shown a
+       slide captioned "draft", and the person presenting it must never forget
+       that it is one. */
+    if (slide.draft && db.isAdmin()) {
+      box.classList.add("slide--draft");
+      box.append(el(`<p class="slide__draft"><b>Draft, and admin-only:</b> agree these five
+        with the working group before the night. Every one is already a question put to the
+        club in writing, so none of it is new &mdash; but it is the Association&rsquo;s
+        position and it is not mine to set.</p>`));
+    }
+
+  } else {
+    if (slide.title) heading(slide.title);
+    if (slide.body) para(slide.body);
+  }
+
+  stage.append(el(`<div class="slide__foot">
+    <span>Kettering Town FC Supporters&rsquo; Association</span>
+    <span>${i + 1} / ${total}</span>
+  </div>`));
+
+  /* Spoken, not shown. On the page it sits under the slide for whoever is
+     reading later; in presentation mode it is hidden, because the television
+     is mirroring this laptop and the room would read the stage directions. */
+  if (slide.say) box.append(el(`<p class="slide__say"><b>Saying it:</b> ${esc(slide.say)}</p>`));
+
+  return box;
+}
+
+/**
+ * Presentation mode.
+ *
+ * The same slides, one at a time, full screen. Nothing is re-rendered: a class
+ * on the container changes what is shown, so whatever a slide had loaded into
+ * it is still there and going in and out costs nothing.
+ */
+function wireDeck(wrap, stack, bar) {
+  let at = 0;
+  const slides = () => [...stack.querySelectorAll(".slide")];
+
+  const show = (n) => {
+    const all = slides();
+    if (!all.length) return;
+    at = Math.max(0, Math.min(n, all.length - 1));
+    all.forEach((s, i) => s.classList.toggle("is-at", i === at));
+    if (wrap.classList.contains("is-presenting")) all[at].focus({ preventScroll: true });
+  };
+
+  const enter = async () => {
+    wrap.classList.add("is-presenting");
+    document.body.classList.add("presenting");
+    show(at);
+    try { await wrap.requestFullscreen?.(); } catch { /* a refused fullscreen still presents */ }
+  };
+  const leave = () => {
+    wrap.classList.remove("is-presenting");
+    document.body.classList.remove("presenting");
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    slides()[at]?.scrollIntoView({ block: "center" });
+  };
+
+  $('[data-act="present"]', bar).addEventListener("click", enter);
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) leave();
+  });
+
+  const onKey = (e) => {
+    if (!wrap.classList.contains("is-presenting")) return;
+    if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].includes(e.key)) {
+      e.preventDefault(); show(at + 1);
+    } else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
+      e.preventDefault(); show(at - 1);
+    } else if (e.key === "Escape") {
+      leave();
+    } else if (e.key === "Home") { show(0); }
+    else if (e.key === "End") { show(slides().length - 1); }
+  };
+  document.addEventListener("keydown", onKey);
+
+  /* Tap the right half to go on, the left half to go back. A remote clicker
+     sends arrow keys, so it works with one of those too. */
+  stack.addEventListener("click", (e) => {
+    if (!wrap.classList.contains("is-presenting")) return;
+    show(e.clientX > window.innerWidth / 2 ? at + 1 : at - 1);
+  });
+
+  /* The listener is on the document, so it has to come off when the page
+     changes or every deck ever opened keeps answering the arrow keys. */
+  tickWhileOnPage(wrap, () => {}, 60000);
+  const watch = setInterval(() => {
+    if (document.contains(wrap)) return;
+    clearInterval(watch);
+    document.removeEventListener("keydown", onKey);
+    document.body.classList.remove("presenting");
+  }, 1000);
 }
 
 /**

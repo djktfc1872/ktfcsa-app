@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v248";
+const CACHE = "ktfcsa-v249";
 
 const SHELL = [
   "./",
@@ -22,6 +22,14 @@ const SHELL = [
   "assets/js/config.js",
   "assets/img/logo-128.png",
   "assets/img/logo-192.png",
+  /* The meeting is in a pub with a television and no wifi worth the name, and
+     the slides are being presented off a laptop. These three are precached so
+     that opening the deck once at home is enough, whatever the room's signal
+     turns out to be on the night. */
+  "assets/js/supabase.js",
+  "data/deck.json",
+  "data/agenda.json",
+  "data/attendances.json",
 ];
 
 self.addEventListener("install", (e) => {
