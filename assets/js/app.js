@@ -5983,7 +5983,10 @@ function buildAdmin() {
   /* Four tabs rather than one long stack of cards. The panel had grown to
      thirteen sections in a row and nothing was findable. */
   const ATABS = [["overview", "Overview"], ["consult", "Consultation"],
-                 ["archive", "Archive"], ["people", "People"]];
+                 ["archive", "Archive"], ["people", "People"],
+                 /* Admin only, and not offered to a moderator: a tab that opens
+                    on nothing is worse than a tab that was never there. */
+                 ...(canRunThings ? [["access", "Access"]] : [])];
   const atab = state.adminTab || "overview";
   /* Sticky, because the consultation tab is twenty thousand pixels tall and
      getting back to the section bar meant scrolling all the way up. */
@@ -6000,6 +6003,13 @@ function buildAdmin() {
   db.pendingActions().then((pa) => {
     if (!pa) return;
     const marks = { consult: pa.consultation || 0 };
+    /* The tab wears its own count, so a proposed change cannot sit unseen
+       behind a tab nobody had a reason to open. */
+    db.pendingEdits().then((rows) => {
+      const n = (rows || []).filter((r) => r.state === "pending").length;
+      const dot = abar.querySelector('[data-badge="access"]');
+      if (dot && n > 0) { dot.textContent = n; dot.hidden = false; }
+    }).catch(() => {});
     Object.entries(marks).forEach(([k, n]) => {
       const dot = abar.querySelector(`[data-badge="${k}"]`);
       if (dot && n > 0) { dot.textContent = n; dot.hidden = false; }
@@ -6119,7 +6129,6 @@ function buildAdmin() {
     const jump = el(`
       <div class="jump" role="group" aria-label="Jump to">
         <button data-to="a-publish">Publish</button>
-        <button data-to="a-proposed">Proposed</button>
         <button data-to="a-questions">Questions</button>
         <button data-to="a-queue">Queue</button>
         <button data-to="a-live">Findings</button>
@@ -6198,12 +6207,27 @@ function buildAdmin() {
     }).catch(() => {});
     wrap.append(pub);
 
-    /* Above the workbench on purpose. Somebody else's proposed change should be
+    /* A pointer, not a second copy. Somebody else's proposed change should be
        dealt with before you start editing the same questions yourself, or you
-       will be applying a change on top of work it was written against. */
+       will be applying a change on top of the work it was written against —
+       but rendering the queue twice means two fetches and two places to fix. */
     if (canRunThings) {
-      wrap.append(el(`<h2 class="section-title" id="a-proposed">Proposed changes</h2>`));
-      panelSection(wrap, null, () => editQueueCard());
+      const nudge = el(`<div id="a-proposed"></div>`);
+      wrap.append(nudge);
+      db.pendingEdits().then((rows) => {
+        const n = (rows || []).filter((r) => r.state === "pending").length;
+        if (!n || !document.contains(nudge)) return;
+        const card = el(`
+          <div class="todo">
+            <b>${n} proposed change${n === 1 ? "" : "s"} waiting</b>
+            <div class="todo__jobs"></div>
+          </div>`);
+        const b = el(`<button class="todo__job">Look at ${
+          n === 1 ? "it" : "them"} before you edit these <span aria-hidden="true">›</span></button>`);
+        b.addEventListener("click", () => { state.adminTab = "access"; render({ toTop: true }); });
+        $(".todo__jobs", card).append(b);
+        nudge.append(card);
+      }).catch(() => {});
     }
 
     wrap.append(el(`<h2 class="section-title" id="a-questions">Questions for the club</h2>`));
@@ -7007,11 +7031,23 @@ function buildAdmin() {
   /* Appended here rather than beside peopleCard, because tagsCard and
      paintTags are consts declared below it and reaching for either of them
      earlier throws before initialisation, which took the whole tab out. */
+  /* Its own tab rather than a section buried under People. Granting somebody
+     access and reading what they send back are the same job done twice a year,
+     and the queue was previously at the bottom of a consultation tab twenty
+     thousand pixels tall. */
+  if (atab === "access" && !canRunThings) {
+    wrap.append(el(`<div class="empty"><b>Not for you, sorry</b>Only an admin can give
+      people access.</div>`));
+  }
+  if (atab === "access" && canRunThings) {
+    panelSection(wrap, "Who can work on the letters", () => accessCard());
+    panelSection(wrap, "Proposed changes", () => editQueueCard());
+  }
+
   if (atab === "people") {
     panelSection(wrap, "People", () => { paintPeople(); return peopleCard; });
     if (canRunThings) {
       panelSection(wrap, "Tags", () => { paintTags(); return tagsCard; });
-      panelSection(wrap, "Who can work on the letters", () => accessCard());
     }
   }
 

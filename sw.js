@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v268";
+const CACHE = "ktfcsa-v269";
 
 const SHELL = [
   "./",
