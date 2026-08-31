@@ -8739,6 +8739,25 @@ function howSoon(when) {
 }
 
 /**
+ * A time nobody will be held to.
+ *
+ * "8:10pm" on an agenda is a promise, and it is one that a hundred people in a
+ * function room will have broken by twenty past. Rounded to the nearest
+ * quarter of an hour and prefixed, so the page says roughly when a thing
+ * happens without pretending anybody is running the night to the minute.
+ */
+function looseTime(start, mins, i) {
+  if (!start) return "";
+  const d = new Date(start.getTime() + mins * 60000);
+  const q = Math.round(d.getMinutes() / 15) * 15;
+  d.setMinutes(0, 0, 0);
+  d.setMinutes(q);
+  const clock = d.toLocaleTimeString("en-GB", {
+    hour: "numeric", minute: "2-digit", hour12: true }).replace(":00", "").replace(" ", "");
+  return i === 0 ? `from ${clock}` : `about ${clock}`;
+}
+
+/**
  * When, where, and how to get there.
  *
  * This was a bare gold rule with the rows jammed against it, which read as a
@@ -8843,25 +8862,18 @@ function downloadInvite(m, when) {
 function runningOrder(m, when) {
   const box = el(`
     <div class="agenda">
-      <div class="info__label">How the night runs</div>
-      <p class="hint">Roughly. Nobody is going to be held to the minute.</p>
+      <div class="info__label">How the evening runs</div>
     </div>`);
-
-  const at = (mins) => {
-    if (!when) return "";
-    const d = new Date(when.getTime() + mins * 60000);
-    return d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
-      .replace(":00", "").replace(" ", "");
-  };
 
   /* From data/agenda.json rather than written out here, because the slides
      read the same file. An agenda in two places is an agenda that disagrees
      with itself by the night. */
   readJSON("data/agenda.json").then((plan) => {
     if (!plan || !document.contains(box)) return;
-    plan.rows.forEach((row) => box.append(el(`
+    if (plan.preamble) box.append(el(`<p class="hint">${esc(plan.preamble)}</p>`));
+    plan.rows.forEach((row, i) => box.append(el(`
       <div class="agenda__row">
-        <div class="agenda__at">${esc(at(row.at)) || "&mdash;"}</div>
+        <div class="agenda__at">${esc(looseTime(when, row.at, i)) || "&mdash;"}</div>
         <div class="agenda__what">
           <b>${esc(row.what)}</b>
           <span>${esc(row.why)}</span>
@@ -9265,15 +9277,9 @@ function deckSlide(slide, i, total, facts) {
     const start = m?.held_at ? new Date(m.held_at) : null;
     readJSON("data/agenda.json").then((plan) => {
       if (!plan || !document.contains(list)) return;
-      plan.rows.forEach((r) => {
-        const t = start
-          ? new Date(start.getTime() + r.at * 60000).toLocaleTimeString("en-GB",
-              { hour: "numeric", minute: "2-digit", hour12: true })
-              .replace(":00", "").replace(" ", "")
-          : "";
-        list.append(el(`<div class="slide__agenda-row"><b>${esc(t)}</b>
-          <span>${esc(r.what)}</span></div>`));
-      });
+      plan.rows.forEach((r, i) => list.append(el(
+        `<div class="slide__agenda-row"><b>${esc(looseTime(start, r.at, i))}</b>
+          <span>${esc(r.what)}</span></div>`)));
     }).catch(() => {});
 
   } else if (slide.kind === "position") {

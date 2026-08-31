@@ -6970,7 +6970,7 @@ button,
 }
 .agenda__row {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
   gap: 3px 14px;
   padding: 9px 0;
 }
@@ -6981,7 +6981,9 @@ button,
 }
 .agenda__row + .agenda__row { border-top: 1px solid var(--line-soft); }
 .agenda__at {
-  font-size: 0.8125rem; font-weight: 800; color: var(--accent);
+  /* Wider than it was: "about 8:15pm" is a phrase, not a timestamp, and it was
+     wrapping onto two lines in a 4.5rem column. */
+  font-size: 0.8125rem; font-weight: 700; color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .agenda__what b { display: block; font-size: 0.9375rem; }
@@ -7178,7 +7180,7 @@ button,
 .slide__points li::marker { color: var(--accent); font-weight: 800; }
 
 .slide__agenda { display: flex; flex-direction: column; gap: 1cqw; }
-.slide__agenda-row { display: grid; grid-template-columns: 8cqw 1fr; gap: 2cqw; align-items: baseline; }
+.slide__agenda-row { display: grid; grid-template-columns: 11cqw 1fr; gap: 2cqw; align-items: baseline; }
 .slide__agenda-row b { font-size: 1.9cqw; color: var(--accent); font-variant-numeric: tabular-nums; }
 .slide__agenda-row span { font-size: 2cqw; color: var(--text); }
 
