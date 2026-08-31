@@ -7431,3 +7431,6 @@ body.presenting { overflow: hidden; }
   text-transform: uppercase; color: var(--text-3);
 }
 .qedit__field textarea { resize: vertical; }
+
+.grant-find { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.grant-find .input { width: 100%; margin-top: 6px; }

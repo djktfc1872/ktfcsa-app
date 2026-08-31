@@ -526,7 +526,7 @@ class Backend {
   async adminPeople() {
     const { data, error } = await this.sb
       .from("profiles")
-      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator, dormant")
+      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator, dormant, access")
       .order("created_at", { ascending: false });
     if (!error) return data || [];
     /* Same reason as loadAvatars: usable before the schema catches up. */

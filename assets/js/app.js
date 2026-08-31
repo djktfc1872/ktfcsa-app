@@ -7154,52 +7154,90 @@ function accessCard() {
     changes, which come to you before anything is published. Nobody can grant themselves
     either, and neither one makes somebody a moderator.</p>`));
 
-  const list = el(`<div data-role="list"><p class="hint">Loading\u2026</p></div>`);
-  card.append(list);
+  const has = el(`<div data-role="has"><p class="hint">Loading\u2026</p></div>`);
+  const find = el(`
+    <div class="grant-find">
+      <div class="info__label">Give it to somebody</div>
+      <input class="input" data-role="q" maxlength="40" placeholder="Start typing a name">
+      <div data-role="hits"></div>
+    </div>`);
+  card.append(has, find);
 
   const LEVELS = [[null, "No access"], ["view", "Can view"], ["edit", "Can view and edit"]];
 
-  const draw = (rows) => {
-    list.replaceChildren();
+  const chips = (profileId, current, onDone) => {
+    const box = el(`<div class="grant__levels"></div>`);
+    LEVELS.forEach(([value, label]) => {
+      const on = (current || null) === value;
+      const b = el(`<button class="chip${on ? " chip--on" : ""}">${esc(label)}</button>`);
+      b.addEventListener("click", async () => {
+        if (on) return;
+        box.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+        try {
+          await db.setUserAccess(profileId, value);
+          toast(value ? "Access given." : "Access removed.", "good");
+          onDone();
+        } catch (err) {
+          box.querySelectorAll("button").forEach((x) => { x.disabled = false; });
+          toast(err.message || "That did not save.", "bad");
+        }
+      });
+      box.append(b);
+    });
+    return box;
+  };
+
+  const load = () => db.workbenchAccess().then((rows) => {
+    has.replaceChildren();
     if (rows === null) {
-      list.append(el(`<p class="hint">This needs the newest schema run before it will work.</p>`));
+      has.append(el(`<p class="hint">This needs the newest schema run before it will work.</p>`));
       return;
     }
     if (!rows.length) {
-      list.append(el(`<div class="empty"><b>Nobody has access yet</b>Find a supporter under
-        People and give it to them from there.</div>`));
+      has.append(el(`<div class="empty"><b>Nobody has access yet</b>Search below to give it
+        to somebody.</div>`));
+      return;
     }
     rows.forEach((r) => {
       const row = el(`
         <div class="grant">
           <div class="grant__who"><b>${esc(r.display_name || "Someone")}</b>${
             r.pending ? `<span class="grant__pending">${r.pending} waiting on you</span>` : ""}</div>
-          <div class="grant__levels"></div>
         </div>`);
-      const levels = $(".grant__levels", row);
-      LEVELS.forEach(([value, label]) => {
-        const on = (r.access || null) === value;
-        const b = el(`<button class="chip${on ? " chip--on" : ""}">${esc(label)}</button>`);
-        b.addEventListener("click", async () => {
-          if (on) return;
-          levels.querySelectorAll("button").forEach((x) => { x.disabled = true; });
-          try {
-            await db.setUserAccess(r.profile_id, value);
-            toast(value ? `${r.display_name || "They"} can now ${
-              value === "edit" ? "view and edit" : "view"}.` : "Access removed.", "good");
-            load();
-          } catch (err) {
-            levels.querySelectorAll("button").forEach((x) => { x.disabled = false; });
-            toast(err.message || "That did not save.", "bad");
-          }
-        });
-        levels.append(b);
-      });
-      list.append(row);
+      row.append(chips(r.profile_id, r.access, load));
+      has.append(row);
     });
-  };
+  }).catch(() => {
+    has.replaceChildren();
+    has.append(el(`<p class="hint">Could not read who has access.</p>`));
+  });
 
-  const load = () => db.workbenchAccess().then(draw).catch(() => draw(null));
+  /* Searched rather than listed. Four hundred accounts in a dropdown is not a
+     way to find one person, and this screen is used perhaps twice a year. */
+  const q = $('[data-role="q"]', find);
+  const hits = $('[data-role="hits"]', find);
+  let people = null;
+  const search = () => {
+    const term = q.value.trim().toLowerCase();
+    hits.replaceChildren();
+    if (term.length < 2 || !people) return;
+    people
+      .filter((r) => String(r.display_name || "").toLowerCase().includes(term))
+      .slice(0, 6)
+      .forEach((r) => {
+        const row = el(`
+          <div class="grant">
+            <div class="grant__who"><b>${esc(r.display_name || "Someone")}</b></div>
+          </div>`);
+        row.append(chips(r.id, r.access, () => { q.value = ""; hits.replaceChildren(); load(); }));
+        hits.append(row);
+      });
+  };
+  q.addEventListener("input", () => {
+    if (people) return search();
+    db.adminPeople().then((rows) => { people = rows || []; search(); }).catch(() => {});
+  });
+
   load();
   return card;
 }
