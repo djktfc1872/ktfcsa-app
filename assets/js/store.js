@@ -181,6 +181,10 @@ export const rsvpMeeting = (id, coming, key, name, email, eating) =>
 export const meetingList = (id) =>
   (backend?.meetingList ? backend.meetingList(id) : Promise.resolve([]));
 
+export const setMeetingStream = (id, url) =>
+  (backend?.setMeetingStream ? backend.setMeetingStream(id, url)
+    : Promise.reject(new Error("Not connected.")));
+
 export const groundBoard = () =>
   (backend?.groundBoard ? backend.groundBoard() : Promise.resolve([]));
 export const wordleLeague = () =>

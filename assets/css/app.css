@@ -6930,3 +6930,20 @@ button,
 }
 .rsvp__food input { margin-top: 3px; flex: none; accent-color: var(--accent); }
 .meeting__food b { color: var(--accent); }
+
+/* ---- setting the stream link, on the night ------------------------------- */
+
+.stream-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.stream-panel__url { flex: 1; min-width: 190px; }
+
+.meeting__stream {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-line);
+}
+.meeting__stream:hover { border-bottom-color: var(--accent); }

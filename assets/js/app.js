@@ -8242,7 +8242,11 @@ function meetingCard(m) {
       : "Not settled yet"],
     ["Where", m.venue ? `${esc(m.venue)}${m.address ? `, ${esc(m.address)}` : ""}` : "Not settled yet"],
   ];
-  if (m.online_url) rows.push(["Online", "There is a link for anybody who cannot get there"]);
+  if (m.online_url) {
+    /* It was a sentence saying a link existed, which is not a link. */
+    rows.push(["Online", `<a href="${esc(m.online_url)}" target="_blank" rel="noopener"
+      class="meeting__stream">Watch it live</a>`]);
+  }
 
   const slip = el(`<div class="sent-slip"></div>`);
   rows.forEach(([k, v]) => slip.append(el(
@@ -8286,12 +8290,75 @@ function meetingCard(m) {
 
   card.append(rsvpPanel(m, total));
 
+  /* Setting the stream link, for whoever is standing in the pub when it starts.
+     Admins only, matching the policy on meetings: a moderator can read the
+     guest list but cannot change what the meeting is. */
+  if (db.isAdmin()) card.append(streamPanel(m));
+
   /* The list, and a way to get the addresses out. Volunteers only: the policy
      on meeting_rsvps refuses everybody else, so for a supporter this asks for
      nothing and appends nothing. */
   if (db.isModerator()) card.append(rsvpList(m));
 
   return card;
+}
+
+/**
+ * Paste the live stream link in, on the night.
+ *
+ * A Facebook Live URL does not exist until somebody presses go, which will be
+ * at half seven in a pub on a phone. So it goes here rather than in the admin
+ * panel: on the page you are already looking at, one box and one button, and
+ * forgiving about what gets pasted. Facebook hands you a URL with a query
+ * string a mile long and half the time no scheme on the front.
+ */
+function streamPanel(m) {
+  const box = el(`
+    <div class="stream-panel">
+      <div class="info__label">Live stream link</div>
+      <p class="hint" style="margin:2px 0 8px">Paste it here when the stream starts and a
+        <b>Watch it live</b> link appears on this page for everybody. Volunteers only.</p>
+      <div class="row row--wrap" style="gap:8px">
+        <input class="input stream-panel__url" type="url" inputmode="url"
+          placeholder="Paste the Facebook Live link"
+          value="${esc(m.online_url || "")}">
+        <button class="btn btn--sm" data-act="save">Save</button>
+        ${m.online_url ? `<button class="link-btn" data-act="clear">Take it down</button>` : ""}
+      </div>
+      <p class="hint" data-role="say"></p>
+    </div>`);
+
+  const input = $(".stream-panel__url", box);
+  const say = $('[data-role="say"]', box);
+
+  /* Somebody pasting from the Facebook app gets no scheme, and a URL without
+     one is treated as a relative path and goes nowhere. */
+  const tidy = (v) => {
+    const t = String(v || "").trim();
+    if (!t) return "";
+    return /^https?:\/\//i.test(t) ? t : `https://${t.replace(/^\/+/, "")}`;
+  };
+
+  const save = async (value) => {
+    const url = tidy(value);
+    if (url) {
+      try { new URL(url); } catch { say.textContent = "That does not look like a link."; return; }
+    }
+    say.textContent = "Saving\u2026";
+    try {
+      await db.setMeetingStream(m.meeting_id, url);
+      toast(url ? "The link is up." : "Link taken down.", "good");
+      render();
+    } catch (err) {
+      say.textContent = String(err?.message || err);
+    }
+  };
+
+  $('[data-act="save"]', box).addEventListener("click", () => save(input.value));
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") save(input.value); });
+  $('[data-act="clear"]', box)?.addEventListener("click", () => save(""));
+
+  return box;
 }
 
 /**

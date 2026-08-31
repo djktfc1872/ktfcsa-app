@@ -707,6 +707,27 @@ class Backend {
     return data || [];
   }
 
+  /* Set from the meeting page itself rather than the admin panel, because the
+     moment it is needed is the moment the stream starts: somebody standing in
+     a pub with a Facebook link on their phone. The policy on meetings already
+     restricts this to volunteers, so there is no function to go through. */
+  async setMeetingStream(id, url) {
+    /* .select() matters. Row level security filters an update rather than
+       refusing it, so without asking for the changed rows back PostgREST
+       answers "fine" having changed nothing, and the page says the link is up
+       when it is not. Somebody whose session had quietly expired would stand
+       in a pub watching a link that was never saved. */
+    const { data, error } = await this.sb.from("meetings")
+      .update({ online_url: url || null, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id, online_url");
+    if (error) throw new Error(friendly(error));
+    if (!data || !data.length) {
+      throw new Error("That did not save. Sign in as a volunteer and try again.");
+    }
+    return data[0];
+  }
+
   async groundBoard() {
     const { data, error } = await this.sb.from("ground_board").select("*");
     if (error) return [];
@@ -991,6 +1012,9 @@ class Backend {
   }
 
   async stampQuestionsAsked() {
+    /* No row check here on purpose: stamping twice is meant to be a no-op, so
+       nought rows changed is the normal answer the second time somebody
+       presses it rather than a failure. */
     const { error } = await this.sb
       .from("consultation_question_groups")
       .update({ asked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
@@ -1043,11 +1067,15 @@ class Backend {
   }
 
   async setConsultationStatus(id, patch) {
-    const { error } = await this.sb
+    /* .select() for the same reason as setMeetingStream: an update a policy
+       filters comes back as a success that changed nothing. */
+    const { data, error } = await this.sb
       .from("consultation_responses")
       .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
     if (error) throw new Error(friendly(error));
+    if (!data || !data.length) throw new Error("That did not save. Are you still signed in?");
   }
 
   async pendingActions() {
@@ -1160,8 +1188,10 @@ class Backend {
   }
 
   async hidePub(id, hidden) {
-    const { error } = await this.sb.from("pubs").update({ hidden }).eq("id", id);
+    const { data, error } = await this.sb.from("pubs")
+      .update({ hidden }).eq("id", id).select("id");
     if (error) throw new Error(friendly(error));
+    if (!data || !data.length) throw new Error("That did not save. Are you still signed in?");
   }
 
   /* -------------------------------------------------------------- feedback */
