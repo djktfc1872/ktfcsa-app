@@ -7147,8 +7147,14 @@ button,
 
 /* The big numbers. One dominant, the rest supporting: three equal figures read
    as a table and nobody remembers a table. */
-.slide__figures { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 3cqw 5cqw; }
-.figure { max-width: 22em; }
+/* Tops aligned, not bottoms. Bottom alignment lines up the captions and
+   leaves the numbers at different heights, which reads as a mistake rather
+   than as a hierarchy. Each figure also gets a basis wide enough that its
+   caption is not squeezed into three lines beside a number four times its
+   height. */
+.slide__figures { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 3cqw 5cqw; }
+.figure { flex: 1 1 13em; max-width: 26em; }
+.figure--small { flex: 1 1 10em; }
 .figure b {
   display: block; font-size: 11cqw; line-height: 0.92; font-weight: 800;
   color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
@@ -7156,6 +7162,10 @@ button,
 .figure b i { font-style: normal; font-size: 0.42em; }
 .figure span { display: block; margin-top: 0.8cqw; font-size: 1.95cqw; line-height: 1.35; color: var(--text-2); }
 .figure--small b { font-size: 6cqw; color: var(--text); }
+/* The clock slide puts a line of prose under its figures; without this the
+   two sit on top of each other, because the gap belongs to .slide__body and
+   this block is a level deeper. */
+.slide__figures + .slide__text { margin-top: 2.2cqw; }
 .figure--small span { font-size: 1.7cqw; }
 
 .slide__points { margin: 0; padding-left: 3.2cqw; display: flex; flex-direction: column; gap: 1.4cqw; }
