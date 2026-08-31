@@ -1,58 +1,35 @@
-# What gets validated before it goes out
+# How work gets out
 
-There is one person writing this app, one person reviewing it, and four hundred
-supporters on the other end. This is how a change gets from an idea to the live
-site without that being reckless.
+One person writing this app, four hundred supporters on the other end, and a
+season that does not wait. Work ships when it is done.
 
-It is deliberately not a process for everything. Most changes are a line of copy
-or a colour, and putting those through a review queue would mean the queue gets
-ignored for the ones that matter.
-
----
-
-## Which lane a change is in
-
-Decide this **before** writing it, not after. The question is not how big the
-change is, it is what happens if it is wrong.
-
-### Lane 1 — ship it
-
-Copy, a colour, a label, a fixed date, one club's parking notes. Wrong is
-embarrassing and fixed in five minutes.
-
-Straight to `main`. No sign-off.
-
-### Lane 2 — Ed looks at it
-
-Anything a supporter touches: a new page, a form, a game, a change to the fan
-wall, anything that saves what somebody typed.
-
-Goes out, and the change is added to the test run as a batch: what shipped, and
-what each check should look like when it is right. Ed clears it, the batch comes
-off, and the page goes quiet until the next one. It only ever lists new work, so
-it is never a backlog of things nobody is going to look at.
-
-Shipping first is the right call here because the app has one of everything and
-no realistic way to reproduce four hundred people on a Saturday.
-
-### Lane 3 — validated before it goes near the live site
-
-Four kinds of change, and all four have already bitten this month:
-
-- **Anything touching money, permissions or who can see what.** The fan wall
-  update policy let any signed-in supporter rewrite anybody's post for weeks.
-- **Anything that deletes or overwrites in bulk.** Saving the question workbench
-  deletes every group and reinserts them. One bad save takes the twelve
-  questions to the club with it.
-- **Anything on the consultation, the letters or the questions.** The club reads
-  those pages. An error there is not a bug, it is a own goal in a dispute.
-- **Anything where the app tells a supporter a fact.** Prices, postcodes, dates,
-  counts. "Asked by 0 supporters" and ten pubs pointing at the wrong ground were
-  both this.
-
-These wait for the test instance, and for Ed.
+This is not a queue and not a sign-off. It is the short list of checks that
+have each caught something real here, and a note of when to ask for more than
+that.
 
 ---
+
+## What gets held back
+
+Nothing, unless Danny says so.
+
+Decided 31 August 2026, and it is a deliberate trade rather than a corner cut.
+The app has one of everything and no way to rehearse four hundred supporters on
+a Saturday, so most bugs are only findable in front of people. Holding work back
+to be checked first bought less than it cost.
+
+So: **work goes to `main` when it is done.** Ed tests the live site afterwards
+and anything he finds gets fixed or backed out the same day. The test run
+becomes a record of what has just changed rather than a gate in front of it.
+
+**Ask for a gate when you want one.** Say so and a change waits: the sort of
+thing worth it is anything the club reads, anything touching money, or anything
+that rewrites rows in bulk. That is a judgement call each time now, not a
+standing rule, and it belongs to Danny rather than to this file.
+
+What has not changed is the checking below. None of it is a gate and none of it
+costs anybody a wait: it is the work of not shipping something obviously broken,
+and every line of it is on the list because it caught a real fault here.
 
 ## The checks that actually catch things
 
@@ -107,11 +84,11 @@ bug here, which is why it is on the list and nothing else is.
 
 ## Getting a change to Ed
 
-Until the test instance is up, Lane 2 goes to the live site and Ed is told what
-changed. That is a real compromise and worth naming: he is testing in front of
-supporters.
+Ed tests the live site. He is testing in front of supporters, which is the
+trade being made knowingly rather than a thing nobody noticed.
 
-Once it is up:
+Once there is a test instance, the same list can be worked through there first
+where it suits, without holding anything back:
 
 1. Work lands on the `preview` branch, which deploys itself to the preview URL
    against the preview database.
