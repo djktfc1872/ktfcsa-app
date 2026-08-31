@@ -7155,13 +7155,17 @@ button,
 .slide__figures { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 3cqw 5cqw; }
 .figure { flex: 1 1 13em; max-width: 26em; }
 .figure--small { flex: 1 1 10em; }
-.figure b {
+/* Direct child only. A <b> used for emphasis inside a caption was matching
+   this and being set at 11cqw, which put two words across the whole slide and
+   pushed the rest off the bottom. */
+.figure > b {
   display: block; font-size: 11cqw; line-height: 0.92; font-weight: 800;
   color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
 }
-.figure b i { font-style: normal; font-size: 0.42em; }
+.figure > b i { font-style: normal; font-size: 0.42em; }
 .figure span { display: block; margin-top: 0.8cqw; font-size: 1.95cqw; line-height: 1.35; color: var(--text-2); }
-.figure--small b { font-size: 6cqw; color: var(--text); }
+.figure span b { font-weight: 700; color: var(--text); }
+.figure--small > b { font-size: 6cqw; color: var(--text); }
 /* The clock slide puts a line of prose under its figures; without this the
    two sit on top of each other, because the gap belongs to .slide__body and
    this block is a level deeper. */
@@ -7238,7 +7242,9 @@ body.presenting { overflow: hidden; }
 .slide__bars { display: flex; flex-direction: column; gap: 1.5cqw; width: 100%; }
 .slide__bar {
   display: grid;
-  grid-template-columns: minmax(0, 15em) 1fr 3.5em;
+  /* Wide enough for "100%" on one line. At 3.5em the sign wrapped under the
+     number and every row grew a second line. */
+  grid-template-columns: minmax(0, 15em) 1fr 4.5em;
   align-items: center;
   gap: 2cqw;
 }
@@ -7253,7 +7259,7 @@ body.presenting { overflow: hidden; }
 }
 .slide__bar-n {
   font-size: 2.1cqw; font-weight: 800; color: var(--accent);
-  font-variant-numeric: tabular-nums; text-align: right;
+  font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap;
 }
 .slide__helpers {
   display: block; margin-top: 0.5cqw;
