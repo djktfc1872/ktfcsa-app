@@ -6883,3 +6883,17 @@ button,
   color: var(--accent);
 }
 .rsvp__mail { width: 100%; }
+
+/* The RSVP list, volunteers only. */
+.rsvp-list {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.rsvp-list__group {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.rsvp-list__group b { color: var(--text); display: block; }

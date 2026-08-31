@@ -8273,7 +8273,87 @@ function meetingCard(m) {
   if (m.note) card.append(el(`<p class="club-overview">${esc(m.note)}</p>`));
 
   card.append(rsvpPanel(m, total));
+
+  /* The list, and a way to get the addresses out. Volunteers only: the policy
+     on meeting_rsvps refuses everybody else, so for a supporter this asks for
+     nothing and appends nothing. */
+  if (db.isModerator()) card.append(rsvpList(m));
+
   return card;
+}
+
+/**
+ * Who has said they are coming, for whoever has to book the room and tell
+ * people if it changes.
+ *
+ * The addresses come out semicolon separated, which is what a mail client
+ * wants pasted into Bcc. Bcc rather than To, and the button says so: a hundred
+ * supporters' email addresses shown to each other is a data breach somebody
+ * has to report, not a mistake you tidy up afterwards.
+ */
+function rsvpList(m) {
+  const box = el(`<div class="rsvp-list"></div>`);
+
+  db.meetingList(m.meeting_id).then((rows) => {
+    if (!rows.length) {
+      box.append(el(`<p class="hint">Nobody has said yet.</p>`));
+      return;
+    }
+
+    const label = { in_person: "In the room", online: "Online", cannot: "Keeping posted" };
+    const mails = [...new Set(rows.map((r) => (r.email || "").trim().toLowerCase())
+      .filter((e) => e.includes("@")))];
+
+    box.append(el(`<div class="info__label">Who has said</div>`));
+
+    ["in_person", "online", "cannot"].forEach((kind) => {
+      const some = rows.filter((r) => r.coming === kind);
+      if (!some.length) return;
+      box.append(el(`<p class="rsvp-list__group"><b>${esc(label[kind])} (${some.length})</b>
+        ${esc(some.map((r) => r.name || "no name given").join(", "))}</p>`));
+    });
+
+    const row = el(`<div class="btn-row" style="margin-top:10px"></div>`);
+    if (mails.length) {
+      const b = el(`<button class="btn btn--sm">Copy ${mails.length} email address${
+        mails.length === 1 ? "" : "es"}</button>`);
+      b.addEventListener("click", () => {
+        const text = mails.join(";");
+        copyText(text).then((ok) => {
+          if (ok) {
+            b.textContent = "Copied \u2014 paste into Bcc";
+            setTimeout(() => { b.textContent = `Copy ${mails.length} email addresses`; }, 3000);
+            return;
+          }
+          modal(`
+            <h3 style="margin:0 0 8px">${mails.length} addresses</h3>
+            <p class="hint" style="margin-bottom:10px">Press and hold to copy, then paste into
+              Bcc.</p>
+            <textarea readonly rows="6" style="width:100%">${esc(text)}</textarea>`);
+        });
+      });
+      row.append(b);
+    }
+
+    const names = el(`<button class="btn btn--sm btn--ghost">Copy the names</button>`);
+    names.addEventListener("click", () => {
+      const text = rows.map((r) => `${r.name || "no name given"} - ${label[r.coming]}`).join("\n");
+      copyText(text).then((ok) => {
+        if (ok) { names.textContent = "Copied"; setTimeout(() => { names.textContent = "Copy the names"; }, 2500); }
+        else modal(`<h3 style="margin:0 0 8px">The list</h3>
+          <textarea readonly rows="10" style="width:100%">${esc(text)}</textarea>`);
+      });
+    });
+    row.append(names);
+    box.append(row);
+
+    const without = rows.length - mails.length;
+    box.append(el(`<p class="hint">${mails.length} of ${rows.length} left an email${
+      without ? `, so ${without} can only be told through the app or Facebook` : ""}.
+      <b>Paste into Bcc, never To.</b> Only you and the other volunteers see this.</p>`));
+  }).catch(() => { box.append(el(`<p class="hint">Could not read the list.</p>`)); });
+
+  return box;
 }
 
 /**
