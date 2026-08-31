@@ -7295,3 +7295,33 @@ body.presenting { overflow: hidden; }
   font-style: normal; font-variant-numeric: tabular-nums;
   font-weight: 800; color: var(--accent);
 }
+
+/* Each ask on the position slide carries the number that backs it. */
+.slide__points li > span { display: block; }
+.slide__backs {
+  display: block; margin-top: 0.35cqw;
+  font-style: normal; font-size: 1.45cqw; line-height: 1.35; color: var(--accent);
+}
+
+/* ---- the corporate picture ----------------------------------------------- */
+
+.slide__firms { display: flex; flex-direction: column; gap: 1.3cqw; width: 100%; }
+.slide__firm {
+  display: grid;
+  grid-template-columns: minmax(0, 17em) minmax(0, 1fr);
+  gap: 0.4cqw 2.5cqw;
+  padding-bottom: 1.1cqw;
+  border-bottom: 1px solid var(--line-soft);
+}
+.slide__firm:last-child { border-bottom: 0; padding-bottom: 0; }
+.slide__firm-name { font-size: 1.85cqw; font-weight: 700; color: var(--text); }
+.slide__firm-name i {
+  display: block; margin-top: 0.25cqw;
+  font-style: normal; font-size: 1.35cqw; font-weight: 400; color: var(--accent);
+}
+.slide__firm-note { font-size: 1.6cqw; line-height: 1.4; color: var(--text-2); }
+.slide__source { margin: 0; font-size: 1.25cqw; color: var(--text-3); }
+
+@media (max-width: 560px) {
+  .slide__firm { grid-template-columns: 1fr; }
+}

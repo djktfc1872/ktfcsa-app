@@ -8538,7 +8538,10 @@ function viewDeck() {
  * it. Clear `draft` in data/deck.json once it is agreed and it goes live.
  */
 function deckVisible(slide) {
-  if (slide.kind === "position" && slide.draft) return db.isAdmin();
+  /* Any slide marked draft, whatever kind it is. Both of the ones carrying
+     that flag say something in the Association's name that the working group
+     has not yet agreed, and the route is reachable by anyone with the link. */
+  if (slide.draft) return db.isAdmin();
   return true;
 }
 
@@ -8691,6 +8694,24 @@ function deckSlide(slide, i, total, facts) {
       badly or very badly. The Trust is the only one of the four rated more positively
       than negatively.</p>`));
 
+  } else if (slide.kind === "entities") {
+    heading(slide.title);
+    const tbl = el(`<div class="slide__firms"></div>`);
+    (slide.rows || []).forEach((r) => tbl.append(el(`
+      <div class="slide__firm">
+        <div class="slide__firm-name">${esc(r.name)}
+          <i>${esc(r.no)} &middot; ${esc(r.state)}${r.where && r.where !== "\u2014"
+            ? ` &middot; ${esc(r.where)}` : ""}</i></div>
+        <div class="slide__firm-note">${esc(r.note)}</div>
+      </div>`)));
+    body.append(tbl);
+    /* The disclaimer is part of the slide, not a note to the presenter. It has
+       to be on the television and in the photograph somebody takes of it. */
+    if (slide.foot) body.append(el(`<p class="slide__aside">${esc(slide.foot)}</p>`));
+    if (slide.checked) {
+      body.append(el(`<p class="slide__source">${esc(slide.checked)}</p>`));
+    }
+
   } else if (slide.kind === "proposals") {
     heading(slide.title);
     const list = el(`<div class="slide__asks" data-role="props"></div>`);
@@ -8841,8 +8862,17 @@ function deckSlide(slide, i, total, facts) {
 
   } else if (slide.kind === "position") {
     heading(slide.title);
+    /* Each ask carries the number underneath it. The evidence is not there to
+       be read out; it is there so that nobody in the room has to take the
+       Association's word for any of it, and so that the slide survives being
+       photographed and argued with afterwards. */
     const list = el(`<ol class="slide__points"></ol>`);
-    (slide.points || []).forEach((pt) => list.append(el(`<li>${esc(pt)}</li>`)));
+    (slide.points || []).forEach((pt) => {
+      const ask = typeof pt === "string" ? pt : pt.ask;
+      const backs = typeof pt === "string" ? "" : pt.backs;
+      list.append(el(`<li><span>${esc(ask)}</span>${
+        backs ? `<i class="slide__backs">${esc(backs)}</i>` : ""}</li>`));
+    });
     body.append(list);
     /* Marked only for whoever runs the site. The room must never be shown a
        slide captioned "draft", and the person presenting it must never forget

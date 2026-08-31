@@ -44,6 +44,38 @@
       "say": "Be careful and be fair here. This is how supporters feel, which is a fact about supporters, not an accusation about any individual. Say it exactly that way."
     },
     {
+      "kind": "entities",
+      "eyebrow": "The bigger picture",
+      "title": "Three companies, one football club.",
+      "checked": "Companies House, public record, checked 31 August 2026",
+      "draft": true,
+      "rows": [
+        {
+          "name": "Kettering Town F.C. Management Ltd",
+          "no": "02267071",
+          "state": "Active",
+          "where": "Latimer Park, Burton Latimer",
+          "note": "Incorporated 1988. Accounts to 31 August 2025 filed on 27 July 2026, under the small-company exemption: nine pages, no income and no spending shown."
+        },
+        {
+          "name": "Kettering Town FC 1872 Ltd",
+          "no": "15689118",
+          "state": "Active, dormant",
+          "where": "48 Fuller Gardens, Watford",
+          "note": "Incorporated April 2024. Has filed dormant accounts, meaning it has had no transactions at all."
+        },
+        {
+          "name": "Kettering Town Football Club Ltd",
+          "no": "04610155",
+          "state": "Dissolved 2022",
+          "where": "—",
+          "note": "The previous company. Last accounts made up to 2017."
+        }
+      ],
+      "foot": "None of this is unusual on its own, and none of it is an accusation. The question is simply which company holds what — the lease, the ground, the debts — and supporters cannot tell from the public record.",
+      "say": "Read the foot of this slide out loud, word for word, before you say anything else about it. This is public record and nothing more. The moment it sounds like an allegation you have lost the room's trust and handed the club an easy answer. The ask is 'explain the structure', not 'what are you hiding'."
+    },
+    {
       "kind": "appetite",
       "eyebrow": "What supporters said they would back",
       "title": "Only one in nine would rather it was left alone.",
