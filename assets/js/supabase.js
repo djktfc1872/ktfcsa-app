@@ -760,6 +760,20 @@ class Backend {
     return data;
   }
 
+  async proposeForMeeting(meetingId, key, name, body) {
+    const { data, error } = await this.sb.rpc("propose_for_meeting", {
+      p_meeting: meetingId, p_key: key || null, p_name: name || null, p_body: body });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  async helpWithProposal(questionId, key) {
+    const { data, error } = await this.sb.rpc("help_with_proposal", {
+      p_question: questionId, p_key: key || null });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
   async setQuestionState(id, patch) {
     const { data, error } = await this.sb.from("meeting_questions")
       .update(patch).eq("id", id).select("id");

@@ -3760,16 +3760,118 @@ end $$;
 revoke all on function back_meeting_question(uuid, text) from public;
 grant execute on function back_meeting_question(uuid, text) to anon, authenticated;
 
--- What the page shows. No device key, no profile id: a question is attributed
--- to a name and nothing else, the same as the wall.
+-- The view that the page reads is defined once, further down, after the
+-- proposal columns exist. Defining it here as well left a dead copy that
+-- nobody could tell was dead without counting line numbers.
+
+-- ---------------------------------------------------------------------------
+-- Proposals: what we do next
+-- ---------------------------------------------------------------------------
+--
+-- A meeting that ends in agreement and no record of it was a nice evening.
+-- The point of this one is to come away with things that are actually going to
+-- happen, and the difference between a good intention and an action is
+-- somebody's name against it.
+--
+-- So a proposal carries two numbers, not one:
+--
+--   * **backers** — how many supporters want this done. That is the mandate,
+--     and it is the same mechanism as a question, because it is the same
+--     question: does the room want this.
+--   * **helpers** — how many will actually do some of it. That is the bit that
+--     decides whether it happens. Ten proposals with two hundred backers and
+--     no helpers is how a supporters' group dies of its own ambition.
+--
+-- Helping implies backing, so nobody has to press two things, and one row per
+-- person per proposal keeps the primary key doing the enforcement rather than
+-- the browser.
+
+alter table meeting_questions add column if not exists kind text not null default 'question';
+alter table meeting_questions drop constraint if exists meeting_questions_kind_check;
+alter table meeting_questions add constraint meeting_questions_kind_check
+  check (kind in ('question', 'proposal'));
+
+alter table meeting_questions add column if not exists helpers int not null default 0;
+alter table meeting_question_backers add column if not exists helping boolean not null default false;
+
+create or replace function bump_question_backers() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_id uuid := coalesce(new.question_id, old.question_id);
+begin
+  update meeting_questions
+     set backers = (select count(*) from meeting_question_backers where question_id = v_id),
+         helpers = (select count(*) from meeting_question_backers
+                     where question_id = v_id and helping)
+   where id = v_id;
+  return null;
+end $$;
+
+drop trigger if exists meeting_question_backers_count on meeting_question_backers;
+create trigger meeting_question_backers_count
+  after insert or update or delete on meeting_question_backers
+  for each row execute function bump_question_backers();
+
+-- Put one up. Same shape as asking a question, with the kind on the end.
+create or replace function propose_for_meeting(
+  p_meeting uuid, p_key text, p_name text, p_body text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+begin
+  v_id := ask_meeting_question(p_meeting, p_key, p_name, p_body);
+  update meeting_questions set kind = 'proposal' where id = v_id;
+  return v_id;
+end $$;
+
+revoke all on function propose_for_meeting(uuid, text, text, text) from public;
+grant execute on function propose_for_meeting(uuid, text, text, text) to anon, authenticated;
+
+-- "I will help with this." Turning it on also backs the proposal, because
+-- offering to do a thing you have not said you want is not a state worth
+-- modelling.
+create or replace function help_with_proposal(p_question uuid, p_key text)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_voter text := coalesce(auth.uid()::text, nullif(btrim(coalesce(p_key, '')), ''));
+  v_now boolean;
+begin
+  if v_voter is null then
+    raise exception 'We need to know which browser this came from.';
+  end if;
+  if not exists (select 1 from meeting_questions where id = p_question and not hidden) then
+    raise exception 'That is no longer there.';
+  end if;
+
+  insert into meeting_question_backers (question_id, voter, helping)
+  values (p_question, v_voter, true)
+  on conflict (question_id, voter) do update set helping = not meeting_question_backers.helping
+  returning helping into v_now;
+
+  return (select helpers from meeting_questions where id = p_question);
+end $$;
+
+revoke all on function help_with_proposal(uuid, text) from public;
+grant execute on function help_with_proposal(uuid, text) to anon, authenticated;
+
 drop view if exists meeting_question_board cascade;
 create view meeting_question_board as
 select
   q.id,
   q.meeting_id,
+  q.kind,
   q.author_name,
   q.body,
   q.backers,
+  q.helpers,
   q.answered,
   q.created_at
 from meeting_questions q

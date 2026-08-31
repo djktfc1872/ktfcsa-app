@@ -193,6 +193,13 @@ export const askMeetingQuestion = (id, key, name, body) =>
 export const backMeetingQuestion = (id, key) =>
   (backend?.backMeetingQuestion ? backend.backMeetingQuestion(id, key)
     : Promise.reject(new Error("Not connected.")));
+export const proposeForMeeting = (id, key, name, body) =>
+  (backend?.proposeForMeeting ? backend.proposeForMeeting(id, key, name, body)
+    : Promise.reject(new Error("Not connected.")));
+export const helpWithProposal = (id, key) =>
+  (backend?.helpWithProposal ? backend.helpWithProposal(id, key)
+    : Promise.reject(new Error("Not connected.")));
+
 export const setQuestionState = (id, patch) =>
   (backend?.setQuestionState ? backend.setQuestionState(id, patch)
     : Promise.reject(new Error("Not connected.")));

@@ -1,89 +1,89 @@
 {
-  "note": "The slides for the first supporters meeting. Prose here is a draft for Danny to say in his own words; every number is pulled live from the app at render time and is never typed into this file. Anything in `say` is spoken, not shown: it is the note under the slide on the follow-along page, and it is not on the TV.",
+  "note": "Slides for the first supporters meeting, in five acts: open, what the data says, what we did about it, over to the room, and what happens next. Every figure is pulled live from the consultation and the letters at render time and none of it is typed into this file. `say` is a note to whoever is presenting and is never shown to the room or to the public.",
   "slides": [
     {
       "kind": "title",
-      "eyebrow": "Kettering Town FC Supporters’ Association",
+      "eyebrow": "Kettering Town FC Supporters' Association",
       "title": "The first supporters meeting",
       "sub": "The Wayfarers Inn, Kettering"
     },
     {
       "kind": "agenda",
       "eyebrow": "How the night runs",
-      "title": "Roughly two hours, and most of it is yours.",
-      "say": "Ten seconds on this. Say the questions block is forty five minutes and that it is the point of the night, then move on."
+      "title": "Two hours, and most of it is yours.",
+      "say": "Ten seconds. Say the questions block is forty five minutes, that it is the point of the night, and that we finish on what we are actually going to do."
     },
     {
       "kind": "statement",
       "eyebrow": "Why we are here",
       "title": "199 supporters answered in five days.",
-      "body": "Nobody was paid, nobody was chased, and it was open for less than a week. That is the mandate for tonight, and it is the reason the club is being asked anything at all.",
-      "say": "Keep this short. The room already knows. The point of the slide is that the numbers behind you are theirs, not yours."
+      "body": "Nobody was paid and nobody was chased. 181 of them asked for a meeting: 118 in a room, 71 online, 31 who could not come but wanted keeping posted. This is us getting on with it.",
+      "say": "Short. This is the answer to anyone who thinks the working group appointed itself, so say it once and let it sit."
     },
     {
-      "kind": "stat",
+      "kind": "headline",
       "eyebrow": "What you told us",
-      "source": "consultation",
-      "say": "Read the middle number out loud and then stop talking for a second. It does the work on its own."
+      "say": "Read the second number out and stop talking. Ninety six people choosing the lowest score there was is the single hardest fact of the night."
     },
     {
-      "kind": "statement",
-      "eyebrow": "What you asked for",
-      "title": "181 of you wanted a meeting.",
-      "body": "118 in a room, 71 online, and 31 who could not come but asked to be kept posted. This is us getting on with it.",
-      "say": "This is the answer to anyone who says the Association appointed itself."
+      "kind": "split",
+      "eyebrow": "The first thing the data says",
+      "title": "This is not about the football.",
+      "say": "The most important slide in the deck and the one most likely to be misrepresented afterwards. Say plainly: nobody in this room is here because results are bad. The team is the thing supporters are proudest of."
+    },
+    {
+      "kind": "themes",
+      "eyebrow": "What worries supporters",
+      "title": "Five things, and they are not close.",
+      "say": "Do not read all seven. Name the top three, say that more than eight in ten supporters picked each of them, and move on."
+    },
+    {
+      "kind": "representation",
+      "eyebrow": "Who supporters feel speaks for them",
+      "title": "Four in five feel the ownership does not represent them.",
+      "say": "Be careful and be fair here. This is how supporters feel, which is a fact about supporters, not an accusation about any individual. Say it exactly that way."
+    },
+    {
+      "kind": "appetite",
+      "eyebrow": "What supporters said they would back",
+      "title": "Half of you would go further than a letter.",
+      "say": "This is the mandate for the last part of the night. Note that eleven per cent would rather it was settled quietly, and say so: that is a real answer and those people are in the room too."
     },
     {
       "kind": "questions",
-      "eyebrow": "What we asked the club",
+      "eyebrow": "What we did about it",
       "title": "Twelve questions, in writing.",
-      "body": "Ten came straight out of what supporters wrote in the consultation. Two were added by the working group after the club’s reply to the first letter.",
-      "say": "Do not read all twelve out. Point at the page, say they are all on the app, and pick the two you most want the room thinking about."
+      "body": "Ten of them came straight out of what supporters wrote in the consultation. Two were added by the working group after the reply to the first letter.",
+      "say": "Do not read all twelve. Say they are all on the app and pick the two you most want the room thinking about before questions open."
     },
     {
       "kind": "clock",
-      "eyebrow": "Where the club has got to",
-      "say": "This one updates itself. Whatever it says on the night is what you say: if they have replied, say so plainly and fairly. If they have not, let the number speak and do not editorialise."
+      "eyebrow": "Where that has got to",
+      "say": "This one counts itself. Whatever it says on the night is what you say. If they have replied, say so plainly and fairly. If they have not, let the number do it and add nothing."
     },
     {
       "kind": "attendance",
-      "eyebrow": "One thing worth knowing",
-      "say": "Say it once, flatly, and move on. It lands harder without a speech attached."
-    },
-    {
-      "kind": "statement",
-      "eyebrow": "What we have built",
-      "title": "A free app, run by supporters.",
-      "body": "Fixtures, the table, the archive, away guides, the consultation, this meeting. No adverts, nothing behind a paywall, and no data sold. It costs about £200 a year and the working group has covered it so far.",
-      "say": "Do not sell it. Mention the bucket for the room and leave it."
-    },
-    {
-      "kind": "position",
-      "eyebrow": "What we think should happen",
-      "title": "Five things, and none of them are unreasonable.",
-      "body": "This is the one slide I should not draft for you. It is the Association’s position on what it wants from the club, and it has to be yours and the working group’s, agreed before the night. Tell me what it says and I will set it.",
-      "say": "This is the Association's position and it must be agreed by the working group before the night, not read off a screen for the first time. Every one of these five is already a question put to the club in writing, so nothing here is new and nothing here can be called a demand that came out of nowhere. If the working group wants it different, it changes.",
-      "points": [
-        "Answer the twelve questions in writing, and publish the answers.",
-        "File and publish the accounts, so supporters can see the club's position for themselves.",
-        "Name the board and any committee, with roles and dates.",
-        "Tell supporters about changes before they find out by noticing.",
-        "Meet a recognised supporters' body regularly, on a set date, on the record."
-      ],
-      "draft": true
+      "eyebrow": "One thing worth remembering",
+      "say": "Say it once, flatly. It lands harder without a speech attached, and it is the one slide that is about what supporters are worth rather than what is wrong."
     },
     {
       "kind": "asks",
-      "eyebrow": "Your questions",
-      "title": "Put to the floor, in the order you backed them.",
-      "say": "Hand over here. This is the half of the night that matters."
+      "eyebrow": "Over to you",
+      "title": "Your questions, in the order you backed them.",
+      "say": "Hand over. Forty five minutes. This is the half of the night that matters and the half that will be remembered."
+    },
+    {
+      "kind": "proposals",
+      "eyebrow": "What we do next",
+      "title": "Nothing on this slide happens without a name against it.",
+      "say": "Work down the list. For each one ask for hands, then ask who will actually help. Anybody can add one from their phone right now and it appears here. Do not leave the room until at least two have a helper."
     },
     {
       "kind": "statement",
-      "eyebrow": "What happens next",
-      "title": "Nothing here works without people.",
-      "body": "Everything tonight was done by supporters in their own time. If you want to help — with the archive, away travel, the letters, or the app — say so before you leave.",
-      "say": "Finish on the ask. Then get out of the way and let people talk."
+      "eyebrow": "Before you go",
+      "title": "Everything tonight was done by supporters in their own time.",
+      "body": "The consultation, the letters, the app, this room. If you want to help with any of it — the archive, away travel, the letters, the accounts — say so before you leave, or put your name against something on the app.",
+      "say": "Finish on the ask, then get out of the way and let people talk."
     }
   ]
 }

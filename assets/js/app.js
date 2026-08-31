@@ -8283,7 +8283,8 @@ function meetingCard(m) {
 
   card.append(runningOrder(m, when));
   card.append(rsvpPanel(m, total));
-  card.append(questionsPanel(m));
+  card.append(questionsPanel(m, "question"));
+  card.append(questionsPanel(m, "proposal"));
 
   /* Setting the stream link, for whoever is standing in the pub when it starts.
      Admins only, matching the policy on meetings: a moderator can read the
@@ -8541,6 +8542,24 @@ function deckVisible(slide) {
   return true;
 }
 
+/** Ranked bars for a slide. Percentages of everyone who answered, not of the
+ *  people who picked something, because "92% of supporters" is the claim being
+ *  made and "92% of those who ticked a box" is a different and weaker one. */
+function barsSlide(rows, names, total) {
+  const box = el(`<div class="slide__bars"></div>`);
+  const top = Math.max(...rows.map((r) => r.people), 1);
+  rows.forEach((r) => {
+    const pct = Math.round((r.people / total) * 100);
+    box.append(el(`
+      <div class="slide__bar">
+        <span class="slide__bar-name">${esc(names[r.choice] || r.choice)}</span>
+        <span class="slide__bar-track"><i style="width:${Math.round((r.people / top) * 100)}%"></i></span>
+        <b class="slide__bar-n">${pct}%</b>
+      </div>`));
+  });
+  return box;
+}
+
 /** One slide. A fixed 16:9 stage that scales itself to whatever it is shown on. */
 function deckSlide(slide, i, total, facts) {
   const box = el(`<section class="slide" tabindex="-1"></section>`);
@@ -8564,6 +8583,125 @@ function deckSlide(slide, i, total, facts) {
         when.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
           .replace(":00", "").replace(" ", "")}`) : ""
     }${slide.sub ? ` &middot; ${esc(slide.sub)}` : ""}</p>`));
+
+  } else if (slide.kind === "headline") {
+    /* The two numbers that carry the whole evening. The average was 2.4 out of
+       ten, which is a number nobody feels; ninety six people choosing the
+       lowest score on the scale is the same finding and it is impossible to
+       put down. */
+    const r = facts.results?.summary;
+    const low = (facts.results?.confidence || []).find((c) => Number(c.score) === 1);
+    if (!r) { heading("The consultation"); para("Numbers unavailable."); }
+    else {
+      body.append(el(`
+        <div class="slide__figures">
+          <div class="figure">
+            <b>${r.direction_wrong}</b>
+            <span>of ${r.responses} say the club is going in the wrong direction.
+              ${r.direction_right} say it is going the right way.</span>
+          </div>
+          <div class="figure">
+            <b>${low ? low.people : "&mdash;"}</b>
+            <span>gave the lowest confidence score there was. The average was
+              ${Number(r.confidence_avg).toFixed(1)} out of ten.</span>
+          </div>
+        </div>`));
+    }
+
+  } else if (slide.kind === "split") {
+    /* Concerns against positives, on one slide. The gap between the two is the
+       finding, and it is the thing most likely to be lost in the retelling:
+       supporters are hard on how the club is run and warm about the club. */
+    heading(slide.title);
+    const c = facts.results?.choices || [];
+    const total = facts.results?.summary?.responses || 199;
+    const top = (kind, map) => {
+      const rows = c.filter((x) => x.kind === kind).sort((a, b) => b.people - a.people)[0];
+      return rows ? { label: Object.fromEntries(map)[rows.choice] || rows.choice,
+                      people: rows.people, pct: Math.round((rows.people / total) * 100) } : null;
+    };
+    const best = top("positive", CONSULT_POSITIVES);
+    const worst = top("concern", CONSULT_CONCERNS);
+    if (best && worst) {
+      body.append(el(`
+        <div class="slide__figures">
+          <div class="figure">
+            <b>${best.pct}<i>%</i></b>
+            <span>would defend <b>${esc(best.label.toLowerCase())}</b>. It is the thing
+              supporters are proudest of.</span>
+          </div>
+          <div class="figure">
+            <b>${worst.pct}<i>%</i></b>
+            <span>are worried about <b>${esc(worst.label.toLowerCase())}</b>. Every one of the
+              top concerns is about how the club is run.</span>
+          </div>
+        </div>`));
+    }
+
+  } else if (slide.kind === "themes") {
+    heading(slide.title);
+    const total = facts.results?.summary?.responses || 199;
+    const names = Object.fromEntries(CONSULT_CONCERNS);
+    const rows = (facts.results?.choices || [])
+      .filter((x) => x.kind === "concern")
+      .sort((a, b) => b.people - a.people).slice(0, 5);
+    body.append(barsSlide(rows, names, total));
+
+  } else if (slide.kind === "appetite") {
+    heading(slide.title);
+    const total = facts.results?.summary?.responses || 199;
+    const names = Object.fromEntries(CONSULT_ACTIONS);
+    const rows = (facts.results?.choices || [])
+      .filter((x) => x.kind === "action")
+      .sort((a, b) => b.people - a.people).slice(0, 6);
+    body.append(barsSlide(rows, names, total));
+
+  } else if (slide.kind === "representation") {
+    heading(slide.title);
+    const names = { ownership: "Club ownership", board: "The club board",
+                    sponsors: "Partners and sponsors", trust: "The Supporters\u2019 Trust" };
+    const byBody = {};
+    (facts.results?.representation || []).forEach((x) => {
+      (byBody[x.body] ||= {})[x.verdict] = x.people;
+    });
+    const rows = Object.keys(names).filter((k) => byBody[k]).map((k) => {
+      const v = byBody[k];
+      const all = Object.values(v).reduce((a, b) => a + b, 0);
+      const bad = (v.poor || 0) + (v["very-poor"] || 0);
+      return { choice: k, people: bad, of: all };
+    }).sort((a, b) => (b.people / b.of) - (a.people / a.of));
+    body.append(barsSlide(rows.map((r) => ({ choice: r.choice, people: r.people })),
+      names, rows[0] ? rows[0].of : 199));
+    body.append(el(`<p class="slide__aside">Supporters saying each body represents them
+      badly or very badly. The Trust is the only one of the four rated more positively
+      than negatively.</p>`));
+
+  } else if (slide.kind === "proposals") {
+    heading(slide.title);
+    const list = el(`<div class="slide__asks" data-role="props"></div>`);
+    body.append(list);
+    if (facts.meeting) {
+      const paint = () => db.meetingQuestions(facts.meeting.meeting_id).then((rows) => {
+        if (!document.contains(list)) return;
+        const props = (rows || []).filter((q) => q.kind === "proposal");
+        list.replaceChildren();
+        if (!props.length) {
+          list.append(el(`<p class="slide__text">Whatever the room decides. Anyone can put
+            one up from their phone.</p>`));
+          return;
+        }
+        props.slice(0, 5).forEach((q) => list.append(el(`
+          <div class="slide__ask">
+            <b>${q.backers}</b>
+            <span>${esc(q.body)}
+              <i class="slide__helpers">${q.helpers
+                ? `${q.helpers} will help` : "nobody has offered to help yet"}</i></span>
+          </div>`)));
+      }).catch(() => {});
+      /* Refreshed while it is up, because the room is adding to it from their
+         phones as the slide is being shown. */
+      tickWhileOnPage(box, paint, 20000);
+    }
 
   } else if (slide.kind === "stat") {
     /* The consultation, in the three numbers that matter. Straight from the
@@ -8815,29 +8953,60 @@ function wireDeck(wrap, stack, bar) {
 }
 
 /**
- * Questions for the floor.
+ * Questions for the floor, and proposals for what happens next.
  *
- * Standing up in a room of a hundred people and asking a question is a skill,
- * and it is not the same skill as having a good question. The people most
- * worth hearing from about a football club are often the least likely to do
- * that. So a question can go in from the sofa, with no account, and be read
- * out on the night by whoever is chairing.
+ * One renderer for both, because they are the same object with a different
+ * word on the front: something a supporter wrote, that other supporters can
+ * put their weight behind, ordered by how much weight it has. Splitting them
+ * into two components would have meant two of every bug.
  *
- * Backing decides the order. The chair has maybe forty minutes and forty
- * questions, and picking by what the room actually wants asked is both fairer
- * and harder to argue with than picking by who is loudest or who is a mate.
- * Everybody can see the order in advance, which is the point.
+ * Standing up in a room of a hundred people is a skill, and not the same skill
+ * as having a good question. The people most worth hearing from about this
+ * club are often the least likely to do it. So both of these can be filled in
+ * from the sofa, with no account, and read out on the night.
+ *
+ * Proposals carry a second number. Backers say the room wants a thing done;
+ * helpers say somebody will actually do it. Ten proposals with two hundred
+ * backers and no helpers is how a supporters' group dies of its own ambition,
+ * so the count of helpers is deliberately as prominent as the count of
+ * backers, and a proposal with none says so in as many words.
  */
-function questionsPanel(m) {
+function questionsPanel(m, kind = "question") {
+  const proposal = kind === "proposal";
+
+  const copy = proposal ? {
+    head: "What we should do next",
+    count: (n) => `${n} on the table`,
+    blurb: `Put up something the Association should actually do &mdash; about the club, the
+      ground, away travel, the archive, any of it. Back the ones you want done, and say if
+      you would help. <b>The ones with people behind them are the ones that happen.</b>`,
+    empty: "<b>Nothing proposed yet</b>Put the first one up. It does not have to be big.",
+    placeholder: "What should we do?",
+    button: "Put it up",
+    note: "Your name is shown with your proposal. Nothing else is.",
+    short: "A few more words and it can go up.",
+    done: "On the list. Thank you.",
+  } : {
+    head: "Questions for the floor",
+    count: (n) => `${n} so far`,
+    blurb: `Put a question in and we will read it out on the night, whether you make it or
+      not. Back the ones you want asked &mdash; the most backed go first, so the agenda is
+      decided by the room rather than by us.`,
+    empty: "<b>Nothing asked yet</b>Be the first. A question here gets read out even if you cannot get there.",
+    placeholder: "What would you like asked?",
+    button: "Add it to the agenda",
+    note: "Your name is shown with your question. Nothing else is.",
+    short: "A few more words and it can go on.",
+    done: "On the agenda. Thank you.",
+  };
+
   const box = el(`
     <div class="asks">
       <div class="asks__head">
-        <div class="info__label">Questions for the floor</div>
+        <div class="info__label">${copy.head}</div>
         <span class="asks__count" data-role="count"></span>
       </div>
-      <p class="hint">Put a question in and we will read it out on the night, whether you
-        make it or not. Back the ones you want asked &mdash; the most backed go first, so
-        the agenda is decided by the room rather than by us.</p>
+      <p class="hint">${copy.blurb}</p>
       <div data-role="list"></div>
       <div data-role="form"></div>
     </div>`);
@@ -8845,23 +9014,25 @@ function questionsPanel(m) {
   const list = $('[data-role="list"]', box);
   const count = $('[data-role="count"]', box);
 
-  /* Which ones this browser has backed. The database holds the real record and
-     refuses a second backing on its own; this only decides which button reads
-     "Backed" on the way back to the page. */
+  /* What this browser has backed and offered to help with. The database holds
+     the real record and refuses a second backing on its own; this only decides
+     which button reads "Backed" on the way back to the page. */
   const mineKey = `qbacked:${m.meeting_id}`;
+  const helpKey = `qhelp:${m.meeting_id}`;
   const mine = new Set(db.read(mineKey, []) || []);
+  const helping = new Set(db.read(helpKey, []) || []);
 
-  const draw = (rows) => {
+  const draw = (all) => {
     /* Null means the tables are not on this database yet. Show nothing rather
-       than an invitation to ask a question that would fail on submit. */
-    if (rows === null) { box.remove(); return; }
+       than an invitation to add something that would fail on submit. */
+    if (all === null) { box.remove(); return; }
 
+    const rows = all.filter((q) => (q.kind || "question") === kind);
     list.replaceChildren();
-    count.textContent = rows.length ? `${rows.length} so far` : "";
+    count.textContent = rows.length ? copy.count(rows.length) : "";
 
     if (!rows.length) {
-      list.append(el(`<div class="empty asks__empty"><b>Nothing asked yet</b>Be the first.
-        A question here gets read out even if you cannot get there.</div>`));
+      list.append(el(`<div class="empty asks__empty">${copy.empty}</div>`));
       return;
     }
 
@@ -8869,26 +9040,24 @@ function questionsPanel(m) {
       const row = el(`
         <div class="ask${q.answered ? " ask--done" : ""}">
           <button class="ask__back${mine.has(q.id) ? " is-mine" : ""}" type="button"
-            title="Back this question">
+            title="Back this">
             <span class="ask__n">${q.backers}</span>
             <span class="ask__up">${mine.has(q.id) ? "Backed" : "Back it"}</span>
           </button>
           <div class="ask__body">
             <p class="ask__text">${esc(q.body)}</p>
             <p class="ask__by">${esc(q.author_name)}${
-              q.answered ? ` &middot; <b>answered on the night</b>` : ""}</p>
+              q.answered ? ` &middot; <b>${proposal ? "done" : "answered on the night"}</b>` : ""}</p>
           </div>
         </div>`);
 
-      const btn = $(".ask__back", row);
-      btn.addEventListener("click", async () => {
+      $(".ask__back", row).addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
         btn.disabled = true;
         try {
-          const now = await db.backMeetingQuestion(q.id, db.consultDeviceKey());
+          await db.backMeetingQuestion(q.id, db.consultDeviceKey());
           if (mine.has(q.id)) mine.delete(q.id); else mine.add(q.id);
           db.write(mineKey, [...mine]);
-          /* The count the database ended up with, not the one we guessed. */
-          q.backers = now;
           load();
         } catch (err) {
           btn.disabled = false;
@@ -8896,12 +9065,40 @@ function questionsPanel(m) {
         }
       });
 
-      /* Volunteers only, and deliberately plain: hiding a question somebody
-         wanted asked is a serious thing to do quietly. */
+      /* The half of a proposal that decides whether it is real. */
+      if (proposal) {
+        const on = helping.has(q.id);
+        const help = el(`
+          <button class="ask__help${on ? " is-mine" : ""}" type="button">
+            ${on ? "You are helping" : "I would help"}
+            <i>${q.helpers || 0}</i>
+          </button>`);
+        help.addEventListener("click", async () => {
+          help.disabled = true;
+          try {
+            await db.helpWithProposal(q.id, db.consultDeviceKey());
+            if (helping.has(q.id)) helping.delete(q.id); else helping.add(q.id);
+            /* Helping backs it too, on the database side, so the page has to
+               agree or the two buttons contradict each other on reload. */
+            if (helping.has(q.id)) mine.add(q.id);
+            db.write(helpKey, [...helping]);
+            db.write(mineKey, [...mine]);
+            load();
+          } catch (err) {
+            help.disabled = false;
+            toast(err.message || "That did not save.", "bad");
+          }
+        });
+        $(".ask__body", row).append(help);
+      }
+
+      /* Volunteers only, and deliberately plain: hiding something somebody
+         wanted raised is a serious thing to do quietly. */
       if (db.isModerator()) {
         const tools = el(`<div class="ask__tools"></div>`);
         const mark = el(`<button class="link-btn">${
-          q.answered ? "Not answered after all" : "Mark answered"}</button>`);
+          q.answered ? (proposal ? "Not done after all" : "Not answered after all")
+                     : (proposal ? "Mark done" : "Mark answered")}</button>`);
         mark.addEventListener("click", async () => {
           try {
             await db.setQuestionState(q.id, { answered: !q.answered });
@@ -8910,7 +9107,7 @@ function questionsPanel(m) {
         });
         const hide = el(`<button class="link-btn link-btn--warn">Hide</button>`);
         hide.addEventListener("click", async () => {
-          if (!window.confirm("Hide this question from everybody?")) return;
+          if (!window.confirm("Hide this from everybody?")) return;
           try {
             await db.setQuestionState(q.id, { hidden: true });
             toast("Hidden.", "good");
@@ -8930,24 +9127,24 @@ function questionsPanel(m) {
     .catch(() => {
       if (!document.contains(box)) return;
       list.replaceChildren();
-      list.append(el(`<div class="empty"><b>Could not load the questions</b>Try again in a
-        moment. Yours is not lost.</div>`));
+      list.append(el(`<div class="empty"><b>Could not load these</b>Try again in a moment.
+        Yours is not lost.</div>`));
     });
 
-  /* The form, below the list: read what has been asked before adding to it. */
+  /* The form, below the list: read what is already there before adding to it. */
   const form = $('[data-role="form"]', box);
   const build = () => {
     form.replaceChildren();
     const f = el(`
       <div class="ask-form">
         <textarea class="input ask-form__text" rows="3" maxlength="600"
-          placeholder="What would you like asked?"></textarea>
+          placeholder="${copy.placeholder}"></textarea>
         <div class="row row--wrap ask-form__row">
           <input class="input ask-form__name" maxlength="40" placeholder="Your name"
             value="${esc(db.currentUser()?.name || "")}">
-          <button class="btn btn--sm">Add it to the agenda</button>
+          <button class="btn btn--sm">${copy.button}</button>
         </div>
-        <p class="hint" data-role="say">Your name is shown with your question. Nothing else is.</p>
+        <p class="hint" data-role="say">${copy.note}</p>
       </div>`);
     const text = $(".ask-form__text", f);
     const name = $(".ask-form__name", f);
@@ -8955,16 +9152,17 @@ function questionsPanel(m) {
     const btn = $("button", f);
 
     btn.addEventListener("click", async () => {
-      const body = text.value.trim();
-      if (body.length < 8) { say.textContent = "A few more words and it can go on."; return; }
+      const value = text.value.trim();
+      if (value.length < 8) { say.textContent = copy.short; return; }
       btn.disabled = true;
       say.textContent = "Adding\u2026";
       try {
-        const id = await db.askMeetingQuestion(
-          m.meeting_id, db.consultDeviceKey(), name.value.trim(), body);
+        const id = proposal
+          ? await db.proposeForMeeting(m.meeting_id, db.consultDeviceKey(), name.value.trim(), value)
+          : await db.askMeetingQuestion(m.meeting_id, db.consultDeviceKey(), name.value.trim(), value);
         mine.add(id);
         db.write(mineKey, [...mine]);
-        toast("On the agenda. Thank you.", "good");
+        toast(copy.done, "good");
         build();
         load();
       } catch (err) {

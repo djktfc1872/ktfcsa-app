@@ -7232,3 +7232,59 @@ body.presenting { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .figure b { transition: none; }
 }
+
+/* ---- ranked bars on a slide ---------------------------------------------- */
+
+.slide__bars { display: flex; flex-direction: column; gap: 1.5cqw; width: 100%; }
+.slide__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 15em) 1fr 3.5em;
+  align-items: center;
+  gap: 2cqw;
+}
+.slide__bar-name { font-size: 1.95cqw; color: var(--text); }
+.slide__bar-track {
+  height: 1.5cqw; border-radius: 999px; overflow: hidden;
+  background: var(--line-soft);
+}
+.slide__bar-track i {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--accent); min-width: 2px;
+}
+.slide__bar-n {
+  font-size: 2.1cqw; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.slide__helpers {
+  display: block; margin-top: 0.5cqw;
+  font-style: normal; font-size: 1.5cqw; color: var(--text-3);
+}
+
+@media (max-width: 560px) {
+  .slide__bar { grid-template-columns: minmax(0, 9em) 1fr 3em; }
+}
+
+/* ---- "I would help", on a proposal --------------------------------------- */
+
+.ask__help {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 8px;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.8125rem; font-weight: 600;
+  cursor: pointer;
+}
+.ask__help:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.ask__help:disabled { opacity: 0.5; cursor: default; }
+.ask__help.is-mine {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.ask__help i {
+  font-style: normal; font-variant-numeric: tabular-nums;
+  font-weight: 800; color: var(--accent);
+}
