@@ -5331,6 +5331,8 @@ function questionWorkbench(rows) {
             asked_at: r.asked_at,
             replied_at: r.replied_at,
             reply_note: r.reply_note || "",
+            record_note: r.record_note || "",
+            record_checked: r.record_checked || null,
             answered_at: r.answered_at,
             origin: r.origin || "supporters",
           }));
@@ -5518,6 +5520,16 @@ function questionWorkbench(rows) {
                 value="${esc(g.reply_note || "")}">
               <p class="hint">Answered means they wrote back with an answer to it. A reply that
                 does not answer it is a reply, and the question keeps counting.</p>
+
+              <div class="qgroup__reply-head" style="margin-top:10px">What the public record shows</div>
+              <input class="input qgroup__record" maxlength="700"
+                placeholder="Something anybody can go and check, not something the club told us"
+                value="${esc(g.record_note || "")}">
+              <p class="hint">Not a reply, and it does not stop the clock. It is for when a
+                question gets overtaken by something on the public record &mdash; a filing, a
+                notice &mdash; and leaving it standing as though nobody had checked would be
+                the kind of thing that loses the argument. Dated, because a fact from the
+                record is a fact as at a day.</p>
             </div>` : ""}
         </div>`);
       card.querySelector(".qgroup__label").addEventListener("input", (e) => {
@@ -5558,6 +5570,12 @@ function questionWorkbench(rows) {
       });
       card.querySelector(".qgroup__note")?.addEventListener("input", (e) => {
         g.reply_note = e.target.value;
+      });
+      card.querySelector(".qgroup__record")?.addEventListener("input", (e) => {
+        g.record_note = e.target.value;
+        /* Stamped the moment somebody writes one, so a note can never be
+           published without a date saying when it was true. */
+        g.record_checked = g.record_note.trim() ? londonToday() : null;
       });
       card.querySelector('[data-act="drop"]').addEventListener("click", () => {
         /* Deleting a question must not delete what was filed under it: those
@@ -13526,6 +13544,9 @@ db.publishedQuestions().then((qs) => {
                 : `Awaiting a reply, ${days} day${days === 1 ? "" : "s"} so far.`}</b>` :
             `${attributed ? " · " : ""}To be sent to the club.`}</p>
           ${q.reply_note ? `<p class="qitem__reply">${esc(q.reply_note)}</p>` : ""}
+          ${q.record_note ? `<p class="qitem__record"><b>What the public record shows.</b>
+            ${esc(q.record_note)}${q.record_checked
+              ? ` <i>Checked ${esc(fmtDate(String(q.record_checked).slice(0, 10)))}.</i>` : ""}</p>` : ""}
 
           ${(q.samples || []).length ? `
             <details class="qitem__src">

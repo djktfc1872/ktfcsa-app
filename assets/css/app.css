@@ -7338,3 +7338,18 @@ body.presenting { overflow: hidden; }
 .slide--dense .slide__firms { gap: 0.9cqw; }
 .slide--dense .slide__firm-name { font-size: 1.7cqw; }
 .slide--dense .slide__firm-note { font-size: 1.4cqw; }
+
+/* What anybody can go and check, as against what the club wrote back. Deliberately
+   not styled like the reply: confusing the two would be the whole failure. */
+.qitem__record {
+  margin: 6px 0 0;
+  padding: 8px 11px;
+  border-left: 2px solid var(--text-3);
+  border-radius: 0 7px 7px 0;
+  background: color-mix(in srgb, var(--text-3) 8%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.qitem__record b { color: var(--text); }
+.qitem__record i { font-style: normal; color: var(--text-3); }

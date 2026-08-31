@@ -1762,62 +1762,9 @@ create policy "volunteers write question groups" on consultation_question_groups
 -- Those samples come only from questions that were individually approved, so
 -- the grouping cannot carry anything into public view that would not have got
 -- there on its own. Worth keeping in mind if this view is ever widened.
-drop view if exists consultation_questions_public cascade;
-create view consultation_questions_public as
-select
-  g.id,
-  g.label,
-  g.topic,
-  g.sort,
-  cardinality(g.members)                      as asked_by,
-  g.origin,
-  coalesce(sample.wording, '{}')              as samples,
-  coalesce(sample.n, 0)                       as samples_total,
-  g.asked_at,
-  g.replied_at,
-  g.reply_note,
-  g.answered_at
-from consultation_question_groups g
--- Every approved wording behind the question, not a token three: the promise on
--- the public page is that you can see what is under each one. Anything a
--- supporter did not clear for publication is still counted in asked_by and
--- still went to the club, it simply cannot be shown, and the page says so.
-left join lateral (
-  select array_agg(r.question) as wording, count(*) as n
-  from (
-    select r.question
-    from consultation_responses r
-    where r.id = any(g.members)
-      and r.question_status = 'approved'
-      and r.question is not null
-    limit 40
-  ) r
-) sample on true
-where g.status = 'final'
-  -- Published to everyone once the switch is on. Before that, still visible to
-  -- volunteers and to anyone given early sight, because a preview that cannot
-  -- show the merged questions is a preview of the wrong page: it would fall
-  -- back to the individually approved list and look nothing like what goes out.
-  and (
-    (select results_public from consultation_settings where id)
-    or is_admin()
-    or exists (
-      select 1 from profiles p
-      -- The moderator role carries early sight as well, so the one-off flag is
-      -- for people who need to read the findings and nothing else. Without
-      -- this, making somebody a moderator and clearing their flag would quietly
-      -- take away something they had.
-      where p.id = auth.uid() and (p.results_viewer or p.is_moderator)
-    )
-  );
-
--- NOTE: owner, not invoker, for the same reason as consultation_summary. The
--- rows underneath are volunteers-only and the whole point is that the public
--- can read the findings. Safe because every column here is either the
--- volunteer's own wording, a count, or a phrasing already approved for
--- publication. Check that again before adding a column.
-alter view consultation_questions_public set (security_invoker = false);
-grant select on consultation_questions_public to anon, authenticated;
+-- The public view of the questions is defined once, further down, after the
+-- record_note column exists. A second copy lived here and was dead: the
+-- later one wins and nobody could tell which without counting lines.
 
 -- ===========================================================================
 -- How many people are looking, and at what
@@ -3880,3 +3827,290 @@ order by q.answered, q.backers desc, q.created_at;
 
 alter view meeting_question_board set (security_invoker = false);
 grant select on meeting_question_board to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- What the public record shows
+-- ---------------------------------------------------------------------------
+--
+-- Separate from reply_note, and the distinction is the whole point of the
+-- column. reply_note is what the club wrote back. This is what anybody can go
+-- and check for themselves — Companies House, the Gazette, a filed document —
+-- and it is emphatically not the club answering.
+--
+-- It exists because a question can be overtaken by the record while it sits
+-- there unanswered. "When will the accounts for the year ending 2025 be filed"
+-- was put to the club on 22 August; the accounts had been filed on 27 July.
+-- Leaving that question standing as though it were open is the kind of thing
+-- that loses an argument the Association is otherwise winning, and it would be
+-- found in ten seconds by anybody who went looking.
+--
+-- Dated, because a fact from the public record is a fact as at a day, and the
+-- page has to be able to say when somebody last checked.
+
+alter table consultation_question_groups
+  add column if not exists record_note text
+  check (record_note is null or char_length(record_note) <= 700);
+alter table consultation_question_groups
+  add column if not exists record_checked date;
+
+drop view if exists consultation_questions_public cascade;
+create view consultation_questions_public as
+select
+  g.id,
+  g.label,
+  g.topic,
+  g.sort,
+  cardinality(g.members)                      as asked_by,
+  g.origin,
+  coalesce(sample.wording, '{}')              as samples,
+  coalesce(sample.n, 0)                       as samples_total,
+  g.asked_at,
+  g.replied_at,
+  g.reply_note,
+  g.record_note,
+  g.record_checked,
+  g.answered_at
+from consultation_question_groups g
+left join lateral (
+  select array_agg(r.question) as wording, count(*) as n
+  from (
+    select r.question
+    from consultation_responses r
+    where r.id = any(g.members)
+      and r.question_status = 'approved'
+      and r.question is not null
+    limit 40
+  ) r
+) sample on true
+where g.status = 'final'
+order by g.sort;
+
+alter view consultation_questions_public set (security_invoker = false);
+grant select on consultation_questions_public to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Letting somebody else work on the questions
+-- ---------------------------------------------------------------------------
+--
+-- One person has written every word the Association has published. That is a
+-- single point of failure and it is also a lot to carry, so other people need
+-- to be able to work on the letters and the questions. What must not happen is
+-- that handing somebody a login quietly hands them the power to change what
+-- the Association has said to the club.
+--
+-- So access is two things rather than one:
+--
+--   * **view** — can see the workbench: drafts, replies, everything that is
+--     not yet public. Changes nothing.
+--   * **edit** — can also propose changes. Proposing is not applying. The
+--     change is written down, it says who wrote it and why, and it sits there
+--     until an admin applies it or turns it down.
+--
+-- edit therefore includes view, which is why the site offers three states and
+-- not four: no access, view, or view and edit.
+--
+-- Nothing here can be granted by anybody except an admin, and an editor cannot
+-- promote themselves: is_editor() is read from the profile row, and the policy
+-- on profiles has never allowed anybody to write their own access column.
+
+alter table profiles add column if not exists access text;
+alter table profiles drop constraint if exists profiles_access_check;
+alter table profiles add constraint profiles_access_check
+  check (access is null or access in ('view', 'edit'));
+
+create or replace function can_view_workbench() returns boolean
+language sql stable security definer set search_path = public as $$
+  select is_moderator() or exists (
+    select 1 from profiles p
+     where p.id = auth.uid() and p.access in ('view', 'edit'));
+$$;
+
+create or replace function can_edit_workbench() returns boolean
+language sql stable security definer set search_path = public as $$
+  select is_admin() or exists (
+    select 1 from profiles p where p.id = auth.uid() and p.access = 'edit');
+$$;
+
+-- A proposed change, not a change. The patch is the columns being suggested
+-- and nothing else, so applying it later cannot touch a field nobody proposed.
+create table if not exists question_edits (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references consultation_question_groups on delete cascade,
+  profile_id uuid references profiles on delete set null,
+  author_name text not null,
+  patch jsonb not null,
+  note text,
+  state text not null default 'pending' check (state in ('pending', 'applied', 'declined')),
+  decided_by uuid references profiles on delete set null,
+  decided_at timestamptz,
+  decided_note text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists question_edits_pending_idx
+  on question_edits (state, created_at desc);
+
+alter table question_edits enable row level security;
+
+drop policy if exists "workbench reads edits" on question_edits;
+create policy "workbench reads edits" on question_edits
+  for select using (can_view_workbench());
+
+-- No insert, update or delete policy at all: everything goes through the three
+-- definer functions below, which is what makes "proposing is not applying"
+-- true rather than merely intended.
+
+-- The fields an editor may propose. Anything else in the patch is dropped
+-- rather than rejected, because a future column added to the table must not
+-- silently become editable by whoever knows it is there.
+create or replace function proposable_fields() returns text[]
+language sql immutable as $$
+  select array['label', 'topic', 'reply_note', 'record_note', 'record_checked',
+               'replied_at', 'answered_at', 'sort']::text[];
+$$;
+
+create or replace function propose_question_edit(
+  p_group uuid, p_patch jsonb, p_note text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_clean jsonb := '{}'::jsonb;
+  v_key text;
+  v_id uuid;
+  v_name text;
+begin
+  if not can_edit_workbench() then
+    raise exception 'You do not have edit access.';
+  end if;
+  if not exists (select 1 from consultation_question_groups where id = p_group) then
+    raise exception 'That question is no longer there.';
+  end if;
+
+  foreach v_key in array proposable_fields() loop
+    if p_patch ? v_key then
+      v_clean := v_clean || jsonb_build_object(v_key, p_patch -> v_key);
+    end if;
+  end loop;
+
+  if v_clean = '{}'::jsonb then
+    raise exception 'That change did not include anything that can be edited.';
+  end if;
+
+  select coalesce(display_name, 'A volunteer') into v_name from profiles where id = auth.uid();
+
+  insert into question_edits (group_id, profile_id, author_name, patch, note)
+  values (p_group, auth.uid(), coalesce(v_name, 'A volunteer'), v_clean, nullif(btrim(p_note), ''))
+  returning id into v_id;
+  return v_id;
+end $$;
+
+revoke all on function propose_question_edit(uuid, jsonb, text) from public;
+grant execute on function propose_question_edit(uuid, jsonb, text) to authenticated;
+
+-- Applying one. Admin only, and the patch is applied field by field from the
+-- allowed list rather than by merging the json wholesale, so a row written
+-- before a new field existed cannot reach a column it was never meant to.
+create or replace function apply_question_edit(p_edit uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  e question_edits;
+begin
+  if not is_admin() then
+    raise exception 'Only an admin can apply a change.';
+  end if;
+  select * into e from question_edits where id = p_edit;
+  if e.id is null then raise exception 'That change is no longer there.'; end if;
+  if e.state <> 'pending' then
+    raise exception 'That change has already been dealt with.';
+  end if;
+
+  update consultation_question_groups g set
+    label          = coalesce(e.patch ->> 'label', g.label),
+    topic          = coalesce(e.patch ->> 'topic', g.topic),
+    reply_note     = case when e.patch ? 'reply_note'
+                          then nullif(e.patch ->> 'reply_note', '') else g.reply_note end,
+    record_note    = case when e.patch ? 'record_note'
+                          then nullif(e.patch ->> 'record_note', '') else g.record_note end,
+    record_checked = case when e.patch ? 'record_checked'
+                          then (nullif(e.patch ->> 'record_checked', ''))::date
+                          else g.record_checked end,
+    replied_at     = case when e.patch ? 'replied_at'
+                          then (nullif(e.patch ->> 'replied_at', ''))::timestamptz
+                          else g.replied_at end,
+    answered_at    = case when e.patch ? 'answered_at'
+                          then (nullif(e.patch ->> 'answered_at', ''))::timestamptz
+                          else g.answered_at end,
+    sort           = coalesce((nullif(e.patch ->> 'sort', ''))::int, g.sort),
+    updated_at     = now()
+  where g.id = e.group_id;
+
+  update question_edits
+     set state = 'applied', decided_by = auth.uid(), decided_at = now()
+   where id = p_edit;
+end $$;
+
+revoke all on function apply_question_edit(uuid) from public;
+grant execute on function apply_question_edit(uuid) to authenticated;
+
+create or replace function decline_question_edit(p_edit uuid, p_note text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only an admin can turn a change down.';
+  end if;
+  update question_edits
+     set state = 'declined', decided_by = auth.uid(), decided_at = now(),
+         decided_note = nullif(btrim(p_note), '')
+   where id = p_edit and state = 'pending';
+  if not found then raise exception 'That change has already been dealt with.'; end if;
+end $$;
+
+revoke all on function decline_question_edit(uuid, text) from public;
+grant execute on function decline_question_edit(uuid, text) to authenticated;
+
+-- Granting it. Admin only, and deliberately a function rather than a policy on
+-- profiles: the access column is the one thing on a profile that must never be
+-- writable by the person it belongs to.
+create or replace function set_user_access(p_profile uuid, p_access text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Only an admin can change access.';
+  end if;
+  if p_access is not null and p_access not in ('view', 'edit') then
+    raise exception 'Access is view, edit, or nothing at all.';
+  end if;
+  update profiles set access = p_access where id = p_profile;
+  if not found then raise exception 'No such person.'; end if;
+end $$;
+
+revoke all on function set_user_access(uuid, text) from public;
+grant execute on function set_user_access(uuid, text) to authenticated;
+
+-- Who has been given something, for the screen that grants it.
+drop view if exists workbench_access cascade;
+create view workbench_access as
+select p.id as profile_id, p.display_name, p.tag, p.access,
+       (select count(*) from question_edits e
+         where e.profile_id = p.id and e.state = 'pending') as pending
+from profiles p
+where p.access is not null
+order by p.display_name;
+
+alter view workbench_access set (security_invoker = false);
+grant select on workbench_access to authenticated;

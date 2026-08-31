@@ -1057,6 +1057,9 @@ class Backend {
         sort: i, status: g.status || "draft",
         asked_at: g.asked_at || null, answered_at: g.answered_at || null,
         replied_at: g.replied_at || null, reply_note: g.reply_note || null,
+        /* Not a reply and not the club: what anybody can go and check. Carried
+           through the rewrite or a note written this morning is gone by lunch. */
+        record_note: g.record_note || null, record_checked: g.record_checked || null,
         /* Carried through a rewrite, or a question the working group asked
            would come back as one supporters asked, with a count of nought. */
         origin: g.origin || "supporters",
