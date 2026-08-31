@@ -23,12 +23,20 @@ import { fileURLToPath } from "node:url";
 
 const FILE = resolve(dirname(fileURLToPath(import.meta.url)), "..", "supabase", "schema.sql");
 
-/** Comments and string literals are not code and must not count as a use. */
+/**
+ * Comments and string literals are not code and must not count as a use.
+ *
+ * Every replacement keeps the newlines it removes, so a line number in the
+ * stripped copy is the same line number in the file. Without that, a
+ * multi-line comment on a table shifts everything below it and the audit
+ * reports the wrong statement, which is worse than reporting none.
+ */
 function strip(sql) {
+  const blank = (m) => "\n".repeat((m.match(/\n/g) || []).length);
   return sql
-    .replace(/\$\$[\s\S]*?\$\$/g, (m) => "\n".repeat((m.match(/\n/g) || []).length))
+    .replace(/\$\$[\s\S]*?\$\$/g, blank)
     .replace(/--[^\n]*/g, "")
-    .replace(/'(?:[^']|'')*'/g, "''");
+    .replace(/'(?:[^']|'')*'/g, (m) => `''${blank(m)}`);
 }
 
 /* Function bodies are dollar-quoted and Postgres does not resolve what is
@@ -151,6 +159,47 @@ for (const [, c] of columns) {
   }
 }
 
+/* ---- what actually touches data ------------------------------------------
+   Supabase warns that this file "includes destructive operations" every single
+   time, because it matches on the word DROP and the file drops a hundred and
+   thirty views, policies and triggers and recreates each one on the next line.
+   A warning that fires every time is a warning nobody can act on, so this
+   separates the two kinds: statements that rebuild a definition, and the
+   handful that could change a row.
+
+   Statements inside a function body do not count. They run when somebody calls
+   the function, not when the file is read. */
+
+const dataTouching = [];
+{
+  /* Read from the stripped copy so comments cannot trigger it, but print from
+     the original: the stripper blanks string literals, and an update shown as
+     "set tag = '' where tag = ''" tells the reader nothing and looks alarming
+     into the bargain. */
+  const rawLines = raw.split("\n");
+  let at = 0;
+  for (const stmt of sql.split(";")) {
+    const start = at;
+    at += stmt.length + 1;
+    const t = stmt.trim().toLowerCase();
+    if (!t) continue;
+    const kind =
+      /^drop\s+table/.test(t) ? "DROPS A TABLE" :
+      /^truncate/.test(t) ? "TRUNCATES" :
+      /^delete\s+from/.test(t) ? "deletes rows" :
+      /^update\s+/.test(t) ? "updates rows" : null;
+    if (!kind) continue;
+
+    const line = lineOf(sql, start + stmt.search(/\S/));
+    const text = rawLines.slice(line - 1, line + 6).join(" ")
+      .replace(/--[^\n]*/g, "").replace(/\s+/g, " ").trim();
+    const stop = text.indexOf(";");
+    dataTouching.push([line, kind, stop > 0 ? text.slice(0, stop + 1) : text.slice(0, 150)]);
+  }
+}
+
+const rebuilds = (sql.match(/\bdrop\s+(view|policy|trigger|constraint|index|function)\b/gi) || []).length;
+
 /* ---- defined twice -------------------------------------------------------
    Not an ordering fault, so it does not fail the run, but a view written out
    twice means one of them is dead and nobody knows which is live without
@@ -167,6 +216,19 @@ const dupes = [...twice].filter(([, lines]) => lines.length > 1);
 
 const seen = new Set();
 const unique = problems.filter((p) => (seen.has(p) ? false : seen.add(p)));
+
+console.log(
+  `Rebuilt, not destroyed: ${rebuilds} views, policies, triggers and the like are dropped and ` +
+  `recreated. None of them holds data.\n`);
+
+if (dataTouching.length) {
+  console.log("Statements that could change a row, all of them:\n");
+  dataTouching.forEach(([line, kind, text]) =>
+    console.log(`  line ${line}  ${kind}\n    ${text}`));
+  console.log("");
+} else {
+  console.log("Nothing in this file changes a row.\n");
+}
 
 if (dupes.length) {
   console.warn("Defined more than once. The last one wins and the rest are dead:\n");

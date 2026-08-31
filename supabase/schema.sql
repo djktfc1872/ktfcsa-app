@@ -3235,3 +3235,167 @@ order by f.kickoff_at desc, pr.display_name;
 
 alter view exact_calls set (security_invoker = false);
 grant select on exact_calls to anon, authenticated;
+
+-- ===========================================================================
+-- The first meeting
+-- ===========================================================================
+--
+-- 181 of the 199 supporters who answered the consultation wanted one: 118 in a
+-- room, 71 online, 31 who could not come but asked to be kept posted. That is
+-- the mandate, and it is the reason this exists rather than a committee
+-- deciding a meeting would be nice.
+--
+-- Two things it has to do that a Facebook post cannot. Give a headcount before
+-- a room is booked, because a room costs seventy five pounds and booking one
+-- for forty people who turn out to be twelve is how a group spends its first
+-- money badly. And let somebody say they are coming without making an account
+-- first, the same way the consultation let them answer, because 118 of those
+-- 118 answered without one.
+
+create table if not exists meetings (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null check (char_length(title) between 3 and 120),
+  /* Everything below may be null while a date is still being worked out. A
+     meeting people can register for before it has a venue is the whole point:
+     the numbers are what decides the venue. */
+  held_at     timestamptz,
+  venue       text,
+  address     text,
+  online_url  text,
+  capacity    int check (capacity is null or capacity between 1 and 2000),
+  note        text check (note is null or char_length(note) <= 2000),
+  status      text not null default 'planning'
+              check (status in ('planning', 'announced', 'done', 'off')),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+comment on table meetings is
+  'Supporters meetings. status planning means we are counting heads before
+   booking anything; announced means it is on.';
+
+alter table meetings enable row level security;
+
+drop policy if exists "meetings readable" on meetings;
+create policy "meetings readable" on meetings
+  for select using (status <> 'off' or is_admin());
+
+drop policy if exists "volunteers run meetings" on meetings;
+create policy "volunteers run meetings" on meetings
+  for all using (is_admin()) with check (is_admin());
+
+-- ---- who is coming --------------------------------------------------------
+--
+-- One row per person per meeting. Signed in, that is their profile; not signed
+-- in, it is the same device key the consultation used, so somebody can say they
+-- are coming in ten seconds and make an account later or never.
+
+create table if not exists meeting_rsvps (
+  id         uuid primary key default gen_random_uuid(),
+  meeting_id uuid not null references meetings on delete cascade,
+  profile_id uuid references profiles on delete set null,
+  device_key text check (device_key is null or char_length(device_key) between 8 and 64),
+  coming     text not null check (coming in ('in_person', 'online', 'cannot')),
+  name       text check (name is null or char_length(name) between 2 and 40),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  /* Somebody has to be identifiable as somebody, or a headcount is a guess. */
+  check (profile_id is not null or device_key is not null)
+);
+
+create unique index if not exists meeting_rsvp_profile_idx
+  on meeting_rsvps (meeting_id, profile_id) where profile_id is not null;
+create unique index if not exists meeting_rsvp_device_idx
+  on meeting_rsvps (meeting_id, device_key) where profile_id is null;
+
+alter table meeting_rsvps enable row level security;
+
+-- Nobody reads the list but the volunteers who have to book a room for it.
+-- The counts are public, through the view below, and the names are not.
+drop policy if exists "volunteers read the list" on meeting_rsvps;
+create policy "volunteers read the list" on meeting_rsvps
+  for select using (is_moderator());
+
+drop policy if exists "say you are coming" on meeting_rsvps;
+create policy "say you are coming" on meeting_rsvps
+  for insert with check (
+    profile_id is null or profile_id = auth.uid()
+  );
+
+drop policy if exists "change your mind" on meeting_rsvps;
+create policy "change your mind" on meeting_rsvps
+  for update
+  using      (profile_id is not null and profile_id = auth.uid())
+  with check (profile_id is not null and profile_id = auth.uid());
+
+-- ---- the headcount --------------------------------------------------------
+--
+-- Runs as owner so the numbers are public while the list of names is not. This
+-- is the number that decides whether seventy five pounds gets spent, so it is
+-- worth everybody being able to see it.
+
+drop view if exists meeting_counts cascade;
+create view meeting_counts as
+select
+  m.id                 as meeting_id,
+  m.title,
+  m.held_at,
+  m.venue,
+  m.address,
+  m.online_url,
+  m.capacity,
+  m.note,
+  m.status,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'in_person') as in_person,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'online')    as online,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'cannot')    as cannot
+from meetings m
+where m.status <> 'off'
+order by m.held_at nulls last, m.created_at;
+
+alter view meeting_counts set (security_invoker = false);
+grant select on meeting_counts to anon, authenticated;
+
+-- ---- saying you are coming ------------------------------------------------
+--
+-- One function rather than an insert and an update from the browser, because
+-- changing your mind has to overwrite the row you already have and the browser
+-- does not know whether it has one.
+
+create or replace function rsvp_meeting(p_meeting uuid, p_coming text, p_key text, p_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if p_coming not in ('in_person', 'online', 'cannot') then
+    raise exception 'Not one of the answers';
+  end if;
+
+  if uid is not null then
+    insert into meeting_rsvps (meeting_id, profile_id, coming, name)
+    values (p_meeting, uid, p_coming, nullif(btrim(p_name), ''))
+    on conflict (meeting_id, profile_id) where profile_id is not null
+    do update set coming = excluded.coming, name = excluded.name, updated_at = now();
+    return;
+  end if;
+
+  if p_key is null or char_length(p_key) < 8 then
+    raise exception 'Tell us who you are, or sign in';
+  end if;
+
+  insert into meeting_rsvps (meeting_id, device_key, coming, name)
+  values (p_meeting, p_key, p_coming, nullif(btrim(p_name), ''))
+  on conflict (meeting_id, device_key) where profile_id is null
+  do update set coming = excluded.coming, name = excluded.name, updated_at = now();
+end;
+$$;
+
+revoke all on function rsvp_meeting(uuid, text, text, text) from public;
+grant execute on function rsvp_meeting(uuid, text, text, text) to anon, authenticated;

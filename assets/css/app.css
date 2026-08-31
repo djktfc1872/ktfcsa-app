@@ -6856,3 +6856,29 @@ button,
 
 .replycard--late { border-left-color: var(--red-300); }
 .replycard--late .replycard__state b { color: var(--red-300); }
+
+/* ---- the first supporters meeting ---------------------------------------- */
+
+.meeting__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.meeting__counts { margin: 14px 0 0; }
+
+.rsvp {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rsvp__name { width: 100%; }
+.rsvp__row { flex-wrap: wrap; gap: 8px; }
+.rsvp__done {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--accent);
+}

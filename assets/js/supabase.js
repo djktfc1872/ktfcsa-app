@@ -680,6 +680,31 @@ class Backend {
     return data || [];
   }
 
+  /* ---- the meeting ------------------------------------------------------- */
+
+  async meetings() {
+    const { data, error } = await this.sb.from("meeting_counts").select("*");
+    if (error) return [];
+    return data || [];
+  }
+
+  async rsvpMeeting(id, coming, key, name) {
+    const { error } = await this.sb.rpc("rsvp_meeting", {
+      p_meeting: id, p_coming: coming, p_key: key || null, p_name: name || null });
+    if (error) throw new Error(friendly(error));
+  }
+
+  /* The list of names, for whoever has to book the room. Volunteers only: the
+     policy refuses everybody else, so this returns nothing rather than
+     erroring. */
+  async meetingList(id) {
+    const { data, error } = await this.sb
+      .from("meeting_rsvps").select("coming, name, created_at, profile_id")
+      .eq("meeting_id", id).order("created_at");
+    if (error) return [];
+    return data || [];
+  }
+
   async groundBoard() {
     const { data, error } = await this.sb.from("ground_board").select("*");
     if (error) return [];

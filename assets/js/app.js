@@ -355,6 +355,8 @@ const ROUTES = {
     group: "Happening now", render: viewConsult },
   letter: { label: "Our Open Letter", short: "Letter", icon: "\u2709\uFE0F", nav: "more",
     group: "Happening now", render: viewLetter },
+  meeting: { label: "The First Meeting", short: "Meeting", icon: "\uD83D\uDDE3\uFE0F", nav: "more",
+    group: "Happening now", render: viewMeeting },
   home: { label: "Home", short: "Home", icon: ICON.poppy, nav: "tab", group: "Matchday", render: viewHome },
   fixtures: { label: "All Fixtures", short: "Fixtures", icon: "⚽", nav: "more", group: "Matchday", render: viewFixtures },
   table: { label: "Table", icon: "🏆", nav: "tab", group: "Matchday", render: viewTable },
@@ -8171,6 +8173,165 @@ function replyInbox() {
     db.markWallSeen().then(() => { replyWaiting = 0; renderNav(); });
   }).catch(() => { /* the wall is fine without it */ });
 
+  return box;
+}
+
+/* ---------------------------------------------------------------- meeting */
+
+/**
+ * The first supporters meeting.
+ *
+ * 181 of the 199 who answered the consultation wanted one. That is the mandate
+ * and the page says so, because a meeting called by a working group nobody
+ * elected needs to point at the reason it is being called.
+ *
+ * It works before there is a date. The headcount is what decides the venue, and
+ * a room costs seventy five pounds, so the count comes first and the booking
+ * second rather than the other way round.
+ */
+function viewMeeting() {
+  const wrap = el(`<div></div>`);
+  wrap.append(el(`
+    <div class="page-head page-head--airy">
+      <h1>The first supporters meeting</h1>
+      <p>In the consultation, <b>181 of 199</b> supporters said they wanted one: 118 in a room,
+         71 online, and 31 who could not come but asked to be kept posted. This is us getting
+         on with it.</p>
+    </div>`));
+
+  const box = el(`<div><div class="skeleton" style="height:220px"></div></div>`);
+  wrap.append(box);
+
+  db.meetings().then((rows) => {
+    box.replaceChildren();
+    const live = rows.filter((m) => m.status !== "done");
+    if (!live.length) {
+      box.append(el(`
+        <div class="card">
+          <p class="club-overview" style="margin:0">Nothing is booked yet. The date and the venue
+          go here as soon as they are settled, and anybody who has said they are coming gets told
+          first.</p>
+        </div>`));
+      return;
+    }
+    live.forEach((m) => box.append(meetingCard(m)));
+  }).catch(() => {
+    box.replaceChildren();
+    box.append(el(`<div class="empty"><b>Could not load it</b>Try again in a moment.</div>`));
+  });
+
+  return wrap;
+}
+
+function meetingCard(m) {
+  const card = el(`<div class="card meeting"></div>`);
+  const planning = m.status === "planning";
+
+  card.append(el(`<h2 class="meeting__title">${esc(m.title)}</h2>`));
+
+  /* Where, when, and how many. Nulls are the normal state early on and say so
+     rather than showing an empty row. */
+  const rows = [
+    ["When", m.held_at
+      ? `${fmtDate(String(m.held_at).slice(0, 10))}, ${
+          new Date(m.held_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+      : "Not settled yet"],
+    ["Where", m.venue ? `${esc(m.venue)}${m.address ? `, ${esc(m.address)}` : ""}` : "Not settled yet"],
+  ];
+  if (m.online_url) rows.push(["Online", "There is a link for anybody who cannot get there"]);
+
+  const slip = el(`<div class="sent-slip"></div>`);
+  rows.forEach(([k, v]) => slip.append(el(
+    `<div class="sent-slip__row"><span>${esc(k)}</span><b>${v}</b></div>`)));
+  card.append(slip);
+
+  if (planning) {
+    card.append(el(`<p class="hint">Nothing is booked. A room costs money, and how big a
+      room depends on how many are coming, so the count comes first.</p>`));
+  }
+
+  /* The count. Public, because it is what decides whether the room gets
+     booked, and everybody paying for it should be able to see it. */
+  const total = (m.in_person || 0) + (m.online || 0);
+  card.append(el(`
+    <div class="info-grid info-grid--3 meeting__counts">
+      <div class="info"><div class="info__label">In the room</div>
+        <div class="info__value" style="color:var(--accent)">${m.in_person || 0}</div></div>
+      <div class="info"><div class="info__label">Online</div>
+        <div class="info__value">${m.online || 0}</div></div>
+      <div class="info"><div class="info__label">Keep me posted</div>
+        <div class="info__value">${m.cannot || 0}</div></div>
+    </div>`));
+
+  if (m.capacity) {
+    const left = m.capacity - (m.in_person || 0);
+    card.append(el(`<p class="hint">${left > 0
+      ? `${left} place${left === 1 ? "" : "s"} left in the room, of ${m.capacity}.`
+      : `The room is full. Say you are coming anyway and we will look at a bigger one.`}</p>`));
+  }
+
+  if (m.note) card.append(el(`<p class="club-overview">${esc(m.note)}</p>`));
+
+  card.append(rsvpPanel(m, total));
+  return card;
+}
+
+/**
+ * Saying you are coming.
+ *
+ * No account needed, the same as the consultation, because all 118 of the 118
+ * who said they would come in person said it without one. Asking them to sign
+ * up first would lose most of them and the headcount is the point.
+ */
+function rsvpPanel(m, total) {
+  const box = el(`<div class="rsvp"></div>`);
+  const saved = db.read(`rsvp:${m.id}`, null);
+
+  const draw = () => {
+    box.replaceChildren();
+    if (saved) {
+      const said = { in_person: "You are coming, in the room",
+                     online: "You are joining online",
+                     cannot: "You cannot come, and we will keep you posted" }[saved];
+      box.append(el(`<p class="rsvp__done">${esc(said)}. Thank you.</p>`));
+      const change = el(`<button class="link-btn">Change that</button>`);
+      change.addEventListener("click", () => { db.write(`rsvp:${m.id}`, null); redraw(); });
+      box.append(change);
+      return;
+    }
+
+    box.append(el(`<div class="info__label">Are you coming?</div>`));
+    const name = el(`<input class="input rsvp__name" maxlength="40"
+      placeholder="Your name, so we know who to expect"
+      value="${esc(db.currentUser()?.name || "")}">`);
+    box.append(name);
+
+    const row = el(`<div class="btn-row rsvp__row"></div>`);
+    [["in_person", "I will be there"],
+     ["online", "I would join online"],
+     ["cannot", "I cannot make it, keep me posted"]].forEach(([key, label], i) => {
+      const b = el(`<button class="btn btn--sm${i ? " btn--ghost" : ""}">${esc(label)}</button>`);
+      b.addEventListener("click", async () => {
+        row.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+        try {
+          await db.rsvpMeeting(m.id, key, db.consultDeviceKey(), name.value.trim());
+          db.write(`rsvp:${m.id}`, key);
+          toast("Thank you. We will let you know.", "good");
+          redraw();
+        } catch (err) {
+          row.querySelectorAll("button").forEach((x) => { x.disabled = false; });
+          toast(err.message || "That did not save.", "bad");
+        }
+      });
+      row.append(b);
+    });
+    box.append(row);
+    box.append(el(`<p class="hint">No account needed. Your name is seen only by whoever books
+      the room, and the numbers above are all anybody else sees.</p>`));
+  };
+
+  const redraw = () => { render(); };
+  draw();
   return box;
 }
 

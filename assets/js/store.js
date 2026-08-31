@@ -173,6 +173,14 @@ export const setDormant = (id, hidden) =>
 
 export const exactCalls = () =>
   (backend?.exactCalls ? backend.exactCalls() : Promise.resolve([]));
+export const meetings = () =>
+  (backend?.meetings ? backend.meetings() : Promise.resolve([]));
+export const rsvpMeeting = (id, coming, key, name) =>
+  (backend?.rsvpMeeting ? backend.rsvpMeeting(id, coming, key, name)
+    : Promise.reject(new Error("Not connected.")));
+export const meetingList = (id) =>
+  (backend?.meetingList ? backend.meetingList(id) : Promise.resolve([]));
+
 export const groundBoard = () =>
   (backend?.groundBoard ? backend.groundBoard() : Promise.resolve([]));
 export const wordleLeague = () =>
