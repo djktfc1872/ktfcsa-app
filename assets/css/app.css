@@ -7240,7 +7240,7 @@ body.presenting { overflow: hidden; }
 
 /* ---- ranked bars on a slide ---------------------------------------------- */
 
-.slide__bars { display: flex; flex-direction: column; gap: 1.5cqw; width: 100%; }
+.slide__bars { display: flex; flex-direction: column; gap: 1.15cqw; width: 100%; }
 .slide__bar {
   display: grid;
   /* Wide enough for "100%" on one line. At 3.5em the sign wrapped under the
