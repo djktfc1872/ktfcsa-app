@@ -4114,3 +4114,33 @@ order by p.display_name;
 
 alter view workbench_access set (security_invoker = false);
 grant select on workbench_access to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Which version of this file is actually applied
+-- ---------------------------------------------------------------------------
+--
+-- Last, deliberately. Postgres runs this file as one transaction, so if
+-- anything above fails the whole thing rolls back and this stamp never lands.
+-- A stamp that is present therefore means the entire file ran, not that it
+-- started.
+--
+-- This exists because of a real half hour spent guessing. Two copies of
+-- schema.sql had been sent in one afternoon, an older one was run by mistake,
+-- and from the outside that is indistinguishable from a script that failed
+-- silently: the new tables were simply not there. Now it can be read off the
+-- database in one request.
+
+create table if not exists schema_meta (
+  id int primary key default 1 check (id = 1),
+  applied_version text not null,
+  applied_at timestamptz not null default now()
+);
+
+alter table schema_meta enable row level security;
+drop policy if exists "schema version readable" on schema_meta;
+create policy "schema version readable" on schema_meta for select using (true);
+grant select on schema_meta to anon, authenticated;
+
+insert into schema_meta (id, applied_version) values (1, '2026-08-31-workbench-access')
+on conflict (id) do update
+  set applied_version = excluded.applied_version, applied_at = now();
