@@ -1,8 +1,29 @@
 {
-  "updated": "2026-08-30T22:48:32.224Z",
+  "updated": "2026-08-31T15:04:40.099Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "0yP1mqbK8xU",
+      "title": "My Broadcast",
+      "published": "2026-08-31T14:57:49+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a1a68ce9ef452b61f425e"
+    },
+    {
+      "videoId": "fdg5rHaIMb8",
+      "title": "My Broadcast",
+      "published": "2026-08-31T14:56:22+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a1a68ce9ef452b61f425e"
+    },
+    {
+      "videoId": "Bce0-XiY28Q",
+      "title": "My Broadcast",
+      "published": "2026-08-31T13:57:44+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a1a68ce9ef452b61f425e"
+    },
     {
       "videoId": "OppSoPS8E2s",
       "title": "Post Match Interview | Hitchin Town 1-1 Kettering Town (29/08/2026)",
