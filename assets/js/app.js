@@ -487,7 +487,7 @@ function refreshPending() {
    page itself still checks: hiding a button is not a control. */
 const routesWhere = (...kinds) =>
   Object.entries(ROUTES).filter(([, r]) =>
-    kinds.includes(r.nav) && (!r.adminOnly || db.isModerator()));
+    kinds.includes(r.nav) && (!r.adminOnly || db.isModerator() || db.canViewLetters()));
 
 function renderNav() {
   let lastGroup = null;
@@ -5955,6 +5955,16 @@ function buildAdmin() {
     </div>
   </div>`);
 
+  /* Somebody with letters access but no moderator role gets this page and
+     nothing else on it: their own screen, and none of the tabs. Giving them the
+     moderation tools as well would be exactly the quiet widening of a grant
+     that the two-state design exists to avoid. */
+  if (!db.isModerator() && db.canViewLetters()) {
+    wrap.append(el(`<h2 class="section-title">The letters</h2>`));
+    panelSection(wrap, null, () => lettersForEditors());
+    return wrap;
+  }
+
   if (!db.isModerator()) {
     wrap.append(el(`
       <div class="empty">
@@ -6109,6 +6119,7 @@ function buildAdmin() {
     const jump = el(`
       <div class="jump" role="group" aria-label="Jump to">
         <button data-to="a-publish">Publish</button>
+        <button data-to="a-proposed">Proposed</button>
         <button data-to="a-questions">Questions</button>
         <button data-to="a-queue">Queue</button>
         <button data-to="a-live">Findings</button>
@@ -6186,6 +6197,14 @@ function buildAdmin() {
       pub.append(card, row);
     }).catch(() => {});
     wrap.append(pub);
+
+    /* Above the workbench on purpose. Somebody else's proposed change should be
+       dealt with before you start editing the same questions yourself, or you
+       will be applying a change on top of work it was written against. */
+    if (canRunThings) {
+      wrap.append(el(`<h2 class="section-title" id="a-proposed">Proposed changes</h2>`));
+      panelSection(wrap, null, () => editQueueCard());
+    }
 
     wrap.append(el(`<h2 class="section-title" id="a-questions">Questions for the club</h2>`));
     if (canRunThings) {
@@ -6992,10 +7011,295 @@ function buildAdmin() {
     panelSection(wrap, "People", () => { paintPeople(); return peopleCard; });
     if (canRunThings) {
       panelSection(wrap, "Tags", () => { paintTags(); return tagsCard; });
+      panelSection(wrap, "Who can work on the letters", () => accessCard());
     }
   }
 
   return wrap;
+}
+
+/**
+ * The letters, for somebody who has been given access but does not run the site.
+ *
+ * Deliberately not the admin workbench. That one rebuilds the whole question
+ * list in a single delete-and-reinsert, which is the right shape for the
+ * person who owns the list and a terrible thing to hand anybody else: one
+ * mistimed save and twelve questions and their supporter counts are gone.
+ *
+ * So this is the read-only list with one suggestion form per question. It can
+ * change exactly the fields the database is willing to accept, one question at
+ * a time, and nothing it does goes live on its own.
+ */
+function lettersForEditors() {
+  const card = el(`<div class="card"></div>`);
+  const mayEdit = db.canEditLetters();
+
+  card.append(el(`<p class="hint">${mayEdit
+    ? `You can suggest changes to any of these. Nothing you write here goes on the site by
+       itself &mdash; it goes to Danny, with your name and your reason on it, and he applies it
+       or turns it down.`
+    : `You can see the questions and where each one stands. You have not been given editing,
+       so nothing here can be changed.`}</p>`));
+
+  const list = el(`<div><p class="hint">Loading\u2026</p></div>`);
+  card.append(list);
+
+  const FIELDS = [
+    ["label", "The question itself", "textarea"],
+    ["reply_note", "What the club said", "input"],
+    ["record_note", "What the public record shows", "input"],
+  ];
+
+  db.publishedQuestions().then((qs) => {
+    list.replaceChildren();
+    if (!qs || !qs.length) {
+      list.append(el(`<div class="empty"><b>No questions yet</b>Nothing has been published.</div>`));
+      return;
+    }
+    qs.forEach((q, i) => {
+      const row = el(`
+        <div class="qedit">
+          <div class="qedit__head"><span class="qitem__n">${i + 1}</span>
+            <p>${esc(q.label)}</p></div>
+          <p class="hint">${q.answered_at ? "Answered." : q.replied_at
+            ? "Replied to, not answered." : "Awaiting a reply."}${
+            q.reply_note ? ` &middot; ${esc(q.reply_note)}` : ""}</p>
+          ${q.record_note ? `<p class="hint"><b>Public record:</b> ${esc(q.record_note)}</p>` : ""}
+        </div>`);
+
+      if (mayEdit) {
+        const open = el(`<button class="link-btn">Suggest a change</button>`);
+        const form = el(`<div class="qedit__form" hidden></div>`);
+        FIELDS.forEach(([key, label, kind]) => {
+          const value = q[key] || "";
+          form.append(el(`
+            <label class="qedit__field">
+              <span>${esc(label)}</span>
+              ${kind === "textarea"
+                ? `<textarea class="input" rows="3" data-f="${key}">${esc(value)}</textarea>`
+                : `<input class="input" maxlength="700" data-f="${key}" value="${esc(value)}">`}
+            </label>`));
+        });
+        form.append(el(`
+          <label class="qedit__field"><span>Why (Danny sees this)</span>
+            <input class="input" maxlength="300" data-role="why"
+              placeholder="Where this came from, or what is wrong with it now"></label>`));
+        const send = el(`<button class="btn btn--sm">Send it for review</button>`);
+
+        open.addEventListener("click", () => {
+          form.hidden = !form.hidden;
+          open.textContent = form.hidden ? "Suggest a change" : "Never mind";
+        });
+
+        send.addEventListener("click", async () => {
+          /* Only what actually changed. Sending every field back would make a
+             one-word fix look like a rewrite of the question, and Danny would
+             have to diff it by eye to see what was being asked for. */
+          const patch = {};
+          FIELDS.forEach(([key]) => {
+            const v = $(`[data-f="${key}"]`, form).value.trim();
+            if (v !== String(q[key] || "").trim()) patch[key] = v;
+          });
+          if (!Object.keys(patch).length) {
+            toast("Nothing has changed yet.", "bad");
+            return;
+          }
+          if (patch.record_note) patch.record_checked = londonToday();
+          send.disabled = true;
+          try {
+            await db.proposeQuestionEdit(q.id, patch, $('[data-role="why"]', form).value.trim());
+            toast("Sent for review. Thank you.", "good");
+            form.hidden = true;
+            open.textContent = "Sent \u2014 suggest another";
+          } catch (err) {
+            send.disabled = false;
+            toast(err.message || "That did not send.", "bad");
+          }
+        });
+
+        form.append(send);
+        row.append(open, form);
+      }
+      list.append(row);
+    });
+  }).catch(() => {
+    list.replaceChildren();
+    list.append(el(`<p class="hint">Could not load the questions.</p>`));
+  });
+
+  return card;
+}
+
+/* ================================================= who can work on the letters */
+
+/**
+ * Granting somebody access, and reviewing what they do with it.
+ *
+ * One person has written every word this Association has published, which is a
+ * single point of failure and a lot to carry. Other people need to be able to
+ * work on the letters. What must not follow from that is a login quietly
+ * carrying the power to change what has been said to the club.
+ *
+ * Hence two states rather than one. **View** sees the workbench and changes
+ * nothing. **Edit** can propose, and proposing is not applying: the change is
+ * written down with who wrote it and why, and waits. Edit includes view, so
+ * there are three choices offered and not four.
+ *
+ * The refusals live in the database, not here. This screen is the courtesy.
+ */
+function accessCard() {
+  const card = el(`<div class="card"></div>`);
+  card.append(el(`<p class="hint">Give somebody the workbench. <b>Can view</b> sees the
+    drafts and replies and changes nothing. <b>Can view and edit</b> can also propose
+    changes, which come to you before anything is published. Nobody can grant themselves
+    either, and neither one makes somebody a moderator.</p>`));
+
+  const list = el(`<div data-role="list"><p class="hint">Loading\u2026</p></div>`);
+  card.append(list);
+
+  const LEVELS = [[null, "No access"], ["view", "Can view"], ["edit", "Can view and edit"]];
+
+  const draw = (rows) => {
+    list.replaceChildren();
+    if (rows === null) {
+      list.append(el(`<p class="hint">This needs the newest schema run before it will work.</p>`));
+      return;
+    }
+    if (!rows.length) {
+      list.append(el(`<div class="empty"><b>Nobody has access yet</b>Find a supporter under
+        People and give it to them from there.</div>`));
+    }
+    rows.forEach((r) => {
+      const row = el(`
+        <div class="grant">
+          <div class="grant__who"><b>${esc(r.display_name || "Someone")}</b>${
+            r.pending ? `<span class="grant__pending">${r.pending} waiting on you</span>` : ""}</div>
+          <div class="grant__levels"></div>
+        </div>`);
+      const levels = $(".grant__levels", row);
+      LEVELS.forEach(([value, label]) => {
+        const on = (r.access || null) === value;
+        const b = el(`<button class="chip${on ? " chip--on" : ""}">${esc(label)}</button>`);
+        b.addEventListener("click", async () => {
+          if (on) return;
+          levels.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+          try {
+            await db.setUserAccess(r.profile_id, value);
+            toast(value ? `${r.display_name || "They"} can now ${
+              value === "edit" ? "view and edit" : "view"}.` : "Access removed.", "good");
+            load();
+          } catch (err) {
+            levels.querySelectorAll("button").forEach((x) => { x.disabled = false; });
+            toast(err.message || "That did not save.", "bad");
+          }
+        });
+        levels.append(b);
+      });
+      list.append(row);
+    });
+  };
+
+  const load = () => db.workbenchAccess().then(draw).catch(() => draw(null));
+  load();
+  return card;
+}
+
+/**
+ * The queue of proposed changes.
+ *
+ * Shown as what it would do rather than as a patch: "reply_note: ..." is a
+ * database column and nobody should have to read one to decide whether to
+ * publish a sentence. Each field says what it is called on the page and what
+ * it currently says, so the decision can be made without opening another tab.
+ */
+function editQueueCard() {
+  const card = el(`<div class="card"></div>`);
+  const list = el(`<div><p class="hint">Loading\u2026</p></div>`);
+  card.append(list);
+
+  const FIELD_NAMES = {
+    label: "The question itself",
+    topic: "Topic",
+    reply_note: "What the club said",
+    record_note: "What the public record shows",
+    record_checked: "Record checked on",
+    replied_at: "Marked replied",
+    answered_at: "Marked answered",
+    sort: "Position in the list",
+  };
+
+  const draw = (rows) => {
+    list.replaceChildren();
+    if (rows === null) {
+      list.append(el(`<p class="hint">This needs the newest schema run before it will work.</p>`));
+      return;
+    }
+    const pending = rows.filter((r) => r.state === "pending");
+    if (!pending.length) {
+      list.append(el(`<div class="todo todo--clear"><b>Nothing waiting</b>No proposed changes
+        to look at.</div>`));
+      return;
+    }
+
+    pending.forEach((r) => {
+      const row = el(`
+        <div class="proposed">
+          <div class="proposed__head">
+            <b>${esc(r.author_name)}</b>
+            <span>${esc(fmtDate(String(r.created_at).slice(0, 10)))}</span>
+          </div>
+          ${r.note ? `<p class="proposed__why">${esc(r.note)}</p>` : ""}
+          <div class="proposed__fields"></div>
+          <div class="btn-row">
+            <button class="btn btn--sm" data-act="apply">Apply it</button>
+            <button class="btn btn--sm btn--ghost" data-act="no">Turn it down</button>
+          </div>
+        </div>`);
+
+      const fields = $(".proposed__fields", row);
+      Object.entries(r.patch || {}).forEach(([k, v]) => {
+        fields.append(el(`
+          <div class="proposed__field">
+            <div class="proposed__field-name">${esc(FIELD_NAMES[k] || k)}</div>
+            <div class="proposed__field-value">${
+              v === null || v === "" ? "<i>cleared</i>" : esc(String(v))}</div>
+          </div>`));
+      });
+
+      $('[data-act="apply"]', row).addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        try {
+          await db.applyQuestionEdit(r.id);
+          toast("Applied. It is live on the letters page.", "good");
+          /* The workbench holds its own copy of the groups, and applying a
+             change behind its back would leave it about to save the old
+             wording over the new one. */
+          state.questionGroups = null;
+          state.groupsLoaded = false;
+          load();
+        } catch (err) {
+          e.currentTarget.disabled = false;
+          toast(err.message || "That did not apply.", "bad");
+        }
+      });
+
+      $('[data-act="no"]', row).addEventListener("click", async () => {
+        const why = window.prompt("Why not? They will see this. Leave blank to say nothing.");
+        if (why === null) return;
+        try {
+          await db.declineQuestionEdit(r.id, why);
+          toast("Turned down.", "good");
+          load();
+        } catch (err) { toast(err.message || "That did not save.", "bad"); }
+      });
+
+      list.append(row);
+    });
+  };
+
+  const load = () => db.pendingEdits().then(draw).catch(() => draw(null));
+  load();
+  return card;
 }
 
 /* =========================================================== supporter tags */

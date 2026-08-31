@@ -121,6 +121,19 @@ export const isModerator = () => {
 };
 export const isModeratorId = (id) => live.moderators.has(id);
 
+/* The letters workbench. Two states rather than one: view sees the drafts and
+   changes nothing, edit can propose changes that wait for an admin. Edit
+   includes view, so these nest rather than sitting side by side. An admin has
+   both without being granted anything. */
+export const canViewLetters = () => {
+  const u = currentUser();
+  return Boolean(u && (u.isAdmin || u.access === "view" || u.access === "edit"));
+};
+export const canEditLetters = () => {
+  const u = currentUser();
+  return Boolean(u && (u.isAdmin || u.access === "edit"));
+};
+
 /* True when the page was opened from a password reset link, in which case the
    session is now live and the person needs to choose a new password. */
 export const consumeRecoveryLink = () =>
@@ -193,6 +206,25 @@ export const askMeetingQuestion = (id, key, name, body) =>
 export const backMeetingQuestion = (id, key) =>
   (backend?.backMeetingQuestion ? backend.backMeetingQuestion(id, key)
     : Promise.reject(new Error("Not connected.")));
+export const schemaVersion = () =>
+  (backend?.schemaVersion ? backend.schemaVersion() : Promise.resolve(null));
+export const workbenchAccess = () =>
+  (backend?.workbenchAccess ? backend.workbenchAccess() : Promise.resolve(null));
+export const setUserAccess = (id, access) =>
+  (backend?.setUserAccess ? backend.setUserAccess(id, access)
+    : Promise.reject(new Error("Not connected.")));
+export const proposeQuestionEdit = (id, patch, note) =>
+  (backend?.proposeQuestionEdit ? backend.proposeQuestionEdit(id, patch, note)
+    : Promise.reject(new Error("Not connected.")));
+export const pendingEdits = () =>
+  (backend?.pendingEdits ? backend.pendingEdits() : Promise.resolve(null));
+export const applyQuestionEdit = (id) =>
+  (backend?.applyQuestionEdit ? backend.applyQuestionEdit(id)
+    : Promise.reject(new Error("Not connected.")));
+export const declineQuestionEdit = (id, note) =>
+  (backend?.declineQuestionEdit ? backend.declineQuestionEdit(id, note)
+    : Promise.reject(new Error("Not connected.")));
+
 export const proposeForMeeting = (id, key, name, body) =>
   (backend?.proposeForMeeting ? backend.proposeForMeeting(id, key, name, body)
     : Promise.reject(new Error("Not connected.")));

@@ -67,14 +67,23 @@ class Backend {
   }
 
   async loadProfile(id) {
-    const { data, error } = await this.sb
-      .from("profiles")
-      .select("id, display_name, is_admin")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) throw error;
+    /* Narrowing retry, the same as loadAvatars, and for the same reason: this
+       code ships before the schema is run. Asking for a column that does not
+       exist yet fails the whole select, and the whole select failing here is
+       nobody being able to sign in. The access column is a nicety; signing in
+       is not. */
+    const TRIES = ["id, display_name, is_admin, access", "id, display_name, is_admin"];
+    let data = null;
+    let last = null;
+    for (const cols of TRIES) {
+      const res = await this.sb.from("profiles").select(cols).eq("id", id).maybeSingle();
+      if (!res.error) { data = res.data; last = null; break; }
+      last = res.error;
+    }
+    if (last) throw last;
     this.profile = data
-      ? { id: data.id, name: data.display_name, isAdmin: data.is_admin }
+      ? { id: data.id, name: data.display_name, isAdmin: data.is_admin,
+          access: data.access || null }
       : null;
     return this.profile;
   }
@@ -772,6 +781,50 @@ class Backend {
       p_question: questionId, p_key: key || null });
     if (error) throw new Error(friendly(error));
     return data;
+  }
+
+  /* -------------------------------------------- workbench access */
+
+  async schemaVersion() {
+    const { data } = await this.sb.from("schema_meta").select("*").maybeSingle();
+    return data || null;
+  }
+
+  async workbenchAccess() {
+    const { data, error } = await this.sb.from("workbench_access").select("*");
+    if (error) return null;
+    return data || [];
+  }
+
+  async setUserAccess(profileId, access) {
+    const { error } = await this.sb.rpc("set_user_access", {
+      p_profile: profileId, p_access: access || null });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async proposeQuestionEdit(groupId, patch, note) {
+    const { data, error } = await this.sb.rpc("propose_question_edit", {
+      p_group: groupId, p_patch: patch, p_note: note || null });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  async pendingEdits() {
+    const { data, error } = await this.sb.from("question_edits")
+      .select("*").order("created_at", { ascending: false });
+    if (error) return null;
+    return data || [];
+  }
+
+  async applyQuestionEdit(id) {
+    const { error } = await this.sb.rpc("apply_question_edit", { p_edit: id });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async declineQuestionEdit(id, note) {
+    const { error } = await this.sb.rpc("decline_question_edit", {
+      p_edit: id, p_note: note || null });
+    if (error) throw new Error(friendly(error));
   }
 
   async setQuestionState(id, patch) {

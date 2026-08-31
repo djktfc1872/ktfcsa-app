@@ -7353,3 +7353,81 @@ body.presenting { overflow: hidden; }
 }
 .qitem__record b { color: var(--text); }
 .qitem__record i { font-style: normal; color: var(--text-3); }
+
+/* ---- granting access, and reviewing what comes back ---------------------- */
+
+.grant {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 14px;
+  padding: 11px 0;
+}
+.grant + .grant { border-top: 1px solid var(--line-soft); }
+.grant__who b { font-size: 0.9375rem; }
+.grant__pending {
+  display: block; margin-top: 2px;
+  font-size: 0.8125rem; color: var(--accent); font-weight: 600;
+}
+.grant__levels { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.8125rem; font-weight: 600;
+  cursor: pointer;
+}
+.chip:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.chip:disabled { opacity: 0.5; cursor: default; }
+.chip--on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.proposed { padding: 12px 0; }
+.proposed + .proposed { border-top: 1px solid var(--line-soft); }
+.proposed__head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.proposed__head b { font-size: 0.9375rem; }
+.proposed__head span { font-size: 0.8125rem; color: var(--text-3); }
+.proposed__why {
+  margin: 5px 0 0; font-size: 0.875rem; line-height: 1.5;
+  color: var(--text-2); font-style: italic;
+}
+.proposed__fields { margin: 9px 0; display: flex; flex-direction: column; gap: 8px; }
+.proposed__field {
+  padding: 8px 11px;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.proposed__field-name {
+  font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.proposed__field-value {
+  margin-top: 3px; font-size: 0.875rem; line-height: 1.5;
+  color: var(--text); overflow-wrap: anywhere;
+}
+.proposed__field-value i { color: var(--text-3); }
+
+/* ---- the letters, for somebody who is not an admin ----------------------- */
+
+.qedit { padding: 13px 0; }
+.qedit + .qedit { border-top: 1px solid var(--line-soft); }
+.qedit__head { display: flex; gap: 11px; align-items: flex-start; }
+.qedit__head p { margin: 0; font-size: 0.9375rem; line-height: 1.5; }
+.qedit__form {
+  margin-top: 10px; padding: 12px;
+  border: 1px solid var(--line); border-radius: 10px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.qedit__form[hidden] { display: none; }
+.qedit__field { display: flex; flex-direction: column; gap: 4px; }
+.qedit__field > span {
+  font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.qedit__field textarea { resize: vertical; }
