@@ -8651,10 +8651,22 @@ function deckSlide(slide, i, total, facts) {
     heading(slide.title);
     const total = facts.results?.summary?.responses || 199;
     const names = Object.fromEntries(CONSULT_ACTIONS);
-    const rows = (facts.results?.choices || [])
-      .filter((x) => x.kind === "action")
+    const acts = (facts.results?.choices || []).filter((x) => x.kind === "action");
+    const rows = acts.filter((x) => x.choice !== "none")
       .sort((a, b) => b.people - a.people).slice(0, 6);
     body.append(barsSlide(rows, names, total));
+    /* Said plainly rather than left off. "Nothing, I would rather it was
+       settled quietly" was on the form as a real answer, the people who chose
+       it are in the room, and a slide about appetite for action that quietly
+       drops the people with none is the kind of thing this Association is
+       complaining about. */
+    const none = acts.find((x) => x.choice === "none");
+    if (none) {
+      body.append(el(`<p class="slide__aside">${none.people} supporters
+        &mdash; ${Math.round((none.people / total) * 100)}% &mdash; chose
+        <b>nothing, I would rather it was settled quietly</b>. That was on the form as a
+        real answer and they are in this room too.</p>`));
+    }
 
   } else if (slide.kind === "representation") {
     heading(slide.title);
