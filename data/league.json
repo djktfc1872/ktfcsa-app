@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-31T15:04:37.820Z",
+  "updated": "2026-08-31T19:44:51.090Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -15,8 +15,8 @@
       "drawn": 0,
       "lost": 0,
       "for": 20,
-      "against": 4,
-      "goalDifference": 16,
+      "against": 6,
+      "goalDifference": 14,
       "points": 18,
       "deduction": 0,
       "form": "WWWWW"
@@ -28,13 +28,13 @@
       "slug": "bury-town",
       "crest": "assets/crests/bury-town.png",
       "played": 6,
-      "won": 5,
-      "drawn": 1,
+      "won": 6,
+      "drawn": 0,
       "lost": 0,
-      "for": 13,
-      "against": 5,
-      "goalDifference": 8,
-      "points": 16,
+      "for": 15,
+      "against": 6,
+      "goalDifference": 9,
+      "points": 18,
       "deduction": 0,
       "form": "WWWWW"
     },
@@ -53,7 +53,7 @@
       "goalDifference": 9,
       "points": 15,
       "deduction": 0,
-      "form": "LWWWW"
+      "form": "WWWWW"
     },
     {
       "position": 4,
@@ -70,10 +70,27 @@
       "goalDifference": 7,
       "points": 15,
       "deduction": 0,
-      "form": "WWLWW"
+      "form": "WLWWW"
     },
     {
       "position": 5,
+      "name": "Kettering Town",
+      "short": "Kettering",
+      "slug": "kettering-town",
+      "crest": "assets/crests/kettering-town.png",
+      "played": 6,
+      "won": 3,
+      "drawn": 3,
+      "lost": 0,
+      "for": 9,
+      "against": 2,
+      "goalDifference": 7,
+      "points": 12,
+      "deduction": 0,
+      "form": "DWDDW"
+    },
+    {
+      "position": 6,
       "name": "Rushall Olympic",
       "short": "Rushall",
       "slug": "rushall-olympic",
@@ -87,24 +104,7 @@
       "goalDifference": 4,
       "points": 12,
       "deduction": 0,
-      "form": "WLWWW"
-    },
-    {
-      "position": 6,
-      "name": "Kettering Town",
-      "short": "Kettering",
-      "slug": "kettering-town",
-      "crest": "assets/crests/kettering-town.png",
-      "played": 6,
-      "won": 3,
-      "drawn": 3,
-      "lost": 0,
-      "for": 5,
-      "against": 2,
-      "goalDifference": 3,
-      "points": 12,
-      "deduction": 0,
-      "form": "WDWDD"
+      "form": "LWWWL"
     },
     {
       "position": 7,
@@ -116,32 +116,15 @@
       "won": 3,
       "drawn": 2,
       "lost": 1,
-      "for": 9,
+      "for": 10,
       "against": 6,
-      "goalDifference": 3,
+      "goalDifference": 4,
       "points": 11,
       "deduction": 0,
-      "form": "DDWWL"
+      "form": "DWWLW"
     },
     {
       "position": 8,
-      "name": "Leiston",
-      "short": "Leiston",
-      "slug": "Leiston",
-      "crest": "assets/crests/leiston.png",
-      "played": 6,
-      "won": 2,
-      "drawn": 3,
-      "lost": 1,
-      "for": 12,
-      "against": 9,
-      "goalDifference": 3,
-      "points": 9,
-      "deduction": 0,
-      "form": "DWLDW"
-    },
-    {
-      "position": 9,
       "name": "Stourbridge FC",
       "short": "Stourbridge",
       "slug": "Stourbridge FC",
@@ -158,24 +141,75 @@
       "form": "WWDD"
     },
     {
+      "position": 9,
+      "name": "Leiston",
+      "short": "Leiston",
+      "slug": "Leiston",
+      "crest": "assets/crests/leiston.png",
+      "played": 6,
+      "won": 2,
+      "drawn": 2,
+      "lost": 2,
+      "for": 13,
+      "against": 11,
+      "goalDifference": 2,
+      "points": 8,
+      "deduction": 0,
+      "form": "WLDWL"
+    },
+    {
       "position": 10,
+      "name": "Needham Market",
+      "short": "Needham Market",
+      "slug": "needham-market",
+      "crest": "assets/crests/needham-market.png",
+      "played": 6,
+      "won": 2,
+      "drawn": 1,
+      "lost": 3,
+      "for": 9,
+      "against": 11,
+      "goalDifference": -2,
+      "points": 7,
+      "deduction": 0,
+      "form": "WLLWD"
+    },
+    {
+      "position": 11,
+      "name": "Redditch United",
+      "short": "Redditch Utd",
+      "slug": "redditch-united",
+      "crest": "assets/crests/redditch-united.png",
+      "played": 6,
+      "won": 1,
+      "drawn": 3,
+      "lost": 2,
+      "for": 7,
+      "against": 8,
+      "goalDifference": -1,
+      "points": 6,
+      "deduction": 0,
+      "form": "DDLLW"
+    },
+    {
+      "position": 12,
       "name": "Peterborough Sports",
       "short": "sports",
       "slug": "peterborough-sports",
       "crest": "assets/crests/peterborough-sports.png",
       "played": 6,
-      "won": 2,
-      "drawn": 2,
+      "won": 1,
+      "drawn": 3,
       "lost": 2,
-      "for": 5,
-      "against": 6,
-      "goalDifference": -1,
-      "points": 8,
+      "for": 7,
+      "against": 9,
+      "goalDifference": -2,
+      "points": 6,
       "deduction": 0,
-      "form": "DLLDW"
+      "form": "LLDWD"
     },
     {
-      "position": 11,
+      "position": 13,
       "name": "Racing Club Warwick",
       "short": "RC Warwick",
       "slug": "racing-club-warwick",
@@ -189,27 +223,10 @@
       "goalDifference": -2,
       "points": 6,
       "deduction": 0,
-      "form": "DLWDL"
+      "form": "LWDLD"
     },
     {
-      "position": 12,
-      "name": "Redditch United",
-      "short": "Redditch Utd",
-      "slug": "redditch-united",
-      "crest": "assets/crests/redditch-united.png",
-      "played": 6,
-      "won": 1,
-      "drawn": 3,
-      "lost": 2,
-      "for": 5,
-      "against": 7,
-      "goalDifference": -2,
-      "points": 6,
-      "deduction": 0,
-      "form": "DDDLL"
-    },
-    {
-      "position": 13,
+      "position": 14,
       "name": "Halesowen Town",
       "short": "Halesowen Town",
       "slug": "halesowen-town",
@@ -218,32 +235,32 @@
       "won": 2,
       "drawn": 0,
       "lost": 3,
-      "for": 2,
-      "against": 4,
-      "goalDifference": -2,
-      "points": 6,
-      "deduction": 0,
-      "form": "LWWL"
-    },
-    {
-      "position": 14,
-      "name": "Needham Market",
-      "short": "Needham Market",
-      "slug": "needham-market",
-      "crest": "assets/crests/needham-market.png",
-      "played": 6,
-      "won": 2,
-      "drawn": 0,
-      "lost": 4,
-      "for": 6,
-      "against": 9,
+      "for": 3,
+      "against": 6,
       "goalDifference": -3,
       "points": 6,
       "deduction": 0,
-      "form": "LWLLW"
+      "form": "LWWLL"
     },
     {
       "position": 15,
+      "name": "Leighton Town",
+      "short": "Leighton",
+      "slug": "leighton-town",
+      "crest": "assets/crests/leighton-town.png",
+      "played": 6,
+      "won": 1,
+      "drawn": 2,
+      "lost": 3,
+      "for": 9,
+      "against": 11,
+      "goalDifference": -2,
+      "points": 5,
+      "deduction": 0,
+      "form": "DWLLL"
+    },
+    {
+      "position": 16,
       "name": "Worcester City",
       "short": "Worcester City",
       "slug": "worcester-city",
@@ -257,24 +274,7 @@
       "goalDifference": -3,
       "points": 5,
       "deduction": 0,
-      "form": "DLLWD"
-    },
-    {
-      "position": 16,
-      "name": "Leighton Town",
-      "short": "Leighton",
-      "slug": "leighton-town",
-      "crest": "assets/crests/leighton-town.png",
-      "played": 6,
-      "won": 1,
-      "drawn": 2,
-      "lost": 3,
-      "for": 7,
-      "against": 11,
-      "goalDifference": -4,
-      "points": 5,
-      "deduction": 0,
-      "form": "DDWLL"
+      "form": "LLWDL"
     },
     {
       "position": 17,
@@ -287,11 +287,11 @@
       "drawn": 2,
       "lost": 3,
       "for": 6,
-      "against": 10,
-      "goalDifference": -4,
+      "against": 11,
+      "goalDifference": -5,
       "points": 5,
       "deduction": 0,
-      "form": "DWLLD"
+      "form": "WLLDL"
     },
     {
       "position": 18,
@@ -303,12 +303,12 @@
       "won": 1,
       "drawn": 1,
       "lost": 4,
-      "for": 2,
+      "for": 3,
       "against": 10,
-      "goalDifference": -8,
+      "goalDifference": -7,
       "points": 4,
       "deduction": 0,
-      "form": "DLLLL"
+      "form": "LLLLW"
     },
     {
       "position": 19,
@@ -321,11 +321,11 @@
       "drawn": 3,
       "lost": 3,
       "for": 5,
-      "against": 9,
-      "goalDifference": -4,
+      "against": 10,
+      "goalDifference": -5,
       "points": 3,
       "deduction": 0,
-      "form": "LLDDD"
+      "form": "LDDDL"
     },
     {
       "position": 20,
@@ -342,7 +342,7 @@
       "goalDifference": -8,
       "points": 3,
       "deduction": 0,
-      "form": "DDLLL"
+      "form": "DLLLD"
     },
     {
       "position": 21,
@@ -372,8 +372,8 @@
       "drawn": 0,
       "lost": 6,
       "for": 1,
-      "against": 10,
-      "goalDifference": -9,
+      "against": 14,
+      "goalDifference": -13,
       "points": 0,
       "deduction": 0,
       "form": "LLLLL"
@@ -1267,11 +1267,11 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "live",
-      "rawStatus": "SecondHalf",
-      "homeScore": 1,
+      "status": "played",
+      "rawStatus": "FullTime",
+      "homeScore": 5,
       "awayScore": 0,
-      "attendance": null,
+      "attendance": 1125,
       "lineup": [
         {
           "name": "Jason Alexander",
@@ -1382,12 +1382,68 @@
             "minute": 20,
             "ours": true,
             "type": null
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 57,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Michael Gyasi",
+            "minute": 59,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 82,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Shaun Jeffers",
+            "minute": 84,
+            "ours": true,
+            "type": null
           }
         ],
         "cards": [
           {
             "name": "Michael Gyasi",
             "minute": 36,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tai Fleming",
+            "minute": 51,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Jon Challinor",
+            "minute": 54,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Sam Warburton",
+            "minute": 64,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tom Leak",
+            "minute": 85,
             "ours": true,
             "type": null,
             "second": false,
