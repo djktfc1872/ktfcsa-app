@@ -8444,7 +8444,7 @@ function rsvpList(m) {
  */
 function rsvpPanel(m, total) {
   const box = el(`<div class="rsvp"></div>`);
-  const saved = db.read(`rsvp:${m.id}`, null);
+  const saved = db.read(`rsvp:${m.meeting_id}`, null);
 
   const draw = () => {
     box.replaceChildren();
@@ -8454,7 +8454,7 @@ function rsvpPanel(m, total) {
                      cannot: "You cannot come, and we will keep you posted" }[saved];
       box.append(el(`<p class="rsvp__done">${esc(said)}. Thank you.</p>`));
       const change = el(`<button class="link-btn">Change that</button>`);
-      change.addEventListener("click", () => { db.write(`rsvp:${m.id}`, null); redraw(); });
+      change.addEventListener("click", () => { db.write(`rsvp:${m.meeting_id}`, null); redraw(); });
       box.append(change);
       return;
     }
@@ -8495,10 +8495,10 @@ function rsvpPanel(m, total) {
         try {
           /* Only sent for somebody who will actually be in the room. Anybody
              else leaves it null, which means not asked rather than no. */
-          await db.rsvpMeeting(m.id, key, db.consultDeviceKey(), name.value.trim(),
+          await db.rsvpMeeting(m.meeting_id, key, db.consultDeviceKey(), name.value.trim(),
             mail ? mail.value.trim() : null,
             key === "in_person" ? foodBox.checked : null);
-          db.write(`rsvp:${m.id}`, key);
+          db.write(`rsvp:${m.meeting_id}`, key);
           toast("Thank you. We will let you know.", "good");
           redraw();
         } catch (err) {
