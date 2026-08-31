@@ -8499,11 +8499,16 @@ function viewDeck() {
   const stack = el(`<div class="deck"></div>`);
   wrap.append(stack);
 
+  /* loadLetter matters here. The reply clock counts from the day we wrote, and
+     state.letter is only filled by whoever has already opened the letters
+     page. Without this the deck showed an em dash to anybody arriving at it
+     directly, which on the night is everybody. */
   Promise.all([
     readJSON("data/deck.json"),
     readJSON("data/attendances.json"),
     db.consultationResults().catch(() => null),
     db.meetings().then((rows) => rows[0] || null).catch(() => null),
+    loadLetter().catch(() => null),
   ]).then(([deck, att, results, meeting]) => {
     const facts = { att, results, meeting };
     stack.replaceChildren();
