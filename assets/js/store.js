@@ -175,8 +175,8 @@ export const exactCalls = () =>
   (backend?.exactCalls ? backend.exactCalls() : Promise.resolve([]));
 export const meetings = () =>
   (backend?.meetings ? backend.meetings() : Promise.resolve([]));
-export const rsvpMeeting = (id, coming, key, name, email) =>
-  (backend?.rsvpMeeting ? backend.rsvpMeeting(id, coming, key, name, email)
+export const rsvpMeeting = (id, coming, key, name, email, eating) =>
+  (backend?.rsvpMeeting ? backend.rsvpMeeting(id, coming, key, name, email, eating)
     : Promise.reject(new Error("Not connected.")));
 export const meetingList = (id) =>
   (backend?.meetingList ? backend.meetingList(id) : Promise.resolve([]));

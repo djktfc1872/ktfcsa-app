@@ -688,10 +688,11 @@ class Backend {
     return data || [];
   }
 
-  async rsvpMeeting(id, coming, key, name, email) {
+  async rsvpMeeting(id, coming, key, name, email, eating) {
     const { error } = await this.sb.rpc("rsvp_meeting", {
       p_meeting: id, p_coming: coming, p_key: key || null,
-      p_name: name || null, p_email: email || null });
+      p_name: name || null, p_email: email || null,
+      p_eating: typeof eating === "boolean" ? eating : null });
     if (error) throw new Error(friendly(error));
   }
 
@@ -700,7 +701,7 @@ class Backend {
      erroring. */
   async meetingList(id) {
     const { data, error } = await this.sb
-      .from("meeting_rsvps").select("coming, name, created_at, profile_id")
+      .from("meeting_rsvps").select("coming, name, email, eating, created_at, profile_id")
       .eq("meeting_id", id).order("created_at");
     if (error) return [];
     return data || [];

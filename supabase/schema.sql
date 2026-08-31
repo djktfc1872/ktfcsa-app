@@ -3330,34 +3330,10 @@ create policy "change your mind" on meeting_rsvps
 
 -- ---- the headcount --------------------------------------------------------
 --
--- Runs as owner so the numbers are public while the list of names is not. This
--- is the number that decides whether seventy five pounds gets spent, so it is
--- worth everybody being able to see it.
+-- The view lives further down, with the food question it gained later, so that
+-- there is one definition of it rather than two and nobody has to count line
+-- numbers to find out which is live.
 
-drop view if exists meeting_counts cascade;
-create view meeting_counts as
-select
-  m.id                 as meeting_id,
-  m.title,
-  m.held_at,
-  m.venue,
-  m.address,
-  m.online_url,
-  m.capacity,
-  m.note,
-  m.status,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.coming = 'in_person') as in_person,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.coming = 'online')    as online,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.coming = 'cannot')    as cannot
-from meetings m
-where m.status <> 'off'
-order by m.held_at nulls last, m.created_at;
-
-alter view meeting_counts set (security_invoker = false);
-grant select on meeting_counts to anon, authenticated;
 
 -- ---- saying you are coming ------------------------------------------------
 --
@@ -3493,3 +3469,118 @@ $$;
 
 revoke all on function rsvp_meeting(uuid, text, text, text) from public;
 grant execute on function rsvp_meeting(uuid, text, text, text) to anon, authenticated;
+
+-- ===========================================================================
+-- Eating on the night
+-- ===========================================================================
+--
+-- No. 1 Smash & Grab need a number before they will commit to catering, and
+-- the alternative was counting a Facebook comment thread by hand. It is a
+-- separate question from whether somebody is coming, because plenty will turn
+-- up and not eat, and one answer must not be read as the other.
+--
+-- Nullable on purpose. Null means they were never asked, which is the honest
+-- state for everybody who said they were coming before this existed, and is a
+-- different thing from having said no.
+
+alter table meeting_rsvps add column if not exists eating boolean;
+
+comment on column meeting_rsvps.eating is
+  'Would eat on the night if catering is booked. Null means not asked, which is
+   not the same as no: everybody who replied before the question existed is
+   null and must not be counted as a refusal.';
+
+create or replace function rsvp_meeting(
+  p_meeting uuid, p_coming text, p_key text, p_name text, p_email text, p_eating boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  mail text := nullif(btrim(lower(p_email)), '');
+begin
+  if p_coming not in ('in_person', 'online', 'cannot') then
+    raise exception 'Not one of the answers';
+  end if;
+
+  if mail is not null and mail not like '%_@_%' then
+    raise exception 'That does not look like an email address';
+  end if;
+
+  if uid is not null then
+    insert into meeting_rsvps (meeting_id, profile_id, coming, name, email, eating)
+    values (p_meeting, uid, p_coming, nullif(btrim(p_name), ''), mail, p_eating)
+    on conflict (meeting_id, profile_id) where profile_id is not null
+    do update set coming = excluded.coming, name = excluded.name,
+                  email = coalesce(excluded.email, meeting_rsvps.email),
+                  eating = coalesce(excluded.eating, meeting_rsvps.eating),
+                  updated_at = now();
+    return;
+  end if;
+
+  if p_key is null or char_length(p_key) < 8 then
+    raise exception 'Tell us who you are, or sign in';
+  end if;
+
+  insert into meeting_rsvps (meeting_id, device_key, coming, name, email, eating)
+  values (p_meeting, p_key, p_coming, nullif(btrim(p_name), ''), mail, p_eating)
+  on conflict (meeting_id, device_key) where profile_id is null
+  do update set coming = excluded.coming, name = excluded.name,
+                email = coalesce(excluded.email, meeting_rsvps.email),
+                eating = coalesce(excluded.eating, meeting_rsvps.eating),
+                updated_at = now();
+end;
+$$;
+
+revoke all on function rsvp_meeting(uuid, text, text, text, text, boolean) from public;
+grant execute on function rsvp_meeting(uuid, text, text, text, text, boolean) to anon, authenticated;
+
+-- The older signatures stay and delegate, for the same reason as before: a
+-- phone holding an earlier copy of the app must not have its RSVP refused
+-- between this file running and that phone picking up new code.
+create or replace function rsvp_meeting(
+  p_meeting uuid, p_coming text, p_key text, p_name text, p_email text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  select rsvp_meeting(p_meeting, p_coming, p_key, p_name, p_email, null::boolean);
+$$;
+
+revoke all on function rsvp_meeting(uuid, text, text, text, text) from public;
+grant execute on function rsvp_meeting(uuid, text, text, text, text) to anon, authenticated;
+
+-- The headcount gains the food number. Null is not counted either way, so
+-- "would eat" and "would not" add up to less than the room, which is correct:
+-- the rest have not been asked.
+drop view if exists meeting_counts cascade;
+create view meeting_counts as
+select
+  m.id                 as meeting_id,
+  m.title,
+  m.held_at,
+  m.venue,
+  m.address,
+  m.online_url,
+  m.capacity,
+  m.note,
+  m.status,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'in_person') as in_person,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'online')    as online,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'cannot')    as cannot,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.eating is true)       as eating,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.eating is false)      as not_eating
+from meetings m
+where m.status <> 'off'
+order by m.held_at nulls last, m.created_at;
+
+alter view meeting_counts set (security_invoker = false);
+grant select on meeting_counts to anon, authenticated;

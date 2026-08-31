@@ -8267,6 +8267,14 @@ function meetingCard(m) {
         <div class="info__value">${m.cannot || 0}</div></div>
     </div>`));
 
+  /* Only once anybody has answered. A food count of nought sitting under an
+     empty room says nothing and looks like a failure. */
+  if ((m.eating || 0) + (m.not_eating || 0) > 0) {
+    card.append(el(`<p class="hint meeting__food"><b>${m.eating || 0}</b> would eat on the
+      night${m.not_eating ? `, ${m.not_eating} would not` : ""}. That is the number
+      No. 1 Smash &amp; Grab need before they commit.</p>`));
+  }
+
   if (m.capacity) {
     const left = m.capacity - (m.in_person || 0);
     card.append(el(`<p class="hint">${left > 0
@@ -8398,6 +8406,18 @@ function rsvpPanel(m, total) {
       maxlength="120" placeholder="Email, only if you want telling of any change">`);
     if (mail) box.append(mail);
 
+    /* Asked of everybody but only meaningful for the room, so it is a tick
+       rather than a third button: somebody joining online is not eating a
+       burger in Kettering. */
+    const food = el(`
+      <label class="rsvp__food">
+        <input type="checkbox">
+        <span>I would eat on the night, if there is food on
+          (No. 1 Smash &amp; Grab, pay as you eat)</span>
+      </label>`);
+    box.append(food);
+    const foodBox = food.querySelector("input");
+
     const row = el(`<div class="btn-row rsvp__row"></div>`);
     [["in_person", "I will be there"],
      ["online", "I would join online"],
@@ -8406,8 +8426,11 @@ function rsvpPanel(m, total) {
       b.addEventListener("click", async () => {
         row.querySelectorAll("button").forEach((x) => { x.disabled = true; });
         try {
+          /* Only sent for somebody who will actually be in the room. Anybody
+             else leaves it null, which means not asked rather than no. */
           await db.rsvpMeeting(m.id, key, db.consultDeviceKey(), name.value.trim(),
-            mail ? mail.value.trim() : null);
+            mail ? mail.value.trim() : null,
+            key === "in_person" ? foodBox.checked : null);
           db.write(`rsvp:${m.id}`, key);
           toast("Thank you. We will let you know.", "good");
           redraw();

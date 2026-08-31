@@ -6915,3 +6915,18 @@ button,
 @media (max-width: 420px) {
   .meeting .sent-slip__row { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* The food question. A tick rather than a button: it qualifies "I will be
+   there" instead of competing with it. */
+.rsvp__food {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 2px 0;
+}
+.rsvp__food input { margin-top: 3px; flex: none; accent-color: var(--accent); }
+.meeting__food b { color: var(--accent); }
