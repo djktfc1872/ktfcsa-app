@@ -8226,32 +8226,17 @@ function viewMeeting() {
 function meetingCard(m) {
   const card = el(`<div class="card meeting"></div>`);
   const planning = m.status === "planning";
+  const when = m.held_at ? new Date(m.held_at) : null;
 
-  card.append(el(`<h2 class="meeting__title">${esc(m.title)}</h2>`));
+  /* The head: what it is, and how long you have got. A date on its own makes
+     the reader do the arithmetic, and the answer to "is this soon?" is the
+     thing that decides whether they act now or mean to later. */
+  const head = el(`<div class="meeting__head"></div>`);
+  head.append(el(`<h2 class="meeting__title">${esc(m.title)}</h2>`));
+  if (when) head.append(el(`<span class="meeting__soon">${esc(howSoon(when))}</span>`));
+  card.append(head);
 
-  /* Where, when, and how many. Nulls are the normal state early on and say so
-     rather than showing an empty row. */
-  const rows = [
-    /* 7:30pm, not 19:30. Nobody arranging to meet in a pub says nineteen
-       thirty, and this is read by supporters rather than by a timetable. */
-    ["When", m.held_at
-      ? `${fmtDate(String(m.held_at).slice(0, 10))}, ${
-          new Date(m.held_at).toLocaleTimeString("en-GB", {
-            hour: "numeric", minute: "2-digit", hour12: true })
-            .replace(":00", "").replace(" ", "")}`
-      : "Not settled yet"],
-    ["Where", m.venue ? `${esc(m.venue)}${m.address ? `, ${esc(m.address)}` : ""}` : "Not settled yet"],
-  ];
-  if (m.online_url) {
-    /* It was a sentence saying a link existed, which is not a link. */
-    rows.push(["Online", `<a href="${esc(m.online_url)}" target="_blank" rel="noopener"
-      class="meeting__stream">Watch it live</a>`]);
-  }
-
-  const slip = el(`<div class="sent-slip"></div>`);
-  rows.forEach(([k, v]) => slip.append(el(
-    `<div class="sent-slip__row"><span>${esc(k)}</span><b>${v}</b></div>`)));
-  card.append(slip);
+  card.append(meetingFacts(m, when, planning));
 
   if (planning) {
     card.append(el(`<p class="hint">Nothing is booked. A room costs money, and how big a
@@ -8271,6 +8256,21 @@ function meetingCard(m) {
         <div class="info__value">${m.cannot || 0}</div></div>
     </div>`));
 
+  /* How full the room is, drawn rather than described. A number of places left
+     is abstract until you can see how much of the bar has gone. */
+  if (m.capacity) {
+    const taken = Math.min(m.in_person || 0, m.capacity);
+    const left = m.capacity - (m.in_person || 0);
+    const pct = Math.round((taken / m.capacity) * 100);
+    card.append(el(`
+      <div class="room-fill">
+        <div class="room-fill__bar"><i style="width:${pct}%"></i></div>
+        <p class="hint room-fill__say">${left > 0
+          ? `<b>${left}</b> place${left === 1 ? "" : "s"} left in the room, of ${m.capacity}.`
+          : `The room is full. Say you are coming anyway and we will look at a bigger one.`}</p>
+      </div>`));
+  }
+
   /* Only once anybody has answered. A food count of nought sitting under an
      empty room says nothing and looks like a failure. */
   if ((m.eating || 0) + (m.not_eating || 0) > 0) {
@@ -8279,16 +8279,11 @@ function meetingCard(m) {
       No. 1 Smash &amp; Grab need before they commit.</p>`));
   }
 
-  if (m.capacity) {
-    const left = m.capacity - (m.in_person || 0);
-    card.append(el(`<p class="hint">${left > 0
-      ? `${left} place${left === 1 ? "" : "s"} left in the room, of ${m.capacity}.`
-      : `The room is full. Say you are coming anyway and we will look at a bigger one.`}</p>`));
-  }
-
   if (m.note) card.append(el(`<p class="club-overview">${esc(m.note)}</p>`));
 
+  card.append(runningOrder(m, when));
   card.append(rsvpPanel(m, total));
+  card.append(questionsPanel(m));
 
   /* Setting the stream link, for whoever is standing in the pub when it starts.
      Admins only, matching the policy on meetings: a moderator can read the
@@ -8301,6 +8296,325 @@ function meetingCard(m) {
   if (db.isModerator()) card.append(rsvpList(m));
 
   return card;
+}
+
+/**
+ * "In six days", "Tomorrow", "Tonight", "Under way".
+ *
+ * Deliberately vague past a fortnight, because "in 43 days" is a number nobody
+ * needed. The point is only ever whether to act now.
+ */
+function howSoon(when) {
+  const ms = when.getTime() - Date.now();
+  if (ms < -3 * 3600e3) return "Been and gone";
+  if (ms < 0) return "Under way now";
+  const mins = Math.round(ms / 60000);
+  if (mins < 90) return `In ${mins} minute${mins === 1 ? "" : "s"}`;
+
+  /* Whole days apart on the calendar, not lumps of 24 hours: at eleven at
+     night, a meeting the following evening is 20 hours away and "Tomorrow" is
+     what a person would say. */
+  const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((midnight(when) - midnight(new Date())) / 86400e3);
+  if (days === 0) return "Tonight";
+  if (days === 1) return "Tomorrow";
+  if (days < 14) return `In ${days} days`;
+  return `In ${Math.round(days / 7)} weeks`;
+}
+
+/**
+ * When, where, and how to get there.
+ *
+ * This was a bare gold rule with the rows jammed against it, which read as a
+ * stray line rather than as anything holding the rows together. It is now a
+ * panel with room to breathe, and each row carries the thing you would
+ * otherwise have to go and find: a map for the address, a calendar entry for
+ * the date, the actual link for the stream.
+ */
+function meetingFacts(m, when, planning) {
+  const facts = el(`<div class="facts"></div>`);
+
+  const row = (label, value, extra) => facts.append(el(`
+    <div class="facts__row">
+      <div class="facts__label">${esc(label)}</div>
+      <div class="facts__value">${value}${extra ? `<span class="facts__extra">${extra}</span>` : ""}</div>
+    </div>`));
+
+  /* 7:30pm, not 19:30. Nobody arranging to meet in a pub says nineteen
+     thirty, and this is read by supporters rather than by a timetable. */
+  const clock = (d) => d.toLocaleTimeString("en-GB", {
+    hour: "numeric", minute: "2-digit", hour12: true }).replace(":00", "").replace(" ", "");
+
+  row("When", when
+    ? `${fmtDate(String(m.held_at).slice(0, 10))}, ${clock(when)}`
+    : `<span class="facts__tbc">Not settled yet</span>`,
+    when && !planning ? `<a class="facts__link" data-act="cal" href="#">Add to your calendar</a>` : "");
+
+  row("Where", m.venue
+    ? `${esc(m.venue)}${m.address ? `<span class="facts__sub">${esc(m.address)}</span>` : ""}`
+    : `<span class="facts__tbc">Not settled yet</span>`,
+    m.venue ? `<a class="facts__link" target="_blank" rel="noopener"
+      href="https://www.google.com/maps/search/?api=1&query=${
+        encodeURIComponent([m.venue, m.address].filter(Boolean).join(", "))
+      }">Open in maps</a>` : "");
+
+  row("Getting in", `Free`, `Bucket on the night if you want to chip in`);
+
+  if (m.online_url) {
+    /* It was a sentence saying a link existed, which is not a link. */
+    row("Online", `<a href="${esc(m.online_url)}" target="_blank" rel="noopener"
+      class="meeting__stream">Watch it live</a>`, `Facebook Live, no account needed to watch`);
+  } else if (!planning) {
+    row("Online", `<span class="facts__tbc">Facebook Live on the night</span>`,
+      `The link appears here when the stream starts`);
+  }
+
+  /* An .ics rather than a link to a calendar service, so it works the same on
+     a phone, a laptop and whatever somebody's work machine runs. Built when it
+     is clicked, not on every render. */
+  $('[data-act="cal"]', facts)?.addEventListener("click", (e) => {
+    e.preventDefault();
+    downloadInvite(m, when);
+  });
+
+  return facts;
+}
+
+/**
+ * A calendar entry, built in the browser.
+ *
+ * Two hours long because the note says half seven to about half nine, and an
+ * entry with no end time shows as an all-day blob on most phones.
+ */
+function downloadInvite(m, when) {
+  const stamp = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const end = new Date(when.getTime() + 2 * 3600e3);
+  const fold = (v) => String(v || "").replace(/\\/g, "\\\\")
+    .replace(/[,;]/g, (c) => `\\${c}`).replace(/\r?\n/g, "\\n");
+
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//KTFCSA//Fan Companion//EN",
+    "BEGIN:VEVENT",
+    `UID:${m.meeting_id}@ktfcsa.com`,
+    `DTSTAMP:${stamp(new Date())}`,
+    `DTSTART:${stamp(when)}`,
+    `DTEND:${stamp(end)}`,
+    `SUMMARY:${fold(m.title)}`,
+    `LOCATION:${fold([m.venue, m.address].filter(Boolean).join(", "))}`,
+    `DESCRIPTION:${fold(m.note || "Kettering Town FC Supporters' Association.")}`,
+    "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "supporters-meeting.ics";
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast("Saved to your downloads. Open it to add the meeting.", "good");
+}
+
+/**
+ * The running order.
+ *
+ * The note already says what happens; this says when, which is the bit that
+ * decides whether somebody who can only get there for eight bothers coming at
+ * all. Times are worked out from the start rather than written down, so moving
+ * the meeting moves the agenda with it.
+ */
+function runningOrder(m, when) {
+  const box = el(`
+    <div class="agenda">
+      <div class="info__label">How the night runs</div>
+    </div>`);
+
+  const at = (mins) => {
+    if (!when) return "";
+    const d = new Date(when.getTime() + mins * 60000);
+    return d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
+      .replace(":00", "").replace(" ", "");
+  };
+
+  [
+    [0,  "Doors and a drink", "Get there, get a pint, say hello."],
+    [15, "Where we are", "Where the Association has got to, and what the club has and has not said."],
+    [45, "Questions from the floor", "Anything you like. Put one in below beforehand if you would rather not stand up."],
+    [110, "Done by about", "Nobody is keeping you. The bar is not going anywhere."],
+  ].forEach(([mins, what, why]) => box.append(el(`
+    <div class="agenda__row">
+      <div class="agenda__at">${esc(at(mins)) || "&mdash;"}</div>
+      <div class="agenda__what"><b>${esc(what)}</b><span>${esc(why)}</span></div>
+    </div>`)));
+
+  return box;
+}
+
+/**
+ * Questions for the floor.
+ *
+ * Standing up in a room of a hundred people and asking a question is a skill,
+ * and it is not the same skill as having a good question. The people most
+ * worth hearing from about a football club are often the least likely to do
+ * that. So a question can go in from the sofa, with no account, and be read
+ * out on the night by whoever is chairing.
+ *
+ * Backing decides the order. The chair has maybe forty minutes and forty
+ * questions, and picking by what the room actually wants asked is both fairer
+ * and harder to argue with than picking by who is loudest or who is a mate.
+ * Everybody can see the order in advance, which is the point.
+ */
+function questionsPanel(m) {
+  const box = el(`
+    <div class="asks">
+      <div class="asks__head">
+        <div class="info__label">Questions for the floor</div>
+        <span class="asks__count" data-role="count"></span>
+      </div>
+      <p class="hint">Put a question in and we will read it out on the night, whether you
+        make it or not. Back the ones you want asked &mdash; the most backed go first, so
+        the agenda is decided by the room rather than by us.</p>
+      <div data-role="list"></div>
+      <div data-role="form"></div>
+    </div>`);
+
+  const list = $('[data-role="list"]', box);
+  const count = $('[data-role="count"]', box);
+
+  /* Which ones this browser has backed. The database holds the real record and
+     refuses a second backing on its own; this only decides which button reads
+     "Backed" on the way back to the page. */
+  const mineKey = `qbacked:${m.meeting_id}`;
+  const mine = new Set(db.read(mineKey, []) || []);
+
+  const draw = (rows) => {
+    /* Null means the tables are not on this database yet. Show nothing rather
+       than an invitation to ask a question that would fail on submit. */
+    if (rows === null) { box.remove(); return; }
+
+    list.replaceChildren();
+    count.textContent = rows.length ? `${rows.length} so far` : "";
+
+    if (!rows.length) {
+      list.append(el(`<div class="empty asks__empty"><b>Nothing asked yet</b>Be the first.
+        A question here gets read out even if you cannot get there.</div>`));
+      return;
+    }
+
+    rows.forEach((q) => {
+      const row = el(`
+        <div class="ask${q.answered ? " ask--done" : ""}">
+          <button class="ask__back${mine.has(q.id) ? " is-mine" : ""}" type="button"
+            title="Back this question">
+            <span class="ask__n">${q.backers}</span>
+            <span class="ask__up">${mine.has(q.id) ? "Backed" : "Back it"}</span>
+          </button>
+          <div class="ask__body">
+            <p class="ask__text">${esc(q.body)}</p>
+            <p class="ask__by">${esc(q.author_name)}${
+              q.answered ? ` &middot; <b>answered on the night</b>` : ""}</p>
+          </div>
+        </div>`);
+
+      const btn = $(".ask__back", row);
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        try {
+          const now = await db.backMeetingQuestion(q.id, db.consultDeviceKey());
+          if (mine.has(q.id)) mine.delete(q.id); else mine.add(q.id);
+          db.write(mineKey, [...mine]);
+          /* The count the database ended up with, not the one we guessed. */
+          q.backers = now;
+          load();
+        } catch (err) {
+          btn.disabled = false;
+          toast(err.message || "That did not save.", "bad");
+        }
+      });
+
+      /* Volunteers only, and deliberately plain: hiding a question somebody
+         wanted asked is a serious thing to do quietly. */
+      if (db.isModerator()) {
+        const tools = el(`<div class="ask__tools"></div>`);
+        const mark = el(`<button class="link-btn">${
+          q.answered ? "Not answered after all" : "Mark answered"}</button>`);
+        mark.addEventListener("click", async () => {
+          try {
+            await db.setQuestionState(q.id, { answered: !q.answered });
+            load();
+          } catch (err) { toast(err.message, "bad"); }
+        });
+        const hide = el(`<button class="link-btn link-btn--warn">Hide</button>`);
+        hide.addEventListener("click", async () => {
+          if (!window.confirm("Hide this question from everybody?")) return;
+          try {
+            await db.setQuestionState(q.id, { hidden: true });
+            toast("Hidden.", "good");
+            load();
+          } catch (err) { toast(err.message, "bad"); }
+        });
+        tools.append(mark, hide);
+        $(".ask__body", row).append(tools);
+      }
+
+      list.append(row);
+    });
+  };
+
+  const load = () => db.meetingQuestions(m.meeting_id)
+    .then(draw)
+    .catch(() => {
+      if (!document.contains(box)) return;
+      list.replaceChildren();
+      list.append(el(`<div class="empty"><b>Could not load the questions</b>Try again in a
+        moment. Yours is not lost.</div>`));
+    });
+
+  /* The form, below the list: read what has been asked before adding to it. */
+  const form = $('[data-role="form"]', box);
+  const build = () => {
+    form.replaceChildren();
+    const f = el(`
+      <div class="ask-form">
+        <textarea class="input ask-form__text" rows="3" maxlength="600"
+          placeholder="What would you like asked?"></textarea>
+        <div class="row row--wrap ask-form__row">
+          <input class="input ask-form__name" maxlength="40" placeholder="Your name"
+            value="${esc(db.currentUser()?.name || "")}">
+          <button class="btn btn--sm">Add it to the agenda</button>
+        </div>
+        <p class="hint" data-role="say">Your name is shown with your question. Nothing else is.</p>
+      </div>`);
+    const text = $(".ask-form__text", f);
+    const name = $(".ask-form__name", f);
+    const say = $('[data-role="say"]', f);
+    const btn = $("button", f);
+
+    btn.addEventListener("click", async () => {
+      const body = text.value.trim();
+      if (body.length < 8) { say.textContent = "A few more words and it can go on."; return; }
+      btn.disabled = true;
+      say.textContent = "Adding\u2026";
+      try {
+        const id = await db.askMeetingQuestion(
+          m.meeting_id, db.consultDeviceKey(), name.value.trim(), body);
+        mine.add(id);
+        db.write(mineKey, [...mine]);
+        toast("On the agenda. Thank you.", "good");
+        build();
+        load();
+      } catch (err) {
+        btn.disabled = false;
+        say.textContent = String(err?.message || err);
+      }
+    });
+    form.append(f);
+  };
+
+  build();
+  load();
+  return box;
 }
 
 /**

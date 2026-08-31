@@ -728,6 +728,45 @@ class Backend {
     return data[0];
   }
 
+  /* -------------------------------------------- questions for the floor */
+
+  /* Null, not an empty array, when the table is not there. The difference is
+     "nobody has asked anything" against "this feature does not exist on this
+     database yet", and the page has to tell them apart: the first invites you
+     to be the first, and the second has to show nothing at all rather than an
+     invitation that cannot work. */
+  async meetingQuestions(meetingId) {
+    const { data, error } = await this.sb.from("meeting_question_board")
+      .select("*").eq("meeting_id", meetingId);
+    if (error) return null;
+    return data || [];
+  }
+
+  async askMeetingQuestion(meetingId, key, name, body) {
+    const { data, error } = await this.sb.rpc("ask_meeting_question", {
+      p_meeting: meetingId, p_key: key || null,
+      p_name: name || null, p_body: body });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  /* Returns the count the database ended up with rather than the one the page
+     guessed, because two people backing the same question at once is exactly
+     the case an optimistic +1 gets wrong. */
+  async backMeetingQuestion(questionId, key) {
+    const { data, error } = await this.sb.rpc("back_meeting_question", {
+      p_question: questionId, p_key: key || null });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  async setQuestionState(id, patch) {
+    const { data, error } = await this.sb.from("meeting_questions")
+      .update(patch).eq("id", id).select("id");
+    if (error) throw new Error(friendly(error));
+    if (!data || !data.length) throw new Error("That did not save. Are you still signed in?");
+  }
+
   async groundBoard() {
     const { data, error } = await this.sb.from("ground_board").select("*");
     if (error) return [];

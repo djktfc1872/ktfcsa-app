@@ -3584,3 +3584,197 @@ order by m.held_at nulls last, m.created_at;
 
 alter view meeting_counts set (security_invoker = false);
 grant select on meeting_counts to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Questions for the floor
+-- ---------------------------------------------------------------------------
+--
+-- The meeting note promises "a few speakers first, then questions from the
+-- floor", and the whole argument this Association is making to the club is
+-- about being listened to. A meeting where the only way to be heard is to be
+-- confident enough to stand up in a pub is not that.
+--
+-- So a question can be put in beforehand, by anybody, with no account, and
+-- everybody can see what has been asked. Two things follow from that which are
+-- worth stating rather than discovering:
+--
+--   * **Backing is the agenda.** Whoever chairs the night has finite time and
+--     has to choose. Choosing by what the room actually wants asked beats
+--     choosing by who shouts, and it is visible in advance so the choosing
+--     cannot be quietly self-serving.
+--
+--   * **One backer per person per question**, held by a primary key rather
+--     than by the browser, so clearing your history does not buy you a second
+--     go. The same shape as wall_likes, and for the same reason.
+--
+-- Questions are public the moment they are asked. That is deliberate: holding
+-- them for approval would make the Association the gatekeeper of what may be
+-- asked of the club, which is the thing it exists to complain about. Hiding is
+-- there for abuse, after the fact, and is a moderator action like any other.
+
+create table if not exists meeting_questions (
+  id uuid primary key default gen_random_uuid(),
+  meeting_id uuid not null references meetings on delete cascade,
+  profile_id uuid references profiles on delete set null,
+  device_key text,
+  author_name text not null,
+  body text not null check (char_length(btrim(body)) between 8 and 600),
+  hidden boolean not null default false,
+  answered boolean not null default false,
+  backers int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists meeting_questions_idx
+  on meeting_questions (meeting_id, backers desc, created_at);
+
+-- Who backed what. Never readable: the voter column is a device key, and a
+-- readable table of device keys is a way to follow one person around the site.
+-- The count lives on the question and the browser remembers its own backing,
+-- which is a convenience; the primary key here is what actually enforces it.
+create table if not exists meeting_question_backers (
+  question_id uuid not null references meeting_questions on delete cascade,
+  voter text not null,
+  created_at timestamptz not null default now(),
+  primary key (question_id, voter)
+);
+
+create or replace function bump_question_backers() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  update meeting_questions
+     set backers = (select count(*) from meeting_question_backers
+                     where question_id = coalesce(new.question_id, old.question_id))
+   where id = coalesce(new.question_id, old.question_id);
+  return null;
+end $$;
+
+drop trigger if exists meeting_question_backers_count on meeting_question_backers;
+create trigger meeting_question_backers_count
+  after insert or delete on meeting_question_backers
+  for each row execute function bump_question_backers();
+
+alter table meeting_questions enable row level security;
+alter table meeting_question_backers enable row level security;
+
+drop policy if exists "questions readable" on meeting_questions;
+create policy "questions readable" on meeting_questions
+  for select using (not hidden or is_moderator());
+
+drop policy if exists "volunteers moderate questions" on meeting_questions;
+create policy "volunteers moderate questions" on meeting_questions
+  for update using (is_moderator()) with check (is_moderator());
+
+drop policy if exists "volunteers clear questions" on meeting_questions;
+create policy "volunteers clear questions" on meeting_questions
+  for delete using (is_admin());
+
+-- No policy at all on the backers table, so nothing reaches it except the two
+-- definer functions below. That is the point.
+
+-- Ask one. Rate limited per device rather than per name, because a name is
+-- whatever you typed.
+create or replace function ask_meeting_question(
+  p_meeting uuid, p_key text, p_name text, p_body text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_profile uuid := auth.uid();
+  v_name text := nullif(btrim(coalesce(p_name, '')), '');
+  v_body text := btrim(coalesce(p_body, ''));
+  v_id uuid;
+begin
+  if v_profile is null and nullif(btrim(coalesce(p_key, '')), '') is null then
+    raise exception 'We need to know which browser this came from.';
+  end if;
+  if char_length(v_body) < 8 then
+    raise exception 'That is a bit short to go on the agenda.';
+  end if;
+  if char_length(v_body) > 600 then
+    raise exception 'That is longer than anybody will read out. Six hundred characters.';
+  end if;
+
+  if v_name is null then
+    select display_name into v_name from profiles where id = v_profile;
+  end if;
+  v_name := coalesce(v_name, 'A supporter');
+
+  -- Five in a day from one browser is plenty for a two hour meeting.
+  if (select count(*) from meeting_questions
+       where meeting_id = p_meeting
+         and created_at > now() - interval '1 day'
+         and ((v_profile is not null and profile_id = v_profile)
+              or (v_profile is null and device_key = p_key))) >= 5 then
+    raise exception 'That is five questions today. Leave some room for everybody else.';
+  end if;
+
+  insert into meeting_questions (meeting_id, profile_id, device_key, author_name, body)
+  values (p_meeting, v_profile, nullif(btrim(coalesce(p_key, '')), ''), v_name, v_body)
+  returning id into v_id;
+
+  -- Asking it counts as backing it. Otherwise a brand new question sits on
+  -- nought backers below one that has one, which reads as nobody caring.
+  insert into meeting_question_backers (question_id, voter)
+  values (v_id, coalesce(v_profile::text, p_key))
+  on conflict do nothing;
+
+  return v_id;
+end $$;
+
+revoke all on function ask_meeting_question(uuid, text, text, text) from public;
+grant execute on function ask_meeting_question(uuid, text, text, text) to anon, authenticated;
+
+-- Back one, or take it back. Returns the count so the page can show the truth
+-- rather than what it assumed would happen.
+create or replace function back_meeting_question(p_question uuid, p_key text)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_voter text := coalesce(auth.uid()::text, nullif(btrim(coalesce(p_key, '')), ''));
+  v_gone boolean;
+begin
+  if v_voter is null then
+    raise exception 'We need to know which browser this came from.';
+  end if;
+  if not exists (select 1 from meeting_questions where id = p_question and not hidden) then
+    raise exception 'That question is no longer there.';
+  end if;
+
+  delete from meeting_question_backers
+   where question_id = p_question and voter = v_voter;
+  get diagnostics v_gone = row_count;
+
+  if not v_gone then
+    insert into meeting_question_backers (question_id, voter) values (p_question, v_voter);
+  end if;
+
+  return (select backers from meeting_questions where id = p_question);
+end $$;
+
+revoke all on function back_meeting_question(uuid, text) from public;
+grant execute on function back_meeting_question(uuid, text) to anon, authenticated;
+
+-- What the page shows. No device key, no profile id: a question is attributed
+-- to a name and nothing else, the same as the wall.
+drop view if exists meeting_question_board cascade;
+create view meeting_question_board as
+select
+  q.id,
+  q.meeting_id,
+  q.author_name,
+  q.body,
+  q.backers,
+  q.answered,
+  q.created_at
+from meeting_questions q
+where not q.hidden
+order by q.answered, q.backers desc, q.created_at;
+
+alter view meeting_question_board set (security_invoker = false);
+grant select on meeting_question_board to anon, authenticated;

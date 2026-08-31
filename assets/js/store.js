@@ -185,6 +185,18 @@ export const setMeetingStream = (id, url) =>
   (backend?.setMeetingStream ? backend.setMeetingStream(id, url)
     : Promise.reject(new Error("Not connected.")));
 
+export const meetingQuestions = (id) =>
+  (backend?.meetingQuestions ? backend.meetingQuestions(id) : Promise.resolve([]));
+export const askMeetingQuestion = (id, key, name, body) =>
+  (backend?.askMeetingQuestion ? backend.askMeetingQuestion(id, key, name, body)
+    : Promise.reject(new Error("Not connected.")));
+export const backMeetingQuestion = (id, key) =>
+  (backend?.backMeetingQuestion ? backend.backMeetingQuestion(id, key)
+    : Promise.reject(new Error("Not connected.")));
+export const setQuestionState = (id, patch) =>
+  (backend?.setQuestionState ? backend.setQuestionState(id, patch)
+    : Promise.reject(new Error("Not connected.")));
+
 export const groundBoard = () =>
   (backend?.groundBoard ? backend.groundBoard() : Promise.resolve([]));
 export const wordleLeague = () =>

@@ -6899,22 +6899,169 @@ button,
 .rsvp-list__group b { color: var(--text); display: block; }
 
 /* ---- the meeting's when and where ----------------------------------------
-   The same slip as the letters page, but that one lives in a narrow card where
-   pushing the value to the right edge reads as a form. Stretched across a
-   desktop the label and the value end up a screen apart with nothing between
-   them, so here the label gets a column and the value sits next to it. */
+   This was the letters page's slip, which is a bare rule down the left with
+   the rows against it. In a narrow card that reads as a margin; stretched
+   across a desktop it reads as a stray line with text next to it, which is
+   what it was. It is a panel now, and each fact carries the thing you would
+   otherwise have to go and find for yourself. */
 
-.meeting .sent-slip__row {
+.facts {
+  margin-top: 14px;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--surface-2, rgba(255, 255, 255, 0.02));
+  overflow: hidden;
+}
+.facts__row {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-columns: 6.5rem minmax(0, 1fr);
   align-items: baseline;
-  gap: 14px;
+  gap: 4px 16px;
+  padding: 11px 16px;
 }
-.meeting .sent-slip__row b { text-align: left; font-size: 0.9375rem; }
+.facts__row + .facts__row { border-top: 1px solid var(--line-soft); }
+.facts__label {
+  font-size: 0.6562rem; font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.facts__value {
+  min-width: 0; font-size: 0.9375rem; font-weight: 600;
+  color: var(--text); overflow-wrap: anywhere;
+}
+.facts__sub, .facts__extra {
+  display: block; margin-top: 2px;
+  font-size: 0.8125rem; font-weight: 400; color: var(--text-2);
+}
+.facts__tbc { font-weight: 400; color: var(--text-2); }
+.facts__link {
+  display: inline-block; margin-top: 4px;
+  font-size: 0.8125rem; font-weight: 600; color: var(--accent);
+  text-decoration: none; border-bottom: 1px solid var(--accent-line);
+}
+.facts__link:hover { border-bottom-color: var(--accent); }
+.facts__extra .facts__link { margin-top: 0; }
 
-@media (max-width: 420px) {
-  .meeting .sent-slip__row { grid-template-columns: 1fr; gap: 2px; }
+@media (max-width: 460px) {
+  .facts__row { grid-template-columns: 1fr; gap: 3px; padding: 10px 13px; }
 }
+
+/* ---- the head, and how long you have got --------------------------------- */
+
+.meeting__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 14px;
+}
+.meeting__soon {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #17120a;
+  font-size: 0.75rem; font-weight: 800;
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+
+/* ---- how full the room is ------------------------------------------------ */
+
+.room-fill { margin-top: 12px; }
+.room-fill__bar {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: var(--line-soft);
+}
+.room-fill__bar i {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--accent); min-width: 2px;
+  transition: width 0.4s ease;
+}
+.room-fill__say { margin-top: 7px; }
+.room-fill__say b { color: var(--accent); }
+
+/* ---- the running order --------------------------------------------------- */
+
+.agenda {
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.agenda__row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 3px 14px;
+  padding: 9px 0;
+}
+.agenda__row + .agenda__row { border-top: 1px solid var(--line-soft); }
+.agenda__at {
+  font-size: 0.8125rem; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.agenda__what b { display: block; font-size: 0.9375rem; }
+.agenda__what span {
+  display: block; margin-top: 2px;
+  font-size: 0.8125rem; line-height: 1.5; color: var(--text-2);
+}
+
+@media (max-width: 460px) {
+  .agenda__row { grid-template-columns: 1fr; }
+}
+
+/* ---- questions for the floor --------------------------------------------- */
+
+.asks {
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.asks__head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.asks__count { font-size: 0.8125rem; color: var(--text-3); }
+.asks__empty { margin-top: 10px; }
+
+.ask {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.ask--done { opacity: 0.62; }
+
+/* The backing button carries the count, so the number and the way to change it
+   are the same object. Two separate things invites a tap on the number. */
+.ask__back {
+  flex: none; width: 4.25rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 7px 4px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.ask__back:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.ask__back:disabled { opacity: 0.5; cursor: default; }
+.ask__back.is-mine {
+  /* Not --accent-soft: that is a brighter gold for text, and using it here put
+     gold lettering on a near-gold ground. A wash of the accent instead, which
+     works on both themes because it is transparent. */
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.ask__n { font-size: 1.125rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ask__up { font-size: 0.6562rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.ask__body { min-width: 0; flex: 1; }
+.ask__text {
+  margin: 0; font-size: 0.9375rem; line-height: 1.55;
+  color: var(--text); overflow-wrap: anywhere;
+}
+.ask__by { margin: 4px 0 0; font-size: 0.8125rem; color: var(--text-3); }
+.ask__by b { color: var(--accent); }
+.ask__tools { display: flex; gap: 14px; margin-top: 6px; }
+
+.ask-form { margin-top: 14px; }
+.ask-form__text { width: 100%; resize: vertical; }
+.ask-form__row { margin-top: 8px; gap: 8px; }
+.ask-form__name { flex: 1; min-width: 160px; }
 
 /* The food question. A tick rather than a button: it qualifies "I will be
    there" instead of competing with it. */
@@ -6928,7 +7075,12 @@ button,
   cursor: pointer;
   padding: 2px 0;
 }
-.rsvp__food input { margin-top: 3px; flex: none; accent-color: var(--accent); }
+/* width:auto matters. flex:none fixes the flex sizing and says nothing about
+   width, so the global input rule stretched this checkbox to the full width of
+   the card and pushed its own label off the right hand edge. */
+.rsvp__food input {
+  margin-top: 3px; flex: none; width: auto; accent-color: var(--accent);
+}
 .meeting__food b { color: var(--accent); }
 
 /* ---- setting the stream link, on the night ------------------------------- */
