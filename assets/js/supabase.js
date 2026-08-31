@@ -524,17 +524,22 @@ class Backend {
   }
 
   async adminPeople() {
-    const { data, error } = await this.sb
-      .from("profiles")
-      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator, dormant, access")
-      .order("created_at", { ascending: false });
-    if (!error) return data || [];
-    /* Same reason as loadAvatars: usable before the schema catches up. */
-    const retry = await this.sb
-      .from("profiles")
-      .select("id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer")
-      .order("created_at", { ascending: false });
-    return retry.error ? [] : (retry.data || []);
+    /* Stepped down one column at a time, not straight to the bones. Adding
+       `access` to the first try made it fail until the schema is run, and the
+       old single fallback dropped is_moderator and dormant with it — so the
+       People tab quietly lost who the moderators were, in exchange for a
+       column nothing was using yet. Each step gives up the least it can. */
+    const TRIES = [
+      "id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator, dormant, access",
+      "id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer, is_moderator, dormant",
+      "id, display_name, is_admin, avatar, tag, created_at, email_opt_in, results_viewer",
+    ];
+    for (const cols of TRIES) {
+      const { data, error } = await this.sb.from("profiles").select(cols)
+        .order("created_at", { ascending: false });
+      if (!error) return data || [];
+    }
+    return [];
   }
 
   /* Fire and forget: a streak that fails to record is not worth an error in
