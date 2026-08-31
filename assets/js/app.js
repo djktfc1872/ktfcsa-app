@@ -8712,10 +8712,15 @@ function deckSlide(slide, i, total, facts) {
     <span>${i + 1} / ${total}</span>
   </div>`));
 
-  /* Spoken, not shown. On the page it sits under the slide for whoever is
-     reading later; in presentation mode it is hidden, because the television
-     is mirroring this laptop and the room would read the stage directions. */
-  if (slide.say) box.append(el(`<p class="slide__say"><b>Saying it:</b> ${esc(slide.say)}</p>`));
+  /* Notes to whoever is presenting, and for them alone. Hidden in presentation
+     mode because the television is mirroring the laptop, and hidden from
+     everybody else because they are stage directions: "this is the answer to
+     anyone who says we appointed ourselves" is a fair thing to remind yourself
+     before standing up and a bad thing for a supporter to read afterwards. The
+     slides are the public record; how to deliver them is not. */
+  if (slide.say && db.isAdmin()) {
+    box.append(el(`<p class="slide__say"><b>Saying it:</b> ${esc(slide.say)}</p>`));
+  }
 
   return box;
 }
