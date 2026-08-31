@@ -8256,19 +8256,14 @@ function meetingCard(m) {
         <div class="info__value">${m.cannot || 0}</div></div>
     </div>`));
 
-  /* How full the room is, drawn rather than described. A number of places left
-     is abstract until you can see how much of the bar has gone. */
+  /* One line. The room is 120 and that is settled, so a bar filling up implies
+     a negotiation that is not happening. */
   if (m.capacity) {
-    const taken = Math.min(m.in_person || 0, m.capacity);
     const left = m.capacity - (m.in_person || 0);
-    const pct = Math.round((taken / m.capacity) * 100);
-    card.append(el(`
-      <div class="room-fill">
-        <div class="room-fill__bar"><i style="width:${pct}%"></i></div>
-        <p class="hint room-fill__say">${left > 0
-          ? `<b>${left}</b> place${left === 1 ? "" : "s"} left in the room, of ${m.capacity}.`
-          : `The room is full. Say you are coming anyway and we will look at a bigger one.`}</p>
-      </div>`));
+    card.append(el(`<p class="hint">${left > 0
+      ? `${left} place${left === 1 ? "" : "s"} left in the room, of ${m.capacity}.`
+      : `The room is full. Say you are coming anyway and we will let you know if a
+         place comes free.`}</p>`));
   }
 
   /* Only once anybody has answered. A food count of nought sitting under an

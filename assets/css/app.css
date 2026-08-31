@@ -6962,21 +6962,6 @@ button,
   letter-spacing: 0.02em; white-space: nowrap;
 }
 
-/* ---- how full the room is ------------------------------------------------ */
-
-.room-fill { margin-top: 12px; }
-.room-fill__bar {
-  height: 6px; border-radius: 999px; overflow: hidden;
-  background: var(--line-soft);
-}
-.room-fill__bar i {
-  display: block; height: 100%; border-radius: 999px;
-  background: var(--accent); min-width: 2px;
-  transition: width 0.4s ease;
-}
-.room-fill__say { margin-top: 7px; }
-.room-fill__say b { color: var(--accent); }
-
 /* ---- the running order --------------------------------------------------- */
 
 .agenda {
