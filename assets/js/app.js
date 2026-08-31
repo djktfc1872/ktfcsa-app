@@ -8720,22 +8720,43 @@ function wireDeck(wrap, stack, bar) {
     if (wrap.classList.contains("is-presenting")) all[at].focus({ preventScroll: true });
   };
 
+  /* Presenting is a class on the page. Full screen is asked for on top of it
+     and is allowed to fail: a browser that refuses, a policy that blocks it,
+     or an operating system that drops out of it must not take the slides down
+     with it. This is not hypothetical tidiness — the first time this ran, the
+     browser granted full screen and revoked it in the same tick, the change
+     event fired, and the deck walked straight back out to the ordinary page.
+     In a function room with the television already showing the desktop, that
+     is not a thing to be debugging. */
+  let wasFull = false;
+
   const enter = async () => {
     wrap.classList.add("is-presenting");
     document.body.classList.add("presenting");
     show(at);
-    try { await wrap.requestFullscreen?.(); } catch { /* a refused fullscreen still presents */ }
+    try {
+      await wrap.requestFullscreen?.();
+      wasFull = !!document.fullscreenElement;
+    } catch {
+      wasFull = false;                    /* presenting anyway, just in a window */
+    }
   };
+
   const leave = () => {
     wrap.classList.remove("is-presenting");
     document.body.classList.remove("presenting");
+    wasFull = false;
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     slides()[at]?.scrollIntoView({ block: "center" });
   };
 
   $('[data-act="present"]', bar).addEventListener("click", enter);
+
+  /* Only a real exit from a full screen we actually held counts as leaving.
+     Escape still works on its own, below, so there is always a way out. */
   document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement) leave();
+    if (document.fullscreenElement) { wasFull = true; return; }
+    if (wasFull) leave();
   });
 
   const onKey = (e) => {
