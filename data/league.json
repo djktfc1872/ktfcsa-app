@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T17:30:20.225Z",
+  "updated": "2026-09-01T20:08:07.068Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -125,23 +125,6 @@
     },
     {
       "position": 8,
-      "name": "Stourbridge FC",
-      "short": "Stourbridge",
-      "slug": "Stourbridge FC",
-      "crest": "assets/crests/stourbridge-fc.png",
-      "played": 4,
-      "won": 2,
-      "drawn": 2,
-      "lost": 0,
-      "for": 7,
-      "against": 4,
-      "goalDifference": 3,
-      "points": 8,
-      "deduction": 0,
-      "form": "WWDD"
-    },
-    {
-      "position": 9,
       "name": "Leiston",
       "short": "Leiston",
       "slug": "Leiston",
@@ -156,6 +139,23 @@
       "points": 8,
       "deduction": 0,
       "form": "WLDWL"
+    },
+    {
+      "position": 9,
+      "name": "Stourbridge FC",
+      "short": "Stourbridge",
+      "slug": "Stourbridge FC",
+      "crest": "assets/crests/stourbridge-fc.png",
+      "played": 5,
+      "won": 2,
+      "drawn": 2,
+      "lost": 1,
+      "for": 7,
+      "against": 5,
+      "goalDifference": 2,
+      "points": 8,
+      "deduction": 0,
+      "form": "WWDD"
     },
     {
       "position": 10,
@@ -295,6 +295,23 @@
     },
     {
       "position": 18,
+      "name": "Leamington",
+      "short": "Leamington",
+      "slug": "leamington",
+      "crest": "assets/crests/leamington.png",
+      "played": 6,
+      "won": 1,
+      "drawn": 2,
+      "lost": 3,
+      "for": 5,
+      "against": 10,
+      "goalDifference": -5,
+      "points": 5,
+      "deduction": 0,
+      "form": "LDLLD"
+    },
+    {
+      "position": 19,
       "name": "Bishop's Stortford",
       "short": "Bishop's Stortford",
       "slug": "Bishop's Stortford",
@@ -311,7 +328,7 @@
       "form": "LLLLW"
     },
     {
-      "position": 19,
+      "position": 20,
       "name": "Hitchin Town",
       "short": "HitchinTown",
       "slug": "hitchin-town",
@@ -328,7 +345,7 @@
       "form": "LDDDL"
     },
     {
-      "position": 20,
+      "position": 21,
       "name": "Stratford Town",
       "short": "Stratford Town",
       "slug": "stratford-town",
@@ -343,23 +360,6 @@
       "points": 3,
       "deduction": 0,
       "form": "DLLLD"
-    },
-    {
-      "position": 21,
-      "name": "Leamington",
-      "short": "Leamington",
-      "slug": "leamington",
-      "crest": "assets/crests/leamington.png",
-      "played": 5,
-      "won": 0,
-      "drawn": 2,
-      "lost": 3,
-      "for": 4,
-      "against": 10,
-      "goalDifference": -6,
-      "points": 2,
-      "deduction": 0,
-      "form": "LDLLD"
     },
     {
       "position": 22,
