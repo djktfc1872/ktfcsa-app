@@ -9491,11 +9491,17 @@ function deckSlide(slide, i, total, facts) {
     body.append(list);
     if (facts.meeting) {
       db.meetingQuestions(facts.meeting.meeting_id).then((rows) => {
-        if (!rows || !rows.length) {
+        if (!document.contains(list)) return;
+        /* Questions only. Without this filter the board's proposals came back
+           too, so the slide headed "your questions" was showing the list of
+           things we intend to do — the same five items as the slide four
+           along. One table, two kinds; every read of it has to say which. */
+        const asked = (rows || []).filter((q) => (q.kind || "question") === "question");
+        if (!asked.length) {
           list.append(el(`<p class="slide__text">Whatever the room wants to ask.</p>`));
           return;
         }
-        rows.slice(0, 5).forEach((q) => list.append(el(
+        asked.slice(0, 5).forEach((q) => list.append(el(
           `<div class="slide__ask"><b>${q.backers}</b><span>${esc(q.body)}</span></div>`)));
       }).catch(() => {});
     }
