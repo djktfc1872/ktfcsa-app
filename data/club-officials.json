@@ -1,0 +1,47 @@
+{
+  "note": "What the club's own Officials page said, on the day it was read. Recorded rather than summarised, because one of the questions put to the club is that this page is out of date, and a claim like that is worth nothing without a dated copy of what it actually said. Nothing here is the Association's view of who runs the club; it is a transcript of the club's own page.",
+  "source": "https://www.ketteringtownfc.com/officials-community/",
+  "checked": "2026-09-01",
+  "entity": "Kettering Town FC Management Limited, Co. Reg. No. 02267071",
+  "groups": [
+    {
+      "name": "Club management",
+      "rows": [
+        { "role": "Owner", "who": "George Nadim Akhtar" },
+        { "role": "Chairman", "who": "George Nadim Akhtar" },
+        { "role": "Chief Operating Officer", "who": "Nadiya Akhtar-Shahzad" },
+        { "role": "Club President", "who": "Ken Samuel" },
+        { "role": "Vice Chairman (Non Exec) / Match Day Operations Manager", "who": "Mick Coe" },
+        { "role": "Full Associate Directors", "who": "Gary Foreman, Bryony Gates, Paul Titcombe, Sue Samuel" },
+        { "role": "Club Secretary", "who": "Ian Hopewell" },
+        { "role": "General Manager / Bar Manager", "who": "Mark Hindwood" },
+        { "role": "Commercial Manager", "who": "Naheed Shears" },
+        { "role": "Academy & Trust Director", "who": "Phil Wade" },
+        { "role": "Funding & Grants", "who": "Paul Bailey" },
+        { "role": "Match Day Boardroom Hosts", "who": "Sue Samuel & Bryony Gates" },
+        { "role": "Hospitality & Events", "who": "Paula Conde" }
+      ]
+    },
+    {
+      "name": "Football staff",
+      "rows": [
+        { "role": "Football Director", "who": "Fabian Forde" },
+        { "role": "First Team Manager", "who": "Liam McDonald" },
+        { "role": "Assistant Manager / Coach", "who": "Nick Green" },
+        { "role": "Assistant Coach / Analyst", "who": "David Bridgwater" },
+        { "role": "Lead Strength and Conditioning Coach", "who": "TBA" },
+        { "role": "Sports Rehabilitator", "who": "Michael Hunter" },
+        { "role": "Club Chief Medical Officer", "who": "TBA" },
+        { "role": "Club Doctor", "who": "TBA" },
+        { "role": "Board Safeguarding Champion", "who": "Phil Wade" },
+        { "role": "Kitmen", "who": "Malcolm Lewer, Aaron Lewer, Dan Willis" },
+        { "role": "Safety Officer", "who": "Mark Brace" },
+        { "role": "Press Officer", "who": "TBA" },
+        { "role": "Club Photographer", "who": "Mark Hope" },
+        { "role": "Club Videographer", "who": "Joe Kemp" },
+        { "role": "Matchday Media", "who": "Doug Brown" },
+        { "role": "Programme Editor", "who": "Terry Brumpton" }
+      ]
+    }
+  ]
+}

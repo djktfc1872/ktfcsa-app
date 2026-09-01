@@ -413,6 +413,8 @@ const ROUTES = {
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   privacy: { label: "Your data", icon: "🔒", nav: "hidden", render: viewPrivacy },
   accessibility: { label: "Accessibility", icon: "\u267F", nav: "hidden", render: viewAccessibility },
+  officials: { label: "Who runs the club", short: "Officials", icon: "\uD83D\uDCCB",
+    nav: "more", group: "Happening now", render: viewOfficials },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   topic: { label: "Topic", icon: "\uD83D\uDDE8\uFE0F", nav: "hidden", render: viewTopic },
   supporter: { label: "Supporter", icon: "\uD83D\uDC64", nav: "hidden", render: viewSupporter },
@@ -729,6 +731,76 @@ function viewAccessibility() {
   const b = el(`<button class="btn btn--sm">Tell us what is hard</button>`);
   b.addEventListener("click", () => go("feedback"));
   wrap.lastChild.append(b);
+
+  return wrap;
+}
+
+/**
+ * Who the club says runs the club.
+ *
+ * A transcript of the club's own Officials page on the day it was read, not
+ * the Association's account of anything. It exists because two of the twelve
+ * questions turn on this page — one asking the club to name everyone on the
+ * board with the date they took the role, one saying the website is not
+ * maintained and this page is inaccurate — and a claim like that is worth
+ * nothing without a dated copy of what the page actually said.
+ *
+ * Which is also why it is a transcript rather than a summary, and why the
+ * date is on it twice. If it changes, we will be able to show what it changed
+ * from, and if it does not, the record shows that too.
+ */
+function viewOfficials() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Who the club says runs the club</h1>
+      <p>Copied from the club's own Officials page, word for word. This is not our list and it
+        is not a comment on anybody on it.</p>
+    </div>
+  </div>`);
+
+  const box = el(`<div class="card"><p class="note" style="margin:0">Loading.</p></div>`);
+  wrap.append(box);
+
+  readJSON("data/club-officials.json").then((d) => {
+    if (!d) {
+      box.replaceChildren(el(`<p class="note" style="margin:0">Could not load it.</p>`));
+      return;
+    }
+    box.replaceChildren();
+    box.append(el(`
+      <div class="sent-slip">
+        <div class="sent-slip__row"><span>Read on</span>
+          <b>${esc(fmtDate(d.checked))}</b></div>
+        <div class="sent-slip__row"><span>From</span>
+          <b><a href="${esc(d.source)}" target="_blank" rel="noopener">the club's website</a></b></div>
+        <div class="sent-slip__row"><span>Listed under</span><b>${esc(d.entity)}</b></div>
+      </div>`));
+
+    d.groups.forEach((g) => {
+      wrap.append(el(`<h2 class="section-title">${esc(g.name)}</h2>`));
+      const card = el(`<div class="card"></div>`);
+      g.rows.forEach((r) => card.append(el(`
+        <div class="official${r.who === "TBA" ? " official--tba" : ""}">
+          <div class="official__role">${esc(r.role)}</div>
+          <div class="official__who">${esc(r.who)}</div>
+        </div>`)));
+      wrap.append(card);
+    });
+
+    const tba = d.groups.flatMap((g) => g.rows).filter((r) => r.who === "TBA").length;
+    wrap.append(el(`
+      <div class="card">
+        <p class="hint" style="margin:0">${tba
+          ? `${tba} of these roles are listed as <b>TBA</b> on the club's page. That is what the
+             page says; it is not necessarily what is true.`
+          : "Every role on the page has a name against it."}
+          We keep this copy because we have asked the club to name everyone on the board with the
+          date they took the role, and because we have said the website is not being kept up. If
+          either changes, this shows what it changed from.</p>
+      </div>`));
+  }).catch(() => {
+    box.replaceChildren(el(`<p class="note" style="margin:0">Could not load it.</p>`));
+  });
 
   return wrap;
 }

@@ -7499,3 +7499,22 @@ body.presenting { overflow: hidden; }
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ---- the club's own officials list --------------------------------------- */
+
+.official {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 9px 0;
+  align-items: baseline;
+}
+.official + .official { border-top: 1px solid var(--line-soft); }
+.official__role { font-size: 0.8125rem; color: var(--text-2); }
+.official__who { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
+.official--tba .official__who { font-weight: 400; color: var(--text-3); font-style: italic; }
+
+@media (max-width: 460px) {
+  .official { grid-template-columns: 1fr; gap: 1px; }
+  .official__role { font-size: 0.75rem; }
+}
