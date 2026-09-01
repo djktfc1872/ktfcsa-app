@@ -412,6 +412,7 @@ const ROUTES = {
   more: { label: "More", icon: "⋯", nav: "hidden", render: viewMore },
   club: { label: "Club", icon: "📍", nav: "hidden", render: viewClub },
   privacy: { label: "Your data", icon: "🔒", nav: "hidden", render: viewPrivacy },
+  accessibility: { label: "Accessibility", icon: "\u267F", nav: "hidden", render: viewAccessibility },
   thread: { label: "Discussion", icon: "💬", nav: "hidden", render: viewThread },
   topic: { label: "Topic", icon: "\uD83D\uDDE8\uFE0F", nav: "hidden", render: viewTopic },
   supporter: { label: "Supporter", icon: "\uD83D\uDC64", nav: "hidden", render: viewSupporter },
@@ -559,6 +560,56 @@ function applyTextSize(key = textSize()) {
   document.documentElement.dataset.text = found.key;
 }
 
+/* The rest of the accessibility settings. Each is stored as a plain string and
+   applied as an attribute on the root, so the CSS does the work and there is
+   one place to look when something is not taking effect. */
+
+const MOTION = [
+  { key: "system", label: "Match my device" },
+  { key: "still",  label: "Reduce motion" },
+  { key: "full",   label: "Allow motion" },
+];
+
+function applyMotion(key = db.read("motion", "system")) {
+  /* "system" leaves the attribute off entirely, which lets the existing
+     prefers-reduced-motion rules apply on their own. Writing a value here
+     would override the choice somebody had already made on their phone. */
+  const root = document.documentElement;
+  if (key === "system") delete root.dataset.motion;
+  else root.dataset.motion = key;
+}
+
+function applyLinks(on = db.read("underlineLinks", false)) {
+  const root = document.documentElement;
+  if (on) root.dataset.links = "underline";
+  else delete root.dataset.links;
+}
+
+/* Dark, light, or whatever the device is set to. The stylesheet is dark by
+   default with a light override and knows nothing about prefers-color-scheme,
+   so "system" is resolved here and re-resolved when the device changes rather
+   than duplicating every colour in a media query. */
+const THEMES = [
+  { key: "system", label: "Match my device" },
+  { key: "dark",   label: "Dark" },
+  { key: "light",  label: "Light" },
+];
+
+const prefersLight = () =>
+  window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+
+function applyTheme(key = db.read("theme", "dark")) {
+  document.documentElement.dataset.theme =
+    key === "system" ? (prefersLight() ? "light" : "dark") : key;
+}
+
+/* Follow the device while it is set to follow the device. */
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+    if (db.read("theme", "dark") === "system") applyTheme("system");
+  });
+}
+
 function textSizePanel() {
   const box = el(`
     <div class="card a11y">
@@ -586,13 +637,118 @@ function textSizePanel() {
   return box;
 }
 
+/**
+ * Everything that makes the app easier to read or easier to bear.
+ *
+ * Gathered onto one page because they were scattered: text size sat on More,
+ * the theme was behind signing in — which is its own accessibility fault, as
+ * somebody who needs a light background needs it before they have an account —
+ * and reduced motion was only ever whatever the device said.
+ *
+ * Every setting offers "match my device" and defaults to it where it can. The
+ * app overriding a choice somebody has already made in their phone's own
+ * settings was the original complaint that started all of this.
+ */
+function viewAccessibility() {
+  const wrap = el(`<div>
+    <div class="page-head">
+      <h1>Accessibility</h1>
+      <p>Make the app easier to read. Everything here is saved on this device and
+        takes effect straight away.</p>
+    </div>
+  </div>`);
+
+  wrap.append(textSizePanel());
+
+  /* One shape for all three of the choose-one settings. */
+  const chooser = (title, hint, options, current, onPick) => {
+    const box = el(`
+      <div class="card a11y">
+        <div class="info__label">${esc(title)}</div>
+        <p class="hint" style="margin:2px 0 10px">${hint}</p>
+        <div class="a11y__row" role="group" aria-label="${esc(title)}"></div>
+      </div>`);
+    const row = $(".a11y__row", box);
+    const paint = () => {
+      row.textContent = "";
+      options.forEach((o) => {
+        const on = current() === o.key;
+        const b = el(`<button class="a11y__btn${on ? " is-on" : ""}" type="button"
+          aria-pressed="${on}">${esc(o.label)}</button>`);
+        b.addEventListener("click", () => { onPick(o.key); paint(); });
+        row.append(b);
+      });
+    };
+    paint();
+    return box;
+  };
+
+  wrap.append(chooser("Theme",
+    `Dark is the default. Light is easier for some people to read, and matching your
+     device follows whatever you have set there.`,
+    THEMES, () => db.read("theme", "dark"),
+    (k) => { db.write("theme", k); applyTheme(k); render(); }));
+
+  wrap.append(chooser("Movement",
+    `Turns off the sliding and fading. Worth trying if animation makes you feel unwell
+     or makes the page harder to follow.`,
+    MOTION, () => db.read("motion", "system"),
+    (k) => { db.write("motion", k); applyMotion(k); }));
+
+  /* A tick, not a row of buttons: it is on or it is off. */
+  const links = el(`
+    <div class="card a11y">
+      <div class="info__label">Links</div>
+      <label class="rsvp__food" style="margin-top:8px">
+        <input type="checkbox"${db.read("underlineLinks", false) ? " checked" : ""}>
+        <span>Underline every link, so they do not rely on colour alone.</span>
+      </label>
+    </div>`);
+  $("input", links).addEventListener("change", (e) => {
+    db.write("underlineLinks", e.target.checked);
+    applyLinks(e.target.checked);
+  });
+  wrap.append(links);
+
+  wrap.append(el(`
+    <div class="card">
+      <div class="info__label">Your phone can do more than this</div>
+      <p class="hint" style="margin-top:6px">Everything above only changes this app. Your phone
+        has its own settings for text size, bold text, contrast and reducing motion, and they
+        work everywhere — on iPhone under Settings, Accessibility, Display &amp; Text Size; on
+        Android under Settings, Accessibility. The app follows your text size setting, so it is
+        worth setting it there first.</p>
+    </div>`));
+
+  wrap.append(el(`
+    <div class="card">
+      <div class="info__label">Something still hard to use?</div>
+      <p class="hint" style="margin-top:6px">Tell us and it gets fixed. The larger text options
+        exist because one supporter said the app was hard to read.</p>
+    </div>`));
+  const b = el(`<button class="btn btn--sm">Tell us what is hard</button>`);
+  b.addEventListener("click", () => go("feedback"));
+  wrap.lastChild.append(b);
+
+  return wrap;
+}
+
 function viewMore() {
   const wrap = el(`<div>
     <div class="page-head"><h1>More</h1><p>Everything else in the app.</p></div>
   </div>`);
-  /* Above the list rather than buried behind Account, which needs signing in.
-     Somebody who cannot read the app is not going to find a setting inside it. */
-  wrap.append(textSizePanel());
+  /* Above the list rather than buried in a submenu. Somebody who cannot read
+     the app is not going to go hunting for the setting that fixes it, so the
+     way in stays at the top of More even though the settings now live on their
+     own page. */
+  const a11y = el(`
+    <button class="card a11y-link">
+      <span class="a11y-link__icon" aria-hidden="true">\u267F</span>
+      <span><b>Accessibility</b>Bigger text, light or dark, and less movement.</span>
+      <span class="a11y-link__go" aria-hidden="true">\u203A</span>
+    </button>`);
+  a11y.addEventListener("click", () => go("accessibility"));
+  wrap.append(a11y);
 
   let seen = null;
   routesWhere("more").forEach(([key, r]) => {
@@ -11226,23 +11382,21 @@ function viewAccount() {
     wrap.append(panel);
   }
 
-  /* appearance */
+  /* appearance
+     The theme used to be set here, which meant it was behind signing in — and
+     somebody who needs a light background needs it before they have an
+     account. It lives on the accessibility page now, with the text size and
+     the motion setting, and this is the way through to it. Two controls
+     writing the same preference is how "match my device" got silently
+     overwritten by whichever of them was opened second. */
   wrap.append(el(`<h2 class="section-title">Appearance</h2>`));
   const themeCard = el(`
-    <div class="card">
-      <label>Theme</label>
-      <div class="segmented">
-        ${[["dark", "Dark"], ["light", "Light"]]
-          .map(([k, l]) => `<button data-theme-set="${k}" class="${currentTheme() === k ? "is-active" : ""}">${l}</button>`)
-          .join("")}
-      </div>
-    </div>`);
-  themeCard.querySelectorAll("[data-theme-set]").forEach((b) =>
-    b.addEventListener("click", () => {
-      setTheme(b.dataset.themeSet);
-      render();
-    })
-  );
+    <button class="card a11y-link">
+      <span class="a11y-link__icon" aria-hidden="true">\u267F</span>
+      <span><b>Theme, text size and movement</b>All of it is on the accessibility page.</span>
+      <span class="a11y-link__go" aria-hidden="true">\u203A</span>
+    </button>`);
+  themeCard.addEventListener("click", () => go("accessibility"));
   wrap.append(themeCard);
 
   if (user.isAdmin) {
@@ -11412,12 +11566,13 @@ function localSignInPanel() {
 
 /* =================================================================== theme */
 
-const currentTheme = () => document.documentElement.dataset.theme || "dark";
-
-function setTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  db.write("theme", theme);
-}
+/* Both of these are gone: setTheme wrote the stored preference and the root
+   attribute as the same value, which cannot express "match my device", and
+   currentTheme read back the resolved attribute rather than the preference, so
+   it reported "dark" for somebody following a dark device. applyTheme and
+   db.read("theme") replace them, and keeping the old pair around as a second
+   way to set the same thing is how the two controls disagreed in the first
+   place. */
 
 /* ==================================================================== data */
 
@@ -14836,8 +14991,10 @@ function previewBanner() {
 }
 
 async function boot() {
-  document.documentElement.dataset.theme = db.read("theme", "dark");
+  applyTheme();
   applyTextSize();
+  applyMotion();
+  applyLinks();
   previewBanner();
   readHash();
   countView();

@@ -7466,3 +7466,36 @@ body.presenting { overflow: hidden; }
 @media (max-width: 560px) {
   .slide__plan-row { grid-template-columns: 1fr; gap: 0.4cqw; }
 }
+
+/* ---- the way in to the accessibility page -------------------------------- */
+
+.a11y-link {
+  display: flex; align-items: center; gap: 13px;
+  width: 100%; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface-2, rgba(255,255,255,0.02));
+  color: inherit; font: inherit;
+}
+.a11y-link:hover { border-color: var(--accent); }
+.a11y-link__icon { font-size: 1.5rem; line-height: 1; flex: none; }
+.a11y-link b { display: block; font-size: 0.9375rem; }
+.a11y-link span > b + * { display: block; }
+.a11y-link > span:nth-child(2) { font-size: 0.875rem; color: var(--text-2); line-height: 1.45; }
+.a11y-link__go { margin-left: auto; color: var(--text-3); font-size: 1.25rem; flex: none; }
+
+/* ---- reduced motion, chosen rather than detected ------------------------- */
+/* The media query already covers people whose device says so. This is for
+   somebody whose device does not, or who wants it only here. */
+:root[data-motion="still"] *,
+:root[data-motion="still"] *::before,
+:root[data-motion="still"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ---- links that do not rely on colour ------------------------------------ */
+:root[data-links="underline"] a:not(.btn):not(.a11y-link) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
