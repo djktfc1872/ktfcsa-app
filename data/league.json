@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T12:33:45.536Z",
+  "updated": "2026-09-01T17:30:20.225Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -194,8 +194,8 @@
     {
       "position": 12,
       "name": "Peterborough Sports",
-      "short": "sports",
-      "slug": "peterborough-sports",
+      "short": "Sports",
+      "slug": "Peterborough-Sports",
       "crest": "assets/crests/peterborough-sports.png",
       "played": 6,
       "won": 1,
