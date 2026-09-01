@@ -9469,16 +9469,20 @@ function deckSlide(slide, i, total, facts) {
     const a = facts.att?.swing;
     if (!a) { heading("Attendances"); }
     else {
+      box.classList.add("slide--dense");
       body.append(el(`
         <div class="slide__figures">
           <div class="figure">
             <b>+${a.percent}<i>%</i></b>
-            <span>more through the gate at the grounds we visited last season</span>
+            <span>more through the gate at the ${a.grounds} grounds we visited last season.
+              Those clubs average ${a.theirAverage} at home; with Kettering there they had
+              ${a.withKettering}. Their figures, their season, our visit taken out of the
+              comparison.</span>
           </div>
-        </div>
-        <p class="slide__text">Those ${a.grounds} clubs average ${a.theirAverage} at home.
-          With Kettering there they had ${a.withKettering}. Their own figures, their own
-          season, our visit taken out of the comparison.</p>`));
+        </div>`));
+      /* The number on its own is a boast, and a boast builds nothing. This is
+         the line that turns it into the argument for the rest of the evening. */
+      if (slide.body) body.append(el(`<p class="slide__text">${esc(slide.body)}</p>`));
     }
 
   } else if (slide.kind === "asks") {

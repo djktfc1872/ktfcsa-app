@@ -94,11 +94,6 @@
       "say": "This one counts itself. Whatever it says on the night is what you say. If they have replied, say so plainly and fairly. If they have not, let the number do it and add nothing."
     },
     {
-      "kind": "attendance",
-      "eyebrow": "One thing worth remembering",
-      "say": "Say it once, flatly. It lands harder without a speech attached, and it is the one slide that is about what supporters are worth rather than what is wrong."
-    },
-    {
       "kind": "position",
       "eyebrow": "What we think should happen",
       "title": "Six things, and none of them are unreasonable.",
@@ -130,6 +125,12 @@
         }
       ],
       "say": "Six asks, each already put to the club in writing and each backed by a number. Read the ask, not the evidence line. Agree the wording with the working group before the night."
+    },
+    {
+      "kind": "attendance",
+      "eyebrow": "Before anybody says we are a small club",
+      "say": "Say the number once, flatly, then the line under it, then stop. This is the bridge into the rest of the night: do not let it sit there as a boast about how big we are, because on its own that is all it is. The point is that the difficult half is already done.",
+      "body": "Nobody organised that. No committee, no membership, nobody asking anyone to go. It is simply what this support does. The hard part — getting people to care enough to turn up — is already done, and it is the part most supporters' groups never manage. What is missing is not willingness. It is structure."
     },
     {
       "kind": "roles",
