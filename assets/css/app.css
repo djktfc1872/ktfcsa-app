@@ -7523,3 +7523,28 @@ body.presenting { overflow: hidden; }
 .slide--dense .slide__ask span { font-size: 1.75cqw; }
 .slide--dense .slide__ask b { font-size: 2.2cqw; }
 .slide--dense .slide__helpers { font-size: 1.3cqw; }
+
+/* ---- the club's own officials, on a slide -------------------------------- */
+
+.slide__officials {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8cqw 3cqw; width: 100%;
+}
+.slide__official span {
+  display: block; font-size: 1.3cqw; color: var(--text-3);
+}
+.slide__official b { display: block; font-size: 1.75cqw; color: var(--text); }
+
+@media (max-width: 560px) {
+  .slide__officials { grid-template-columns: 1fr; }
+}
+
+/* Pinned rather than floated up by fake backing: it says so on the row. */
+.ask__pin {
+  display: inline-block; margin-bottom: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 0.6875rem; font-weight: 800;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}

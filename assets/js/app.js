@@ -9323,9 +9323,8 @@ function deckSlide(slide, i, total, facts) {
     const none = acts.find((x) => x.choice === "none");
     if (none) {
       body.append(el(`<p class="slide__aside">${none.people} supporters
-        &mdash; ${Math.round((none.people / total) * 100)}% &mdash; chose
-        <b>nothing, I would rather it was settled quietly</b>. That was on the form as a
-        real answer and they are in this room too.</p>`));
+        &mdash; ${Math.round((none.people / total) * 100)}% &mdash;
+        ${esc(slide.note || "chose nothing, I would rather it was settled quietly.")}</p>`));
     }
 
   } else if (slide.kind === "representation") {
@@ -9366,6 +9365,26 @@ function deckSlide(slide, i, total, facts) {
     if (slide.checked) {
       body.append(el(`<p class="slide__source">${esc(slide.checked)}</p>`));
     }
+
+  } else if (slide.kind === "officials") {
+    box.classList.add("slide--dense");
+    heading(slide.title);
+    if (slide.body) para(slide.body);
+    const grid = el(`<div class="slide__officials" data-role="off"></div>`);
+    body.append(grid);
+    readJSON("data/club-officials.json").then((d) => {
+      if (!d || !document.contains(grid)) return;
+      /* The board and the people who speak for the club, not the kitmen. A
+         television is not the place for twenty nine rows, and the ones that
+         matter to the questions we have asked are the first handful. */
+      const rows = (d.groups[0]?.rows || []).slice(0, 8);
+      rows.forEach((r) => grid.append(el(
+        `<div class="slide__official"><span>${esc(r.role)}</span><b>${esc(r.who)}</b></div>`)));
+      const all = d.groups.flatMap((g) => g.rows);
+      body.append(el(`<p class="slide__source">${all.length} roles listed in total,
+        ${all.filter((r) => r.who === "TBA").length} of them as TBA.
+        Read from the club's website on ${esc(fmtDate(d.checked))}.</p>`));
+    }).catch(() => {});
 
   } else if (slide.kind === "proposals") {
     heading(slide.title);
@@ -9455,7 +9474,7 @@ function deckSlide(slide, i, total, facts) {
               due ? ` by ${esc(fmtDate(last.replyBy))}` : ""}</span>
           </div>
           <div class="figure figure--small">
-            <b data-role="replied">0</b><span>of the questions answered</span>
+            <b data-role="replied">0</b><span>${esc(slide.unanswered || "of the questions answered")}</span>
           </div>
         </div>
         <p class="slide__text">${over
@@ -9578,6 +9597,12 @@ function deckSlide(slide, i, total, facts) {
   } else {
     if (slide.title) heading(slide.title);
     if (slide.body) para(slide.body);
+    /* A second, quieter column of prose. Two slides carry one: the method
+       behind the survey, and the part about what happens if nobody steps up.
+       Both are things somebody might want to read rather than be told. */
+    if (slide.method || slide.aside) {
+      body.append(el(`<p class="slide__aside">${esc(slide.method || slide.aside)}</p>`));
+    }
   }
 
   stage.append(el(`<div class="slide__foot">
@@ -9780,6 +9805,7 @@ function questionsPanel(m, kind = "question") {
             <span class="ask__up">${mine.has(q.id) ? "Backed" : "Back it"}</span>
           </button>
           <div class="ask__body">
+            ${q.pinned ? `<span class="ask__pin">First on the night</span>` : ""}
             <p class="ask__text">${esc(q.body)}</p>
             <p class="ask__by">${esc(q.author_name)}${
               q.answered ? ` &middot; <b>${proposal ? "done" : "answered on the night"}</b>` : ""}</p>
@@ -9840,6 +9866,16 @@ function questionsPanel(m, kind = "question") {
             load();
           } catch (err) { toast(err.message, "bad"); }
         });
+        if (proposal) {
+          const pin = el(`<button class="link-btn">${q.pinned ? "Unpin" : "Pin to top"}</button>`);
+          pin.addEventListener("click", async () => {
+            try {
+              await db.setQuestionState(q.id, { pinned: !q.pinned });
+              load();
+            } catch (err) { toast(err.message, "bad"); }
+          });
+          tools.append(pin);
+        }
         const hide = el(`<button class="link-btn link-btn--warn">Hide</button>`);
         hide.addEventListener("click", async () => {
           if (!window.confirm("Hide this from everybody?")) return;

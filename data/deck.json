@@ -9,7 +9,7 @@
     },
     {
       "kind": "agenda",
-      "eyebrow": "How the night runs",
+      "eyebrow": "The plan for the evening",
       "title": "Two hours, and most of it is yours.",
       "say": "Ten seconds. Say the questions block is forty five minutes, that it is the point of the night, and that we finish on what we are actually going to do."
     },
@@ -18,7 +18,8 @@
       "eyebrow": "Why we are here",
       "title": "199 supporters answered in five days.",
       "body": "Nobody was paid and nobody was chased. 181 of them asked for a meeting: 118 in a room, 71 online, 31 who could not come but wanted keeping posted. This is us getting on with it.",
-      "say": "Short. This is the answer to anyone who thinks the working group appointed itself, so say it once and let it sit."
+      "say": "Short. This is the answer to anyone who thinks the working group appointed itself, so say it once and let it sit.",
+      "method": "We ran a survey from Monday 17 August to midday on Friday 21 August 2026 — five days — through this app. Anyone could answer, with or without an account, one response per device. Nine questions, seven of them multiple choice and two free text. Nobody was paid, prompted or selected."
     },
     {
       "kind": "headline",
@@ -45,7 +46,7 @@
     },
     {
       "kind": "entities",
-      "eyebrow": "One thing we cannot see",
+      "eyebrow": "The club's legal entities",
       "title": "Three companies, one football club.",
       "checked": "Companies House, public record, checked 31 August 2026",
       "draft": true,
@@ -72,14 +73,22 @@
           "note": "The previous company."
         }
       ],
-      "foot": "Nothing here is unusual and none of it is an accusation. We raise it once and leave it: supporters cannot tell which company holds the ground, the lease or the debts, and the filed accounts show neither income nor spending. We have asked. We are not going to spend tonight on it.",
+      "foot": "Nothing here is unusual and none of it is an accusation of anything at all; it is purely for fan awareness. We raise it once and leave it. We have asked the question and we are not going to spend tonight on it.",
       "say": "Sixty seconds, then move on, and say the last sentence of the slide out loud. This is on the record and we have asked about it. It is not what tonight is for, and a room that spends an hour on company numbers has not built anything."
+    },
+    {
+      "kind": "officials",
+      "eyebrow": "Who the club says runs the club",
+      "title": "Twenty nine roles, four of them still to be announced.",
+      "body": "Straight off the club's own Officials page. Not our list, not a comment on anybody on it, and worth having in front of us because one of the twelve questions asks the club to name the board with the date each person took their role.",
+      "say": "Do not read the names out. Point at it, say it is the club's own page copied on the day, and move on. The only thing worth saying aloud is the number still marked TBA — and say it as a fact, not as a dig."
     },
     {
       "kind": "appetite",
       "eyebrow": "What supporters said they would back",
       "title": "Only one in nine would rather it was left alone.",
-      "say": "This is the mandate for the last part of the night. Note that eleven per cent would rather it was settled quietly, and say so: that is a real answer and those people are in the room too."
+      "say": "This is the mandate for the last part of the night. Note that eleven per cent would rather it was settled quietly, and say so: that is a real answer and those people are in the room too.",
+      "note": "chose “nothing, I would rather it was settled quietly”. That was on the form as a real answer, and hopefully there are a few in this camp in this room too."
     },
     {
       "kind": "questions",
@@ -91,12 +100,13 @@
     {
       "kind": "clock",
       "eyebrow": "Where that has got to",
-      "say": "This one counts itself. Whatever it says on the night is what you say. If they have replied, say so plainly and fairly. If they have not, let the number do it and add nothing."
+      "say": "This one counts itself. Whatever it says on the night is what you say. If they have replied, say so plainly and fairly. If they have not, let the number do it and add nothing.",
+      "unanswered": "of the questions are answered and the email has not been acknowledged."
     },
     {
       "kind": "position",
-      "eyebrow": "What we think should happen",
-      "title": "Six things, and none of them are unreasonable.",
+      "eyebrow": "What we think supporters should have sight of",
+      "title": "Six things, and none of them are huge.",
       "draft": true,
       "points": [
         {
@@ -104,7 +114,7 @@
           "backs": "The largest concern in the consultation — 92% of 199"
         },
         {
-          "ask": "Answer the twelve questions in writing, and publish the answers.",
+          "ask": "Answer the twelve questions in writing, and publish the answers. Chase if not received.",
           "backs": "Sent 22 August, with a reply asked for by 4 September"
         },
         {
@@ -113,15 +123,15 @@
         },
         {
           "ask": "Meet a recognised supporters’ body regularly, on a set date, on the record.",
-          "backs": "83% say the ownership does not represent them; 97 asked for a public meeting"
+          "backs": "83% say the ownership does not represent them; 97 asked for a public meeting (hopefully some of you are here)"
         },
         {
           "ask": "Set out which company holds the ground, the lease and the debts.",
-          "backs": "Three companies on the public record; supporters cannot tell"
+          "backs": "Three companies on the public record; supporters cannot tell which, and that drives confusion and sometimes division among fans"
         },
         {
-          "ask": "Publish accounts a supporter can read: income, where it comes from, and what it is spent on.",
-          "backs": "Financial sustainability 86%. The filed accounts show neither"
+          "ask": "Publish a financial health report that a supporter can read: income, where it comes from, and what it is spent on.",
+          "backs": "Financial sustainability is a huge fan concern, mentioned by 86%. The filed accounts do not show a clear picture"
         }
       ],
       "say": "Six asks, each already put to the club in writing and each backed by a number. Read the ask, not the evidence line. Agree the wording with the working group before the night."
@@ -130,7 +140,7 @@
       "kind": "attendance",
       "eyebrow": "Before anybody says we are a small club",
       "say": "Say the number once, flatly, then the line under it, then stop. This is the bridge into the rest of the night: do not let it sit there as a boast about how big we are, because on its own that is all it is. The point is that the difficult half is already done.",
-      "body": "Nobody organised that. No committee, no membership, nobody asking anyone to go. It is simply what this support does. The hard part — getting people to care enough to turn up — is already done, and it is the part most supporters' groups never manage. What is missing is not willingness. It is structure."
+      "body": "This stat is not here to boast. It shows, in theory, an average of about 170 fans going through the gate at every away ground, and nobody organised it. No committee, no membership, nobody asking. It is just what this support does. Which means the hard part — getting people to care and turn up — is already done. The only thing missing is structure."
     },
     {
       "kind": "roles",
@@ -140,15 +150,15 @@
       "points": [
         {
           "ask": "Someone to chair it",
-          "backs": "Runs the meetings, speaks for the room, and is the name on the letters."
+          "backs": "Runs the meetings, speaks for the room, and keeps things moving along with a bit of diplomacy."
         },
         {
           "ask": "Someone to keep the record",
           "backs": "Writes down what was agreed and publishes it, so nothing rests on anyone's memory."
         },
         {
-          "ask": "Someone to hold the money",
-          "backs": "A bank account, a float, and a list of what came in and what went out."
+          "ask": "Someone for graphics and the digital side",
+          "backs": "All of it so far has been built from the ground up, solo. We want somebody to help turn art into life, and we would love to platform your work too."
         },
         {
           "ask": "Someone to talk to the club",
@@ -159,22 +169,22 @@
     },
     {
       "kind": "plan",
-      "eyebrow": "How we do it, and how fast",
+      "eyebrow": "How we could do it, and how fast",
       "title": "Most of this can be settled tonight.",
       "rows": [
         {
           "when": "Tonight",
-          "what": "Agree the Association exists, and elect an interim committee from the floor.",
-          "why": "Interim, so nobody is signing up for life and nobody has to have read a constitution to stand."
+          "what": "Agree the Association exists, and elect an interim committee or working group from the floor.",
+          "why": "Interim, so nobody is signing up for life, anybody can change their mind, and nobody has to have read a constitution."
         },
         {
           "when": "Tonight",
-          "what": "Name one person to write to the club as our representative.",
-          "why": "The club has told us it does not know who speaks for supporters. After tonight it does."
+          "what": "Name someone to write to the club as a representative and collator of fan feedback.",
+          "why": "Fans have not been listened to properly for years, over and over. We want that to change."
         },
         {
           "when": "Within a month",
-          "what": "A short constitution — two pages, not twenty — published for everyone to read.",
+          "what": "A short constitution or founding document — two pages, not twenty — published for everyone.",
           "why": "It says who can join, how officers are chosen, and how they can be removed. That is most of it."
         },
         {
@@ -188,9 +198,10 @@
     {
       "kind": "statement",
       "eyebrow": "Before anybody volunteers",
-      "title": "This should not be my association, and I would rather it was not.",
-      "body": "I built the app and I am happy being the person who builds the app. Somebody had to start this and nobody else was doing it, so I did — but a supporters' association that depends on one person is not an association, it is a hobby with a website. If nobody stands tonight it stays with me by default, and that is the worst outcome on offer, for you and for me.",
-      "say": "Your call whether to say this at all. If you do, say it once, without apology, and then be quiet and let the room answer. Do not soften it into a joke — the honesty is the whole reason it works."
+      "title": "This should not be my association. It is yours.",
+      "body": "I built the app and I am happy being the person who keeps growing it — I genuinely enjoy it. Somebody had to start this and nobody else was doing it, so I did. But a supporters' association that depends on one person, or on a small working group, is not an association. Fan representation is the whole point of it.",
+      "say": "Your call whether to say this at all. If you do, say it once, without apology, and then be quiet and let the room answer. Do not soften it into a joke — the honesty is the whole reason it works.",
+      "aside": "Only through a group effort is this going to get off the ground. If the interest is not there it stays a web app, focused on the matchday experience and nothing more. Our club has a lot more potential than that, and our history is something we should be proud of and aim to preserve."
     },
     {
       "kind": "asks",
@@ -208,7 +219,7 @@
       "kind": "statement",
       "eyebrow": "Before you go",
       "title": "Everything tonight was done by supporters in their own time.",
-      "body": "The consultation, the letters, the app, this room. If you want to help with any of it — the archive, away travel, the letters, the accounts — say so before you leave, or put your name against something on the app.",
+      "body": "Thank you to everyone involved in arranging it, and thank you for coming. The consultation, the letters, the app, this room. If you want to help with any of it — the archive project, away travel, the letters — say so before you leave, put your name against something on the app, or come and speak to one of us.",
       "say": "Finish on the ask, then get out of the way and let people talk."
     }
   ]

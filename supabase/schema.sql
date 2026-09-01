@@ -3809,24 +3809,8 @@ end $$;
 revoke all on function help_with_proposal(uuid, text) from public;
 grant execute on function help_with_proposal(uuid, text) to anon, authenticated;
 
-drop view if exists meeting_question_board cascade;
-create view meeting_question_board as
-select
-  q.id,
-  q.meeting_id,
-  q.kind,
-  q.author_name,
-  q.body,
-  q.backers,
-  q.helpers,
-  q.answered,
-  q.created_at
-from meeting_questions q
-where not q.hidden
-order by q.answered, q.backers desc, q.created_at;
-
-alter view meeting_question_board set (security_invoker = false);
-grant select on meeting_question_board to anon, authenticated;
+-- The board view is defined once, further down, after the pinned column
+-- exists. A second copy lived here and was dead.
 
 -- ---------------------------------------------------------------------------
 -- What the public record shows
@@ -4141,6 +4125,47 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-08-31-workbench-access')
+insert into schema_meta (id, applied_version) values (1, '2026-09-01-pinning')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Pinning one to the top
+-- ---------------------------------------------------------------------------
+--
+-- The board is ordered by how many people have backed something, which is the
+-- whole point of it and must stay that way. But one proposal on the night is
+-- different in kind rather than degree: standing the committee up has to
+-- happen in the room, while everybody is still in their seats, and the other
+-- four can be agreed and done afterwards.
+--
+-- Pinning is the honest way to say that. The alternative — backing it a few
+-- times from different browsers to float it up — would have worked and would
+-- have been a lie about how many people wanted it, on the one page whose
+-- entire argument is that the order reflects the room.
+--
+-- Moderators only, through the existing update policy. Nothing new to grant.
+
+alter table meeting_questions add column if not exists pinned boolean not null default false;
+
+drop view if exists meeting_question_board cascade;
+create view meeting_question_board as
+select
+  q.id,
+  q.meeting_id,
+  q.kind,
+  q.author_name,
+  q.body,
+  q.backers,
+  q.helpers,
+  q.answered,
+  q.pinned,
+  q.created_at
+from meeting_questions q
+where not q.hidden
+order by q.answered, q.pinned desc, q.backers desc, q.created_at;
+
+alter view meeting_question_board set (security_invoker = false);
+grant select on meeting_question_board to anon, authenticated;
+
+update schema_meta set applied_version = '2026-09-01-pinning', applied_at = now() where id = 1;
