@@ -7518,3 +7518,8 @@ body.presenting { overflow: hidden; }
   .official { grid-template-columns: 1fr; gap: 1px; }
   .official__role { font-size: 0.75rem; }
 }
+
+.slide--dense .slide__asks { gap: 1cqw; }
+.slide--dense .slide__ask span { font-size: 1.75cqw; }
+.slide--dense .slide__ask b { font-size: 2.2cqw; }
+.slide--dense .slide__helpers { font-size: 1.3cqw; }

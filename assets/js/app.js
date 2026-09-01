@@ -9375,6 +9375,10 @@ function deckSlide(slide, i, total, facts) {
       const paint = () => db.meetingQuestions(facts.meeting.meeting_id).then((rows) => {
         if (!document.contains(list)) return;
         const props = (rows || []).filter((q) => q.kind === "proposal");
+        /* Sized down once there are several, because the text is whatever a
+           supporter typed and the list only grows during the meeting. It
+           measured a hair over the stage mid-load with five on it. */
+        box.classList.toggle("slide--dense", props.length >= 4);
         list.replaceChildren();
         if (!props.length) {
           list.append(el(`<p class="slide__text">Whatever the room decides. Anyone can put
