@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T00:30:12.805Z",
+  "updated": "2026-09-02T12:06:19.484Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -858,7 +858,7 @@
         "goals": [
           {
             "name": "Bayley Brown",
-            "minute": 94,
+            "minute": 93,
             "ours": true,
             "type": null
           }
@@ -882,7 +882,7 @@
           },
           {
             "name": "Cameron Paul Joseph Eubank",
-            "minute": 91,
+            "minute": 90,
             "ours": false,
             "type": null,
             "second": false,
@@ -1436,6 +1436,14 @@
           {
             "name": "Sam Warburton",
             "minute": 64,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tyler Winters",
+            "minute": 84,
             "ours": false,
             "type": null,
             "second": false,

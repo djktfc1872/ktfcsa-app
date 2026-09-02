@@ -1,11 +1,22 @@
 {
-  "updated": "2026-09-02T00:30:15.115Z",
+  "updated": "2026-09-02T12:06:21.317Z",
   "feed": "https://anchor.fm/s/103d565e8/podcast/rss",
   "title": "The Poppycast",
   "description": "Fans of Kettering Town talking all things Poppies",
   "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
   "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17",
   "episodes": [
+    {
+      "title": "Ep24 - Brad and Norms",
+      "published": "Tue, 01 Sep 2026 22:50:10 GMT",
+      "publishedISO": "2026-09-01T22:50:10.000Z",
+      "duration": "00:59:38",
+      "description": "This week, Craig, Jamie (and Shorty!) welcome Brad Piercewright and Craig Norman onto the pod to discuss their latest bid to buy the football club. Brad breaks down the details of the offer, and the challenges he has been facing in getting responses from the club. You, our listeners, have sent in tonnes of questions and comments in the run-up to this episode: we hope that they have been sufficiently answered. Thankyou for your engagement! Up The Poppies!",
+      "audio": "https://anchor.fm/s/103d565e8/podcast/play/125062802/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-1%2F430995472-44100-2-9b218bd936cac.m4a",
+      "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17/episodes/Ep24---Brad-and-Norms-e3o746i",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
+      "episode": ""
+    },
     {
       "title": "Ep23 - Bridgey over troubled water",
       "published": "Mon, 17 Aug 2026 21:01:57 GMT",
