@@ -13941,14 +13941,27 @@ function replyDue(L) {
 function replyWaitCard() {
   const box = el(`<div></div>`);
 
-  loadLetter().then((L) => {
+  Promise.all([
+    loadLetter(),
+    db.publishedQuestions().catch(() => []),
+    db.roomVotes(null, "letters").catch(() => null),
+  ]).then(([L, qs, votes]) => {
     const letters = lettersOf(L).filter((x) => x.sentAt);
-    if (!letters.length) return;
+    if (!letters.length || !document.contains(box)) return;
 
+    const sent = letters.map((x) => new Date(x.sentAt).getTime()).sort((a, b) => a - b);
     const dates = letters.map((x) => x.replyBy).filter(Boolean).sort();
     const dueISO = dates[0] || null;
     const due = dueISO ? new Date(`${dueISO}T23:59:59+01:00`).getTime() : null;
-    const sent = letters.map((x) => new Date(x.sentAt).getTime()).sort((a, b) => a - b);
+
+    /* Read, never written down. The card used to delete itself the moment a
+       question was marked replied, which meant the home page said nothing at
+       all about the thing the Association had spent a fortnight on. A card
+       that changes what it says is worth more than one that disappears. */
+    const replied  = qs.filter((q) => q.replied_at || q.answered_at).length;
+    const answered = qs.filter((q) => q.answered_at).length;
+    const hasReply = replied > 0;
+    const openVote = (votes || []).find((v) => v.state === "open");
 
     const card = el(`
       <button class="replycard" data-nav="letter">
@@ -13959,20 +13972,33 @@ function replyWaitCard() {
         </span>
         <span class="replycard__go" aria-hidden="true">\u203A</span>
       </button>`);
-
-    const what = $(".replycard__what", card);
+    const what   = $(".replycard__what", card);
     const state_ = $(".replycard__state", card);
+    const short  = (t) => fmtDate(new Date(t).toISOString().slice(0, 10), "short");
 
-    const days = Math.max(0, Math.floor((Date.now() - sent[0]) / 86400000));
     what.textContent = letters.length > 1
-      ? `Two letters, sent ${fmtDate(new Date(sent[0]).toISOString().slice(0, 10), "short")} and ${
-          fmtDate(new Date(sent[sent.length - 1]).toISOString().slice(0, 10), "short")}.`
-      : `Sent ${fmtDate(new Date(sent[0]).toISOString().slice(0, 10), "short")}, ${days} day${
-          days === 1 ? "" : "s"} ago.`;
+      ? `Two letters, sent ${short(sent[0])} and ${short(sent[sent.length - 1])}.`
+      : `Sent ${short(sent[0])}.`;
+
+    if (hasReply) {
+      /* Replied and answered are different things and the home page has to
+         keep them apart in one line, without editorialising. The reply came
+         inside the date and that is said before anything else about it. */
+      const r = letters.find((x) => x.reply)?.reply;
+      const when = r ? short(r.at) : null;
+      card.classList.add("replycard--replied");
+      state_.innerHTML =
+        `<b>The club replied${when ? ` ${esc(when)}` : ""}.</b> ` +
+        (answered
+          ? `${answered} of ${qs.length} questions answered.`
+          : `None of the ${qs.length} questions answered directly.`) +
+        (openVote ? ` <span class="replycard__cta">Have your say on what we do next.</span>` : "");
+      box.append(card);
+      return;
+    }
 
     const tick = () => {
       if (!due) { state_.textContent = "No reply date was asked for."; return; }
-
       const left = due - Date.now();
       if (left < 0) {
         const over = Math.floor(-left / 86400000);
@@ -13989,17 +14015,7 @@ function replyWaitCard() {
 
     box.append(card);
     /* Once a minute. A second hand belongs on the letters page, not here. */
-    const stop = tickWhileOnPage(card, tick, 60000);
-
-    /* Only while there is still nothing back. The moment a question is marked
-       replied in the workbench this stops being true, and a card that has to
-       be remembered is a card that goes stale. */
-    db.publishedQuestions().then((qs) => {
-      if (qs.length && qs.some((q) => q.replied_at || q.answered_at)) {
-        stop();
-        card.remove();
-      }
-    }).catch(() => {});
+    tickWhileOnPage(card, tick, 60000);
   }).catch((err) => { console.warn("The reply card did not render:", err); });
 
   return box;

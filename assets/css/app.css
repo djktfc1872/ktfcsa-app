@@ -7641,3 +7641,8 @@ body.presenting { overflow: hidden; }
 .reply-card__note { margin-top: 12px; }
 
 .meeting-votes { margin-top: 4px; }
+
+/* Replied is not late and must not borrow its colour. */
+.replycard--replied { border-color: var(--line); }
+.replycard--replied .replycard__state b { color: var(--accent); }
+.replycard__cta { display: block; margin-top: 3px; color: var(--accent); font-weight: 600; }
