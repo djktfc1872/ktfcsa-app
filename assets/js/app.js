@@ -9477,9 +9477,9 @@ function deckSlide(slide, i, total, facts) {
             <b data-role="replied">0</b><span>${esc(slide.unanswered || "of the questions answered")}</span>
           </div>
         </div>
-        <p class="slide__text">${over
-          ? "That date has passed."
-          : "We will say so plainly either way."}</p>`));
+        <p class="slide__text">${slide.replied
+          ? esc(slide.replied)
+          : over ? "That date has passed." : "We will say so plainly either way."}</p>`));
       db.publishedQuestions().then((rows) => {
         const done = (rows || []).filter((q) => q.replied_at).length;
         const n = $('[data-role="replied"]', wait);
@@ -14127,6 +14127,43 @@ function oneLetter(L, newest, openByDefault = false) {
           days === 1 ? "" : "s"}</b></div>`;
       })()}
     </div>`));
+
+  /* The club's reply, published whole and unedited.
+     
+     Two things this page has to keep apart, because conflating them is how a
+     campaign loses the room. The club replied, inside the date we asked for,
+     and that is said first and plainly. Whether the reply answers the twelve
+     questions is a separate judgement, recorded against each question rather
+     than asserted here in a sentence. Anyone can read the reply and disagree
+     with us, which is the point of printing it in full. */
+  if (L.reply) {
+    const r = L.reply;
+    const when = new Date(r.at);
+    const box = el(`
+      <div class="card reply-card">
+        <div class="reply-card__head">
+          <span class="pill pill--good">Replied</span>
+          <span>${esc(fmtDate(String(r.at).slice(0, 10)))} at ${esc(
+            when.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
+              .replace(" ", ""))}, from ${esc(r.from)}</span>
+        </div>
+        ${r.note ? `<p class="club-overview">${esc(r.note)}</p>` : ""}
+      </div>`);
+    if (r.commitments?.length) {
+      box.append(el(`<div class="info__label" style="margin-top:12px">What they committed to</div>`));
+      box.append(el(`<ul class="letter__list">${
+        r.commitments.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>`));
+      box.append(el(`<p class="hint">Held here so it can be checked against what happens. A
+        commitment is not an answer, and it is not nothing either.</p>`));
+    }
+    box.append(foldable("Read the reply in full, exactly as sent", () => {
+      const c = el(`<div class="letter"></div>`);
+      String(r.body).split(/\n{2,}/).forEach((para) =>
+        c.append(el(`<p class="letter__p">${esc(para.trim())}</p>`)));
+      return c;
+    }));
+    wrap.append(box);
+  }
 
   wrap.append(foldable(`Read it in full, as sent on ${L.sentWords}`, () => {
     const card = el(`<div class="card letter"></div>`);

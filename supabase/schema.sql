@@ -4125,7 +4125,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-01-pinning')
+insert into schema_meta (id, applied_version) values (1, '2026-09-01-room-votes')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4169,3 +4169,127 @@ alter view meeting_question_board set (security_invoker = false);
 grant select on meeting_question_board to anon, authenticated;
 
 update schema_meta set applied_version = '2026-09-01-pinning', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- A vote in the room
+-- ---------------------------------------------------------------------------
+--
+-- The consultation says 83% feel the ownership does not represent them. What
+-- it does not say is what supporters want done about it, and a meeting that
+-- ends without answering that has answered nothing.
+--
+-- Four rules are built into the shape of this rather than left to the night:
+--
+--   * **What each outcome triggers is written down before the vote opens.**
+--     A vote with no agreed consequence is a vote people argue about
+--     afterwards. carries_note and fails_note are set when the vote is drafted
+--     and shown on screen while people are voting.
+--   * **A threshold, not a bare majority.** Binding four hundred supporters to
+--     a position 51% of one room holds is not a mandate. Default two thirds.
+--   * **Turnout is part of the result.** "38 of the 90 people here" is honest;
+--     "the meeting voted" is not, when half the room sat on their hands.
+--   * **Abstaining is a real answer**, on the ballot, counted and reported.
+--     22 supporters told the consultation they would rather it was settled
+--     quietly and they are in the room too.
+--
+-- No account needed: the same device key the RSVP uses. One device, one vote,
+-- changeable while the vote is open and fixed the moment it closes.
+
+create table if not exists room_votes (
+  id uuid primary key default gen_random_uuid(),
+  meeting_id uuid not null references meetings on delete cascade,
+  question text not null check (char_length(question) between 8 and 300),
+  detail text,
+  options jsonb not null,
+  threshold int not null default 66 check (threshold between 50 and 100),
+  carries_note text,
+  fails_note text,
+  present int,                      -- how many were in the room, for turnout
+  state text not null default 'draft' check (state in ('draft','open','closed')),
+  sort int not null default 0,
+  opened_at timestamptz,
+  closed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists room_ballots (
+  vote_id uuid not null references room_votes on delete cascade,
+  voter text not null,
+  choice int not null check (choice >= 0),
+  created_at timestamptz not null default now(),
+  primary key (vote_id, voter)
+);
+
+alter table room_votes enable row level security;
+alter table room_ballots enable row level security;
+
+drop policy if exists "room votes readable" on room_votes;
+create policy "room votes readable" on room_votes
+  for select using (state <> 'draft' or is_moderator());
+
+drop policy if exists "volunteers run room votes" on room_votes;
+create policy "volunteers run room votes" on room_votes
+  for all using (is_admin()) with check (is_admin());
+
+-- No policy on the ballots. Nothing reads or writes them but the function
+-- below and the result view, which is the point: a table of device keys and
+-- how each one voted is not something anybody should be able to page through.
+
+create or replace function cast_room_vote(p_vote uuid, p_key text, p_choice int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_voter text := coalesce(auth.uid()::text, nullif(btrim(coalesce(p_key,'')), ''));
+  v_state text;
+  v_n int;
+begin
+  if v_voter is null then
+    raise exception 'We need to know which browser this came from.';
+  end if;
+  select state, jsonb_array_length(options) into v_state, v_n
+    from room_votes where id = p_vote;
+  if v_state is null then raise exception 'That vote is no longer there.'; end if;
+  if v_state <> 'open' then raise exception 'That vote is not open.'; end if;
+  if p_choice < 0 or p_choice >= v_n then raise exception 'That is not one of the options.'; end if;
+
+  insert into room_ballots (vote_id, voter, choice)
+  values (p_vote, v_voter, p_choice)
+  on conflict (vote_id, voter) do update set choice = excluded.choice, created_at = now();
+end $$;
+
+revoke all on function cast_room_vote(uuid, text, int) from public;
+grant execute on function cast_room_vote(uuid, text, int) to anon, authenticated;
+
+-- The result, counted per option, with turnout and whether it carried. Never
+-- exposes who voted for what.
+drop view if exists room_vote_result cascade;
+create view room_vote_result as
+select
+  v.id, v.meeting_id, v.question, v.detail, v.options, v.threshold,
+  v.carries_note, v.fails_note, v.present, v.state, v.sort,
+  coalesce(b.tally, '[]'::jsonb)                       as tally,
+  coalesce(b.cast_total, 0)                            as cast_total,
+  case when coalesce(b.cast_total,0) = 0 then null
+       else round(100.0 * coalesce(b.top_count,0) / b.cast_total) end as top_pct,
+  b.top_choice,
+  case when coalesce(b.cast_total,0) = 0 then null
+       else (100.0 * coalesce(b.top_count,0) / b.cast_total) >= v.threshold end as carried
+from room_votes v
+left join lateral (
+  select
+    jsonb_agg(jsonb_build_object('choice', c.choice, 'n', c.n) order by c.choice) as tally,
+    sum(c.n)                                                       as cast_total,
+    (array_agg(c.choice order by c.n desc, c.choice))[1]           as top_choice,
+    max(c.n)                                                       as top_count
+  from (select choice, count(*) as n from room_ballots where vote_id = v.id group by choice) c
+) b on true
+where v.state <> 'draft' or is_moderator()
+order by v.sort, v.created_at;
+
+alter view room_vote_result set (security_invoker = true);
+grant select on room_vote_result to anon, authenticated;
+
+update schema_meta set applied_version = '2026-09-01-room-votes', applied_at = now() where id = 1;
