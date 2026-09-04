@@ -717,7 +717,7 @@ function viewAccessibility() {
       <div class="info__label">Your phone can do more than this</div>
       <p class="hint" style="margin-top:6px">Everything above only changes this app. Your phone
         has its own settings for text size, bold text, contrast and reducing motion, and they
-        work everywhere — on iPhone under Settings, Accessibility, Display &amp; Text Size; on
+        work everywhere - on iPhone under Settings, Accessibility, Display &amp; Text Size; on
         Android under Settings, Accessibility. The app follows your text size setting, so it is
         worth setting it there first.</p>
     </div>`));
