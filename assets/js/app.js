@@ -5754,8 +5754,8 @@ function questionWorkbench(rows) {
                 placeholder="Something anybody can go and check, not something the club told us"
                 value="${esc(g.record_note || "")}">
               <p class="hint">Not a reply, and it does not stop the clock. It is for when a
-                question gets overtaken by something on the public record &mdash; a filing, a
-                notice &mdash; and leaving it standing as though nobody had checked would be
+                question gets overtaken by something on the public record - a filing, a
+                notice - and leaving it standing as though nobody had checked would be
                 the kind of thing that loses the argument. Dated, because a fact from the
                 record is a fact as at a day.</p>
             </div>` : ""}
@@ -7319,7 +7319,7 @@ function lettersForEditors() {
 
   card.append(el(`<p class="hint">${mayEdit
     ? `You can suggest changes to any of these. Nothing you write here goes on the site by
-       itself &mdash; it goes to Danny, with your name and your reason on it, and he applies it
+       itself - it goes to Danny, with your name and your reason on it, and he applies it
        or turns it down.`
     : `You can see the questions and where each one stands. You have not been given editing,
        so nothing here can be changed.`}</p>`));
@@ -9101,7 +9101,7 @@ function runningOrder(m, when) {
     if (plan.preamble) box.append(el(`<p class="hint">${esc(plan.preamble)}</p>`));
     plan.rows.forEach((row, i) => box.append(el(`
       <div class="agenda__row">
-        <div class="agenda__at">${esc(looseTime(when, row.at, i)) || "&mdash;"}</div>
+        <div class="agenda__at">${esc(looseTime(when, row.at, i)) || "-"}</div>
         <div class="agenda__what">
           <b>${esc(row.what)}</b>
           <span>${esc(row.why)}</span>
@@ -9258,7 +9258,7 @@ function deckSlide(slide, i, total, facts) {
               ${r.direction_right} say it is going the right way.</span>
           </div>
           <div class="figure">
-            <b>${low ? low.people : "&mdash;"}</b>
+            <b>${low ? low.people : "-"}</b>
             <span>gave the lowest confidence score there was. The average was
               ${Number(r.confidence_avg).toFixed(1)} out of ten.</span>
           </div>
@@ -9323,7 +9323,7 @@ function deckSlide(slide, i, total, facts) {
     const none = acts.find((x) => x.choice === "none");
     if (none) {
       body.append(el(`<p class="slide__aside">${none.people} supporters
-        &mdash; ${Math.round((none.people / total) * 100)}% &mdash;
+        - ${Math.round((none.people / total) * 100)}% -
         ${esc(slide.note || "chose nothing, I would rather it was settled quietly.")}</p>`));
     }
 
@@ -9469,7 +9469,7 @@ function deckSlide(slide, i, total, facts) {
       wait.replaceChildren(el(`
         <div class="slide__figures">
           <div class="figure">
-            <b>${days == null ? "&mdash;" : days}</b>
+            <b>${days == null ? "-" : days}</b>
             <span>days since we wrote, and asked for a reply${
               due ? ` by ${esc(fmtDate(last.replyBy))}` : ""}</span>
           </div>
@@ -9590,7 +9590,7 @@ function deckSlide(slide, i, total, facts) {
       box.classList.add("slide--draft");
       box.append(el(`<p class="slide__draft"><b>Draft, and admin-only:</b> agree these five
         with the working group before the night. Every one is already a question put to the
-        club in writing, so none of it is new &mdash; but it is the Association&rsquo;s
+        club in writing, so none of it is new - but it is the Association&rsquo;s
         position and it is not mine to set.</p>`));
     }
 
@@ -9737,7 +9737,7 @@ function questionsPanel(m, kind = "question") {
   const copy = proposal ? {
     head: "What we should do next",
     count: (n) => `${n} on the table`,
-    blurb: `Put up something the Association should actually do &mdash; about the club, the
+    blurb: `Put up something the Association should actually do - about the club, the
       ground, away travel, the archive, any of it. Back the ones you want done, and say if
       you would help. <b>The ones with people behind them are the ones that happen.</b>`,
     empty: "<b>Nothing proposed yet</b>Put the first one up. It does not have to be big.",
@@ -9750,7 +9750,7 @@ function questionsPanel(m, kind = "question") {
     head: "Questions for the floor",
     count: (n) => `${n} so far`,
     blurb: `Put a question in and we will read it out on the night, whether you make it or
-      not. Back the ones you want asked &mdash; the most backed go first, so the agenda is
+      not. Back the ones you want asked - the most backed go first, so the agenda is
       decided by the room rather than by us.`,
     empty: "<b>Nothing asked yet</b>Be the first. A question here gets read out even if you cannot get there.",
     placeholder: "What would you like asked?",
@@ -10630,7 +10630,7 @@ function newTopicForm() {
       <label class="field">
         <span class="field__label">What is it about?</span>
         <select class="input" data-f="cat">
-          ${TOPIC_CATS.map((c) => `<option value="${c.key}">${esc(c.label)} &mdash; ${esc(c.hint)}</option>`).join("")}
+          ${TOPIC_CATS.map((c) => `<option value="${c.key}">${esc(c.label)} - ${esc(c.hint)}</option>`).join("")}
         </select>
       </label>
       <label class="field">
@@ -12757,8 +12757,8 @@ function viewArchive() {
                   <td>${r.won}</td>
                   <td>${r.drew}</td>
                   <td>${r.lost}</td>
-                  <td>${pct === null ? "&mdash;" : `${pct}%`}</td>
-                  <td class="${r.captain ? "arch__capt" : "hint"}">${r.captain || "&mdash;"}</td>
+                  <td>${pct === null ? "-" : `${pct}%`}</td>
+                  <td class="${r.captain ? "arch__capt" : "hint"}">${r.captain || "-"}</td>
                   <td class="hint arch__seasons">${[...r.seasons].sort().join(", ")}</td>
                 </tr>`; }).join("")}
             </tbody>
@@ -14136,7 +14136,7 @@ function roomVotePanel(vote) {
       <button class="vote__opt${on ? " is-mine" : ""}" type="button" ${open ? "" : "disabled"}>
         <span class="vote__label">${esc(label)}</span>
         <span class="vote__bar"><i style="width:${total ? pct : 0}%"></i></span>
-        <span class="vote__n">${total ? `${pct}%` : "&mdash;"}</span>
+        <span class="vote__n">${total ? `${pct}%` : "-"}</span>
       </button>`);
     if (open) row.addEventListener("click", async () => {
       rows.querySelectorAll("button").forEach((b) => { b.disabled = true; });
