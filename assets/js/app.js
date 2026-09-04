@@ -8927,6 +8927,9 @@ function meetingCard(m) {
   card.append(runningOrder(m, when));
   card.append(rsvpPanel(m, total));
   card.append(questionsPanel(m, "question"));
+  /* Between the questions and the things we propose to do, because that is
+     where it falls on the night: the room has argued, and now it decides. */
+  card.append(meetingVotes(m));
   card.append(questionsPanel(m, "proposal"));
 
   /* Setting the stream link, for whoever is standing in the pub when it starts.
@@ -9710,6 +9713,35 @@ function wireDeck(wrap, stack, bar) {
     document.removeEventListener("keydown", onKey);
     document.body.classList.remove("presenting");
   }, 1000);
+}
+
+/**
+ * The vote the room takes on the night.
+ *
+ * The same panel the letters page uses, scoped to this meeting. It is drafted
+ * ahead of time so the wording is settled in daylight rather than typed into a
+ * phone at half eight, and it stays closed until a volunteer opens it: a vote
+ * left open all week is a poll, and a poll is not what the deck promises.
+ *
+ * A draft is visible to whoever runs the site and to nobody else, so the page
+ * never advertises a vote that has not started.
+ */
+function meetingVotes(m) {
+  const box = el(`<div class="meeting-votes"></div>`);
+  db.roomVotes(m.meeting_id, "meeting").then((votes) => {
+    if (!votes || !document.contains(box)) return;
+    const show = votes.filter((v) => v.state !== "draft" || db.isAdmin());
+    if (!show.length) return;
+    box.append(el(`<div class="info__label" style="margin-top:16px">The vote</div>`));
+    show.forEach((v) => {
+      if (v.state === "draft") {
+        box.append(el(`<p class="hint">Not open yet, and only you can see it. Open it from
+          the panel below when the room is ready.</p>`));
+      }
+      box.append(roomVotePanel(v));
+    });
+  }).catch(() => {});
+  return box;
 }
 
 /**
