@@ -4340,4 +4340,17 @@ where m.status <> 'off'
   and not exists (select 1 from room_votes v where v.meeting_id = m.id and v.scope = 'meeting')
 order by m.held_at nulls last limit 1;
 
+-- A vote's state is never set by this file, and must not be. Whether a vote is
+-- open is a decision somebody makes in a room, and re-running the schema on a
+-- Monday morning must not quietly close one that is running. The insert above
+-- only ever adds a vote that is not there, and nothing here updates state.
+--
+-- If that ever stops being true, this is the line that should stop you.
+do $$
+begin
+  if exists (select 1 from room_votes where state = 'open') then
+    raise notice 'A vote is currently open. This file does not change vote state; if one has just closed, something else did it.';
+  end if;
+end $$;
+
 update schema_meta set applied_version = '2026-09-04-vote-scope', applied_at = now() where id = 1;
