@@ -14148,7 +14148,8 @@ function commitmentsCard(L) {
     <div class="card">
       <p class="hint" style="margin-top:0">Nothing here is an answer to a question. They are
         promises, which is better than nothing and worse than an answer, and unlike an opinion
-        they can be checked. We will check them, in public, on this page.</p>
+        they can be checked later. Whether we track them here, and how, is one of the things
+        to settle on Monday.</p>
     </div>`);
   const list = el(`<ol class="commit-list"></ol>`);
   r.commitments.forEach((c) => list.append(el(
@@ -14156,27 +14157,34 @@ function commitmentsCard(L) {
   card.append(list);
   box.append(card);
 
-  box.append(el(`<h2 class="section-title">How we hold them to it</h2>`));
+  box.append(el(`<h2 class="section-title">How do we hold them to it?</h2>`));
   const how = el(`<div class="card"></div>`);
+  /* Questions, not instructions, and the caveat goes first rather than last.
+     Written as a plan this read like something already decided, with the line
+     saying it was not buried underneath it - which is the same trick we are
+     asking the club not to pull. Monday decides; this is a starting list. */
+  how.append(el(`<p class="hint" style="margin-top:0">None of this is agreed and none of it is
+    a plan. It is a starting list for Monday and the room is free to throw all of it out, add
+    to it, or decide the reply deserves a fair run before we do anything at all.</p>`));
   const points = [
-    ["Put a date on each one, and ask them to confirm it",
-     "A promise with no date cannot be late. That is not cynicism, it is how every promise works."],
-    ["Check them here in public, monthly",
-     "Same three lines, same page, updated whether or not anything has moved. The record does the arguing."],
-    ["Take the fans forum offer seriously",
-     "They floated monthly updates or a face to face forum. That is the most concrete thing in the reply and we should say yes to it quickly, in writing."],
-    ["Go through the Trust where it makes sense",
-     "The club says it already meets them and will meet them more often. Anything we want raised can be raised twice."],
-    ["Decide what happens if nothing moves",
-     "Agree that now, while nobody is annoyed. Deciding it after the fact is how supporters' groups end up doing something they cannot undo."],
+    ["Do we ask them to put dates on it?",
+     "A promise with no date cannot be late. Reasonable to ask, or does it read as point scoring a week after they wrote back?"],
+    ["Do we track them here, in the open?",
+     "The same three lines on this page, updated whether or not anything has moved. A useful record, or needless needling?"],
+    ["Do we take the forum offer up, and quickly?",
+     "Monthly updates or a face to face forum is the most concrete thing in the reply. There is a case for saying yes in writing this week."],
+    ["Where does the Trust fit in this?",
+     "The club says it already meets them and will meet more often. Some of what we want raised may be better raised through them, and that is worth talking about with them rather than about them."],
+    ["Do we decide now what happens if nothing moves?",
+     "Some would rather settle that while nobody is annoyed. Others would say wait until there is something to react to. Both are defensible."],
   ];
   points.forEach(([what, why]) => how.append(el(`
     <div class="how-row">
       <b>${esc(what)}</b>
       <span>${esc(why)}</span>
     </div>`)));
-  how.append(el(`<p class="hint">These are for the room on Monday to argue with, not a plan
-    anybody has agreed. Add your own on the meeting page and they get read out.</p>`));
+  how.append(el(`<p class="hint">Put your own on the meeting page and it gets read out on the
+    night, whether or not you can be there.</p>`));
   box.append(how);
   return box;
 }
