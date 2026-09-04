@@ -751,9 +751,12 @@ class Backend {
      invitation that cannot work. */
   /* -------------------------------------------------- votes in the room */
 
-  async roomVotes(meetingId) {
+  /* Scoped, because every vote hangs off a meeting and without this the
+     letters page and the meeting page showed each other's. */
+  async roomVotes(meetingId, scope) {
     let q = this.sb.from("room_vote_result").select("*");
     if (meetingId) q = q.eq("meeting_id", meetingId);
+    if (scope) q = q.eq("scope", scope);
     const { data, error } = await q;
     if (error) return null;
     return data || [];

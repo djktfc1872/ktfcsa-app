@@ -14253,7 +14253,7 @@ function roomVotePanel(vote) {
 /** Every vote that is open or finished, on the letters page. */
 function reAskVote() {
   const box = el(`<div></div>`);
-  db.roomVotes().then((votes) => {
+  db.roomVotes(null, "letters").then((votes) => {
     if (!votes || !votes.length || !document.contains(box)) return;
     const live = votes.filter((v) => v.state !== "draft" || db.isAdmin());
     if (!live.length) return;

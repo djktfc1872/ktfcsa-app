@@ -4125,7 +4125,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-01-room-votes')
+insert into schema_meta (id, applied_version) values (1, '2026-09-04-vote-scope')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4265,10 +4265,35 @@ grant execute on function cast_room_vote(uuid, text, int) to anon, authenticated
 
 -- The result, counted per option, with turnout and whether it carried. Never
 -- exposes who voted for what.
+-- room_vote_result is defined once, further down, after the scope column.
+
+update schema_meta set applied_version = '2026-09-01-room-votes', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- Which page a vote belongs on
+-- ---------------------------------------------------------------------------
+--
+-- Every vote hangs off a meeting, because that is the body of supporters doing
+-- the voting. But the re-ask vote lives on the letters page and the ownership
+-- vote belongs in the room, and with only meeting_id to go on both pages
+-- showed both. A supporter reading about the club's reply was being asked to
+-- vote on the ownership halfway down, and the meeting page was asking about
+-- letters.
+--
+-- One column, so each page asks for its own.
+
+alter table room_votes add column if not exists scope text not null default 'meeting';
+alter table room_votes drop constraint if exists room_votes_scope_check;
+alter table room_votes add constraint room_votes_scope_check
+  check (scope in ('meeting', 'letters'));
+
+update room_votes set scope = 'letters'
+ where question = 'Should we put the same twelve questions to the club again?';
+
 drop view if exists room_vote_result cascade;
 create view room_vote_result as
 select
-  v.id, v.meeting_id, v.question, v.detail, v.options, v.threshold,
+  v.id, v.meeting_id, v.scope, v.question, v.detail, v.options, v.threshold,
   v.carries_note, v.fails_note, v.present, v.state, v.sort,
   coalesce(b.tally, '[]'::jsonb)                       as tally,
   coalesce(b.cast_total, 0)                            as cast_total,
@@ -4281,9 +4306,9 @@ from room_votes v
 left join lateral (
   select
     jsonb_agg(jsonb_build_object('choice', c.choice, 'n', c.n) order by c.choice) as tally,
-    sum(c.n)                                                       as cast_total,
-    (array_agg(c.choice order by c.n desc, c.choice))[1]           as top_choice,
-    max(c.n)                                                       as top_count
+    sum(c.n)                                             as cast_total,
+    (array_agg(c.choice order by c.n desc, c.choice))[1] as top_choice,
+    max(c.n)                                             as top_count
   from (select choice, count(*) as n from room_ballots where vote_id = v.id group by choice) c
 ) b on true
 where v.state <> 'draft' or is_moderator()
@@ -4292,4 +4317,27 @@ order by v.sort, v.created_at;
 alter view room_vote_result set (security_invoker = true);
 grant select on room_vote_result to anon, authenticated;
 
-update schema_meta set applied_version = '2026-09-01-room-votes', applied_at = now() where id = 1;
+-- The vote the room takes on the night. Drafted now so the wording is settled
+-- in the cold light of day rather than typed into a phone at half eight, and
+-- left closed: a volunteer opens it from the meeting page when the room is
+-- ready, and closes it when the hands go down.
+insert into room_votes (meeting_id, scope, question, detail, options, threshold,
+                        carries_note, fails_note, sort, state)
+select m.id, 'meeting',
+  'Should the Association take a public position on the ownership of Kettering Town?',
+  'Agreed before we vote, not after. Two thirds of those voting carries it, and we report the turnout with the result.',
+  jsonb_build_array(
+    'Yes - take a public position',
+    'No - keep making the case privately',
+    'Not yet - ask the whole fanbase first',
+    'I would rather it was settled quietly'),
+  66,
+  'The working group drafts the position within a week and publishes it for every supporter to read before it goes to the club. Nobody signs anything on the night.',
+  'We publish the split honestly, say nothing in the Association''s name, and put it to the whole fanbase properly.',
+  1, 'draft'
+from meetings m
+where m.status <> 'off'
+  and not exists (select 1 from room_votes v where v.meeting_id = m.id and v.scope = 'meeting')
+order by m.held_at nulls last limit 1;
+
+update schema_meta set applied_version = '2026-09-04-vote-scope', applied_at = now() where id = 1;

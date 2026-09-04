@@ -7639,3 +7639,5 @@ body.presenting { overflow: hidden; }
 .reply-card__body { margin-top: 10px; }
 .reply-card__body .letter__p:first-child { margin-top: 0; }
 .reply-card__note { margin-top: 12px; }
+
+.meeting-votes { margin-top: 4px; }
