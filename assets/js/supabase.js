@@ -749,6 +749,31 @@ class Backend {
      database yet", and the page has to tell them apart: the first invites you
      to be the first, and the second has to show nothing at all rather than an
      invitation that cannot work. */
+  /* -------------------------------------------------- votes in the room */
+
+  async roomVotes(meetingId) {
+    let q = this.sb.from("room_vote_result").select("*");
+    if (meetingId) q = q.eq("meeting_id", meetingId);
+    const { data, error } = await q;
+    if (error) return null;
+    return data || [];
+  }
+
+  async castRoomVote(voteId, key, choice) {
+    const { error } = await this.sb.rpc("cast_room_vote", {
+      p_vote: voteId, p_key: key || null, p_choice: choice });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async setVoteState(id, state) {
+    const stamp = state === "open" ? { opened_at: new Date().toISOString() }
+                : state === "closed" ? { closed_at: new Date().toISOString() } : {};
+    const { data, error } = await this.sb.from("room_votes")
+      .update({ state, ...stamp }).eq("id", id).select("id");
+    if (error) throw new Error(friendly(error));
+    if (!data || !data.length) throw new Error("That did not save. Are you still signed in?");
+  }
+
   async meetingQuestions(meetingId) {
     const { data, error } = await this.sb.from("meeting_question_board")
       .select("*").eq("meeting_id", meetingId);

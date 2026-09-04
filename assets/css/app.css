@@ -7560,3 +7560,76 @@ body.presenting { overflow: hidden; }
   background: color-mix(in srgb, var(--good, #7ec48f) 18%, transparent);
   color: var(--good, #7ec48f); border-color: transparent;
 }
+
+/* ---- where the exchange has got to --------------------------------------- */
+
+.exchange__steps { margin: 10px 0 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: 10px; }
+.exchange__step {
+  display: grid; grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 2px 14px; padding-left: 14px; border-left: 2px solid var(--line);
+}
+.exchange__step--them { border-left-color: var(--good, #7ec48f); }
+.exchange__step--us   { border-left-color: var(--accent); }
+.exchange__step b {
+  grid-row: span 2; align-self: center;
+  font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.exchange__step span { font-size: 0.9375rem; color: var(--text); }
+.exchange__step i { font-style: normal; font-size: 0.8125rem; color: var(--text-2); }
+.exchange__count {
+  margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-size: 0.9375rem; line-height: 1.55; color: var(--text-2);
+}
+.exchange__count b { color: var(--accent); }
+
+.commit-list { margin: 10px 0 0; padding-left: 1.2rem; display: flex;
+  flex-direction: column; gap: 9px; }
+.commit-list li { font-size: 0.9375rem; line-height: 1.5; color: var(--text); }
+.commit-list li::marker { color: var(--accent); font-weight: 800; }
+.commit-list i { display: block; margin-top: 2px; font-style: normal;
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+
+.how-row { padding: 10px 0; }
+.how-row + .how-row { border-top: 1px solid var(--line-soft); }
+.how-row b { display: block; font-size: 0.9375rem; color: var(--text); }
+.how-row span { display: block; margin-top: 3px; font-size: 0.875rem;
+  line-height: 1.5; color: var(--text-2); }
+
+/* ---- a vote ------------------------------------------------------------- */
+
+.vote__q { margin: 4px 0 0; font-size: 1.0625rem; line-height: 1.4; }
+.vote__opts { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.vote__opt {
+  display: grid; grid-template-columns: minmax(0, 1fr) 8rem 3rem;
+  align-items: center; gap: 12px;
+  padding: 10px 12px; text-align: left;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: transparent; color: var(--text); cursor: pointer;
+}
+.vote__opt:hover:not(:disabled) { border-color: var(--accent); }
+.vote__opt:disabled { cursor: default; }
+.vote__opt.is-mine { border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.vote__label { font-size: 0.9375rem; }
+.vote__bar { height: 6px; border-radius: 999px; background: var(--line-soft); overflow: hidden; }
+.vote__bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.vote__n { font-size: 0.875rem; font-weight: 800; color: var(--accent);
+  text-align: right; font-variant-numeric: tabular-nums; }
+.vote__foot { margin-top: 10px; }
+.vote__verdict { margin: 8px 0 0; font-weight: 700; color: var(--text-2); }
+.vote__verdict.is-carried { color: var(--accent); }
+.vote__agreed { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  display: flex; flex-direction: column; gap: 8px; }
+.vote__agreed b { display: block; font-size: 0.6875rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.vote__agreed span { display: block; margin-top: 2px; font-size: 0.875rem;
+  line-height: 1.5; color: var(--text-2); }
+
+@media (max-width: 520px) {
+  .exchange__step { grid-template-columns: 1fr; }
+  .exchange__step b { grid-row: auto; }
+  .vote__opt { grid-template-columns: minmax(0, 1fr) 3rem; }
+  .vote__bar { display: none; }
+}

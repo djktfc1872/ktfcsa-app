@@ -13815,18 +13815,31 @@ function viewLetter() {
       <p>Written on behalf of the supporters who took part in the consultation, and published in
          full. What they said, and what we have asked the club.</p>
     </div>`));
-  /* The clock before the letters. It is the one thing on this page that is
-     different from the last time somebody looked. */
+  /* What is at the top depends on whether anybody has written back.
+  
+     While we were waiting, the clock was the only thing on this page that
+     changed between visits and it earned its place. Now the club has replied
+     it is worse than useless: it counted down to a reply that had already
+     arrived, under a line saying they had come back on all twelve. A page
+     arguing that the club is unclear cannot itself say two opposite things
+     above the fold. */
   const slot = el(`<div></div>`);
   wrap.append(slot);
+  const after = el(`<div></div>`);
+  wrap.append(after);
+
   loadLetter().then((L) => {
-    const c = replyClock(L);
-    if (c) slot.replaceWith(c);
+    const replied = lettersOf(L).some((x) => x.reply);
+    if (replied) {
+      slot.replaceWith(exchangeCard(L));
+      after.append(commitmentsCard(L));
+      after.append(reAskVote());
+    } else {
+      const c = replyClock(L);
+      if (c) slot.replaceWith(c);
+    }
   }).catch((err) => {
-    /* A swallowed catch here hid a broken clock completely: no clock, no error,
-       nothing to go on. The page is fine without it, so it still fails quietly
-       for the supporter, but it says so where somebody can see it. */
-    console.warn("The reply clock did not render:", err);
+    console.warn("The top of the letters page did not render:", err);
   });
 
   wrap.append(openLetterSection({ openNewest: true }));
@@ -13956,6 +13969,246 @@ function replyWaitCard() {
     }).catch(() => {});
   }).catch((err) => { console.warn("The reply card did not render:", err); });
 
+  return box;
+}
+
+/**
+ * Where the exchange has got to, in order.
+ *
+ * Three things happened and the page has to say all three in the order they
+ * happened, because the order is the argument: we asked, they answered inside
+ * the date, and what came back did not answer the questions. Take any one of
+ * those out and the page is either unfair or naive.
+ *
+ * "Replied" and "answered" stay separate here as they do everywhere else. The
+ * counts are read from the questions rather than written down, so marking one
+ * answered in the workbench changes this line and nobody has to remember.
+ */
+function exchangeCard(L) {
+  const letters = lettersOf(L).filter((x) => x.sentAt);
+  const withReply = letters.find((x) => x.reply);
+  const r = withReply?.reply;
+  const ours = withReply?.ourReply;
+
+  const box = el(`<div class="card exchange"></div>`);
+  box.append(el(`<div class="info__label">Where this has got to</div>`));
+
+  const when = (iso) => {
+    const d = new Date(iso);
+    return `${fmtDate(String(iso).slice(0, 10))} at ${
+      d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
+        .replace(" ", "")}`;
+  };
+
+  const steps = el(`<ol class="exchange__steps"></ol>`);
+  const step = (who, what, sub, tone) => steps.append(el(`
+    <li class="exchange__step${tone ? ` exchange__step--${tone}` : ""}">
+      <b>${esc(who)}</b>
+      <span>${esc(what)}</span>
+      ${sub ? `<i>${esc(sub)}</i>` : ""}
+    </li>`));
+
+  const first = letters.map((x) => x.sentAt).sort()[0];
+  step("We wrote", `${letters.length} letter${letters.length === 1 ? "" : "s"}, ${
+    when(first)}`, "Twelve questions, ten of them written by supporters.");
+
+  if (r) {
+    const late = withReply.replyBy
+      ? new Date(r.at) > new Date(`${withReply.replyBy}T23:59:59+01:00`) : false;
+    step("They replied", when(r.at),
+      late ? "After the date we asked for."
+           : "Inside the date we asked for, and we say so first.", "them");
+  }
+  if (ours) step("We replied", when(ours.at), "Sent the same day.", "us");
+  box.append(steps);
+
+  /* Worked out, never typed. A sentence saying "none answered" is true until
+     the day one is, and on that day nobody remembers to come back here. */
+  const said = el(`<p class="exchange__count">Checking&hellip;</p>`);
+  box.append(said);
+  db.publishedQuestions().then((qs) => {
+    if (!document.contains(said)) return;
+    const n = qs.length;
+    const answered = qs.filter((q) => q.answered_at).length;
+    said.innerHTML = answered
+      ? `<b>${answered} of ${n}</b> questions answered.`
+      : `The club has come back on all <b>${n}</b> questions, and answered <b>none of them</b> `
+        + `directly. That is their right, and it is also the reason this page is still here.`;
+  }).catch(() => { said.remove(); });
+
+  if (ours) {
+    box.append(foldable("Read what we said back", () => {
+      const c = el(`<div class="letter"></div>`);
+      String(ours.body).split(/\n{2,}/).forEach((para) =>
+        c.append(el(`<p class="letter__p">${esc(para.trim())}</p>`)));
+      return c;
+    }));
+  }
+  return box;
+}
+
+/**
+ * What they committed to, and what we do about it.
+ *
+ * The reply answered no questions but it did promise four things, and a
+ * promise is the one part of it that can be checked later. Writing them down
+ * with a date next to each is the whole of holding somebody to account: not
+ * argument, just a list somebody keeps.
+ */
+function commitmentsCard(L) {
+  const r = lettersOf(L).find((x) => x.reply)?.reply;
+  const box = el(`<div></div>`);
+  if (!r?.commitments?.length) return box;
+
+  box.append(el(`<h2 class="section-title">What they committed to</h2>`));
+  const card = el(`
+    <div class="card">
+      <p class="hint" style="margin-top:0">Nothing here is an answer to a question. They are
+        promises, which is better than nothing and worse than an answer, and unlike an opinion
+        they can be checked. We will check them, in public, on this page.</p>
+    </div>`);
+  const list = el(`<ol class="commit-list"></ol>`);
+  r.commitments.forEach((c) => list.append(el(
+    `<li><span>${esc(c)}</span><i>No date given</i></li>`)));
+  card.append(list);
+  box.append(card);
+
+  box.append(el(`<h2 class="section-title">How we hold them to it</h2>`));
+  const how = el(`<div class="card"></div>`);
+  const points = [
+    ["Put a date on each one, and ask them to confirm it",
+     "A promise with no date cannot be late. That is not cynicism, it is how every promise works."],
+    ["Check them here in public, monthly",
+     "Same three lines, same page, updated whether or not anything has moved. The record does the arguing."],
+    ["Take the fans forum offer seriously",
+     "They floated monthly updates or a face to face forum. That is the most concrete thing in the reply and we should say yes to it quickly, in writing."],
+    ["Go through the Trust where it makes sense",
+     "The club says it already meets them and will meet them more often. Anything we want raised can be raised twice."],
+    ["Decide what happens if nothing moves",
+     "Agree that now, while nobody is annoyed. Deciding it after the fact is how supporters' groups end up doing something they cannot undo."],
+  ];
+  points.forEach(([what, why]) => how.append(el(`
+    <div class="how-row">
+      <b>${esc(what)}</b>
+      <span>${esc(why)}</span>
+    </div>`)));
+  how.append(el(`<p class="hint">These are for the room on Monday to argue with, not a plan
+    anybody has agreed. Add your own on the meeting page and they get read out.</p>`));
+  box.append(how);
+  return box;
+}
+
+/**
+ * A vote, in the app.
+ *
+ * Built for the meeting, used here first, because the question of whether to
+ * re-ask the twelve is one every supporter has a view on and only a hundred of
+ * them will be in the room on Monday.
+ *
+ * Four things are true of it by construction rather than by intention: no
+ * account is needed, one device is one vote, the result shows the threshold it
+ * has to clear, and what each outcome triggers was written down before the vote
+ * opened. That last one is the whole point. A vote with no agreed consequence
+ * is a vote people argue about afterwards.
+ */
+function roomVotePanel(vote) {
+  const box = el(`<div class="card vote"></div>`);
+  const key = `voted:${vote.id}`;
+  let mine = db.read(key, null);
+
+  box.append(el(`<div class="info__label">${
+    vote.state === "closed" ? "The result" : "Have your say"}</div>`));
+  box.append(el(`<h3 class="vote__q">${esc(vote.question)}</h3>`));
+  if (vote.detail) box.append(el(`<p class="hint">${esc(vote.detail)}</p>`));
+
+  const opts = Array.isArray(vote.options) ? vote.options : [];
+  const tally = {};
+  (vote.tally || []).forEach((t) => { tally[t.choice] = t.n; });
+  const total = vote.cast_total || 0;
+
+  const rows = el(`<div class="vote__opts"></div>`);
+  opts.forEach((label, i) => {
+    const n = tally[i] || 0;
+    const pct = total ? Math.round((n / total) * 100) : 0;
+    const on = mine === i;
+    const open = vote.state === "open";
+    const row = el(`
+      <button class="vote__opt${on ? " is-mine" : ""}" type="button" ${open ? "" : "disabled"}>
+        <span class="vote__label">${esc(label)}</span>
+        <span class="vote__bar"><i style="width:${total ? pct : 0}%"></i></span>
+        <span class="vote__n">${total ? `${pct}%` : "&mdash;"}</span>
+      </button>`);
+    if (open) row.addEventListener("click", async () => {
+      rows.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+      try {
+        await db.castRoomVote(vote.id, db.consultDeviceKey(), i);
+        db.write(key, i);
+        toast("Counted. You can change it while the vote is open.", "good");
+        render();
+      } catch (err) {
+        rows.querySelectorAll("button").forEach((b) => { b.disabled = false; });
+        toast(err.message || "That did not save.", "bad");
+      }
+    });
+    rows.append(row);
+  });
+  box.append(rows);
+
+  /* Turnout, always, and never just the winning number. "38 of the 90 here"
+     is honest; "the meeting voted" is not, when half the room sat it out. */
+  const bits = [];
+  bits.push(total === 0 ? "Nobody has voted yet"
+    : `${total} vote${total === 1 ? "" : "s"} so far`);
+  if (vote.present) bits.push(`${vote.present} were in the room`);
+  bits.push(`${vote.threshold}% needed to carry`);
+  box.append(el(`<p class="hint vote__foot">${esc(bits.join(" \u00b7 "))}</p>`));
+
+  if (vote.state === "closed" && vote.carried !== null) {
+    box.append(el(`<p class="vote__verdict${vote.carried ? " is-carried" : ""}">${
+      vote.carried
+        ? `Carried on ${vote.top_pct}%.`
+        : `Not carried. The highest answer had ${vote.top_pct}%, and ${vote.threshold}% was needed.`
+    }</p>`));
+  }
+
+  /* What each outcome means, shown while people are still voting rather than
+     produced afterwards to suit whichever way it went. */
+  if (vote.carries_note || vote.fails_note) {
+    const agreed = el(`<div class="vote__agreed"></div>`);
+    if (vote.carries_note) agreed.append(el(
+      `<div><b>If it carries</b><span>${esc(vote.carries_note)}</span></div>`));
+    if (vote.fails_note) agreed.append(el(
+      `<div><b>If it does not</b><span>${esc(vote.fails_note)}</span></div>`));
+    box.append(agreed);
+  }
+
+  if (db.isAdmin()) {
+    const tools = el(`<div class="btn-row" style="margin-top:12px"></div>`);
+    [["open", "Open it"], ["closed", "Close it"], ["draft", "Hide it"]]
+      .filter(([st]) => st !== vote.state)
+      .forEach(([st, label]) => {
+        const b = el(`<button class="btn btn--sm btn--ghost">${esc(label)}</button>`);
+        b.addEventListener("click", async () => {
+          try { await db.setVoteState(vote.id, st); render(); }
+          catch (err) { toast(err.message, "bad"); }
+        });
+        tools.append(b);
+      });
+    box.append(tools);
+  }
+  return box;
+}
+
+/** Every vote that is open or finished, on the letters page. */
+function reAskVote() {
+  const box = el(`<div></div>`);
+  db.roomVotes().then((votes) => {
+    if (!votes || !votes.length || !document.contains(box)) return;
+    const live = votes.filter((v) => v.state !== "draft" || db.isAdmin());
+    if (!live.length) return;
+    box.append(el(`<h2 class="section-title">What should we do next?</h2>`));
+    live.forEach((v) => box.append(roomVotePanel(v)));
+  }).catch(() => {});
   return box;
 }
 
