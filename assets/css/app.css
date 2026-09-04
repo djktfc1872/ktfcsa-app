@@ -7633,3 +7633,9 @@ body.presenting { overflow: hidden; }
   .vote__opt { grid-template-columns: minmax(0, 1fr) 3rem; }
   .vote__bar { display: none; }
 }
+
+/* The club's reply, at the top and open. It reads as their words rather than
+   ours: quieter ground, and a rule down the left the way a quotation is set. */
+.reply-card__body { margin-top: 10px; }
+.reply-card__body .letter__p:first-child { margin-top: 0; }
+.reply-card__note { margin-top: 12px; }

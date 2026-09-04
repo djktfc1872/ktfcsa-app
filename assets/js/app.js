@@ -13832,6 +13832,7 @@ function viewLetter() {
     const replied = lettersOf(L).some((x) => x.reply);
     if (replied) {
       slot.replaceWith(exchangeCard(L));
+      after.append(replySection(L));
       after.append(commitmentsCard(L));
       after.append(reAskVote());
     } else {
@@ -14036,13 +14037,63 @@ function exchangeCard(L) {
         + `directly. That is their right, and it is also the reason this page is still here.`;
   }).catch(() => { said.remove(); });
 
+  return box;
+}
+
+/**
+ * What the club actually said, at the top of the page and open.
+ *
+ * It was published inside the letter it answered, four folds down, between
+ * that letter's own header and its own "read it in full". So the one thing on
+ * this page a supporter came to see was the hardest thing on it to find, and
+ * it interrupted the letter it belonged to on the way past.
+ *
+ * It is a section of its own now, directly under the summary, and it is not
+ * folded. If we are going to say the club did not answer, the club's words
+ * have to be the easiest thing to read on the page - otherwise we are asking
+ * to be taken on trust, which is the exact thing we are complaining about.
+ */
+function replySection(L) {
+  const withReply = lettersOf(L).find((x) => x.reply);
+  if (!withReply) return el(`<div hidden></div>`);
+  const r = withReply.reply;
+  const ours = withReply.ourReply;
+
+  const box = el(`<div></div>`);
+  box.append(el(`<h2 class="section-title">What the club said</h2>`));
+
+  const stamp = (iso) => {
+    const d = new Date(iso);
+    return `${fmtDate(String(iso).slice(0, 10))} at ${
+      d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
+        .replace(" ", "")}`;
+  };
+
+  const card = el(`
+    <div class="card reply-card">
+      <div class="reply-card__head">
+        <span class="pill pill--good">Replied</span>
+        <span>${esc(stamp(r.at))}, from ${esc(r.from)}</span>
+      </div>
+    </div>`);
+  const body = el(`<div class="letter reply-card__body"></div>`);
+  String(r.body).split(/\n{2,}/).forEach((para) =>
+    body.append(el(`<p class="letter__p">${esc(para.trim())}</p>`)));
+  card.append(body);
+  card.append(el(`<p class="hint reply-card__note">Reproduced in full and unedited, including the
+    signature block, exactly as it arrived.</p>`));
+  box.append(card);
+
   if (ours) {
-    box.append(foldable("Read what we said back", () => {
-      const c = el(`<div class="letter"></div>`);
-      String(ours.body).split(/\n{2,}/).forEach((para) =>
-        c.append(el(`<p class="letter__p">${esc(para.trim())}</p>`)));
-      return c;
-    }));
+    box.append(el(`<h2 class="section-title">What we said back</h2>`));
+    const mine = el(`<div class="card"></div>`);
+    mine.append(el(`<div class="reply-card__head"><span>${esc(stamp(ours.at))}, from ${
+      esc(ours.from)}</span></div>`));
+    const c = el(`<div class="letter"></div>`);
+    String(ours.body).split(/\n{2,}/).forEach((para) =>
+      c.append(el(`<p class="letter__p">${esc(para.trim())}</p>`)));
+    mine.append(c);
+    box.append(mine);
   }
   return box;
 }
@@ -14380,43 +14431,6 @@ function oneLetter(L, newest, openByDefault = false) {
           days === 1 ? "" : "s"}</b></div>`;
       })()}
     </div>`));
-
-  /* The club's reply, published whole and unedited.
-     
-     Two things this page has to keep apart, because conflating them is how a
-     campaign loses the room. The club replied, inside the date we asked for,
-     and that is said first and plainly. Whether the reply answers the twelve
-     questions is a separate judgement, recorded against each question rather
-     than asserted here in a sentence. Anyone can read the reply and disagree
-     with us, which is the point of printing it in full. */
-  if (L.reply) {
-    const r = L.reply;
-    const when = new Date(r.at);
-    const box = el(`
-      <div class="card reply-card">
-        <div class="reply-card__head">
-          <span class="pill pill--good">Replied</span>
-          <span>${esc(fmtDate(String(r.at).slice(0, 10)))} at ${esc(
-            when.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
-              .replace(" ", ""))}, from ${esc(r.from)}</span>
-        </div>
-        ${r.note ? `<p class="club-overview">${esc(r.note)}</p>` : ""}
-      </div>`);
-    if (r.commitments?.length) {
-      box.append(el(`<div class="info__label" style="margin-top:12px">What they committed to</div>`));
-      box.append(el(`<ul class="letter__list">${
-        r.commitments.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>`));
-      box.append(el(`<p class="hint">Held here so it can be checked against what happens. A
-        commitment is not an answer, and it is not nothing either.</p>`));
-    }
-    box.append(foldable("Read the reply in full, exactly as sent", () => {
-      const c = el(`<div class="letter"></div>`);
-      String(r.body).split(/\n{2,}/).forEach((para) =>
-        c.append(el(`<p class="letter__p">${esc(para.trim())}</p>`)));
-      return c;
-    }));
-    wrap.append(box);
-  }
 
   wrap.append(foldable(`Read it in full, as sent on ${L.sentWords}`, () => {
     const card = el(`<div class="card letter"></div>`);
