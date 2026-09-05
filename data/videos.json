@@ -1,8 +1,15 @@
 {
-  "updated": "2026-09-05T11:15:45.970Z",
+  "updated": "2026-09-05T16:23:05.992Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "ek4Zwy3V02k",
+      "title": "My Broadcast",
+      "published": "2026-09-05T16:07:02+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a8c359f36e2cd2b199661a2"
+    },
     {
       "videoId": "AVQHNIzuQzU",
       "title": "Bridgy talks Eddie's hat-trick and excellent goals from Gyasi and Jeffers",

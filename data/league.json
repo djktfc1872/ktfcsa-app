@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T11:15:42.776Z",
+  "updated": "2026-09-05T16:23:03.335Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1470,10 +1470,10 @@
       "competition": "Emirates FA Cup",
       "competitionType": "cup",
       "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
+      "status": "played",
+      "rawStatus": "FullTime",
+      "homeScore": 2,
+      "awayScore": 2,
       "attendance": null,
       "lineup": [],
       "events": {
