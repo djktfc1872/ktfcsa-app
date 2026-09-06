@@ -9247,13 +9247,33 @@ function viewDeck() {
     readJSON("data/attendances.json"),
     db.consultationResults().catch(() => null),
     db.meetings().then((rows) => rows[0] || null).catch(() => null),
+    /* The fallback, always fetched: it is a cached file, it costs nothing, and
+       deciding whether it is needed after the live calls have already failed
+       would mean a second round trip on the connection that just let us down. */
+    readJSON("data/deck-snapshot.json"),
     loadLetter().catch(() => null),
-  ]).then(([deck, att, results, meeting]) => {
-    const facts = { att, results, meeting };
+  ]).then(([deck, att, liveResults, liveMeeting, snap]) => {
+    /* Live wins whenever it answers. This only stands in when it does not, and
+       the slides say so rather than passing an old number off as current. */
+    const results = liveResults || snap?.results || null;
+    const meeting = liveMeeting || snap?.meeting || null;
+    const stale = Boolean(!liveResults && snap?.results);
+    const facts = { att, results, meeting, snap, stale };
     /* Filtered before numbering, not during. Dropping a slide as it is drawn
        left the public deck running 9, 11, 12 and still claiming twelve of
        them, which looks like something has gone missing. It has; it just is
        not supposed to be countable. */
+    /* Say it once, on the page, when the numbers are the cached ones. Not on
+       every slide: the room does not need telling four times, and whoever is
+       presenting needs to know before they start rather than mid sentence. */
+    if (stale && snap?.built) {
+      const when = new Date(snap.built);
+      bar.append(el(`<span class="deck-bar__stale">Offline. Figures as at ${
+        esc(fmtDate(snap.built.slice(0, 10), "short"))}, ${
+        esc(when.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
+          .replace(" ", ""))}.</span>`));
+    }
+
     const shown = deck.slides.filter(deckVisible);
     stack.replaceChildren();
     shown.forEach((slide, i) => stack.append(deckSlide(slide, i, shown.length, facts)));
@@ -9300,6 +9320,17 @@ function barsSlide(rows, names, total) {
   });
   return box;
 }
+
+/* The two live reads the slides make, each with the cached snapshot behind it.
+   Written as one place rather than four, because four separate fallbacks is
+   four chances to forget one and find out in front of the room. */
+const deckQuestions = (facts) =>
+  db.publishedQuestions().then((rows) => (rows && rows.length ? rows : facts.snap?.questions || []))
+    .catch(() => facts.snap?.questions || []);
+
+const deckBoard = (facts) =>
+  db.meetingQuestions(facts.meeting?.meeting_id).then((rows) => (rows || facts.snap?.board || []))
+    .catch(() => facts.snap?.board || []);
 
 /** One slide. A fixed 16:9 stage that scales itself to whatever it is shown on. */
 function deckSlide(slide, i, total, facts) {
@@ -9475,7 +9506,7 @@ function deckSlide(slide, i, total, facts) {
     const list = el(`<div class="slide__asks" data-role="props"></div>`);
     body.append(list);
     if (facts.meeting) {
-      const paint = () => db.meetingQuestions(facts.meeting.meeting_id).then((rows) => {
+      const paint = () => deckBoard(facts).then((rows) => {
         if (!document.contains(list)) return;
         const props = (rows || []).filter((q) => q.kind === "proposal");
         /* Sized down once there are several, because the text is whatever a
@@ -9526,7 +9557,7 @@ function deckSlide(slide, i, total, facts) {
   } else if (slide.kind === "questions") {
     heading(slide.title); if (slide.body) para(slide.body);
     body.append(el(`<p class="slide__aside" data-role="qcount">&nbsp;</p>`));
-    db.publishedQuestions().then((rows) => {
+    deckQuestions(facts).then((rows) => {
       const n = (rows || []).length;
       const supp = (rows || []).filter((q) => (q.origin || "supporters") === "supporters").length;
       $('[data-role="qcount"]', body).innerHTML =
@@ -9564,7 +9595,7 @@ function deckSlide(slide, i, total, facts) {
         <p class="slide__text">${slide.replied
           ? esc(slide.replied)
           : over ? "That date has passed." : "We will say so plainly either way."}</p>`));
-      db.publishedQuestions().then((rows) => {
+      deckQuestions(facts).then((rows) => {
         const done = (rows || []).filter((q) => q.replied_at).length;
         const n = $('[data-role="replied"]', wait);
         if (n) n.textContent = String(done);
@@ -9597,7 +9628,7 @@ function deckSlide(slide, i, total, facts) {
     const list = el(`<div class="slide__asks" data-role="asks"></div>`);
     body.append(list);
     if (facts.meeting) {
-      db.meetingQuestions(facts.meeting.meeting_id).then((rows) => {
+      deckBoard(facts).then((rows) => {
         if (!document.contains(list)) return;
         /* Questions only. Without this filter the board's proposals came back
            too, so the slide headed "your questions" was showing the list of

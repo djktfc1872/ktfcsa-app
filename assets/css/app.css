@@ -7717,3 +7717,9 @@ body.presenting { overflow: hidden; }
   background: color-mix(in srgb, var(--accent) 7%, transparent);
 }
 .gap-note b { color: var(--accent); }
+
+/* Shown only when the deck is running on cached figures. */
+.deck-bar__stale {
+  font-size: 0.8125rem; font-weight: 600; color: var(--accent);
+  padding: 3px 9px; border: 1px dashed var(--accent); border-radius: 999px;
+}

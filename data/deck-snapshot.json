@@ -1,0 +1,454 @@
+{
+  "built": "2026-09-06T21:06:44.686Z",
+  "note": "Written by scripts/build-deck-snapshot.mjs. The deck falls back to this when the database cannot be reached, so that a bad connection in a function room does not empty the slides. Live figures win whenever they answer.",
+  "results": {
+    "summary": {
+      "responses": 199,
+      "from_members": 28,
+      "confidence_avg": 2.4,
+      "direction_right": 9,
+      "direction_wrong": 151,
+      "direction_unsure": 39,
+      "questions_asked": 109,
+      "meeting_in_person": 118,
+      "meeting_online": 71,
+      "meeting_updates": 31,
+      "meeting_any": 181,
+      "opened": "2026-08-17T01:47:32.939318+00:00",
+      "latest": "2026-08-21T10:33:29.507086+00:00"
+    },
+    "confidence": [
+      {
+        "score": 8,
+        "people": 3
+      },
+      {
+        "score": 9,
+        "people": 1
+      },
+      {
+        "score": 7,
+        "people": 6
+      },
+      {
+        "score": 1,
+        "people": 96
+      },
+      {
+        "score": 5,
+        "people": 14
+      },
+      {
+        "score": 4,
+        "people": 16
+      },
+      {
+        "score": 2,
+        "people": 32
+      },
+      {
+        "score": 6,
+        "people": 6
+      },
+      {
+        "score": 3,
+        "people": 25
+      }
+    ],
+    "choices": [
+      {
+        "kind": "positive",
+        "choice": "ground",
+        "people": 16
+      },
+      {
+        "kind": "positive",
+        "choice": "manager",
+        "people": 45
+      },
+      {
+        "kind": "positive",
+        "choice": "community",
+        "people": 58
+      },
+      {
+        "kind": "positive",
+        "choice": "ambition",
+        "people": 10
+      },
+      {
+        "kind": "positive",
+        "choice": "team",
+        "people": 168
+      },
+      {
+        "kind": "positive",
+        "choice": "matchday",
+        "people": 23
+      },
+      {
+        "kind": "concern",
+        "choice": "volunteers",
+        "people": 184
+      },
+      {
+        "kind": "concern",
+        "choice": "matchday",
+        "people": 63
+      },
+      {
+        "kind": "concern",
+        "choice": "communication",
+        "people": 171
+      },
+      {
+        "kind": "concern",
+        "choice": "ground",
+        "people": 119
+      },
+      {
+        "kind": "concern",
+        "choice": "sponsors",
+        "people": 143
+      },
+      {
+        "kind": "concern",
+        "choice": "finance",
+        "people": 172
+      },
+      {
+        "kind": "concern",
+        "choice": "transparency",
+        "people": 148
+      },
+      {
+        "kind": "action",
+        "choice": "boycott",
+        "people": 86
+      },
+      {
+        "kind": "action",
+        "choice": "shop",
+        "people": 83
+      },
+      {
+        "kind": "action",
+        "choice": "stay",
+        "people": 52
+      },
+      {
+        "kind": "action",
+        "choice": "meeting",
+        "people": 97
+      },
+      {
+        "kind": "action",
+        "choice": "none",
+        "people": 22
+      },
+      {
+        "kind": "action",
+        "choice": "banners",
+        "people": 100
+      },
+      {
+        "kind": "action",
+        "choice": "applause",
+        "people": 44
+      },
+      {
+        "kind": "action",
+        "choice": "letter",
+        "people": 89
+      }
+    ],
+    "representation": [
+      {
+        "body": "sponsors",
+        "verdict": "good",
+        "people": 20
+      },
+      {
+        "body": "trust",
+        "verdict": "poor",
+        "people": 33
+      },
+      {
+        "body": "ownership",
+        "verdict": "good",
+        "people": 10
+      },
+      {
+        "body": "board",
+        "verdict": "very-poor",
+        "people": 76
+      },
+      {
+        "body": "board",
+        "verdict": "poor",
+        "people": 65
+      },
+      {
+        "body": "board",
+        "verdict": "very-good",
+        "people": 3
+      },
+      {
+        "body": "trust",
+        "verdict": "ok",
+        "people": 42
+      },
+      {
+        "body": "board",
+        "verdict": "ok",
+        "people": 24
+      },
+      {
+        "body": "board",
+        "verdict": "good",
+        "people": 11
+      },
+      {
+        "body": "ownership",
+        "verdict": "very-poor",
+        "people": 106
+      },
+      {
+        "body": "sponsors",
+        "verdict": "ok",
+        "people": 40
+      },
+      {
+        "body": "sponsors",
+        "verdict": "unsure",
+        "people": 26
+      },
+      {
+        "body": "sponsors",
+        "verdict": "very-poor",
+        "people": 59
+      },
+      {
+        "body": "president",
+        "verdict": "unsure",
+        "people": 1
+      },
+      {
+        "body": "ownership",
+        "verdict": "very-good",
+        "people": 2
+      },
+      {
+        "body": "secretary",
+        "verdict": "unsure",
+        "people": 1
+      },
+      {
+        "body": "trust",
+        "verdict": "very-good",
+        "people": 26
+      },
+      {
+        "body": "sponsors",
+        "verdict": "poor",
+        "people": 45
+      },
+      {
+        "body": "trust",
+        "verdict": "good",
+        "people": 43
+      },
+      {
+        "body": "board",
+        "verdict": "unsure",
+        "people": 20
+      },
+      {
+        "body": "trust",
+        "verdict": "very-poor",
+        "people": 34
+      },
+      {
+        "body": "ownership",
+        "verdict": "unsure",
+        "people": 3
+      },
+      {
+        "body": "ownership",
+        "verdict": "ok",
+        "people": 18
+      },
+      {
+        "body": "ownership",
+        "verdict": "poor",
+        "people": 59
+      },
+      {
+        "body": "sponsors",
+        "verdict": "very-good",
+        "people": 8
+      },
+      {
+        "body": "trust",
+        "verdict": "unsure",
+        "people": 20
+      }
+    ]
+  },
+  "questions": [
+    {
+      "id": "c1a26270-bbf9-4161-b174-4f315ce24f5c",
+      "label": "When you took over in May 2024 you described yourself as a custodian of the club who would step aside if someone better placed came along. Has the club or its owner received any formal takeover approach or written offer since? If so, how many, on what dates, and what was the response to each? On what terms would you consider selling? If you do not intend to sell under any terms, please say so plainly. What will change under your ownership in the next twelve months that has not changed in the last two?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "c52d80d2-6e0e-4690-914b-7d65fd0ac879",
+      "label": "How many volunteers and members of staff have left the club since 1 June 2026, and what are the main reasons for those departures? How many of those roles are now filled, how many remain vacant, and who is covering them on matchdays?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "463bcbd4-4141-4ec8-9444-cfb8a726e79e",
+      "label": "When will the accounts for the year ending 2025 be filed, and will the club publish them to supporters directly rather than leaving them to Companies House? What was the total income from the 2024/25 FA Cup run, and how was it applied - playing budget, ground works, debt, or running costs? Is the club able to meet its liabilities as they fall due?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "5d8c3467-1389-4267-9cbc-eed2b0acb7c4",
+      "label": "Why were volunteers who had held their roles for years asked to apply or interview for them again? Who took that decision, and was it put to the board? What criteria were used, where were the roles advertised, and how many people were reappointed and how many were not?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "bb91eedc-eac6-4379-85c4-0ab6d767569a",
+      "label": "Please name everyone currently serving on the board and on any committee, with their role and the date they joined. Which of them are related to, or employed by, the owner or his family? Who has authority to commit the club to spending, and who decides when there is disagreement? Does the Supporters' Trust hold any formal role, and if it once did, when and why did that end?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "ff3321ce-11f1-4852-b0dc-ba345469e7fc",
+      "label": "Why were the departures, the structural changes and the lease extension not explained to supporters at the time? Who has access to and editorial oversight of the club's official social media accounts, and what approval process exists before anything is posted? Have any posts from official accounts been removed, corrected or apologised for since May 2024, and if so what happened in each case? Will the owner take questions from supporters directly at an open meeting, and when?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "316ebf83-1a69-48eb-94a3-9bc91ef8da7a",
+      "label": "What works are planned at Latimer Park in the next twelve months - perimeter fencing, floodlights, toilets, the proposed 3G surface - with costs, funding source and dates? What grant applications have been made in the club's name, by whom and in what capacity? How does the recently announced lease extension sit with any intention to return to Kettering?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "a3d84d6a-c659-44ac-ab20-9f6f7b403655",
+      "label": "What structural changes have been made to how the club is run since May 2024 - to the board, the committee, volunteer roles and paid staffing? What is the intended structure by the end of this season, how many roles will be paid rather than voluntary, and what will that cost the club?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "362166d7-f192-401e-b8bd-4a54c1f7d66e",
+      "label": "Is the club up to date with payments to suppliers, contractors, players and staff? Are any payments currently overdue, and if so how many and by how long? Have any departing employees, players or volunteers been asked to sign a non-disclosure agreement or confidentiality clause as a condition of a settlement or final payment? If so, how many since May 2024?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "b408e592-3915-4624-a3c2-d8ccf97dd44d",
+      "label": "Besides matchday income, what are the club's revenue streams and roughly what does each contribute? Does the Poppies Community Centre generate funds, and do any reach the football club? Of the main shirt sponsorship - stated to cover first team, academy and community - what share goes to each? How many people does the club employ on a paid basis?",
+      "origin": "supporters",
+      "asked_at": "2026-08-22T21:14:10.771+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "4b0e464d-1de9-474f-9840-6fe9c4ad9abf",
+      "label": "Despite previous statements from the club and a newly-appointed dedicated Social Media Manager, the club's digital presence is poor and inappropriate posts keep going out. What peer checking or approval process is in place to ensure public-facing content is accurate and appropriate, and by what means is the social media aspect being improved?",
+      "origin": "working_group",
+      "asked_at": "2026-08-24T13:46:00+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    },
+    {
+      "id": "598ce668-307c-48e0-85a9-58df2275eabc",
+      "label": "The official club website is not being maintained and is out of date. The Officials page is inaccurate and still lists the names of people who may not wish to be associated with the club. When and how will this be addressed, and who is responsible for maintaining the website?",
+      "origin": "working_group",
+      "asked_at": "2026-08-24T13:46:00+00:00",
+      "replied_at": "2026-09-03T06:45:00+00:00",
+      "answered_at": null
+    }
+  ],
+  "board": [
+    {
+      "id": "7df5316e-0f9d-4c20-a507-8d70f4c503a2",
+      "kind": "proposal",
+      "body": "Put together a volunteer list - who is willing to help with what - so nobody can say the offer was never made.",
+      "backers": 2,
+      "helpers": 0,
+      "author_name": "Suggested to start us off"
+    },
+    {
+      "id": "79278c43-d41e-4a83-922d-4ff1f9e8a166",
+      "kind": "proposal",
+      "body": "Run the consultation again in six months, with the same questions, so we can show whether anything has actually changed.",
+      "backers": 2,
+      "helpers": 1,
+      "author_name": "Suggested to start us off"
+    },
+    {
+      "id": "d36477ec-bcd8-481a-9d92-8c211cc12db9",
+      "kind": "proposal",
+      "body": "Ask the club to meet a supporters' representative every three months, on a set date, and publish a note of what was discussed afterwards.",
+      "backers": 1,
+      "helpers": 0,
+      "author_name": "Suggested to start us off"
+    },
+    {
+      "id": "a53ffa21-8149-4b39-8288-1c7c0e8f4964",
+      "kind": "proposal",
+      "body": "Agree one named contact at the club for supporter questions, and publish who it is and how to reach them.",
+      "backers": 1,
+      "helpers": 0,
+      "author_name": "Suggested to start us off"
+    },
+    {
+      "id": "36004034-b80f-4703-80bf-990488c3927c",
+      "kind": "proposal",
+      "body": "Stand up an interim committee tonight - someone to chair it, keep the record, hold the money and talk to the club - and put the four names on the app before anybody leaves.",
+      "backers": 1,
+      "helpers": 0,
+      "author_name": "Suggested to start us off"
+    }
+  ],
+  "meeting": {
+    "meeting_id": "ab3a3dec-fa05-4e11-9be8-79efa1c92b23",
+    "title": "The first supporters meeting",
+    "held_at": "2026-09-07T18:30:00+00:00",
+    "venue": "The Wayfarers Inn",
+    "address": "296 London Road, Kettering, NN15 6DX",
+    "online_url": null,
+    "capacity": 120,
+    "note": "The point of it is an open, honest conversation about Kettering Town, and building something that is genuinely fans for fans, run by fans. If you would like to speak rather than just ask a question, message us beforehand and we will get you on the agenda. We are hoping to have No. 1 Smash & Grab there on the night, pay as you eat.",
+    "status": "announced",
+    "in_person": 7,
+    "online": 1,
+    "cannot": 3,
+    "eating": 3,
+    "not_eating": 4
+  }
+}
