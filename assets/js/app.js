@@ -4241,6 +4241,10 @@ function viewPlayers() {
 
     if (stats.scorers.length) {
       wrap.append(el(`<h2 class="section-title">Goals</h2>`));
+      /* Same warning as the player page. A season stats screen that quietly
+         omits a cup tie is the one place somebody would never think to check. */
+      const gap = missingCupNote();
+      if (!gap.hasAttribute("hidden")) wrap.append(gap);
       const most = stats.scorers[0].goals;
 
       /* Early in a season half the squad is on one goal, so the card has to
@@ -7944,13 +7948,50 @@ function playerRecord(name) {
     if (!sheet && !goals.length && !cards.length) return;
     games.push({ fixture: f, sheet, goals, cards, rating: db.matchRating(f.id, name) });
   });
+  /* Split by competition as well as totalled. The totals were already every
+     competition, because this walks the whole fixture list, but nothing said
+     so and there was no way to see the league on its own. */
+  const tally = (list) => ({
+    games: list.length,
+    starts: list.filter((g) => g.sheet?.started).length,
+    goals: list.reduce((n, g) => n + g.goals.length, 0),
+    yellows: list.reduce((n, g) => n + g.cards.filter((c) => !c.dismissed).length, 0),
+    reds: list.reduce((n, g) => n + g.cards.filter((c) => c.dismissed).length, 0),
+  });
+  const isCup = (g) => g.fixture.competitionType === "cup";
+
   return {
     games,
+    all: tally(games),
+    league: tally(games.filter((g) => !isCup(g))),
+    cup: tally(games.filter(isCup)),
+    /* Flat fields kept so nothing that already reads rec.goals breaks. */
     starts: games.filter((g) => g.sheet?.started).length,
     goals: games.reduce((n, g) => n + g.goals.length, 0),
     yellows: games.reduce((n, g) => n + g.cards.filter((c) => !c.dismissed).length, 0),
     reds: games.reduce((n, g) => n + g.cards.filter((c) => c.dismissed).length, 0),
   };
+}
+
+/**
+ * Says out loud when a cup total is incomplete.
+ *
+ * The whole reason the split is safe to publish. The feed gives a cup score
+ * and no team sheet, so until somebody types one in the cup column is nought
+ * for everybody - and nought looks like a fact. This turns it back into what
+ * it is: a gap, named, with the game it belongs to.
+ */
+function missingCupNote() {
+  const missing = cupGamesMissingDetail();
+  if (!missing.length) return el(`<span hidden></span>`);
+  const list = missing
+    .map((f) => `${esc(f.opponent)} (${esc(fmtDate(f.date, "short"))})`)
+    .join(", ");
+  return el(`
+    <p class="hint gap-note"><b>Cup figures are not complete.</b> The league feed gives a score
+      for a cup tie but no team sheet, so ${missing.length === 1 ? "one game is" : `${missing.length} games are`}
+      not counted here yet: ${list}. Appearances and goals from ${missing.length === 1 ? "it" : "them"}
+      are missing rather than nought, and go in by hand once we have the line-up.</p>`);
 }
 
 function viewPlayer({ id }) {
@@ -8014,15 +8055,36 @@ function viewPlayer({ id }) {
   }
 
   wrap.append(el(`<h2 class="section-title">This season</h2>`));
-  wrap.append(el(`
+  const seasonCard = el(`
     <div class="card">
       <div class="info-grid info-grid--4">
-        <div class="info"><div class="info__label">Appearances</div><div class="info__value">${rec.games.length}</div></div>
-        <div class="info"><div class="info__label">Started</div><div class="info__value">${rec.starts}</div></div>
-        <div class="info"><div class="info__label">Goals</div><div class="info__value" style="color:var(--accent)">${rec.goals}</div></div>
+        <div class="info"><div class="info__label">Appearances</div><div class="info__value">${rec.all.games}</div></div>
+        <div class="info"><div class="info__label">Started</div><div class="info__value">${rec.all.starts}</div></div>
+        <div class="info"><div class="info__label">Goals</div><div class="info__value" style="color:var(--accent)">${rec.all.goals}</div></div>
         <div class="info"><div class="info__label">Fan rating</div><div class="info__value">${season ? season.average : "\u2014"}</div></div>
       </div>
-    </div>`));
+    </div>`);
+
+  /* The headline is every competition. The split sits under it rather than in
+     a second card, because two cards of numbers invites the reader to add them
+     up and get it wrong. Only shown once there is a cup game to split out. */
+  if (rec.cup.games || rec.league.games !== rec.all.games) {
+    seasonCard.append(el(`
+      <div class="comp-split">
+        <div class="comp-split__row">
+          <b>League</b>
+          <span>${rec.league.games} app${rec.league.games === 1 ? "" : "s"}</span>
+          <span>${rec.league.goals} goal${rec.league.goals === 1 ? "" : "s"}</span>
+        </div>
+        <div class="comp-split__row">
+          <b>Cups</b>
+          <span>${rec.cup.games} app${rec.cup.games === 1 ? "" : "s"}</span>
+          <span>${rec.cup.goals} goal${rec.cup.goals === 1 ? "" : "s"}</span>
+        </div>
+      </div>`));
+  }
+  seasonCard.append(missingCupNote());
+  wrap.append(seasonCard);
 
   if (rec.yellows || rec.reds) {
     wrap.append(el(`<p class="note">${[
@@ -15350,6 +15412,7 @@ async function loadLeague(force = false) {
     if (!res.ok) throw new Error(String(res.status));
     state.league = await res.json();
     await mergeExtraFixtures(state.league);
+    await mergeCupDetails(state.league);
     /* The index folds this season in, so it has to be rebuilt if the archive
        got here first. Whichever order they land in, the answer is the same. */
     if (state.archive) state.archiveIndex = buildArchiveIndex(state.archive);
@@ -15394,6 +15457,49 @@ async function mergeExtraFixtures(league) {
     fromUs: true,
   }));
   league.fixtures.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+/**
+ * Team sheets for cup ties, typed in by hand.
+ *
+ * The feed gives a cup fixture and its score and nothing else: no lineup, no
+ * scorers, because the FA Cup is not the Southern League's competition and
+ * neither is the Trophy or the Hillier. Left alone, every cup appearance and
+ * cup goal reads as nought, and a nought looks like a fact. Two men scored at
+ * Wellingborough on the fifth and the app would have said they had not.
+ *
+ * So the detail is typed in and merged, and anything not typed in yet is
+ * flagged rather than counted as zero. The feed wins if it ever catches up:
+ * a fixture that already has a lineup is left alone.
+ */
+async function mergeCupDetails(league) {
+  if (!league || !Array.isArray(league.fixtures)) return;
+  const extra = await readJSON("data/cup-details.json");
+  const games = extra?.games;
+  if (!games) return;
+
+  league.fixtures.forEach((f) => {
+    const detail = games[f.id];
+    if (!detail) return;
+    if ((f.lineup || []).length) return;          /* the feed got there first */
+    if (detail.lineup) f.lineup = detail.lineup;
+    if (detail.goals || detail.cards) {
+      f.events = { goals: detail.goals || [], cards: detail.cards || [] };
+    }
+    f.handEntered = true;
+  });
+}
+
+/**
+ * A cup tie we have played but not yet typed the team sheet for.
+ *
+ * Anywhere a total is shown, this is what stops it being a lie by omission.
+ */
+function cupGamesMissingDetail() {
+  return fixtures().filter((f) =>
+    f.status === "played" &&
+    f.competitionType === "cup" &&
+    !(f.lineup || []).length);
 }
 
 async function loadAttendances() {

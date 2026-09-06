@@ -7695,3 +7695,25 @@ body.presenting { overflow: hidden; }
 .replycard--replied { border-color: var(--line); }
 .replycard--replied .replycard__state b { color: var(--accent); }
 .replycard__cta { display: block; margin-top: 3px; color: var(--accent); font-weight: 600; }
+
+/* ---- the league / cups split, and the gap in it -------------------------- */
+
+.comp-split {
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.comp-split__row {
+  display: grid; grid-template-columns: 5rem 1fr 1fr;
+  gap: 10px; font-size: 0.875rem; color: var(--text-2);
+}
+.comp-split__row b { color: var(--text); font-weight: 600; }
+
+/* A gap is not a zero, and it must not be styled like ordinary small print. */
+.gap-note {
+  margin-top: 10px; padding: 9px 11px;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.gap-note b { color: var(--accent); }
