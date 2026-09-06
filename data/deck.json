@@ -45,36 +45,32 @@
       "say": "Be careful and be fair here. This is how supporters feel, which is a fact about supporters, not an accusation about any individual. Say it exactly that way."
     },
     {
-      "kind": "entities",
-      "eyebrow": "The club's legal entities",
-      "title": "Three companies, one football club.",
-      "checked": "Companies House, public record, checked 31 August 2026",
-      "draft": true,
+      "kind": "plan",
+      "eyebrow": "The question somebody is about to ask",
+      "title": "So why not just join the Trust?",
       "rows": [
         {
-          "name": "Kettering Town F.C. Management Ltd",
-          "no": "02267071",
-          "state": "Active",
-          "where": "Latimer Park",
-          "note": "The company that runs the club. Its accounts are filed and up to date."
+          "when": "What the club says",
+          "what": "That the Trust already represents the fans, and that they will meet it more often.",
+          "why": "Their words: an independent body with its own membership, which has worked well for years. That is a fair point, honestly made, and it is their answer to our asking for a recognised supporters' body to meet."
         },
         {
-          "name": "Kettering Town FC 1872 Ltd",
-          "no": "15689118",
-          "state": "Active, dormant",
-          "where": "Watford",
-          "note": "Registered in 2024. Has never traded."
+          "when": "What you said",
+          "what": "35% feel the Trust represents them well. 34% feel it does not.",
+          "why": "The other 31% could not say either way. It is the best regarded of the four bodies we asked about, better than the board, the ownership and the sponsors, and the only one the fanbase splits straight down the middle on."
         },
         {
-          "name": "Kettering Town Football Club Ltd",
-          "no": "04610155",
-          "state": "Dissolved 2022",
-          "where": "-",
-          "note": "The previous company."
+          "when": "The difference",
+          "what": "The Trust is a membership body. We are not, and we do not intend to be.",
+          "why": "Trust membership opened this week at £10 a year, £100 for life, free under 18. That is normal and it is how a trust works: the fee is what makes you a member with a vote. Our view is simply different. We think being a Kettering supporter should be enough to be counted."
+        },
+        {
+          "when": "What we propose",
+          "what": "Talk to the Trust first, and offer to help make what they do more visible.",
+          "why": "199 of you answered a free, open survey in five days. That is the case for a front door with no fee on it, and it is not an argument against the Trust. Two bodies competing for the same people makes both weaker and costs the club nothing."
         }
       ],
-      "foot": "Nothing here is unusual and none of it is an accusation of anything at all; it is purely for fan awareness. We raise it once and leave it. We have asked the question and we are not going to spend tonight on it.",
-      "say": "Sixty seconds, then move on, and say the last sentence of the slide out loud. This is on the record and we have asked about it. It is not what tonight is for, and a room that spends an hour on company numbers has not built anything."
+      "say": "The room will be thinking it, so ask it before they do. Say the club's point is fair before you say anything else, and land on talking to them rather than about them."
     },
     {
       "kind": "officials",
@@ -84,25 +80,13 @@
       "say": "Do not read the names out. Point at it, say it is the club's own page copied on the day, and move on. The only thing worth saying aloud is the number still marked TBA - and say it as a fact, not as a dig."
     },
     {
-      "kind": "appetite",
-      "eyebrow": "What supporters said they would back",
-      "title": "Only one in nine would rather it was left alone.",
-      "say": "This is the mandate for the last part of the night. Note that eleven per cent would rather it was settled quietly, and say so: that is a real answer and those people are in the room too.",
-      "note": "chose “nothing, I would rather it was settled quietly”. That was on the form as a real answer, and hopefully there are a few in this camp in this room too."
-    },
-    {
-      "kind": "questions",
-      "eyebrow": "What we did about it",
+      "kind": "clock",
+      "eyebrow": "What we did about it, and where it got to",
       "title": "Twelve questions, in writing.",
       "body": "Ten of them came straight out of what supporters wrote in the consultation. Two were added by the working group after the reply to the first letter.",
-      "say": "Do not read all twelve. Say they are all on the app and pick the two you most want the room thinking about before questions open."
-    },
-    {
-      "kind": "clock",
-      "eyebrow": "Where that has got to",
-      "say": "Say they replied, and say they replied on time, before you say anything else about it. The room will have seen it. If the first thing out of your mouth is a criticism you look like you were never going to be satisfied, and you hand them that for free.",
-      "unanswered": "of the questions are answered and the email has not been acknowledged.",
-      "replied": "The club replied at 7:45am on Wednesday 3 September, a day inside the date we asked for. It is published in full on the letters page. It does not answer the twelve one by one, and we have said which against each."
+      "say": "Say they replied, and say they replied on time, before anything else. Then the number that matters: none of the twelve answered directly. Do not read all twelve out, they are on the app.",
+      "replied": "The club replied at 7:45am on Wednesday 3 September, a day inside the date we asked for. It is published in full on the letters page. It does not answer the twelve one by one, and we have said which against each.",
+      "unanswered": "of the questions are answered and the email has not been acknowledged."
     },
     {
       "kind": "position",
@@ -205,6 +189,41 @@
       "aside": "Only through a group effort is this going to get off the ground. If the interest is not there it stays a web app, focused on the matchday experience and nothing more. Our club has a lot more potential than that, and our history is something we should be proud of and aim to preserve."
     },
     {
+      "kind": "statement",
+      "eyebrow": "The one we have not asked you",
+      "title": "What do we do about the ownership?",
+      "body": "83% of you told us the ownership does not represent you. That is not the same as agreeing what to do about it, and we have never asked. There will be people here who want a public stand and people who would rather it was settled quietly, and 22 of you said exactly that on the form. So we are going to ask properly, and whatever the answer is, we will publish it.",
+      "say": "Slow down here. The point of the slide is that both answers are welcome, and it has to sound like you mean it, because the people who want it left alone are the ones least likely to speak up in a room."
+    },
+    {
+      "kind": "plan",
+      "eyebrow": "A vote in this room",
+      "title": "Agreed before we vote, not after.",
+      "rows": [
+        {
+          "when": "The question",
+          "what": "Should the Association take a public position on the ownership of Kettering Town?",
+          "why": "Four ways to answer, including leaving it alone. Hands in the room, and the app for anyone watching from home. Both are counted and both are reported."
+        },
+        {
+          "when": "To carry",
+          "what": "Two thirds of those voting, and we report the turnout with the result.",
+          "why": "Binding four hundred supporters to something half of one room wants is not a mandate. If it is close, it is not carried, and we say so."
+        },
+        {
+          "when": "If it carries",
+          "what": "The working group drafts the position within a week and publishes it for every supporter to read before it goes to the club.",
+          "why": "Nobody signs anything tonight. You see the words before they are sent."
+        },
+        {
+          "when": "If it does not",
+          "what": "We publish the split honestly, say nothing in the Association's name, and put it to the whole fanbase properly.",
+          "why": "A vote that only counts when it goes one way is not a vote."
+        }
+      ],
+      "say": "This is the slide the night turns on. Read all four rows out. Agreeing the consequences before the hands go up is what stops the argument afterwards about what people thought they were voting for."
+    },
+    {
       "kind": "asks",
       "eyebrow": "Over to you",
       "title": "Your questions, in the order you backed them.",
@@ -222,6 +241,38 @@
       "title": "Everything tonight was done by supporters in their own time.",
       "body": "Thank you to everyone involved in arranging it, and thank you for coming. The consultation, the letters, the app, this room. If you want to help with any of it - the archive project, away travel, the letters - say so before you leave, put your name against something on the app, or come and speak to one of us.",
       "say": "Finish on the ask, then get out of the way and let people talk."
+    },
+    {
+      "kind": "entities",
+      "eyebrow": "If it comes up",
+      "title": "Three companies, one football club.",
+      "checked": "Companies House, public record, checked 31 August 2026",
+      "draft": true,
+      "rows": [
+        {
+          "name": "Kettering Town F.C. Management Ltd",
+          "no": "02267071",
+          "state": "Active",
+          "where": "Latimer Park",
+          "note": "The company that runs the club. Its accounts are filed and up to date."
+        },
+        {
+          "name": "Kettering Town FC 1872 Ltd",
+          "no": "15689118",
+          "state": "Active, dormant",
+          "where": "Watford",
+          "note": "Registered in 2024. Has never traded."
+        },
+        {
+          "name": "Kettering Town Football Club Ltd",
+          "no": "04610155",
+          "state": "Dissolved 2022",
+          "where": "-",
+          "note": "The previous company."
+        }
+      ],
+      "foot": "Nothing here is unusual and none of it is an accusation of anything at all; it is purely for fan awareness. We raise it once and leave it. We have asked the question and we are not going to spend tonight on it.",
+      "say": "Not in the running order. It is here so you have it if somebody asks about the companies, and skipped otherwise. If you do show it, read the last line of the slide out loud before anything else."
     }
   ]
 }
