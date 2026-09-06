@@ -14415,6 +14415,11 @@ function roomVotePanel(vote) {
   const bits = [];
   bits.push(total === 0 ? "Nobody has voted yet"
     : `${total} vote${total === 1 ? "" : "s"} so far`);
+  /* Split the total when it came from two places. A single number hides
+     whether it was a room of forty or four people on a sofa. */
+  if (vote.room_total && vote.app_total) {
+    bits.push(`${vote.room_total} in the room, ${vote.app_total} in the app`);
+  }
   if (vote.present) bits.push(`${vote.present} were in the room`);
   bits.push(`${vote.threshold}% needed to carry`);
   box.append(el(`<p class="hint vote__foot">${esc(bits.join(" \u00b7 "))}</p>`));
@@ -14451,6 +14456,42 @@ function roomVotePanel(vote) {
         tools.append(b);
       });
     box.append(tools);
+
+    /* Counting the hands. Most of the room will settle this by raising an arm
+       rather than getting a phone out, and the people watching the stream can
+       only use the app, so both count and the result reports them separately.
+       One box per option, in the order they appear above. */
+    const opts = Array.isArray(vote.options) ? vote.options : [];
+    const hands = el(`
+      <div class="vote__hands">
+        <div class="info__label">Hands in the room</div>
+        <p class="hint" style="margin:2px 0 8px">Type the count against each option and save.
+          Added to whatever comes in through the app, and reported separately so nobody has to
+          guess how the total was reached.</p>
+      </div>`);
+    const grid = el(`<div class="vote__hands-grid"></div>`);
+    opts.forEach((label, i) => {
+      const current = Array.isArray(vote.room_tally) ? (vote.room_tally[i] ?? "") : "";
+      grid.append(el(`
+        <label class="vote__hand">
+          <span>${esc(label)}</span>
+          <input class="input" type="number" min="0" inputmode="numeric"
+            data-choice="${i}" value="${esc(String(current))}">
+        </label>`));
+    });
+    hands.append(grid);
+    const save = el(`<button class="btn btn--sm" style="margin-top:8px">Save the hand count</button>`);
+    save.addEventListener("click", async () => {
+      const tally = [...grid.querySelectorAll("input")].map((inp) => {
+        const n = parseInt(inp.value, 10);
+        return Number.isFinite(n) && n >= 0 ? n : 0;
+      });
+      save.disabled = true;
+      try { await db.setRoomTally(vote.id, tally); toast("Counted.", "good"); render(); }
+      catch (err) { save.disabled = false; toast(err.message, "bad"); }
+    });
+    hands.append(save);
+    box.append(hands);
   }
   return box;
 }

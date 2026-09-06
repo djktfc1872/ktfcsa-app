@@ -4125,7 +4125,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-04-vote-scope')
+insert into schema_meta (id, applied_version) values (1, '2026-09-06-room-tally')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4290,32 +4290,7 @@ alter table room_votes add constraint room_votes_scope_check
 update room_votes set scope = 'letters'
  where question = 'Should we put the same twelve questions to the club again?';
 
-drop view if exists room_vote_result cascade;
-create view room_vote_result as
-select
-  v.id, v.meeting_id, v.scope, v.question, v.detail, v.options, v.threshold,
-  v.carries_note, v.fails_note, v.present, v.state, v.sort,
-  coalesce(b.tally, '[]'::jsonb)                       as tally,
-  coalesce(b.cast_total, 0)                            as cast_total,
-  case when coalesce(b.cast_total,0) = 0 then null
-       else round(100.0 * coalesce(b.top_count,0) / b.cast_total) end as top_pct,
-  b.top_choice,
-  case when coalesce(b.cast_total,0) = 0 then null
-       else (100.0 * coalesce(b.top_count,0) / b.cast_total) >= v.threshold end as carried
-from room_votes v
-left join lateral (
-  select
-    jsonb_agg(jsonb_build_object('choice', c.choice, 'n', c.n) order by c.choice) as tally,
-    sum(c.n)                                             as cast_total,
-    (array_agg(c.choice order by c.n desc, c.choice))[1] as top_choice,
-    max(c.n)                                             as top_count
-  from (select choice, count(*) as n from room_ballots where vote_id = v.id group by choice) c
-) b on true
-where v.state <> 'draft' or is_moderator()
-order by v.sort, v.created_at;
-
-alter view room_vote_result set (security_invoker = true);
-grant select on room_vote_result to anon, authenticated;
+-- room_vote_result is defined once, further down, after room_tally exists.
 
 -- The vote the room takes on the night. Drafted now so the wording is settled
 -- in the cold light of day rather than typed into a phone at half eight, and
@@ -4354,3 +4329,75 @@ begin
 end $$;
 
 update schema_meta set applied_version = '2026-09-04-vote-scope', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- Hands in the room, counted alongside the app
+-- ---------------------------------------------------------------------------
+--
+-- Most of the people voting will be sitting in the pub with their phones in
+-- their pockets, and a handful will be watching the stream from home. Asking
+-- the room to get an app out to vote on something they can settle by raising a
+-- hand would be daft, and ignoring the people watching online would be unfair.
+-- So both count, and both are reported.
+--
+-- room_tally is counts per option, in the same order as options, typed in by
+-- whoever is running the vote. The result view adds it to the ballots and also
+-- reports the two separately, because "31 in the room and 4 in the app" is a
+-- more honest sentence than a single number that hides how it was reached.
+
+alter table room_votes add column if not exists room_tally jsonb;
+
+drop view if exists room_vote_result cascade;
+create view room_vote_result as
+with counted as (
+  select
+    v.id,
+    v.options,
+    coalesce(b.tally, '[]'::jsonb)  as app_tally,
+    coalesce(b.cast_total, 0)       as app_total,
+    v.room_tally
+  from room_votes v
+  left join lateral (
+    select jsonb_agg(jsonb_build_object('choice', c.choice, 'n', c.n) order by c.choice) as tally,
+           sum(c.n) as cast_total
+    from (select choice, count(*) as n from room_ballots where vote_id = v.id group by choice) c
+  ) b on true
+),
+merged as (
+  select
+    c.id,
+    c.app_total,
+    coalesce((select sum(x::int) from jsonb_array_elements_text(c.room_tally) x), 0) as room_total,
+    (
+      select jsonb_agg(jsonb_build_object('choice', i, 'n',
+               coalesce((select (e ->> 'n')::int from jsonb_array_elements(c.app_tally) e
+                          where (e ->> 'choice')::int = i), 0)
+             + coalesce((c.room_tally ->> i)::int, 0)) order by i)
+      from generate_series(0, jsonb_array_length(c.options) - 1) i
+    ) as tally
+  from counted c
+)
+select
+  v.id, v.meeting_id, v.scope, v.question, v.detail, v.options, v.threshold,
+  v.carries_note, v.fails_note, v.present, v.state, v.sort, v.room_tally,
+  m.tally,
+  m.app_total,
+  m.room_total,
+  (m.app_total + m.room_total) as cast_total,
+  case when (m.app_total + m.room_total) = 0 then null
+       else round(100.0 * (select max((e ->> 'n')::int) from jsonb_array_elements(m.tally) e)
+                  / (m.app_total + m.room_total)) end as top_pct,
+  (select (e ->> 'choice')::int from jsonb_array_elements(m.tally) e
+    order by (e ->> 'n')::int desc, (e ->> 'choice')::int limit 1) as top_choice,
+  case when (m.app_total + m.room_total) = 0 then null
+       else (100.0 * (select max((e ->> 'n')::int) from jsonb_array_elements(m.tally) e)
+             / (m.app_total + m.room_total)) >= v.threshold end as carried
+from room_votes v
+join merged m on m.id = v.id
+where v.state <> 'draft' or is_moderator()
+order by v.sort, v.created_at;
+
+alter view room_vote_result set (security_invoker = true);
+grant select on room_vote_result to anon, authenticated;
+
+update schema_meta set applied_version = '2026-09-06-room-tally', applied_at = now() where id = 1;

@@ -7723,3 +7723,16 @@ body.presenting { overflow: hidden; }
   font-size: 0.8125rem; font-weight: 600; color: var(--accent);
   padding: 3px 9px; border: 1px dashed var(--accent); border-radius: 999px;
 }
+
+/* Counting the hands, admin only. */
+.vote__hands {
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.vote__hands-grid { display: flex; flex-direction: column; gap: 7px; }
+.vote__hand {
+  display: grid; grid-template-columns: minmax(0, 1fr) 5.5rem;
+  gap: 10px; align-items: center;
+  font-size: 0.875rem; color: var(--text-2);
+}
+.vote__hand input { text-align: center; }

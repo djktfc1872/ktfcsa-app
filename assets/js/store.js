@@ -203,6 +203,10 @@ export const roomVotes = (id, scope) =>
 export const castRoomVote = (id, key, choice) =>
   (backend?.castRoomVote ? backend.castRoomVote(id, key, choice)
     : Promise.reject(new Error("Not connected.")));
+export const setRoomTally = (id, tally) =>
+  (backend?.setRoomTally ? backend.setRoomTally(id, tally)
+    : Promise.reject(new Error("Not connected.")));
+
 export const setVoteState = (id, state) =>
   (backend?.setVoteState ? backend.setVoteState(id, state)
     : Promise.reject(new Error("Not connected.")));

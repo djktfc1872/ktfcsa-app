@@ -777,6 +777,13 @@ class Backend {
     if (!data || !data.length) throw new Error("That did not save. Are you still signed in?");
   }
 
+  async setRoomTally(id, tally) {
+    const { data, error } = await this.sb.from("room_votes")
+      .update({ room_tally: tally }).eq("id", id).select("id");
+    if (error) throw new Error(friendly(error));
+    if (!data || !data.length) throw new Error("That did not save. Are you still signed in?");
+  }
+
   async meetingQuestions(meetingId) {
     const { data, error } = await this.sb.from("meeting_question_board")
       .select("*").eq("meeting_id", meetingId);
