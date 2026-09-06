@@ -1628,9 +1628,19 @@ function groundsVisited() {
 
   const away = TEAMS.filter((t) => typeof t.distanceMiles === "number");
   const total = away.length + 1;                 /* every away ground, plus ours */
-  const beenTo = (id) => seen.has(id) || ticked.has(id);
-  const done = away.filter((t) => beenTo(t.id)).length
-    + (homeVisits || ticked.has("kettering-town") ? 1 : 0);
+
+  /* Three states, not two. "Been" was one flag covering a game you went to
+     last month and a ground you last saw in 1998, which made the two
+     indistinguishable and the number harder to read than it needed to be:
+     somebody with a long memory and a quiet season looked identical to
+     somebody who has been everywhere since August. */
+  const thisSeason = (id) => id === "kettering-town" ? homeVisits > 0 : seen.has(id);
+  const everBeen   = (id) => thisSeason(id) || ticked.has(id);
+
+  const doneSeason = away.filter((t) => thisSeason(t.id)).length + (homeVisits ? 1 : 0);
+  const done = away.filter((t) => everBeen(t.id)).length
+    + (everBeen("kettering-town") ? 1 : 0);
+  const beenTo = everBeen;
 
   wrap.append(el(`<h2 class="section-title">Grounds ticked off</h2>`));
   const card = el(`<div class="card"></div>`);
@@ -1640,11 +1650,17 @@ function groundsVisited() {
       <div>
         <div class="grounds__count">${done}<span>of ${total}</span></div>
         <div class="grounds__sub">${done === total
-          ? "The whole division. Every ground in it, this season."
-          : `${total - done} to go for the full set this season`}</div>
+          ? "The whole division. Every ground in it."
+          : `${total - done} to go for the full set`}</div>
+        <div class="grounds__split">
+          <span class="grounds__key grounds__key--season"></span>${doneSeason} this season
+          ${done > doneSeason
+            ? `<span class="grounds__key grounds__key--before"></span>${done - doneSeason} before that`
+            : ""}
+        </div>
       </div>
       <div class="grounds__ring" style="--pct:${Math.round((done / total) * 100)}"
-           role="img" aria-label="${done} of ${total} grounds visited"></div>
+           role="img" aria-label="${done} of ${total} grounds visited, ${doneSeason} of them this season"></div>
     </div>`));
 
   const list = el(`<div class="grounds__list"></div>`);
@@ -1662,24 +1678,28 @@ function groundsVisited() {
   rows.forEach((r) => {
     const been = r.been;
     const auto = r.home ? Boolean(homeVisits) : seen.has(r.team.id);
+    /* Been this season and been at some point are different achievements and
+       the row says which. Before, both drew the same tick, so a ground somebody
+       last stood on in the nineties looked like one they were at in August. */
+    const state = auto ? "season" : been ? "before" : "none";
     const when = r.home
-      ? (homeVisits ? `${homeVisits} game${homeVisits === 1 ? "" : "s"} at home` : "Ticked off")
-      : auto ? `First visit ${fmtDate(r.date, "short")}`
-      : been ? "Ticked off" : `${r.team.distanceMiles} miles away`;
+      ? (homeVisits ? `${homeVisits} game${homeVisits === 1 ? "" : "s"} at home` : "Been before")
+      : auto ? `This season &middot; first visit ${fmtDate(r.date, "short")}`
+      : been ? "Been before" : `${r.team.distanceMiles} miles away`;
     /* The tick is its own control so the row can still open the ground's page.
        One that came from marking attendance is not tickable here: the game is
        where that belongs, and two places to change one fact drift apart. */
     const row = el(`
-      <div class="ground${been ? " ground--been" : ""}">
-        <button class="ground__tick${auto ? " ground__tick--auto" : ""}" type="button"
+      <div class="ground${been ? " ground--been" : ""} ground--${state}">
+        <button class="ground__tick ground__tick--${state}" type="button"
           aria-pressed="${been}" title="${auto
-            ? "From a game you marked as attended"
-            : been ? "Been there. Tap to untick." : "Tap if you have been"}"
+            ? "You were at a game here this season"
+            : been ? "Been here before. Tap to untick." : "Tap if you have been here before"}"
           ${auto ? "disabled" : ""}>${been ? "\u2713" : ""}</button>
         <button class="ground__who" type="button"${
           r.home ? ' data-nav="poppies"' : ` data-club="${esc(r.team.id)}"`}>
           <span class="ground__name">${esc(r.team.name)}</span>
-          <span class="ground__where">${esc(r.team.stadium)} &middot; ${esc(when)}</span>
+          <span class="ground__where">${esc(r.team.stadium)} &middot; ${when}</span>
         </button>
       </div>`);
     if (!auto) {
@@ -1697,10 +1717,11 @@ function groundsVisited() {
     list.append(row);
   });
   card.append(list);
-  card.append(el(`<p class="hint">This season fills itself in from the games you tick off above.
-    Anything before that, tap the circle: plenty of people have been going for thirty years and a
-    list that starts in August is not their list. Nobody else sees it, and there is no table of who
-    has been to most, because it is a collection rather than a competition.</p>`));
+  card.append(el(`<p class="hint">Gold means you were there this season, and it fills itself in
+    from the games you tick off above. The outlined ones are grounds you have told us you had been
+    to before: tap any circle to add one, because plenty of people have been going for thirty years
+    and a list that starts in August is not their list. Nobody else sees it, and there is no table
+    of who has been to most, because it is a collection rather than a competition.</p>`));
 
   wrap.append(card);
   return wrap;

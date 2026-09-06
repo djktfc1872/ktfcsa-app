@@ -6140,7 +6140,39 @@ button,
 }
 .ground__tick:not(:disabled):hover { border-color: var(--accent); }
 .ground__tick:disabled { cursor: default; }
-.ground__tick--auto { opacity: 0.85; }
+/* Gold and solid is this season; outlined is a ground somebody has told us
+   they went to at some point before. Two different achievements, so they must
+   not draw the same tick - which is what they did until now. Shape as well as
+   colour, because a good number of supporters cannot tell the two apart by
+   colour alone. */
+.ground__tick--season {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #17120a;
+  font-weight: 800;
+  opacity: 1;
+}
+.ground__tick--before {
+  background: transparent;
+  border-color: var(--accent);
+  border-style: dashed;
+  color: var(--accent);
+}
+.ground--before .ground__name { font-weight: 600; }
+
+.grounds__split {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px;
+}
+.grounds__key {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--accent);
+}
+.grounds__key--season { background: var(--accent); }
+.grounds__key--before { background: transparent; border-style: dashed; }
+.grounds__key--before:not(:first-child) { margin-left: 8px; }
 .ground__who {
   flex: 1 1 auto;
   background: none;
