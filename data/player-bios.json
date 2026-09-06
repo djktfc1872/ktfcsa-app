@@ -2,7 +2,7 @@
   "credit": "Darren Young",
   "source": "KETTERING TOWN 26_27 - Pen Pics.pdf",
   "imported": "2026-08-10",
-  "note": "Player bios written by Darren Young. Keyed on shirt number, because the source and the club's squad sheet do not always spell a name the same way.",
+  "note": "Player bios written by Darren Young. The numbered ones are keyed on shirt number, because the source and the club's squad sheet do not always spell a name the same way. byName carries anybody without a settled number: shirt 12 alone has been worn by three different players this season, so a number is not an identity, and the app checks the name matches before it shows a numbered bio.",
   "manager": {
     "name": "Nick Green",
     "role": "Manager",
@@ -103,6 +103,18 @@
       "name": "Kai Fifield",
       "position": "Forward",
       "bio": "Kai joined The Poppies in August 2024 having impressed whilst on trial in pre-season. A forward with skill and flair his career at Latimer Park started well but an unfortunate injury saw him face a spell out injured. Prior to joining he had a brief spell with St Ives Town and has also featured for Wellingborough Whitworths. During the 2025/26 Kai spent a month on loan with Quorn where he scored three times in five games. 20 21 22 23 24"
+    }
+  },
+  "byName": {
+    "Amir Hadi": {
+      "name": "Amir Hadi",
+      "position": "Forward",
+      "bio": "Amir is a skillful and powerful player who is able to play anywhere across the forward line. He arrived at Latimer Park in late August 2026 joining on loan from Hemel Hempstead Town. He has experience of the Southern League Premier Division Central having spent 15 months with St Ives Town where he was team mates with Theo Alexandrou. In the 2025/26 season Amir spent time playing in the National League South with Farnborough and spent the final two months of the season in the National League Premier with Braintree Town."
+    },
+    "Mason Jarvis": {
+      "name": "Mason Jarvis",
+      "position": "Midfield",
+      "bio": "Mason is the current Poppies under 18s captain and despite still only being 16 years of age, has been training with the first team squad on a regular basis and was also on the bench for the pre-season friendly against Bedford Town and the Southern League Premier Division Central fixture at Leamington."
     }
   }
 }

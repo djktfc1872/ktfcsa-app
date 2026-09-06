@@ -7949,9 +7949,7 @@ function viewPlayer({ id }) {
       </div>
     </div>`));
 
-  /* Keyed on shirt number rather than name: the pen pics and the club's squad
-     sheet do not always spell one the same way. */
-  const bio = pl?.number != null ? state.bios?.players?.[String(pl.number)] : null;
+  const bio = bioFor(pl);
   if (bio) {
     wrap.append(el(`
       <div class="card">
@@ -14019,6 +14017,43 @@ function replyWaitCard() {
   }).catch((err) => { console.warn("The reply card did not render:", err); });
 
   return box;
+}
+
+/**
+ * The right pen pic for a player.
+ *
+ * The bios are keyed on shirt number, because the pen pics and the club's
+ * squad sheet do not always spell a name the same way. That is still true and
+ * still the right key for the squad, but a number is not an identity: shirt 12
+ * has been worn by Lewis Coyle, Mason Jarvis and Amir Hadi this season, and
+ * Theo Alexandrou has played in 7, which belongs to Lawson D'Ath. On a
+ * number-only lookup all three of those men were shown somebody else's life
+ * story under their own photograph.
+ *
+ * So the number still finds the bio and the name has to agree before it is
+ * used. Agreeing is deliberately loose - surname, plus the first letter of the
+ * first name - because "Will Van Lier" and "William van Lier" are one person
+ * and "Mason Alyn Jarvis" and "Mason Jarvis" are another. Anybody without a
+ * settled number is keyed by name instead.
+ */
+function bioFor(pl) {
+  const all = state.bios;
+  if (!all || !pl) return null;
+
+  const parts = (v) => String(v || "").toLowerCase().normalize("NFKD")
+    .replace(/[^a-z\s]/g, "").trim().split(/\s+/).filter(Boolean);
+  const same = (a, b) => {
+    const A = parts(a), B = parts(b);
+    if (!A.length || !B.length) return false;
+    return A[A.length - 1] === B[B.length - 1] && A[0][0] === B[0][0];
+  };
+
+  const named = Object.values(all.byName || {}).find((x) => same(x.name, pl.name));
+  if (named) return named;
+
+  const numbered = pl.number != null ? all.players?.[String(pl.number)] : null;
+  if (numbered && same(numbered.name, pl.name)) return numbered;
+  return null;
 }
 
 /**
