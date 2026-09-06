@@ -1,5 +1,5 @@
 {
-  "built": "2026-09-06T21:47:47.996Z",
+  "built": "2026-09-06T21:55:57.687Z",
   "note": "Written by scripts/build-deck-snapshot.mjs. The deck falls back to this when the database cannot be reached, so that a bad connection in a function room does not empty the slides. Live figures win whenever they answer.",
   "results": {
     "summary": {
@@ -395,6 +395,14 @@
   ],
   "board": [
     {
+      "id": "36004034-b80f-4703-80bf-990488c3927c",
+      "kind": "proposal",
+      "body": "Stand up an interim committee tonight - someone to chair it, keep the record, hold the money and talk to the club - and put the four names on the app before anybody leaves.",
+      "backers": 1,
+      "helpers": 0,
+      "author_name": "Suggested to start us off"
+    },
+    {
       "id": "7df5316e-0f9d-4c20-a507-8d70f4c503a2",
       "kind": "proposal",
       "body": "Put together a volunteer list - who is willing to help with what - so nobody can say the offer was never made.",
@@ -422,14 +430,6 @@
       "id": "a53ffa21-8149-4b39-8288-1c7c0e8f4964",
       "kind": "proposal",
       "body": "Agree one named contact at the club for supporter questions, and publish who it is and how to reach them.",
-      "backers": 1,
-      "helpers": 0,
-      "author_name": "Suggested to start us off"
-    },
-    {
-      "id": "36004034-b80f-4703-80bf-990488c3927c",
-      "kind": "proposal",
-      "body": "Stand up an interim committee tonight - someone to chair it, keep the record, hold the money and talk to the club - and put the four names on the app before anybody leaves.",
       "backers": 1,
       "helpers": 0,
       "author_name": "Suggested to start us off"
