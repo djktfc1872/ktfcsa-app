@@ -1,0 +1,18 @@
+{
+  "note": "Fixtures the league feed has not got yet, added by hand. The feed carries cup ties but not always cup replays, and it did not carry this one until after the game would have been played. Anything here is dropped automatically the moment the feed catches up, matched on date and opponent, so this file never has to be tidied and can never produce a duplicate.",
+  "fixtures": [
+    {
+      "date": "2026-09-08",
+      "kickoff": "19:45",
+      "venue": "Home",
+      "opponent": "Wellingborough Town",
+      "competition": "Emirates FA Cup",
+      "competitionType": "cup",
+      "ground": "Latimer Park",
+      "status": "upcoming",
+      "note": "First qualifying round replay, after the 2-2 at the Dog and Duck on 5 September.",
+      "addedAt": "2026-09-06",
+      "sourceNote": "Confirmed by the FA's qualifying round listing and the Northants Telegraph. The club had announced nothing when this was added."
+    }
+  ]
+}

@@ -15293,12 +15293,51 @@ async function loadLeague(force = false) {
     const res = await fetch(`data/league.json${force ? `?t=${Date.now()}` : ""}`, { cache: force ? "reload" : "default" });
     if (!res.ok) throw new Error(String(res.status));
     state.league = await res.json();
+    await mergeExtraFixtures(state.league);
     /* The index folds this season in, so it has to be rebuilt if the archive
        got here first. Whichever order they land in, the answer is the same. */
     if (state.archive) state.archiveIndex = buildArchiveIndex(state.archive);
   } catch {
     state.league = null; /* the app falls back to the spreadsheet fixture list */
   }
+}
+
+/**
+ * Fixtures the feed has not got yet.
+ *
+ * The league feed carries cup ties but not reliably cup replays: the FA
+ * confirmed a home replay for the Tuesday and the feed still had Saturday's
+ * league game as the next fixture, so the app was telling supporters the wrong
+ * next match two days before a home tie the club had not announced either.
+ *
+ * Merged rather than pasted into league.json, because that file is overwritten
+ * by the data bot several times a day and anything hand-edited into it is gone
+ * by the next run. Matched on date and opponent so that the moment the feed
+ * does carry it, ours drops out on its own: no duplicate, and nothing to
+ * remember to tidy up.
+ */
+async function mergeExtraFixtures(league) {
+  if (!league || !Array.isArray(league.fixtures)) return;
+  const extra = await readJSON("data/extra-fixtures.json");
+  if (!extra || !Array.isArray(extra.fixtures) || !extra.fixtures.length) return;
+
+  const key = (f) => `${String(f.date).slice(0, 10)}|${String(f.opponent || "").toLowerCase().trim()}`;
+  const have = new Set(league.fixtures.map(key));
+
+  const added = extra.fixtures.filter((f) => !have.has(key(f)));
+  if (!added.length) return;
+
+  added.forEach((f) => league.fixtures.push({
+    /* An id the rest of the app can key on, stable across reloads so a
+       prediction or an attendance logged against it does not move. */
+    id: `extra-${key(f).replace(/[^a-z0-9]+/gi, "-")}`,
+    homeScore: null, awayScore: null, attendance: null,
+    lineup: null, events: null, opponentCrest: "",
+    rawStatus: "NotKickedOff",
+    ...f,
+    fromUs: true,
+  }));
+  league.fixtures.sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 
 async function loadAttendances() {
