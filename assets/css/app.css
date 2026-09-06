@@ -7530,8 +7530,21 @@ body.presenting { overflow: hidden; }
   scroll-behavior: auto !important;
 }
 
-/* ---- links that do not rely on colour ------------------------------------ */
-:root[data-links="underline"] a:not(.btn):not(.a11y-link) {
+/* ---- links that do not rely on colour ------------------------------------
+   Anchors were the whole of this and they are barely any of it: the app moves
+   around with buttons, forty six of them styled as .link-btn alone, so
+   somebody who turned this on to stop relying on colour got underlines under
+   two links on the page and none under the rest. Every class here is one that
+   already reads as a link and behaves like one. */
+:root[data-links="underline"] a:not(.btn):not(.a11y-link),
+:root[data-links="underline"] .link-btn,
+:root[data-links="underline"] .small-link,
+:root[data-links="underline"] .back-link,
+:root[data-links="underline"] .club-link,
+:root[data-links="underline"] .named__link,
+:root[data-links="underline"] .post__who--link,
+:root[data-links="underline"] .called__who,
+:root[data-links="underline"] .essential__value {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
