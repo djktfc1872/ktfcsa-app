@@ -4125,7 +4125,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-06-room-tally')
+insert into schema_meta (id, applied_version) values (1, '2026-09-06-vote-counting')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4397,7 +4397,19 @@ join merged m on m.id = v.id
 where v.state <> 'draft' or is_moderator()
 order by v.sort, v.created_at;
 
-alter view room_vote_result set (security_invoker = true);
+-- Definer, and it has to be. room_ballots has row level security on and no
+-- policy at all, on purpose: a table of device keys and how each one voted is
+-- not something anybody should be able to read. Under invoker semantics this
+-- view inherits that and counts nought ballots for everybody, so the app votes
+-- were cast, stored, and silently never counted. A dry run caught it; the
+-- ownership vote would have shown only the hands and quietly dropped every
+-- supporter watching from home.
+--
+-- Switching to definer does not widen anything. is_moderator() is itself
+-- security definer and keys off auth.uid(), which comes from the request's
+-- JWT claim rather than the database role, so the draft-hiding below still
+-- resolves per caller exactly as before.
+alter view room_vote_result set (security_invoker = false);
 grant select on room_vote_result to anon, authenticated;
 
-update schema_meta set applied_version = '2026-09-06-room-tally', applied_at = now() where id = 1;
+update schema_meta set applied_version = '2026-09-06-vote-counting', applied_at = now() where id = 1;
