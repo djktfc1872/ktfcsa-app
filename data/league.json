@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T11:38:41.069Z",
+  "updated": "2026-09-06T16:34:25.945Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1474,6 +1474,27 @@
       "rawStatus": "FullTime",
       "homeScore": 2,
       "awayScore": 2,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6a9d8f33119b8f4072e2540f",
+      "date": "2026-09-08",
+      "kickoff": "19:45",
+      "venue": "Home",
+      "opponent": "Wellingborough Town",
+      "opponentCrest": "https://www.southern-football-league.co.uk/img/teams/wellingborough_town_logo-bfe6d2b6-6a83-4ff7-87dc-3b031e5ff8ff.png",
+      "competition": "Emirates FA Cup",
+      "competitionType": "cup",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
       "attendance": null,
       "lineup": [],
       "events": {
