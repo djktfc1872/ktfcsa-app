@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-30T22:51:39+00:00",
+  "checked": "2026-09-06T00:13:39+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -48,26 +48,26 @@
       }
     },
     {
+      "club": "real-bedford",
+      "name": "Real Bedford",
+      "source": "https://www.realbedford.com/tickets/e/m-2026-09-08-biggleswadefc",
+      "found": {
+        "adultPrice": 12
+      },
+      "differences": {
+        "adultPrice": {
+          "site": 12,
+          "ours": 14
+        }
+      }
+    },
+    {
       "club": "rushall-olympic",
       "name": "Rushall Olympic",
       "source": "https://www.rofc.co.uk/club-info/online-tickets",
       "found": {
         "adultPrice": 14,
         "concessionPrice": 10
-      }
-    },
-    {
-      "club": "stourbridge",
-      "name": "Stourbridge",
-      "source": "http://www.stourbridgefc.com/news/this-tuesday-night-stourbridge-v-leamingtonfc--book-your-tickets-online-now-2994582.html",
-      "found": {
-        "adultPrice": 13
-      },
-      "differences": {
-        "adultPrice": {
-          "site": 13,
-          "ours": 14
-        }
       }
     },
     {
@@ -82,15 +82,15 @@
   ],
   "drift": [
     {
-      "club": "stourbridge",
-      "name": "Stourbridge",
-      "source": "http://www.stourbridgefc.com/news/this-tuesday-night-stourbridge-v-leamingtonfc--book-your-tickets-online-now-2994582.html",
+      "club": "real-bedford",
+      "name": "Real Bedford",
+      "source": "https://www.realbedford.com/tickets/e/m-2026-09-08-biggleswadefc",
       "found": {
-        "adultPrice": 13
+        "adultPrice": 12
       },
       "differences": {
         "adultPrice": {
-          "site": 13,
+          "site": 12,
           "ours": 14
         }
       }
@@ -106,9 +106,9 @@
     "leiston",
     "needham-market",
     "racing-club-warwick",
-    "real-bedford",
     "redditch-united",
     "stamford",
+    "stourbridge",
     "stratford-town"
   ]
 }
