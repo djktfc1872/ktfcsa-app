@@ -1,8 +1,15 @@
 {
-  "updated": "2026-09-07T00:18:12.798Z",
+  "updated": "2026-09-07T13:29:42.555Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "FqRWDu5E3-I",
+      "title": "John Cecil Interview (31/08/2026)",
+      "published": "2026-09-07T09:00:29+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a1a68ce9ef452b61f425e"
+    },
     {
       "videoId": "ek4Zwy3V02k",
       "title": "My Broadcast",
