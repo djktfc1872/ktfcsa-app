@@ -7777,3 +7777,8 @@ body.presenting { overflow: hidden; }
 .slide--dense .slide__text { font-size: 1.95cqw; }
 .slide--dense .slide__ask span { font-size: 1.75cqw; }
 .slide--dense .slide__asks { gap: 1cqw; }
+/* The proposals slide carries a lead line, five items of supporter-written
+   text, and a footnote. It is the fullest slide in the deck and needs the
+   tightest setting. */
+.slide--dense .slide__ask { gap: 1.5cqw; }
+.slide--dense .slide__ask b { font-size: 2.1cqw; }
