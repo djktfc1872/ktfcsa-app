@@ -9541,7 +9541,7 @@ function deckSlide(slide, i, total, facts) {
         /* Sized down once there are several, because the text is whatever a
            supporter typed and the list only grows during the meeting. It
            measured a hair over the stage mid-load with five on it. */
-        box.classList.toggle("slide--dense", props.length >= 4);
+        box.classList.toggle("slide--dense", props.length >= 3 || Boolean(slide.lead));
         list.replaceChildren();
         if (!props.length) {
           list.append(el(`<p class="slide__text">Whatever the room decides. Anyone can put
@@ -9690,7 +9690,7 @@ function deckSlide(slide, i, total, facts) {
     /* Same shape as the asks: a line, and a line under it saying what it means.
        Written as job descriptions rather than as a plea, because people
        volunteer for a job and back away from being begged. */
-    if ((slide.points || []).length >= 4) box.classList.add("slide--dense");
+    box.classList.add("slide--dense");
     heading(slide.title);
     if (slide.blurb) para(slide.blurb);
     const roles = el(`<ol class="slide__points"></ol>`);
