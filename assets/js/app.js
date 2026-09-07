@@ -8979,7 +8979,7 @@ function meetingCard(m) {
     <div class="info-grid info-grid--3 meeting__counts">
       <div class="info"><div class="info__label">In the room</div>
         <div class="info__value" style="color:var(--accent)">${m.in_person || 0}</div></div>
-      <div class="info"><div class="info__label">Online</div>
+      <div class="info"><div class="info__label">Catching up after</div>
         <div class="info__value">${m.online || 0}</div></div>
       <div class="info"><div class="info__label">Keep me posted</div>
         <div class="info__value">${m.cannot || 0}</div></div>
@@ -9107,13 +9107,18 @@ function meetingFacts(m, when, planning) {
 
   row("Getting in", `Free`, `Bucket on the night if you want to chip in`);
 
+  /* No live stream. It was going to be Facebook Live off a phone in a function
+     room, which was never going to be worth watching, and half the value of a
+     recording is that people can take their time over it afterwards. The
+     online_url now carries the recording rather than a stream, so the same
+     admin box still fills it in. */
   if (m.online_url) {
-    /* It was a sentence saying a link existed, which is not a link. */
-    row("Online", `<a href="${esc(m.online_url)}" target="_blank" rel="noopener"
-      class="meeting__stream">Watch it live</a>`, `Facebook Live, no account needed to watch`);
+    row("Recording", `<a href="${esc(m.online_url)}" target="_blank" rel="noopener"
+      class="meeting__stream">Watch it back</a>`,
+      `The discussion carries on below it, so you can still have your say`);
   } else if (!planning) {
-    row("Online", `<span class="facts__tbc">Facebook Live on the night</span>`,
-      `The link appears here when the stream starts`);
+    row("Recording", `<span class="facts__tbc">Published after the meeting</span>`,
+      `No live stream. It is recorded and put up here, and the discussion stays open afterwards`);
   }
 
   /* An .ics rather than a link to a calendar service, so it works the same on
@@ -10122,23 +10127,27 @@ function questionsPanel(m, kind = "question") {
 }
 
 /**
- * Paste the live stream link in, on the night.
+ * Paste the link to the recording.
  *
- * A Facebook Live URL does not exist until somebody presses go, which will be
- * at half seven in a pub on a phone. So it goes here rather than in the admin
- * panel: on the page you are already looking at, one box and one button, and
- * forgiving about what gets pasted. Facebook hands you a URL with a query
- * string a mile long and half the time no scheme on the front.
+ * There is no live stream. It was going to be Facebook Live off a phone in a
+ * function room, which nobody would have watched and which would have made the
+ * pub's wifi a single point of failure on the one night that mattered. The
+ * meeting is recorded instead and the recording goes up here, which is better
+ * anyway: people can watch it when they have half an hour, and the questions
+ * and proposals on this page stay open so anybody who was not in the room can
+ * still argue with it.
+ *
+ * Same box, same column in the database. Only the words changed.
  */
 function streamPanel(m) {
   const box = el(`
     <div class="stream-panel">
-      <div class="info__label">Live stream link</div>
-      <p class="hint" style="margin:2px 0 8px">Paste it here when the stream starts and a
-        <b>Watch it live</b> link appears on this page for everybody. Volunteers only.</p>
+      <div class="info__label">Recording link</div>
+      <p class="hint" style="margin:2px 0 8px">Paste it here once the recording is up and a
+        <b>Watch it back</b> link appears on this page for everybody. Volunteers only.</p>
       <div class="row row--wrap" style="gap:8px">
         <input class="input stream-panel__url" type="url" inputmode="url"
-          placeholder="Paste the Facebook Live link"
+          placeholder="Paste the link to the recording"
           value="${esc(m.online_url || "")}">
         <button class="btn btn--sm" data-act="save">Save</button>
         ${m.online_url ? `<button class="link-btn" data-act="clear">Take it down</button>` : ""}
@@ -10165,7 +10174,7 @@ function streamPanel(m) {
     say.textContent = "Saving\u2026";
     try {
       await db.setMeetingStream(m.meeting_id, url);
-      toast(url ? "The link is up." : "Link taken down.", "good");
+      toast(url ? "The recording is up." : "Link taken down.", "good");
       render();
     } catch (err) {
       say.textContent = String(err?.message || err);
@@ -10197,7 +10206,7 @@ function rsvpList(m) {
       return;
     }
 
-    const label = { in_person: "In the room", online: "Online", cannot: "Keeping posted" };
+    const label = { in_person: "In the room", online: "Catching up after", cannot: "Keeping posted" };
     const mails = [...new Set(rows.map((r) => (r.email || "").trim().toLowerCase())
       .filter((e) => e.includes("@")))];
 
@@ -10268,7 +10277,7 @@ function rsvpPanel(m, total) {
     box.replaceChildren();
     if (saved) {
       const said = { in_person: "You are coming, in the room",
-                     online: "You are joining online",
+                     online: "You will catch up with the recording",
                      cannot: "You cannot come, and we will keep you posted" }[saved];
       box.append(el(`<p class="rsvp__done">${esc(said)}. Thank you.</p>`));
       const change = el(`<button class="link-btn">Change that</button>`);
@@ -10305,7 +10314,7 @@ function rsvpPanel(m, total) {
 
     const row = el(`<div class="btn-row rsvp__row"></div>`);
     [["in_person", "I will be there"],
-     ["online", "I would join online"],
+     ["online", "I cannot make it, but I want to follow it back"],
      ["cannot", "I cannot make it, keep me posted"]].forEach(([key, label], i) => {
       const b = el(`<button class="btn btn--sm${i ? " btn--ghost" : ""}">${esc(label)}</button>`);
       b.addEventListener("click", async () => {
