@@ -9185,7 +9185,7 @@ function runningOrder(m, when) {
     if (plan.preamble) box.append(el(`<p class="hint">${esc(plan.preamble)}</p>`));
     plan.rows.forEach((row, i) => box.append(el(`
       <div class="agenda__row">
-        <div class="agenda__at">${esc(looseTime(when, row.at, i)) || "-"}</div>
+        <div class="agenda__at">${esc(row.when || looseTime(when, row.at, i)) || "-"}</div>
         <div class="agenda__what">
           <b>${esc(row.what)}</b>
           <span>${esc(row.why)}</span>
@@ -9356,6 +9356,32 @@ function deckSlide(slide, i, total, facts) {
           .replace(":00", "").replace(" ", "")}`) : ""
     }${slide.sub ? ` &middot; ${esc(slide.sub)}` : ""}</p>`));
 
+  } else if (slide.kind === "survey") {
+    /* Three slides became one. The hero is how many answered, because the
+       mandate rests on it, and the four figures under it are the finding. The
+       last pair belong together: proudest of the football, worried about
+       everything around it. Split across slides that pairing was lost. */
+    box.classList.add("slide--dense");
+    heading(slide.title);
+    if (slide.body) para(slide.body);
+    const r = facts.results?.summary;
+    const c = facts.results?.choices || [];
+    const conf = facts.results?.confidence || [];
+    const top = (kind) => c.filter((x) => x.kind === kind).sort((a, b) => b.people - a.people)[0];
+    if (r) {
+      const low = conf.find((x) => Number(x.score) === 1);
+      const best = top("positive"), worst = top("concern");
+      const pc = (n) => Math.round((n / r.responses) * 100);
+      const cell = (v, t) => `<div class="survey__cell"><b>${v}</b><span>${t}</span></div>`;
+      body.append(el(`
+        <div class="survey">
+          ${cell(r.direction_wrong, `of ${r.responses} say the club is going the wrong way. ${r.direction_right} say it is going the right way.`)}
+          ${cell(low ? low.people : "&mdash;", `gave the lowest confidence score there was. The average was ${Number(r.confidence_avg).toFixed(1)} out of ten.`)}
+          ${cell(pc(best.people) + "%", `would defend the team on the pitch. It is what supporters are proudest of.`)}
+          ${cell(pc(worst.people) + "%", `are worried about volunteers leaving. Every top concern is about how the club is run.`)}
+        </div>`));
+    }
+
   } else if (slide.kind === "headline") {
     /* The two numbers that carry the whole evening. The average was 2.4 out of
        ten, which is a number nobody feels; ninety six people choosing the
@@ -9503,6 +9529,9 @@ function deckSlide(slide, i, total, facts) {
 
   } else if (slide.kind === "proposals") {
     heading(slide.title);
+    /* A line of framing above the list: the list means little until somebody
+       at the club is answering, and that has to be said before the items. */
+    if (slide.lead) para(slide.lead);
     const list = el(`<div class="slide__asks" data-role="props"></div>`);
     body.append(list);
     if (facts.meeting) {
@@ -9653,7 +9682,7 @@ function deckSlide(slide, i, total, facts) {
     readJSON("data/agenda.json").then((plan) => {
       if (!plan || !document.contains(list)) return;
       plan.rows.forEach((r, i) => list.append(el(
-        `<div class="slide__agenda-row"><b>${esc(looseTime(start, r.at, i))}</b>
+        `<div class="slide__agenda-row"><b>${esc(r.when || looseTime(start, r.at, i))}</b>
           <span>${esc(r.what)}</span></div>`)));
     }).catch(() => {});
 

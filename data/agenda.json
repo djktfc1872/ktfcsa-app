@@ -1,37 +1,43 @@
 {
   "note": "The shape of the evening rather than a timetable. Offsets are minutes from the advertised start so the whole thing moves if the meeting moves, but they render loosely on purpose: a hundred people in a room will drift, and an agenda promising 8:10pm makes everybody late for something. Read by the meeting page and by the slides, so the two cannot disagree.",
   "loose": true,
-  "preamble": "Times are approximate and the evening will run how it runs. Two things we will hold to: the floor gets the longest stretch of it, and we finish by about half nine.",
+  "preamble": "Times are a rough shape, not a schedule. The two we will hold to: the floor gets the longest stretch of it, and you are out by about half nine.",
   "rows": [
     {
       "at": 0,
       "what": "Doors open",
-      "why": "Come when you can. Nothing formal starts straight away."
+      "why": "Come when you can. Nothing formal starts straight away.",
+      "when": "From 7:30"
     },
     {
       "at": 15,
       "what": "Where we are, and what you told us",
-      "why": "Who the working group is, why we called this, and what the consultation found - 199 people answered in five days."
+      "why": "Who the working group is, why we called this, and what the consultation found - 199 people answered in five days.",
+      "when": "Once people are in"
     },
     {
       "at": 40,
       "what": "What we have asked the club",
-      "why": "The questions we put in writing, where each one stands, and what we think should happen."
+      "why": "The questions we put in writing, where each one stands, and what we think should happen.",
+      "when": "Around eight"
     },
     {
       "at": 55,
       "what": "Your questions and open discussion",
-      "why": "The longest part of the evening and the reason for holding it. Questions from the floor, and the ones sent in through the app are read out too, so you do not have to stand up to be heard."
+      "why": "The longest part of the evening and the reason for holding it. Questions from the floor, and the ones sent in through the app are read out too, so you do not have to stand up to be heard.",
+      "when": "The bulk of the night"
     },
     {
       "at": 100,
       "what": "What we do next",
-      "why": "Not a wish list. Specific things with someone's name against each, agreed before people leave."
+      "why": "Not a wish list. Specific things with someone's name against each, agreed before people leave.",
+      "when": "Before we finish"
     },
     {
       "at": 115,
       "what": "Close",
-      "why": "Finished by about half nine. You are welcome to stay on afterwards."
+      "why": "Finished by about half nine. You are welcome to stay on afterwards.",
+      "when": "Done by about half nine"
     }
   ]
 }

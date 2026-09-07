@@ -14,23 +14,12 @@
       "say": "Ten seconds. Say the questions block is forty five minutes, that it is the point of the night, and that we finish on what we are actually going to do."
     },
     {
-      "kind": "statement",
-      "eyebrow": "Why we are here",
-      "title": "199 supporters answered in five days.",
-      "body": "Nobody was paid and nobody was chased. 181 of them asked for a meeting: 118 in a room, 71 online, 31 who could not come but wanted keeping posted. This is us getting on with it.",
-      "say": "Short. This is the answer to anyone who thinks the working group appointed itself, so say it once and let it sit.",
-      "method": "We ran a survey from Monday 17 August to midday on Friday 21 August 2026 - five days - through this app. Anyone could answer, with or without an account, one response per device. Nine questions, seven of them multiple choice and two free text. Nobody was paid, prompted or selected."
-    },
-    {
-      "kind": "headline",
+      "kind": "survey",
       "eyebrow": "What you told us",
-      "say": "Read the second number out and stop talking. Ninety six people choosing the lowest score there was is the single hardest fact of the night."
-    },
-    {
-      "kind": "split",
-      "eyebrow": "The first thing the data says",
-      "title": "This is not about the football.",
-      "say": "The most important slide in the deck and the one most likely to be misrepresented afterwards. Say plainly: nobody in this room is here because results are bad. The team is the thing supporters are proudest of."
+      "title": "199 supporters answered in five days.",
+      "body": "Nobody was paid and nobody was chased. 181 asked for a meeting: 118 in a room, 71 online, and 31 who could not come but wanted keeping posted.",
+      "method": "We ran a survey from Monday 17 August to midday on Friday 21 August 2026 - five days - through this app. Anyone could answer, with or without an account, one response per device. Nine questions, seven of them multiple choice and two free text. Nobody was paid, prompted or selected.",
+      "say": "One slide, four numbers. Land on the last two together: the football is the thing people are proudest of and every worry is about how the club is run. That pairing is the whole argument and it stops the night sounding like a moan about results."
     },
     {
       "kind": "themes",
@@ -62,22 +51,41 @@
         {
           "when": "The difference",
           "what": "The Trust is a membership body. We are not, and we do not intend to be.",
-          "why": "Trust membership opened this week at £10 a year, £100 for life, free under 18. That is normal and it is how a trust works: the fee is what makes you a member with a vote. Our view is simply different. We think being a Kettering supporter should be enough to be counted."
-        },
-        {
-          "when": "What we propose",
-          "what": "Talk to the Trust first, and offer to help make what they do more visible.",
-          "why": "199 of you answered a free, open survey in five days. That is the case for a front door with no fee on it, and it is not an argument against the Trust. Two bodies competing for the same people makes both weaker and costs the club nothing."
+          "why": "Trust membership opened this week at £10 a year, £100 for life, free under 18. That is normal and it is how a trust works: the fee is what makes you a member with a vote. Our view is simply different. We think being a Kettering supporter should be enough to be counted. We have reached out to the Trust and are waiting to hear back. We would rather work with them than around them."
         }
       ],
-      "say": "The room will be thinking it, so ask it before they do. Say the club's point is fair before you say anything else, and land on talking to them rather than about them."
+      "say": "Ask it before the room does. Say the club's point is fair, give the split, and be honest that we have not spoken to the Trust properly yet and are open to whatever they want. Do not propose anything on their behalf."
     },
     {
-      "kind": "officials",
-      "eyebrow": "Who the club says runs the club",
-      "title": "Twenty nine roles, four of them still to be announced.",
-      "body": "Straight off the club's own Officials page. Not our list, not a comment on anybody on it, and worth having in front of us because one of the twelve questions asks the club to name the board with the date each person took their role.",
-      "say": "Do not read the names out. Point at it, say it is the club's own page copied on the day, and move on. The only thing worth saying aloud is the number still marked TBA - and say it as a fact, not as a dig."
+      "kind": "entities",
+      "eyebrow": "One thing we cannot see",
+      "title": "Three companies, one football club.",
+      "checked": "Companies House, public record, checked 31 August 2026",
+      "rows": [
+        {
+          "name": "Kettering Town F.C. Management Ltd",
+          "no": "02267071",
+          "state": "Active",
+          "where": "Latimer Park",
+          "note": "The company that runs the club. Its accounts are filed and up to date."
+        },
+        {
+          "name": "Kettering Town FC 1872 Ltd",
+          "no": "15689118",
+          "state": "Active, dormant",
+          "where": "Watford",
+          "note": "Registered in 2024. Has never traded."
+        },
+        {
+          "name": "Kettering Town Football Club Ltd",
+          "no": "04610155",
+          "state": "Dissolved 2022",
+          "where": "-",
+          "note": "The previous company."
+        }
+      ],
+      "foot": "Nothing here is unusual and none of it is an accusation of anything at all; it is purely for fan awareness. We raise it once and leave it. We have asked the question and we are not going to spend tonight on it.",
+      "say": "Sixty seconds. Read the last line of the slide out loud before anything else, then move on. It is context, not an accusation, and it is not what tonight is for."
     },
     {
       "kind": "clock",
@@ -106,8 +114,8 @@
           "backs": "71% say the board represents them badly or very badly"
         },
         {
-          "ask": "Meet a recognised supporters’ body regularly, on a set date, on the record.",
-          "backs": "83% say the ownership does not represent them; 97 asked for a public meeting (hopefully some of you are here)"
+          "ask": "Meet a supporters' body openly and regularly, free to attend, with a record published afterwards.",
+          "backs": "83% say the ownership does not represent them. Open, free and written down, so it is accountable rather than a private word"
         },
         {
           "ask": "Set out which company holds the ground, the lease and the debts.",
@@ -121,71 +129,68 @@
       "say": "Six asks, each already put to the club in writing and each backed by a number. Read the ask, not the evidence line. Agree the wording with the working group before the night."
     },
     {
-      "kind": "attendance",
-      "eyebrow": "Before anybody says we are a small club",
-      "say": "Say the number once, flatly, then the line under it, then stop. This is the bridge into the rest of the night: do not let it sit there as a boast about how big we are, because on its own that is all it is. The point is that the difficult half is already done.",
-      "body": "This stat is not here to boast. It shows, in theory, an average of about 170 fans going through the gate at every away ground, and nobody organised it. No committee, no membership, nobody asking. It is just what this support does. Which means the hard part - getting people to care and turn up - is already done. The only thing missing is structure."
-    },
-    {
       "kind": "roles",
-      "eyebrow": "What we are actually trying to build",
-      "title": "An association that outlasts any one of us.",
-      "blurb": "Four jobs. None of them is full time, none needs an accountant, and none of them is currently filled by anybody who put their hand up for it.",
+      "eyebrow": "What we need",
+      "title": "Mostly, we just need people.",
+      "blurb": "Titles can wait. What cannot is having more than a handful of us. If you can spare an hour here and there, that is enough to start, and these are the jobs that would make the most difference first.",
       "points": [
         {
           "ask": "Someone to chair it",
-          "backs": "Runs the meetings, speaks for the room, and keeps things moving along with a bit of diplomacy."
+          "backs": "Runs the meetings and speaks for the room."
         },
         {
           "ask": "Someone to keep the record",
-          "backs": "Writes down what was agreed and publishes it, so nothing rests on anyone's memory."
+          "backs": "Writes down what was agreed and puts it up, so nothing rests on memory."
         },
         {
-          "ask": "Someone for graphics and the digital side",
-          "backs": "All of it so far has been built from the ground up, solo. We want somebody to help turn art into life, and we would love to platform your work too."
+          "ask": "Someone for the digital side",
+          "backs": "It has all been built solo so far. Graphics, social, photography, anything."
         },
         {
           "ask": "Someone to talk to the club",
-          "backs": "One named person, so the club has somebody to answer and cannot say it did not know who to ask."
+          "backs": "One named person, so the club has somebody to answer."
+        },
+        {
+          "ask": "Or just put your name down",
+          "backs": "No title, no commitment. Numbers are what turn this into something real."
         }
       ],
-      "say": "Say plainly that none of these four is filled. Do not make it a plea - make it a job description, because people volunteer for jobs and back away from pleas."
+      "say": "Do not make this sound like a committee being formed. Say the last line properly: we need people more than we need officers, and nobody is signing up for life."
     },
     {
       "kind": "plan",
-      "eyebrow": "How we could do it, and how fast",
-      "title": "Most of this can be settled tonight.",
+      "eyebrow": "How we get going",
+      "title": "Most of this can be sorted tonight.",
       "rows": [
         {
           "when": "Tonight",
-          "what": "Agree the Association exists, and elect an interim committee or working group from the floor.",
-          "why": "Interim, so nobody is signing up for life, anybody can change their mind, and nobody has to have read a constitution."
+          "what": "Agree that the Association exists, and get a few names down to run it for now.",
+          "why": "Nothing formal and nothing binding. It just means somebody can act on what the room decides."
         },
         {
           "when": "Tonight",
-          "what": "Name someone to write to the club as a representative and collator of fan feedback.",
-          "why": "Fans have not been listened to properly for years, over and over. We want that to change."
+          "what": "Pick one person to be the point of contact with the club.",
+          "why": "So the club has a name to reply to, and so nobody has to guess who speaks for supporters."
         },
         {
-          "when": "Within a month",
-          "what": "A short constitution or founding document - two pages, not twenty - published for everyone.",
-          "why": "It says who can join, how officers are chosen, and how they can be removed. That is most of it."
+          "when": "Next few weeks",
+          "what": "Write down how it works. Two pages, not twenty, and everybody gets to read it.",
+          "why": "Who can join, how people are chosen, how they can be replaced. That is genuinely most of it."
         },
         {
           "when": "Within three months",
-          "what": "A proper election, open to every member, at a second meeting.",
-          "why": "Whoever steps up tonight stands again in the open. Nobody inherits anything."
+          "what": "Do it properly, with an open vote at a second meeting.",
+          "why": "Whoever steps up tonight puts themselves forward again in the open. Nobody keeps a job by default."
         }
       ],
-      "say": "This is the slide the night turns on. Take it slowly. The word to lean on is interim: it is the thing that makes standing up feel survivable."
+      "say": "Lean on tonight being provisional. That is what makes it easy for somebody to say yes."
     },
     {
       "kind": "statement",
-      "eyebrow": "Before anybody volunteers",
-      "title": "This should not be my association. It is yours.",
-      "body": "I built the app and I am happy being the person who keeps growing it - I genuinely enjoy it. Somebody had to start this and nobody else was doing it, so I did. But a supporters' association that depends on one person, or on a small working group, is not an association. Fan representation is the whole point of it.",
-      "say": "Your call whether to say this at all. If you do, say it once, without apology, and then be quiet and let the room answer. Do not soften it into a joke - the honesty is the whole reason it works.",
-      "aside": "Only through a group effort is this going to get off the ground. If the interest is not there it stays a web app, focused on the matchday experience and nothing more. Our club has a lot more potential than that, and our history is something we should be proud of and aim to preserve."
+      "eyebrow": "One thing before we go on",
+      "title": "This only works if it is not one person.",
+      "body": "A supporters' association that depends on one or two people is not an association, it is a hobby with a website. The app will keep going either way. What decides whether there is anything around it is whether enough people in this room fancy a hand in it.",
+      "say": "Keep it short and do not make it about you. Say it once, then stop talking and let the room fill the gap."
     },
     {
       "kind": "statement",
@@ -202,12 +207,12 @@
         {
           "when": "The question",
           "what": "Should the Association take a public position on the ownership of Kettering Town?",
-          "why": "Four ways to answer, including leaving it alone. Hands in the room, and the app for anyone watching from home. Both are counted and both are reported."
+          "why": "Four ways to answer, including leaving it well alone. A show of hands in this room, counted and written down."
         },
         {
           "when": "To carry",
           "what": "Two thirds of those voting, and we report the turnout with the result.",
-          "why": "Binding four hundred supporters to something half of one room wants is not a mandate. If it is close, it is not carried, and we say so."
+          "why": "Binding four hundred supporters to something half of one room wants is not a mandate. If it is close, it is not carried, and we will say so."
         },
         {
           "when": "If it carries",
@@ -220,7 +225,7 @@
           "why": "A vote that only counts when it goes one way is not a vote."
         }
       ],
-      "say": "This is the slide the night turns on. Read all four rows out. Agreeing the consequences before the hands go up is what stops the argument afterwards about what people thought they were voting for."
+      "say": "The slide the night turns on. Read all four rows. Agreeing what happens before the hands go up is what stops the argument afterwards."
     },
     {
       "kind": "asks",
@@ -231,46 +236,18 @@
     {
       "kind": "proposals",
       "eyebrow": "What we do next",
-      "title": "Nothing on this slide happens without a name against it.",
-      "say": "Work down the list. For each one ask for hands, then ask who will actually help. Anybody can add one from their phone right now and it appears here. Do not leave the room until at least two have a helper."
+      "title": "First job: actually get answered.",
+      "say": "Say the first line and let it sit. Then go through the list quickly - they are on the app and people can read. What you want out of this is a name against one or two of them before anybody leaves.",
+      "lead": "Twelve questions went in, the club wrote back, and not one of them was answered directly. Everything else on this list is easier once somebody at the club is picking up the questions and replying to them.",
+      "foot": "Nothing here is agreed. Add your own on the app or say it tonight."
     },
     {
       "kind": "statement",
       "eyebrow": "Before you go",
-      "title": "Everything tonight was done by supporters in their own time.",
-      "body": "Thank you to everyone involved in arranging it, and thank you for coming. The consultation, the letters, the app, this room. If you want to help with any of it - the archive project, away travel, the letters - say so before you leave, put your name against something on the app, or come and speak to one of us.",
-      "say": "Finish on the ask, then get out of the way and let people talk."
-    },
-    {
-      "kind": "entities",
-      "eyebrow": "If it comes up",
-      "title": "Three companies, one football club.",
-      "checked": "Companies House, public record, checked 31 August 2026",
-      "rows": [
-        {
-          "name": "Kettering Town F.C. Management Ltd",
-          "no": "02267071",
-          "state": "Active",
-          "where": "Latimer Park",
-          "note": "The company that runs the club. Its accounts are filed and up to date."
-        },
-        {
-          "name": "Kettering Town FC 1872 Ltd",
-          "no": "15689118",
-          "state": "Active, dormant",
-          "where": "Watford",
-          "note": "Registered in 2024. Has never traded."
-        },
-        {
-          "name": "Kettering Town Football Club Ltd",
-          "no": "04610155",
-          "state": "Dissolved 2022",
-          "where": "-",
-          "note": "The previous company."
-        }
-      ],
-      "foot": "Nothing here is unusual and none of it is an accusation of anything at all; it is purely for fan awareness. We raise it once and leave it. We have asked the question and we are not going to spend tonight on it.",
-      "say": "Not in the running order. It is here so you have it if somebody asks about the companies, and skipped otherwise. If you do show it, read the last line of the slide out loud before anything else."
+      "title": "Thanks for coming.",
+      "body": "Everything so far has been done by supporters in their own time. The consultation, the letters, the app, this room. If you want a hand in any of it, put your name on a sheet before you leave or come and grab one of us.",
+      "say": "Say the bucket line lightly and move straight on. Do not linger on it and do not ask twice. It is an offer, not a collection.",
+      "aside": "This room cost £75 and the working group paid for it out of our own pockets. There is a bucket by the door if you would like to chip in towards the next one, and genuinely no pressure at all - the whole point of this is that it is free and it stays free."
     }
   ]
 }

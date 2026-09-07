@@ -1,5 +1,5 @@
 {
-  "built": "2026-09-06T21:55:57.687Z",
+  "built": "2026-09-07T14:06:34.060Z",
   "note": "Written by scripts/build-deck-snapshot.mjs. The deck falls back to this when the database cannot be reached, so that a bad connection in a function room does not empty the slides. Live figures win whenever they answer.",
   "results": {
     "summary": {

@@ -7742,3 +7742,29 @@ body.presenting { overflow: hidden; }
   font-size: 0.875rem; color: var(--text-2);
 }
 .vote__hand input { text-align: center; }
+
+/* ---- the survey slide: four figures that belong together ----------------- */
+
+.survey {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.6cqw 4cqw; width: 100%;
+}
+.survey__cell b {
+  display: block; font-size: 5.6cqw; line-height: 1; font-weight: 800;
+  color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.survey__cell span {
+  display: block; margin-top: 0.5cqw;
+  font-size: 1.55cqw; line-height: 1.35; color: var(--text-2);
+}
+
+/* Legibility pass. The supporting type across the slides was set for a laptop
+   and this is read off a television from the back of a function room. */
+.slide__text        { font-size: 2.45cqw; }
+.slide__aside       { font-size: 2cqw; }
+.slide__backs       { font-size: 1.55cqw; }
+.slide__plan-row i  { font-size: 1.5cqw; }
+.slide__firm-note   { font-size: 1.6cqw; }
+.slide__source      { font-size: 1.35cqw; }
+.slide--dense .slide__points li { font-size: 2.05cqw; }
+.slide--dense .slide__backs     { font-size: 1.4cqw; }
+.slide--dense .slide__firm-note { font-size: 1.5cqw; }
