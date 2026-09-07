@@ -9552,8 +9552,7 @@ function deckSlide(slide, i, total, facts) {
           <div class="slide__ask">
             <b>${q.backers}</b>
             <span>${esc(q.body)}
-              <i class="slide__helpers">${q.helpers
-                ? `${q.helpers} will help` : "nobody has offered to help yet"}</i></span>
+              ${q.helpers ? `<i class="slide__helpers">${q.helpers} will help</i>` : ""}</span>
           </div>`)));
       }).catch(() => {});
       /* Refreshed while it is up, because the room is adding to it from their
