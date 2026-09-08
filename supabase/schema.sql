@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-08-meeting-outcome')
+insert into schema_meta (id, applied_version) values (1, '2026-09-08-contacts')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4446,3 +4446,178 @@ update meetings
  where status <> 'off';
 
 update schema_meta set applied_version = '2026-09-08-meeting-outcome', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- The contact list
+-- ---------------------------------------------------------------------------
+--
+-- Sixty people came and a good number left an address. This is where they go,
+-- and the reason it is not simply a column on profiles is that two different
+-- promises were made to two different groups and they must not be merged.
+--
+--   The paper sheet at the meeting said: "telling you about Association
+--   business. It is not a mailing list, it is not passed to the club, and it
+--   is not passed to anybody else."
+--
+--   The RSVP form on the site said something much narrower: "used for one
+--   thing: telling you if the night or the room changes. It is not a mailing
+--   list and it is not added to one."
+--
+-- Somebody who gave an address on the RSVP form agreed to be told the room had
+-- moved. They did not agree to be sent an Association newsletter, and sweeping
+-- them in would break a promise this app made in writing. Those addresses stay
+-- in meeting_rsvps, are not copied here, and get invited to opt in properly.
+--
+-- So consent_text stores the exact words each person agreed to, on the row.
+-- If it is ever questioned the answer is in the database rather than in
+-- somebody's memory of what the sheet said. source records which way they
+-- came in. Neither is decoration.
+--
+-- This is a contact list. It is not a membership roll: nobody has defined what
+-- membership means yet, and implying rights nobody has been granted would be
+-- its own small dishonesty. It may become the basis of one.
+
+create table if not exists contacts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(btrim(name)) between 2 and 60),
+  email text not null check (email ~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'),
+  source text not null check (source in ('paper', 'site', 'import')),
+  consent_text text not null,
+  consented_at timestamptz not null default now(),
+  profile_id uuid references profiles on delete set null,
+  helps_with text check (helps_with is null or char_length(helps_with) <= 200),
+  note text check (note is null or char_length(note) <= 300),
+  unsubscribed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- One address once. Case folded, because people write their own address in
+-- three different ways across a season and a list with duplicates in it gets
+-- somebody two copies of everything.
+create unique index if not exists contacts_email_idx on contacts (lower(btrim(email)));
+
+alter table contacts enable row level security;
+
+-- Nobody reads this but a volunteer. It is a list of names and addresses given
+-- in confidence and there is no version of it that belongs on a public page.
+drop policy if exists "volunteers read contacts" on contacts;
+create policy "volunteers read contacts" on contacts
+  for select using (is_moderator());
+
+drop policy if exists "admins manage contacts" on contacts;
+create policy "admins manage contacts" on contacts
+  for all using (is_admin()) with check (is_admin());
+
+-- Signing yourself up. No account needed, and the wording agreed to is stored
+-- rather than assumed, so it matches whatever the form actually said.
+create or replace function join_contacts(p_name text, p_email text, p_helps text, p_consent text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_name  text := nullif(btrim(coalesce(p_name, '')), '');
+  v_email text := lower(nullif(btrim(coalesce(p_email, '')), ''));
+begin
+  if v_name is null or char_length(v_name) < 2 then
+    raise exception 'We need a name to put against it.';
+  end if;
+  if v_email is null or v_email !~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+    raise exception 'That does not look like an email address.';
+  end if;
+  if coalesce(btrim(p_consent), '') = '' then
+    raise exception 'The wording being agreed to has to be recorded.';
+  end if;
+
+  insert into contacts (name, email, source, consent_text, profile_id, helps_with)
+  values (v_name, v_email, 'site', p_consent, auth.uid(), nullif(btrim(coalesce(p_helps,'')), ''))
+  on conflict (lower(btrim(email))) do update
+    set name = excluded.name,
+        helps_with = coalesce(excluded.helps_with, contacts.helps_with),
+        unsubscribed_at = null,        -- signing up again is asking to come back
+        consented_at = now(),
+        consent_text = excluded.consent_text;
+end $$;
+
+revoke all on function join_contacts(text, text, text, text) from public;
+grant execute on function join_contacts(text, text, text, text) to anon, authenticated;
+
+-- Typing up the paper sheets. Admin only, one row per line, and it reports
+-- what it did rather than silently swallowing a malformed address.
+create or replace function import_contacts(p_rows jsonb, p_consent text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r jsonb;
+  v_name text; v_email text;
+  added int := 0; updated int := 0; skipped jsonb := '[]'::jsonb;
+begin
+  if not is_admin() then raise exception 'Only an admin can import contacts.'; end if;
+  if coalesce(btrim(p_consent), '') = '' then
+    raise exception 'The wording these people agreed to has to be recorded.';
+  end if;
+
+  for r in select * from jsonb_array_elements(p_rows) loop
+    v_name  := nullif(btrim(coalesce(r ->> 'name', '')), '');
+    v_email := lower(nullif(btrim(coalesce(r ->> 'email', '')), ''));
+    if v_name is null or v_email is null
+       or v_email !~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+      skipped := skipped || jsonb_build_object('name', r ->> 'name', 'email', r ->> 'email');
+      continue;
+    end if;
+    if exists (select 1 from contacts c where lower(btrim(c.email)) = v_email) then
+      update contacts set name = v_name,
+             helps_with = coalesce(nullif(btrim(coalesce(r ->> 'helps', '')), ''), helps_with)
+       where lower(btrim(email)) = v_email;
+      updated := updated + 1;
+    else
+      insert into contacts (name, email, source, consent_text, helps_with)
+      values (v_name, v_email, 'paper', p_consent,
+              nullif(btrim(coalesce(r ->> 'helps', '')), ''));
+      added := added + 1;
+    end if;
+  end loop;
+
+  return jsonb_build_object('added', added, 'updated', updated, 'skipped', skipped);
+end $$;
+
+revoke all on function import_contacts(jsonb, text) from public;
+grant execute on function import_contacts(jsonb, text) to authenticated;
+
+-- Taking yourself off it, which the paper promised. Stamped rather than
+-- deleted, so the same address does not get re-imported off an old sheet.
+create or replace function leave_contacts(p_email text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update contacts set unsubscribed_at = now()
+   where lower(btrim(email)) = lower(btrim(coalesce(p_email, '')));
+  if not found then raise exception 'That address is not on the list.'; end if;
+end $$;
+
+revoke all on function leave_contacts(text) from public;
+grant execute on function leave_contacts(text) to anon, authenticated;
+
+-- Volunteers only, and counts rather than addresses, so the size of the list
+-- can be shown without putting it on a page.
+drop view if exists contact_summary cascade;
+create view contact_summary as
+select
+  count(*) filter (where unsubscribed_at is null)                     as live,
+  count(*) filter (where unsubscribed_at is not null)                 as gone,
+  count(*) filter (where source = 'paper' and unsubscribed_at is null) as from_paper,
+  count(*) filter (where source = 'site'  and unsubscribed_at is null) as from_site,
+  count(*) filter (where helps_with is not null and unsubscribed_at is null) as offered_help
+from contacts;
+
+alter view contact_summary set (security_invoker = true);
+grant select on contact_summary to authenticated;
+
+update schema_meta set applied_version = '2026-09-08-contacts', applied_at = now() where id = 1;

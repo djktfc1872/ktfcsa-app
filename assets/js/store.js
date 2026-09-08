@@ -198,6 +198,20 @@ export const setMeetingStream = (id, url) =>
   (backend?.setMeetingStream ? backend.setMeetingStream(id, url)
     : Promise.reject(new Error("Not connected.")));
 
+export const joinContacts = (name, email, helps, consent) =>
+  (backend?.joinContacts ? backend.joinContacts(name, email, helps, consent)
+    : Promise.reject(new Error("Not connected.")));
+export const leaveContacts = (email) =>
+  (backend?.leaveContacts ? backend.leaveContacts(email)
+    : Promise.reject(new Error("Not connected.")));
+export const importContacts = (rows, consent) =>
+  (backend?.importContacts ? backend.importContacts(rows, consent)
+    : Promise.reject(new Error("Not connected.")));
+export const contactSummary = () =>
+  (backend?.contactSummary ? backend.contactSummary() : Promise.resolve(null));
+export const contactList = () =>
+  (backend?.contactList ? backend.contactList() : Promise.resolve(null));
+
 export const roomVotes = (id, scope) =>
   (backend?.roomVotes ? backend.roomVotes(id, scope) : Promise.resolve(null));
 export const castRoomVote = (id, key, choice) =>

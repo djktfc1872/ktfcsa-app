@@ -7320,6 +7320,10 @@ function buildAdmin() {
     panelSection(wrap, "People", () => { paintPeople(); return peopleCard; });
     if (canRunThings) {
       panelSection(wrap, "Tags", () => { paintTags(); return tagsCard; });
+      if (canRunThings) {
+        panelSection(wrap, "The contact list", () => contactListPanel());
+        panelSection(wrap, "Type up the paper sheets", () => contactImportPanel());
+      }
     }
   }
 
@@ -9015,6 +9019,9 @@ function meetingCard(m) {
 
   if (!done) card.append(runningOrder(m, when));
   if (!done) card.append(rsvpPanel(m, total));
+  /* Once it has been, the thing to ask for is an address rather than a
+     headcount for something that already happened. */
+  if (done) card.append(contactPanel());
   card.append(questionsPanel(m, "question"));
   /* Between the questions and the things we propose to do, because that is
      where it falls on the night: the room has argued, and now it decides. */
@@ -10131,6 +10138,241 @@ function questionsPanel(m, kind = "question") {
 
   build();
   load();
+  return box;
+}
+
+/**
+ * The list itself, for whoever has to send the mail.
+ *
+ * Counts, the addresses in one line ready to paste into a mail client, and
+ * nothing that leaves the app. The app sends no email: building sending,
+ * bounces and unsubscribe plumbing for a list of sixty is work nobody asked
+ * for when a clipboard and Danny's own mail client already do it.
+ */
+function contactListPanel() {
+  const box = el(`<div class="card"><div class="info__label">The contact list</div></div>`);
+  const body = el(`<div>Loading.</div>`);
+  box.append(body);
+
+  Promise.all([db.contactSummary(), db.contactList()]).then(([sum, rows]) => {
+    if (!document.contains(body)) return;
+    body.replaceChildren();
+    if (!sum) { body.append(el(`<p class="hint">Not available.</p>`)); return; }
+
+    body.append(el(`
+      <div class="info-grid info-grid--3" style="margin:10px 0">
+        <div class="info"><div class="info__label">On the list</div>
+          <div class="info__value" style="color:var(--accent)">${sum.live}</div></div>
+        <div class="info"><div class="info__label">From the paper</div>
+          <div class="info__value">${sum.from_paper}</div></div>
+        <div class="info"><div class="info__label">Offered to help</div>
+          <div class="info__value">${sum.offered_help}</div></div>
+      </div>`));
+
+    const live = (rows || []).filter((r) => !r.unsubscribed_at);
+    const copy = el(`<button class="btn btn--sm">Copy the addresses</button>`);
+    copy.addEventListener("click", async () => {
+      const line = live.map((r) => r.email).join(";");
+      try {
+        await navigator.clipboard.writeText(line);
+        toast(`${live.length} addresses copied.`, "good");
+      } catch {
+        modal(`<p class="hint">Copy these:</p><textarea class="input" rows="6"
+          readonly>${esc(line)}</textarea>`);
+      }
+    });
+    body.append(el(`<div class="btn-row"></div>`));
+    $(".btn-row", body).append(copy);
+    body.append(el(`<p class="hint">Blind copy them. The app sends nothing itself, and a
+      list of sixty addresses in a To field is the sort of thing this Association would
+      complain about if the club did it.</p>`));
+
+    const helpers = live.filter((r) => r.helps_with);
+    if (helpers.length) {
+      body.append(el(`<div class="info__label" style="margin-top:12px">Offered to help</div>`));
+      const list = el(`<div class="rsvp-list__group"></div>`);
+      helpers.forEach((r) => list.append(el(
+        `<div><b>${esc(r.name)}</b> ${esc(r.helps_with)}</div>`)));
+      body.append(list);
+    }
+  }).catch(() => { body.replaceChildren(el(`<p class="hint">Not available.</p>`)); });
+
+  return box;
+}
+
+/* What the paper sheet at the meeting promised, word for word. Stored against
+   every row imported from it, so the promise travels with the person rather
+   than living in a printout nobody kept. */
+const PAPER_CONSENT =
+  "One thing only: telling you about Association business. It is not a mailing list, it is " +
+  "not passed to the club, and it is not passed to anybody else. Ask us to take you off it " +
+  "at any point and we will. (Given on paper at the meeting of 7 September 2026.)";
+
+/**
+ * Typing up the paper sheets.
+ *
+ * Sixty people, a stack of handwriting, and one pair of hands. A textarea and
+ * a preview beats a form per person, and the preview is the point: it shows
+ * exactly what will be written, what is already there, and what it could not
+ * read, before anything touches the table. Nobody wants to find out afterwards
+ * that fifteen rows went in with a typo in the domain.
+ */
+function contactImportPanel() {
+  const box = el(`
+    <div class="card">
+      <div class="info__label">Type up the paper sheets</div>
+      <p class="hint" style="margin:2px 0 10px">One person per line, as
+        <b>name, email</b> or <b>name, email, what they would help with</b>. Paste the lot in
+        and check the preview before you commit it.</p>
+      <textarea class="input" rows="8" data-role="paste"
+        placeholder="Jane Smith, jane@example.com, away travel&#10;John Doe, john@example.com"></textarea>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn--sm btn--ghost" data-act="check">Check it</button>
+        <button class="btn btn--sm" data-act="commit" disabled>Add them</button>
+      </div>
+      <div data-role="preview"></div>
+    </div>`);
+
+  const ta = $('[data-role="paste"]', box);
+  const preview = $('[data-role="preview"]', box);
+  const commit = $('[data-act="commit"]', box);
+  let parsed = [];
+
+  const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+  const parse = () => {
+    const good = [], bad = [];
+    ta.value.split(/\r?\n/).forEach((line) => {
+      const raw = line.trim();
+      if (!raw) return;
+      /* Split on commas or tabs, because a paste out of a spreadsheet uses
+         tabs and a person typing uses commas. */
+      const bits = raw.split(/[\t,]+/).map((x) => x.trim()).filter(Boolean);
+      const email = bits.find((b) => EMAIL.test(b));
+      const name = bits.find((b) => b !== email && b.includes(" ")) || bits.find((b) => b !== email);
+      const helps = bits.filter((b) => b !== email && b !== name).join(", ");
+      if (!email || !name || name.length < 2) bad.push(raw);
+      else good.push({ name, email: email.toLowerCase(), helps: helps || null });
+    });
+    /* A sheet passed round a room gets the same person twice. */
+    const seen = new Set(); const dupes = [];
+    const unique = good.filter((g) => {
+      if (seen.has(g.email)) { dupes.push(g); return false; }
+      seen.add(g.email); return true;
+    });
+    return { unique, bad, dupes };
+  };
+
+  $('[data-act="check"]', box).addEventListener("click", () => {
+    const { unique, bad, dupes } = parse();
+    parsed = unique;
+    preview.replaceChildren();
+    preview.append(el(`<p class="hint" style="margin-top:10px"><b>${unique.length}</b> to add,
+      <b>${dupes.length}</b> repeated in what you pasted, <b>${bad.length}</b> we could not
+      read.</p>`));
+    if (bad.length) {
+      preview.append(el(`<div class="notice notice--warn" style="margin-top:6px">
+        <b>Could not read these.</b> They will not be added, so fix them and paste again:
+        <br>${bad.slice(0, 8).map(esc).join("<br>")}</div>`));
+    }
+    if (unique.length) {
+      const list = el(`<div class="rsvp-list__group" style="margin-top:8px"></div>`);
+      unique.slice(0, 40).forEach((g) => list.append(el(
+        `<div>${esc(g.name)} &middot; ${esc(g.email)}${g.helps ? ` &middot; ${esc(g.helps)}` : ""}</div>`)));
+      preview.append(list);
+    }
+    commit.disabled = !unique.length;
+  });
+
+  commit.addEventListener("click", async () => {
+    commit.disabled = true;
+    try {
+      const res = await db.importContacts(parsed, PAPER_CONSENT);
+      toast(`${res.added} added, ${res.updated} already there.`, "good");
+      ta.value = ""; preview.replaceChildren(); parsed = [];
+      render();
+    } catch (err) {
+      commit.disabled = false;
+      toast(err.message || "That did not save.", "bad");
+    }
+  });
+  return box;
+}
+
+/* The exact words somebody agrees to when they sign up here. Sent with the
+   row and stored on it, so what was promised is answerable from the database
+   rather than from whatever the page happened to say that month. It matches
+   the paper sheet on purpose: two routes in, one promise. */
+const CONTACT_CONSENT =
+  "One thing only: telling you about Association business. It is not a mailing list, it is " +
+  "not passed to the club, and it is not passed to anybody else. Ask us to take you off it " +
+  "at any point and we will.";
+
+/**
+ * Joining the contact list.
+ *
+ * Sixty people came and a good number left an address on paper. This is the
+ * same thing for everybody else, worded identically, so the two routes in
+ * carry one promise rather than two.
+ *
+ * Deliberately not called a membership form. Nobody has defined what
+ * membership means yet and implying rights nobody has been granted would be a
+ * small dishonesty on the one page where it would matter most.
+ */
+function contactPanel() {
+  const box = el(`
+    <div class="rsvp joinlist">
+      <div class="info__label">Keep me posted</div>
+      <p class="hint" style="margin:2px 0 10px">Leave an address and we will tell you what
+        comes out of the meetings, when the next one is, and what we are asking the club.
+        Nothing else.</p>
+    </div>`);
+
+  const done = db.read("joinedList", false);
+  if (done) {
+    box.append(el(`<p class="rsvp__done">You are on the list. Thank you.</p>`));
+    const off = el(`<button class="link-btn">Take me off it</button>`);
+    off.addEventListener("click", async () => {
+      const email = window.prompt("Which address should we remove?");
+      if (!email) return;
+      try {
+        await db.leaveContacts(email.trim());
+        db.write("joinedList", false);
+        toast("Removed. Sorry to see you go.", "good");
+        render();
+      } catch (err) { toast(err.message || "That did not work.", "bad"); }
+    });
+    box.append(off);
+    return box;
+  }
+
+  const name  = el(`<input class="input rsvp__name" maxlength="60" placeholder="Your name"
+    value="${esc(db.currentUser()?.name || "")}">`);
+  const email = el(`<input class="input rsvp__mail" type="email" maxlength="120"
+    placeholder="Your email">`);
+  const helps = el(`<input class="input" maxlength="200"
+    placeholder="Anything you would help with (optional)">`);
+  const say   = el(`<p class="hint" data-role="say"></p>`);
+  const go    = el(`<button class="btn btn--sm">Add me to the list</button>`);
+
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    say.textContent = "Adding\u2026";
+    try {
+      await db.joinContacts(name.value.trim(), email.value.trim(), helps.value.trim(),
+        CONTACT_CONSENT);
+      db.write("joinedList", true);
+      toast("You are on the list. Thank you.", "good");
+      render();
+    } catch (err) {
+      go.disabled = false;
+      say.textContent = String(err?.message || err);
+    }
+  });
+
+  box.append(name, email, helps, el(`<div class="btn-row"></div>`), say);
+  $(".btn-row", box).append(go);
+  box.append(el(`<p class="hint">${esc(CONTACT_CONSENT)}</p>`));
   return box;
 }
 

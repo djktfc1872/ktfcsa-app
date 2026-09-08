@@ -753,6 +753,42 @@ class Backend {
 
   /* Scoped, because every vote hangs off a meeting and without this the
      letters page and the meeting page showed each other's. */
+  /* ------------------------------------------------------ the contact list */
+
+  async joinContacts(name, email, helps, consent) {
+    const { error } = await this.sb.rpc("join_contacts", {
+      p_name: name, p_email: email, p_helps: helps || null, p_consent: consent });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async leaveContacts(email) {
+    const { error } = await this.sb.rpc("leave_contacts", { p_email: email });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async importContacts(rows, consent) {
+    const { data, error } = await this.sb.rpc("import_contacts", {
+      p_rows: rows, p_consent: consent });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
+  async contactSummary() {
+    const { data, error } = await this.sb.from("contact_summary").select("*").maybeSingle();
+    if (error) return null;
+    return data;
+  }
+
+  /* Volunteers only by policy, so this returns nothing for anybody else
+     rather than needing a check here as well. */
+  async contactList() {
+    const { data, error } = await this.sb.from("contacts")
+      .select("id, name, email, source, helps_with, unsubscribed_at, created_at")
+      .order("created_at", { ascending: false });
+    if (error) return null;
+    return data || [];
+  }
+
   async roomVotes(meetingId, scope) {
     let q = this.sb.from("room_vote_result").select("*");
     if (meetingId) q = q.eq("meeting_id", meetingId);
