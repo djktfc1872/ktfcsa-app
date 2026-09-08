@@ -3503,34 +3503,7 @@ grant execute on function rsvp_meeting(uuid, text, text, text, text) to anon, au
 -- The headcount gains the food number. Null is not counted either way, so
 -- "would eat" and "would not" add up to less than the room, which is correct:
 -- the rest have not been asked.
-drop view if exists meeting_counts cascade;
-create view meeting_counts as
-select
-  m.id                 as meeting_id,
-  m.title,
-  m.held_at,
-  m.venue,
-  m.address,
-  m.online_url,
-  m.capacity,
-  m.note,
-  m.status,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.coming = 'in_person') as in_person,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.coming = 'online')    as online,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.coming = 'cannot')    as cannot,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.eating is true)       as eating,
-  (select count(*) from meeting_rsvps r
-    where r.meeting_id = m.id and r.eating is false)      as not_eating
-from meetings m
-where m.status <> 'off'
-order by m.held_at nulls last, m.created_at;
-
-alter view meeting_counts set (security_invoker = false);
-grant select on meeting_counts to anon, authenticated;
+-- meeting_counts is defined once, further down, after the outcome columns.
 
 -- ---------------------------------------------------------------------------
 -- Questions for the floor
@@ -4125,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-06-vote-counting')
+insert into schema_meta (id, applied_version) values (1, '2026-09-08-meeting-outcome')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4413,3 +4386,63 @@ alter view room_vote_result set (security_invoker = false);
 grant select on room_vote_result to anon, authenticated;
 
 update schema_meta set applied_version = '2026-09-06-vote-counting', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- What happened at a meeting
+-- ---------------------------------------------------------------------------
+--
+-- Sixty people came on 7 September and £95.30 went into a bucket against a £75
+-- room. Both of those are facts the page should carry, and the money in
+-- particular: it was given in cash by people who had already given up an
+-- evening, and the only decent thing to do with it is account for it to the
+-- penny where everyone can see.
+--
+-- Stored rather than typed into the page, so the write up can be filled in
+-- once the recording has been gone through without touching the code.
+
+alter table meetings add column if not exists attended int
+  check (attended is null or attended between 0 and 5000);
+alter table meetings add column if not exists donated_pence int
+  check (donated_pence is null or donated_pence >= 0);
+alter table meetings add column if not exists cost_pence int
+  check (cost_pence is null or cost_pence >= 0);
+alter table meetings add column if not exists outcome text
+  check (outcome is null or char_length(outcome) <= 2000);
+
+drop view if exists meeting_counts cascade;
+create view meeting_counts as
+select
+  m.id                 as meeting_id,
+  m.title, m.held_at, m.venue, m.address, m.online_url, m.capacity, m.note, m.status,
+  m.attended, m.donated_pence, m.cost_pence, m.outcome,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'in_person') as in_person,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'online')    as online,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.coming = 'cannot')    as cannot,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.eating is true)       as eating,
+  (select count(*) from meeting_rsvps r
+    where r.meeting_id = m.id and r.eating is false)      as not_eating
+from meetings m
+where m.status <> 'off'
+order by m.held_at nulls last, m.created_at;
+
+alter view meeting_counts set (security_invoker = false);
+grant select on meeting_counts to anon, authenticated;
+
+update meetings
+   set status = 'done',
+       attended = 60,
+       donated_pence = 9530,
+       cost_pence = 7500,
+       outcome = 'It was a genuinely good night. Sixty of you turned up, the questions were '
+                 'sharp and fair, and it felt collaborative rather than a room being talked '
+                 'at. This is the first of several. A fuller account goes up alongside the '
+                 'recording, and the next thing we will ask you is what the Association '
+                 'should actually be for.',
+       updated_at = now()
+ where status <> 'off';
+
+update schema_meta set applied_version = '2026-09-08-meeting-outcome', applied_at = now() where id = 1;

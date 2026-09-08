@@ -7782,3 +7782,7 @@ body.presenting { overflow: hidden; }
    tightest setting. */
 .slide--dense .slide__ask { gap: 1.5cqw; }
 .slide--dense .slide__ask b { font-size: 2.1cqw; }
+
+/* ---- what happened, once it has ------------------------------------------ */
+.outcome { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.outcome__grid { margin: 12px 0 0; }

@@ -8955,6 +8955,7 @@ function viewMeeting() {
 function meetingCard(m) {
   const card = el(`<div class="card meeting"></div>`);
   const planning = m.status === "planning";
+  const done = m.status === "done";
   const when = m.held_at ? new Date(m.held_at) : null;
 
   /* The head: what it is, and how long you have got. A date on its own makes
@@ -8967,15 +8968,22 @@ function meetingCard(m) {
 
   card.append(meetingFacts(m, when, planning));
 
+  /* Once it has happened, what happened comes before everything else. The
+     counts below are who said they were coming; this is who actually did. */
+  if (done) card.append(meetingOutcome(m));
+
   if (planning) {
     card.append(el(`<p class="hint">Nothing is booked. A room costs money, and how big a
       room depends on how many are coming, so the count comes first.</p>`));
   }
 
   /* The count. Public, because it is what decides whether the room gets
-     booked, and everybody paying for it should be able to see it. */
+     booked, and everybody paying for it should be able to see it. Once the
+     meeting has happened it is history and worse than that, it is contradicted
+     by the real attendance directly above it: eleven said they were coming and
+     sixty turned up. */
   const total = (m.in_person || 0) + (m.online || 0);
-  card.append(el(`
+  if (!done) card.append(el(`
     <div class="info-grid info-grid--3 meeting__counts">
       <div class="info"><div class="info__label">In the room</div>
         <div class="info__value" style="color:var(--accent)">${m.in_person || 0}</div></div>
@@ -8987,7 +8995,7 @@ function meetingCard(m) {
 
   /* One line. The room is 120 and that is settled, so a bar filling up implies
      a negotiation that is not happening. */
-  if (m.capacity) {
+  if (m.capacity && !done) {
     const left = m.capacity - (m.in_person || 0);
     card.append(el(`<p class="hint">${left > 0
       ? `${left} place${left === 1 ? "" : "s"} left in the room, of ${m.capacity}.`
@@ -8997,7 +9005,7 @@ function meetingCard(m) {
 
   /* Only once anybody has answered. A food count of nought sitting under an
      empty room says nothing and looks like a failure. */
-  if ((m.eating || 0) + (m.not_eating || 0) > 0) {
+  if (!done && (m.eating || 0) + (m.not_eating || 0) > 0) {
     card.append(el(`<p class="hint meeting__food"><b>${m.eating || 0}</b> would eat on the
       night${m.not_eating ? `, ${m.not_eating} would not` : ""}. That is the number
       No. 1 Smash &amp; Grab need before they commit.</p>`));
@@ -9005,8 +9013,8 @@ function meetingCard(m) {
 
   if (m.note) card.append(el(`<p class="club-overview">${esc(m.note)}</p>`));
 
-  card.append(runningOrder(m, when));
-  card.append(rsvpPanel(m, total));
+  if (!done) card.append(runningOrder(m, when));
+  if (!done) card.append(rsvpPanel(m, total));
   card.append(questionsPanel(m, "question"));
   /* Between the questions and the things we propose to do, because that is
      where it falls on the night: the room has argued, and now it decides. */
@@ -10123,6 +10131,46 @@ function questionsPanel(m, kind = "question") {
 
   build();
   load();
+  return box;
+}
+
+/**
+ * What happened, once it has happened.
+ *
+ * Two numbers and a paragraph. The money is the part worth being careful with:
+ * it went into a bucket in cash, from people who had already given up an
+ * evening, so it is accounted for to the penny in public and without being
+ * made a thing of. Somebody who put a fiver in should be able to see where it
+ * went without asking.
+ */
+function meetingOutcome(m) {
+  const box = el(`<div class="outcome"></div>`);
+  const pounds = (p) => `£${(p / 100).toFixed(2)}`;
+
+  box.append(el(`<div class="info__label">How it went</div>`));
+  if (m.outcome) box.append(el(`<p class="club-overview">${esc(m.outcome)}</p>`));
+
+  const bits = [];
+  if (m.attended != null) bits.push([String(m.attended), "came along"]);
+  if (m.donated_pence != null && m.cost_pence != null) {
+    bits.push([pounds(m.donated_pence), "put in the bucket"]);
+    bits.push([pounds(Math.max(0, m.donated_pence - m.cost_pence)), "left over"]);
+  }
+  if (bits.length) {
+    box.append(el(`
+      <div class="info-grid info-grid--3 outcome__grid">
+        ${bits.map(([v, l]) => `
+          <div class="info"><div class="info__label">${esc(l)}</div>
+            <div class="info__value" style="color:var(--accent)">${esc(v)}</div></div>`).join("")}
+      </div>`));
+  }
+  if (m.donated_pence != null && m.cost_pence != null) {
+    box.append(el(`<p class="hint">The room cost ${esc(pounds(m.cost_pence))}, which the
+      working group had already paid. ${esc(pounds(m.donated_pence))} came back in cash on the
+      night, so that is covered and ${esc(pounds(Math.max(0, m.donated_pence - m.cost_pence)))}
+      carries over towards the next one. Nobody was asked twice and nobody had to give
+      anything.</p>`));
+  }
   return box;
 }
 
