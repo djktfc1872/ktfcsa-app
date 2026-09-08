@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-08-one-mailing-list')
+insert into schema_meta (id, applied_version) values (1, '2026-09-08-unsubscribe-fix')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4627,7 +4627,13 @@ begin
   if not (
        is_moderator()
     or (auth.uid() is not null and v_row.profile_id = auth.uid())
-    or (auth.uid() is not null and lower(btrim((select email from profiles where id = auth.uid()))) = v_email)
+    /* auth.users, not profiles. profiles has no email column and never has:
+       the address lives with the account. Written against the wrong table this
+       raised "column email does not exist" and took the whole function down
+       with it, so nobody could unsubscribe at all - which is the one thing the
+       paper people signed promised them. */
+    or (auth.uid() is not null
+        and lower(btrim((select u.email from auth.users u where u.id = auth.uid()))) = v_email)
     or (nullif(btrim(coalesce(p_key, '')), '') is not null and v_row.device_key = p_key)
   ) then
     raise exception 'You can only remove an address you signed up yourself. Reply to any of our emails and we will take it off for you.';
@@ -4815,4 +4821,4 @@ where p.email_opt_in
 alter view mailing_list set (security_invoker = false);
 grant select on mailing_list to authenticated;
 
-update schema_meta set applied_version = '2026-09-08-one-mailing-list', applied_at = now() where id = 1;
+update schema_meta set applied_version = '2026-09-08-unsubscribe-fix', applied_at = now() where id = 1;
