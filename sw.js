@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v308";
+const CACHE = "ktfcsa-v309";
 
 const SHELL = [
   "./",
@@ -33,6 +33,7 @@ const SHELL = [
   "data/attendances.json",
   "data/extra-fixtures.json",
   "data/cup-details.json",
+  "data/scope.json",
 ];
 
 self.addEventListener("install", (e) => {

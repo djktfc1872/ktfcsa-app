@@ -355,6 +355,8 @@ const ROUTES = {
     group: "Happening now", render: viewConsult },
   letter: { label: "Our Open Letter", short: "Letter", icon: "\u2709\uFE0F", nav: "more",
     group: "Happening now", render: viewLetter },
+  scope: { label: "What should we be for?", short: "Have your say", icon: "\u{1F5F3}\uFE0F",
+    nav: "more", group: "Happening now", render: viewScope },
   meeting: { label: "The First Meeting", short: "Meeting", icon: "\uD83D\uDDE3\uFE0F", nav: "more",
     group: "Happening now", render: viewMeeting },
   home: { label: "Home", short: "Home", icon: ICON.poppy, nav: "tab", group: "Matchday", render: viewHome },
@@ -10312,6 +10314,171 @@ function contactImportPanel() {
       commit.disabled = false;
       toast(err.message || "That did not save.", "bad");
     }
+  });
+  return box;
+}
+
+/**
+ * What should the Association be for.
+ *
+ * Ten points to spread, not a list of tick boxes. Everybody agrees that
+ * holding the club to account and running away travel and saving the archive
+ * all sound good, so asking whether they sound good tells you nothing. Making
+ * people spend a fixed ten forces the question a committee actually has to
+ * answer: which of these first, given we cannot do all of them at once.
+ *
+ * The counter is the whole interface. It says how many are left, it will not
+ * let anybody submit at nine or eleven, and the moment it hits ten the button
+ * comes alive. Then the results, immediately, because seeing where you sit
+ * against everybody else is the reason to bother answering.
+ */
+function viewScope() {
+  const wrap = el(`<div></div>`);
+  wrap.append(el(`
+    <div class="page-head">
+      <h1>What should we actually be for?</h1>
+      <p>Sixty of you came to the first meeting. This is the question we said we would ask
+        next, and it decides what the Association spends its time on.</p>
+    </div>`));
+
+  const box = el(`<div></div>`);
+  wrap.append(box);
+
+  readJSON("data/scope.json").then((cfg) => {
+    if (!cfg || !document.contains(box)) return;
+    const saved = db.read("scopeSpend", null);
+    box.replaceChildren();
+
+    const card = el(`<div class="card"></div>`);
+    card.append(el(`<p class="club-overview" style="margin-top:0">${esc(cfg.intro)}</p>`));
+
+    const spend = {};
+    cfg.options.forEach((o) => { spend[o.key] = saved?.[o.key] ?? 0; });
+    const TOTAL = 10;
+    const used = () => Object.values(spend).reduce((a, b) => a + b, 0);
+
+    const meter = el(`<div class="spend-meter"><b></b><span></span></div>`);
+    card.append(meter);
+
+    const rows = el(`<div class="spend"></div>`);
+    cfg.options.forEach((o) => {
+      const row = el(`
+        <div class="spend__row">
+          <div class="spend__what"><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></div>
+          <div class="spend__pick">
+            <button class="spend__btn" data-d="-1" aria-label="One less on ${esc(o.label)}">&minus;</button>
+            <span class="spend__n" data-n>0</span>
+            <button class="spend__btn" data-d="1" aria-label="One more on ${esc(o.label)}">+</button>
+          </div>
+        </div>`);
+      const n = $("[data-n]", row);
+      row.querySelectorAll(".spend__btn").forEach((b) => b.addEventListener("click", () => {
+        const d = Number(b.dataset.d);
+        const next = spend[o.key] + d;
+        /* Refuse rather than clamp silently: somebody pressing plus on a full
+           ten needs to see why nothing happened. */
+        if (next < 0) return;
+        if (d > 0 && used() >= TOTAL) { meter.classList.add("is-full"); setTimeout(() => meter.classList.remove("is-full"), 400); return; }
+        spend[o.key] = next;
+        n.textContent = String(next);
+        row.classList.toggle("is-on", next > 0);
+        paint();
+      }));
+      n.textContent = String(spend[o.key]);
+      row.classList.toggle("is-on", spend[o.key] > 0);
+      rows.append(row);
+    });
+    card.append(rows);
+
+    const note = el(`<textarea class="input" rows="2" maxlength="400" style="margin-top:12px"
+      placeholder="Anything we have missed? (optional)"></textarea>`);
+    card.append(note);
+
+    const go = el(`<button class="btn" disabled>Send it</button>`);
+    const say = el(`<p class="hint" data-role="say"></p>`);
+    card.append(el(`<div class="btn-row" style="margin-top:10px"></div>`));
+    $(".btn-row", card).append(go);
+    card.append(say);
+
+    const paint = () => {
+      const left = TOTAL - used();
+      $("b", meter).textContent = String(left);
+      $("span", meter).textContent = left === 0
+        ? "all spent, ready to send"
+        : left === 1 ? "point left to spend" : "points left to spend";
+      meter.classList.toggle("is-done", left === 0);
+      go.disabled = left !== 0;
+      db.write("scopeSpend", spend);
+    };
+    paint();
+
+    go.addEventListener("click", async () => {
+      go.disabled = true;
+      say.textContent = "Sending\u2026";
+      try {
+        const most = Object.entries(spend).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+        await db.answerScope(db.consultDeviceKey(), spend, most, note.value.trim());
+        db.write("scopeDone", true);
+        toast("Thank you. Here is where everybody else put theirs.", "good");
+        render();
+      } catch (err) {
+        go.disabled = false;
+        say.textContent = String(err?.message || err);
+      }
+    });
+
+    if (db.read("scopeDone", false)) {
+      card.append(el(`<p class="hint">You have already answered. Change anything above and
+        send it again if you have thought better of it.</p>`));
+    }
+    box.append(card);
+    box.append(scopeResults(cfg));
+  }).catch(() => {
+    box.replaceChildren(el(`<div class="empty"><b>Could not load it</b>Try again shortly.</div>`));
+  });
+
+  return wrap;
+}
+
+/**
+ * Where everybody else put theirs.
+ *
+ * Two numbers per option, because they say different things. Total points is
+ * how much the fanbase wants it; how many people put anything against it is
+ * how widely it is wanted. A thing can top the table because a handful care
+ * enormously, and a ranking that hides that is not worth publishing.
+ */
+function scopeResults(cfg) {
+  const box = el(`<div></div>`);
+  box.append(el(`<h2 class="section-title">Where everybody put theirs</h2>`));
+  const card = el(`<div class="card"><p class="hint" style="margin:0">Counting\u2026</p></div>`);
+  box.append(card);
+
+  const labels = Object.fromEntries(cfg.options.map((o) => [o.key, o.label]));
+  db.scopeResult().then((rows) => {
+    if (!document.contains(card)) return;
+    card.replaceChildren();
+    if (!rows || !rows.length) {
+      card.append(el(`<p class="hint" style="margin:0">Nobody has answered yet. Be the
+        first.</p>`));
+      return;
+    }
+    const answers = rows[0].answers;
+    const top = Math.max(...rows.map((r) => r.points));
+    rows.forEach((r) => {
+      card.append(el(`
+        <div class="spend-res">
+          <div class="spend-res__what">${esc(labels[r.choice] || r.choice)}</div>
+          <div class="spend-res__bar"><i style="width:${Math.round(r.points / top * 100)}%"></i></div>
+          <div class="spend-res__n"><b>${r.points}</b><span>${r.backers} of ${answers}</span></div>
+        </div>`));
+    });
+    card.append(el(`<p class="hint">Points on the left, and how many of the ${answers}
+      ${answers === 1 ? "person" : "people"} who answered put anything at all against it on the
+      right. Something can top the list because a few people care a great deal, which is a
+      different thing from most people caring a bit, so both are shown.</p>`));
+  }).catch(() => {
+    card.replaceChildren(el(`<p class="hint" style="margin:0">Results unavailable.</p>`));
   });
   return box;
 }

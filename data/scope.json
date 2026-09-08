@@ -1,0 +1,22 @@
+{
+  "note": "The options in the scope survey. Drawn from what the room raised on 7 September rather than invented, and deliberately not weighted or ordered by anybody's preference: the point of the exercise is that the ranking comes out of it, not into it.",
+  "intro": "Ten points, spread however you like. You can put them all on one thing or split them across everything. The only rule is that they add up to ten, which means backing something means declining something else. That is what makes the answer worth having.",
+  "options": [
+    { "key": "accountability", "label": "Holding the club to account",
+      "hint": "Questions in writing, published answers, and somebody chasing when nothing comes back." },
+    { "key": "voice", "label": "Getting supporters a proper say",
+      "hint": "A recognised body the club meets regularly, on the record, that speaks for fans rather than about them." },
+    { "key": "matchday", "label": "Matchday and away travel",
+      "hint": "Coaches, tickets, meeting points, and making an away day easier to do." },
+    { "key": "heritage", "label": "The archive and the club's history",
+      "hint": "Programmes, photographs, records and memories, collected before they are lost." },
+    { "key": "community", "label": "Work in the community",
+      "hint": "Schools, charity, food banks, and the club being useful to the town." },
+    { "key": "money", "label": "Raising money for the club",
+      "hint": "Fundraising for things the club needs, decided by supporters." },
+    { "key": "social", "label": "Getting supporters together",
+      "hint": "Meetings, socials, quizzes, and giving people a reason to turn up." },
+    { "key": "app", "label": "The app and communication",
+      "hint": "Keeping this going, and making sure supporters hear things first." }
+  ]
+}

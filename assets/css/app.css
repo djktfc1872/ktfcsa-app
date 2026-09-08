@@ -7786,3 +7786,77 @@ body.presenting { overflow: hidden; }
 /* ---- what happened, once it has ------------------------------------------ */
 .outcome { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .outcome__grid { margin: 12px 0 0; }
+
+/* ---- ten points to spread ------------------------------------------------ */
+
+.spend-meter {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: 14px 0 4px; padding: 10px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface-2, rgba(255,255,255,0.02));
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.spend-meter b {
+  font-size: 1.75rem; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.spend-meter span { font-size: 0.875rem; color: var(--text-2); }
+.spend-meter.is-done { border-color: var(--accent); }
+.spend-meter.is-done b { color: var(--accent); }
+/* A shake would be motion for its own sake. A flash of the edge says "that is
+   the limit" and respects anybody who has turned motion down. */
+.spend-meter.is-full { border-color: var(--bad, #e8848f); }
+
+.spend { display: flex; flex-direction: column; margin-top: 6px; }
+.spend__row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 11px 0; border-top: 1px solid var(--line-soft);
+}
+.spend__what { flex: 1; min-width: 0; }
+.spend__what b { display: block; font-size: 0.9375rem; }
+.spend__what span {
+  display: block; margin-top: 2px; font-size: 0.8125rem;
+  line-height: 1.45; color: var(--text-2);
+}
+.spend__row.is-on .spend__what b { color: var(--accent); }
+.spend__pick { display: flex; align-items: center; gap: 4px; flex: none; }
+.spend__btn {
+  width: 34px; height: 34px; flex: none;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: transparent; color: var(--text);
+  font-size: 1.125rem; line-height: 1; cursor: pointer;
+}
+.spend__btn:hover { border-color: var(--accent); color: var(--accent); }
+.spend__n {
+  min-width: 1.9rem; text-align: center;
+  font-size: 1.0625rem; font-weight: 800; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.spend__row.is-on .spend__n { color: var(--accent); }
+
+.spend-res {
+  display: grid; grid-template-columns: minmax(0, 1fr) 4.5rem;
+  gap: 4px 12px; align-items: center;
+  padding: 9px 0; border-top: 1px solid var(--line-soft);
+}
+.spend-res:first-child { border-top: 0; }
+.spend-res__what { font-size: 0.9375rem; }
+.spend-res__bar {
+  grid-column: 1; height: 6px; border-radius: 999px;
+  background: var(--line-soft); overflow: hidden;
+}
+.spend-res__bar i {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--accent); min-width: 2px;
+}
+.spend-res__n { grid-row: 1 / 3; grid-column: 2; text-align: right; }
+.spend-res__n b {
+  display: block; font-size: 1.125rem; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.spend-res__n span { display: block; font-size: 0.75rem; color: var(--text-3); }
+
+@media (max-width: 460px) {
+  .spend__row { gap: 10px; }
+  .spend__what span { font-size: 0.78125rem; }
+}

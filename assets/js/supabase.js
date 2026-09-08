@@ -753,6 +753,20 @@ class Backend {
 
   /* Scoped, because every vote hangs off a meeting and without this the
      letters page and the meeting page showed each other's. */
+  /* ------------------------------------------------------- the scope survey */
+
+  async answerScope(key, spend, most, note) {
+    const { error } = await this.sb.rpc("answer_scope", {
+      p_key: key, p_spend: spend, p_most: most || null, p_note: note || null });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async scopeResult() {
+    const { data, error } = await this.sb.from("scope_result").select("*");
+    if (error) return null;
+    return data || [];
+  }
+
   /* ------------------------------------------------------ the contact list */
 
   async joinContacts(name, email, helps, consent) {

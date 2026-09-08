@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-08-contacts')
+insert into schema_meta (id, applied_version) values (1, '2026-09-08-scope-survey')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4621,3 +4621,109 @@ alter view contact_summary set (security_invoker = true);
 grant select on contact_summary to authenticated;
 
 update schema_meta set applied_version = '2026-09-08-contacts', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- What should the Association actually be for
+-- ---------------------------------------------------------------------------
+--
+-- The August consultation asked what supporters thought of the club. This asks
+-- something different and much harder to answer honestly: out of everything an
+-- Association could do, what should this one do first.
+--
+-- It is a points allocation rather than a list of tick boxes, and that is the
+-- whole design. Ticking boxes produces a survey where every option scores
+-- highly and nothing is decided, because agreeing costs nothing. Ten points to
+-- spread means backing one thing is declining another, which is what a
+-- priority actually is, and it produces a ranking with the disagreement still
+-- visible inside it.
+--
+-- Same shape as everything else people answer without an account: a device
+-- key, one answer per device, changeable while it is open.
+
+create table if not exists scope_answers (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid references profiles on delete set null,
+  device_key text not null check (char_length(device_key) between 8 and 64),
+  -- {"accountability": 4, "matchday": 3, ...}. Validated in the function,
+  -- because a check constraint cannot count the values in an object.
+  spend jsonb not null,
+  most_important text,
+  note text check (note is null or char_length(note) <= 400),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists scope_device_idx on scope_answers (device_key);
+
+alter table scope_answers enable row level security;
+
+-- No select policy for anybody. The results come from the view below as
+-- totals; an individual person's allocation is nobody's business.
+drop policy if exists "volunteers read scope" on scope_answers;
+create policy "volunteers read scope" on scope_answers
+  for select using (is_admin());
+
+create or replace function answer_scope(
+  p_key text, p_spend jsonb, p_most text, p_note text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_key text := nullif(btrim(coalesce(p_key, '')), '');
+  v_total int := 0;
+  v_val int;
+  k text;
+begin
+  if v_key is null then raise exception 'We need to know which browser this came from.'; end if;
+  if jsonb_typeof(p_spend) <> 'object' then raise exception 'That answer is not readable.'; end if;
+
+  for k in select jsonb_object_keys(p_spend) loop
+    v_val := (p_spend ->> k)::int;
+    if v_val < 0 or v_val > 10 then
+      raise exception 'Each one takes between nought and ten points.';
+    end if;
+    v_total := v_total + v_val;
+  end loop;
+
+  /* Ten exactly. Fewer means somebody gave up half way and the answer is not
+     comparable with anybody else's; more means the page let them cheat. */
+  if v_total <> 10 then
+    raise exception 'That comes to %, and it needs to come to ten.', v_total;
+  end if;
+
+  insert into scope_answers (profile_id, device_key, spend, most_important, note)
+  values (auth.uid(), v_key, p_spend, nullif(btrim(coalesce(p_most,'')), ''),
+          nullif(btrim(coalesce(p_note,'')), ''))
+  on conflict (device_key) do update
+    set spend = excluded.spend,
+        most_important = excluded.most_important,
+        note = excluded.note,
+        profile_id = coalesce(excluded.profile_id, scope_answers.profile_id),
+        updated_at = now();
+end $$;
+
+revoke all on function answer_scope(text, jsonb, text, text) from public;
+grant execute on function answer_scope(text, jsonb, text, text) to anon, authenticated;
+
+-- The result: totals per option, and how many people put anything at all
+-- against it. Both matter. One thing can win on total because a handful of
+-- people care enormously, which is a different fact from most people caring a
+-- bit, and a ranking that hides the difference is not worth publishing.
+drop view if exists scope_result cascade;
+create view scope_result as
+select
+  e.key                                   as choice,
+  sum((e.value #>> '{}')::int)::int       as points,
+  count(*) filter (where (e.value #>> '{}')::int > 0)::int as backers,
+  (select count(*) from scope_answers)::int as answers
+from scope_answers a
+cross join lateral jsonb_each(a.spend) e
+group by e.key
+order by points desc, backers desc, choice;
+
+alter view scope_result set (security_invoker = false);
+grant select on scope_result to anon, authenticated;
+
+update schema_meta set applied_version = '2026-09-08-scope-survey', applied_at = now() where id = 1;
