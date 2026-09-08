@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-08-scope-survey')
+insert into schema_meta (id, applied_version) values (1, '2026-09-08-contacts-own-removal')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4496,6 +4496,10 @@ create table if not exists contacts (
 -- somebody two copies of everything.
 create unique index if not exists contacts_email_idx on contacts (lower(btrim(email)));
 
+-- Which browser signed this address up, so somebody can take themselves off
+-- again without an account. Never shown and never exported.
+alter table contacts add column if not exists device_key text;
+
 alter table contacts enable row level security;
 
 -- Nobody reads this but a volunteer. It is a list of names and addresses given
@@ -4510,7 +4514,8 @@ create policy "admins manage contacts" on contacts
 
 -- Signing yourself up. No account needed, and the wording agreed to is stored
 -- rather than assumed, so it matches whatever the form actually said.
-create or replace function join_contacts(p_name text, p_email text, p_helps text, p_consent text)
+create or replace function join_contacts(
+  p_name text, p_email text, p_helps text, p_consent text, p_key text default null)
 returns void
 language plpgsql
 security definer
@@ -4530,18 +4535,23 @@ begin
     raise exception 'The wording being agreed to has to be recorded.';
   end if;
 
-  insert into contacts (name, email, source, consent_text, profile_id, helps_with)
-  values (v_name, v_email, 'site', p_consent, auth.uid(), nullif(btrim(coalesce(p_helps,'')), ''))
+  insert into contacts (name, email, source, consent_text, profile_id, helps_with, device_key)
+  values (v_name, v_email, 'site', p_consent, auth.uid(),
+          nullif(btrim(coalesce(p_helps,'')), ''), nullif(btrim(coalesce(p_key,'')), ''))
   on conflict (lower(btrim(email))) do update
     set name = excluded.name,
         helps_with = coalesce(excluded.helps_with, contacts.helps_with),
         unsubscribed_at = null,        -- signing up again is asking to come back
         consented_at = now(),
-        consent_text = excluded.consent_text;
+        consent_text = excluded.consent_text,
+        /* Kept if it was already there, so a second sign-up from a new phone
+           does not lock the first one out of removing itself. */
+        device_key = coalesce(contacts.device_key, excluded.device_key);
 end $$;
 
-revoke all on function join_contacts(text, text, text, text) from public;
-grant execute on function join_contacts(text, text, text, text) to anon, authenticated;
+revoke all on function join_contacts(text, text, text, text, text) from public;
+grant execute on function join_contacts(text, text, text, text, text) to anon, authenticated;
+drop function if exists join_contacts(text, text, text, text);
 
 -- Typing up the paper sheets. Admin only, one row per line, and it reports
 -- what it did rather than silently swallowing a malformed address.
@@ -4590,20 +4600,45 @@ grant execute on function import_contacts(jsonb, text) to authenticated;
 
 -- Taking yourself off it, which the paper promised. Stamped rather than
 -- deleted, so the same address does not get re-imported off an old sheet.
-create or replace function leave_contacts(p_email text)
+-- Taking yourself off it.
+--
+-- This used to take an address and nothing else, granted to anon, which meant
+-- anybody who knew somebody's address could take them off the list. Nobody
+-- would have noticed until a supporter said they had stopped getting the
+-- emails they had asked for.
+--
+-- Now you can only remove an address you can show some claim to: the one on
+-- your signed-in account, or one signed up from this browser. A volunteer can
+-- still remove anybody, because people ask by reply and somebody has to be
+-- able to action it.
+create or replace function leave_contacts(p_email text, p_key text default null)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_email text := lower(btrim(coalesce(p_email, '')));
+  v_row   contacts;
 begin
-  update contacts set unsubscribed_at = now()
-   where lower(btrim(email)) = lower(btrim(coalesce(p_email, '')));
-  if not found then raise exception 'That address is not on the list.'; end if;
+  select * into v_row from contacts where lower(btrim(email)) = v_email;
+  if v_row.id is null then raise exception 'That address is not on the list.'; end if;
+
+  if not (
+       is_moderator()
+    or (auth.uid() is not null and v_row.profile_id = auth.uid())
+    or (auth.uid() is not null and lower(btrim((select email from profiles where id = auth.uid()))) = v_email)
+    or (nullif(btrim(coalesce(p_key, '')), '') is not null and v_row.device_key = p_key)
+  ) then
+    raise exception 'You can only remove an address you signed up yourself. Reply to any of our emails and we will take it off for you.';
+  end if;
+
+  update contacts set unsubscribed_at = now() where id = v_row.id;
 end $$;
 
-revoke all on function leave_contacts(text) from public;
-grant execute on function leave_contacts(text) to anon, authenticated;
+revoke all on function leave_contacts(text, text) from public;
+grant execute on function leave_contacts(text, text) to anon, authenticated;
+drop function if exists leave_contacts(text);
 
 -- Volunteers only, and counts rather than addresses, so the size of the list
 -- can be shown without putting it on a page.
@@ -4726,4 +4761,4 @@ order by points desc, backers desc, choice;
 alter view scope_result set (security_invoker = false);
 grant select on scope_result to anon, authenticated;
 
-update schema_meta set applied_version = '2026-09-08-scope-survey', applied_at = now() where id = 1;
+update schema_meta set applied_version = '2026-09-08-contacts-own-removal', applied_at = now() where id = 1;

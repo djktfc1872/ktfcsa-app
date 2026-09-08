@@ -204,11 +204,11 @@ export const answerScope = (key, spend, most, note) =>
 export const scopeResult = () =>
   (backend?.scopeResult ? backend.scopeResult() : Promise.resolve(null));
 
-export const joinContacts = (name, email, helps, consent) =>
-  (backend?.joinContacts ? backend.joinContacts(name, email, helps, consent)
+export const joinContacts = (name, email, helps, consent, key) =>
+  (backend?.joinContacts ? backend.joinContacts(name, email, helps, consent, key)
     : Promise.reject(new Error("Not connected.")));
-export const leaveContacts = (email) =>
-  (backend?.leaveContacts ? backend.leaveContacts(email)
+export const leaveContacts = (email, key) =>
+  (backend?.leaveContacts ? backend.leaveContacts(email, key)
     : Promise.reject(new Error("Not connected.")));
 export const importContacts = (rows, consent) =>
   (backend?.importContacts ? backend.importContacts(rows, consent)

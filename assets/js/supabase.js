@@ -769,14 +769,16 @@ class Backend {
 
   /* ------------------------------------------------------ the contact list */
 
-  async joinContacts(name, email, helps, consent) {
+  async joinContacts(name, email, helps, consent, key) {
     const { error } = await this.sb.rpc("join_contacts", {
-      p_name: name, p_email: email, p_helps: helps || null, p_consent: consent });
+      p_name: name, p_email: email, p_helps: helps || null, p_consent: consent,
+      p_key: key || null });
     if (error) throw new Error(friendly(error));
   }
 
-  async leaveContacts(email) {
-    const { error } = await this.sb.rpc("leave_contacts", { p_email: email });
+  async leaveContacts(email, key) {
+    const { error } = await this.sb.rpc("leave_contacts", {
+      p_email: email, p_key: key || null });
     if (error) throw new Error(friendly(error));
   }
 

@@ -9042,22 +9042,15 @@ function meetingCard(m) {
      headcount for something that already happened. */
   if (done) card.append(contactPanel());
 
-  /* The questions, the vote and the proposals were for the night and the night
-     has happened. They come back on the recording page, next to the video, so
-     the discussion carries on where there is something to discuss rather than
-     sitting under a meeting that is over. Before the meeting they still belong
-     here, which is why this is conditional rather than deleted. */
-  if (!done) {
-    card.append(questionsPanel(m, "question"));
-    card.append(meetingVotes(m));
-    card.append(questionsPanel(m, "proposal"));
-  }
+  /* The questions, the vote and the proposals were for the night, and so was
+     the list of who said they were coming. All of it is gone rather than left
+     dormant: a page that keeps its scaffolding after the event is how an app
+     ends up with six things nobody uses. What is worth keeping from the night
+     is the record, and that lives on the deck.
 
-  /* Volunteers only, and invisible to everybody else, so these are not part of
-     what a supporter sees below the sign-up. The recording link box has to stay
-     reachable: it is how the video gets published. */
+     The recording box stays, admin only, because it is how the video gets
+     published. */
   if (db.isAdmin()) card.append(streamPanel(m));
-  if (db.isModerator()) card.append(rsvpList(m));
 
   return card;
 }
@@ -9897,35 +9890,6 @@ function wireDeck(wrap, stack, bar) {
 }
 
 /**
- * The vote the room takes on the night.
- *
- * The same panel the letters page uses, scoped to this meeting. It is drafted
- * ahead of time so the wording is settled in daylight rather than typed into a
- * phone at half eight, and it stays closed until a volunteer opens it: a vote
- * left open all week is a poll, and a poll is not what the deck promises.
- *
- * A draft is visible to whoever runs the site and to nobody else, so the page
- * never advertises a vote that has not started.
- */
-function meetingVotes(m) {
-  const box = el(`<div class="meeting-votes"></div>`);
-  db.roomVotes(m.meeting_id, "meeting").then((votes) => {
-    if (!votes || !document.contains(box)) return;
-    const show = votes.filter((v) => v.state !== "draft" || db.isAdmin());
-    if (!show.length) return;
-    box.append(el(`<div class="info__label" style="margin-top:16px">The vote</div>`));
-    show.forEach((v) => {
-      if (v.state === "draft") {
-        box.append(el(`<p class="hint">Not open yet, and only you can see it. Open it from
-          the panel below when the room is ready.</p>`));
-      }
-      box.append(roomVotePanel(v));
-    });
-  }).catch(() => {});
-  return box;
-}
-
-/**
  * Questions for the floor, and proposals for what happens next.
  *
  * One renderer for both, because they are the same object with a different
@@ -9944,6 +9908,10 @@ function meetingVotes(m) {
  * so the count of helpers is deliberately as prominent as the count of
  * backers, and a proposal with none says so in as many words.
  */
+/* Not mounted anywhere at the moment. The meeting it belonged to has
+   happened; this goes back on the recording page, next to the video, so the
+   discussion carries on where there is something to discuss. Kept rather than
+   deleted because that page is days away, not months. */
 function questionsPanel(m, kind = "question") {
   const proposal = kind === "proposal";
 
@@ -10522,7 +10490,7 @@ function contactPanel() {
       const email = window.prompt("Which address should we remove?");
       if (!email) return;
       try {
-        await db.leaveContacts(email.trim());
+        await db.leaveContacts(email.trim(), db.consultDeviceKey());
         db.write("joinedList", false);
         toast("Removed. Sorry to see you go.", "good");
         render();
@@ -10546,7 +10514,7 @@ function contactPanel() {
     say.textContent = "Adding\u2026";
     try {
       await db.joinContacts(name.value.trim(), email.value.trim(), helps.value.trim(),
-        CONTACT_CONSENT);
+        CONTACT_CONSENT, db.consultDeviceKey());
       db.write("joinedList", true);
       toast("You are on the list. Thank you.", "good");
       render();
@@ -10660,80 +10628,6 @@ function streamPanel(m) {
   $('[data-act="save"]', box).addEventListener("click", () => save(input.value));
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") save(input.value); });
   $('[data-act="clear"]', box)?.addEventListener("click", () => save(""));
-
-  return box;
-}
-
-/**
- * Who has said they are coming, for whoever has to book the room and tell
- * people if it changes.
- *
- * The addresses come out semicolon separated, which is what a mail client
- * wants pasted into Bcc. Bcc rather than To, and the button says so: a hundred
- * supporters' email addresses shown to each other is a data breach somebody
- * has to report, not a mistake you tidy up afterwards.
- */
-function rsvpList(m) {
-  const box = el(`<div class="rsvp-list"></div>`);
-
-  db.meetingList(m.meeting_id).then((rows) => {
-    if (!rows.length) {
-      box.append(el(`<p class="hint">Nobody has said yet.</p>`));
-      return;
-    }
-
-    const label = { in_person: "In the room", online: "Catching up after", cannot: "Keeping posted" };
-    const mails = [...new Set(rows.map((r) => (r.email || "").trim().toLowerCase())
-      .filter((e) => e.includes("@")))];
-
-    box.append(el(`<div class="info__label">Who has said</div>`));
-
-    ["in_person", "online", "cannot"].forEach((kind) => {
-      const some = rows.filter((r) => r.coming === kind);
-      if (!some.length) return;
-      box.append(el(`<p class="rsvp-list__group"><b>${esc(label[kind])} (${some.length})</b>
-        ${esc(some.map((r) => r.name || "no name given").join(", "))}</p>`));
-    });
-
-    const row = el(`<div class="btn-row" style="margin-top:10px"></div>`);
-    if (mails.length) {
-      const b = el(`<button class="btn btn--sm">Copy ${mails.length} email address${
-        mails.length === 1 ? "" : "es"}</button>`);
-      b.addEventListener("click", () => {
-        const text = mails.join(";");
-        copyText(text).then((ok) => {
-          if (ok) {
-            b.textContent = "Copied \u2014 paste into Bcc";
-            setTimeout(() => { b.textContent = `Copy ${mails.length} email addresses`; }, 3000);
-            return;
-          }
-          modal(`
-            <h3 style="margin:0 0 8px">${mails.length} addresses</h3>
-            <p class="hint" style="margin-bottom:10px">Press and hold to copy, then paste into
-              Bcc.</p>
-            <textarea readonly rows="6" style="width:100%">${esc(text)}</textarea>`);
-        });
-      });
-      row.append(b);
-    }
-
-    const names = el(`<button class="btn btn--sm btn--ghost">Copy the names</button>`);
-    names.addEventListener("click", () => {
-      const text = rows.map((r) => `${r.name || "no name given"} - ${label[r.coming]}`).join("\n");
-      copyText(text).then((ok) => {
-        if (ok) { names.textContent = "Copied"; setTimeout(() => { names.textContent = "Copy the names"; }, 2500); }
-        else modal(`<h3 style="margin:0 0 8px">The list</h3>
-          <textarea readonly rows="10" style="width:100%">${esc(text)}</textarea>`);
-      });
-    });
-    row.append(names);
-    box.append(row);
-
-    const without = rows.length - mails.length;
-    box.append(el(`<p class="hint">${mails.length} of ${rows.length} left an email${
-      without ? `, so ${without} can only be told through the app or Facebook` : ""}.
-      <b>Paste into Bcc, never To.</b> Only you and the other volunteers see this.</p>`));
-  }).catch(() => { box.append(el(`<p class="hint">Could not read the list.</p>`)); });
 
   return box;
 }
