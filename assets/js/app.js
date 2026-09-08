@@ -9041,20 +9041,22 @@ function meetingCard(m) {
   /* Once it has been, the thing to ask for is an address rather than a
      headcount for something that already happened. */
   if (done) card.append(contactPanel());
-  card.append(questionsPanel(m, "question"));
-  /* Between the questions and the things we propose to do, because that is
-     where it falls on the night: the room has argued, and now it decides. */
-  card.append(meetingVotes(m));
-  card.append(questionsPanel(m, "proposal"));
 
-  /* Setting the stream link, for whoever is standing in the pub when it starts.
-     Admins only, matching the policy on meetings: a moderator can read the
-     guest list but cannot change what the meeting is. */
+  /* The questions, the vote and the proposals were for the night and the night
+     has happened. They come back on the recording page, next to the video, so
+     the discussion carries on where there is something to discuss rather than
+     sitting under a meeting that is over. Before the meeting they still belong
+     here, which is why this is conditional rather than deleted. */
+  if (!done) {
+    card.append(questionsPanel(m, "question"));
+    card.append(meetingVotes(m));
+    card.append(questionsPanel(m, "proposal"));
+  }
+
+  /* Volunteers only, and invisible to everybody else, so these are not part of
+     what a supporter sees below the sign-up. The recording link box has to stay
+     reachable: it is how the video gets published. */
   if (db.isAdmin()) card.append(streamPanel(m));
-
-  /* The list, and a way to get the addresses out. Volunteers only: the policy
-     on meeting_rsvps refuses everybody else, so for a supporter this asks for
-     nothing and appends nothing. */
   if (db.isModerator()) card.append(rsvpList(m));
 
   return card;
