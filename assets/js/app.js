@@ -10143,22 +10143,25 @@ function contactListPanel() {
   const body = el(`<div>Loading.</div>`);
   box.append(body);
 
-  Promise.all([db.contactSummary(), db.contactList()]).then(([sum, rows]) => {
+  db.contactList().then((rows) => {
     if (!document.contains(body)) return;
     body.replaceChildren();
-    if (!sum) { body.append(el(`<p class="hint">Not available.</p>`)); return; }
+    if (!rows) { body.append(el(`<p class="hint">Not available.</p>`)); return; }
+
+    /* The view only ever contains people we may email, so there is nothing to
+       filter out here. Doing it in the query rather than the page means the
+       page cannot forget. */
+    const live = rows;
 
     body.append(el(`
       <div class="info-grid info-grid--3" style="margin:10px 0">
         <div class="info"><div class="info__label">On the list</div>
-          <div class="info__value" style="color:var(--accent)">${sum.live}</div></div>
+          <div class="info__value" style="color:var(--accent)">${live.length}</div></div>
         <div class="info"><div class="info__label">From the paper</div>
-          <div class="info__value">${sum.from_paper}</div></div>
-        <div class="info"><div class="info__label">Offered to help</div>
-          <div class="info__value">${sum.offered_help}</div></div>
+          <div class="info__value">${live.filter((r) => r.source === "paper").length}</div></div>
+        <div class="info"><div class="info__label">From the app</div>
+          <div class="info__value">${live.filter((r) => r.via === "app account").length}</div></div>
       </div>`));
-
-    const live = (rows || []).filter((r) => !r.unsubscribed_at);
     const copy = el(`<button class="btn btn--sm">Copy the addresses</button>`);
     copy.addEventListener("click", async () => {
       const line = live.map((r) => r.email).join(";");

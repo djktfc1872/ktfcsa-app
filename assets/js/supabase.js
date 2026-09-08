@@ -797,10 +797,12 @@ class Backend {
 
   /* Volunteers only by policy, so this returns nothing for anybody else
      rather than needing a check here as well. */
+  /* Both lists, deduped, from the view. Reading the contacts table directly
+     missed everybody who opted in from inside the app. */
   async contactList() {
-    const { data, error } = await this.sb.from("contacts")
-      .select("id, name, email, source, helps_with, unsubscribed_at, created_at")
-      .order("created_at", { ascending: false });
+    const { data, error } = await this.sb.from("mailing_list")
+      .select("via, name, email, source, helps_with, consented_at")
+      .order("consented_at", { ascending: false });
     if (error) return null;
     return data || [];
   }

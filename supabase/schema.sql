@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-08-contacts-own-removal')
+insert into schema_meta (id, applied_version) values (1, '2026-09-08-one-mailing-list')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4762,3 +4762,57 @@ alter view scope_result set (security_invoker = false);
 grant select on scope_result to anon, authenticated;
 
 update schema_meta set applied_version = '2026-09-08-contacts-own-removal', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- Everybody we are allowed to email, in one place
+-- ---------------------------------------------------------------------------
+--
+-- There were two lists and only one of them was reachable. Supporters with an
+-- account who tapped "yes, keep me posted" set profiles.email_opt_in, and the
+-- export button read the contacts table, so every one of them was invisible to
+-- a campaign they had explicitly agreed to receive. Nobody would have found out
+-- except by somebody asking why they never got the email they said yes to.
+--
+-- One view over both. contacts wins a clash because it carries the exact
+-- wording that person agreed to, which the boolean on a profile does not.
+--
+-- Definer, so it can read auth.users for the account addresses, which means it
+-- has to check who is asking itself: a definer view does not get RLS.
+
+drop view if exists mailing_list cascade;
+create view mailing_list as
+select
+  'signed up here'::text          as via,
+  c.name                          as name,
+  lower(btrim(c.email))           as email,
+  c.source                        as source,
+  c.helps_with                    as helps_with,
+  c.consented_at                  as consented_at
+from contacts c
+where c.unsubscribed_at is null
+  and is_moderator()
+
+union all
+
+select
+  'app account',
+  coalesce(p.display_name, 'Supporter'),
+  lower(btrim(u.email)),
+  'app',
+  null,
+  p.email_opt_in_at
+from profiles p
+join auth.users u on u.id = p.id
+where p.email_opt_in
+  and p.dormant = false
+  and u.email is not null
+  and is_moderator()
+  /* One person, one line. Somebody who signed the paper and has an account is
+     already above, with better provenance. */
+  and lower(btrim(u.email)) not in (
+        select lower(btrim(email)) from contacts where unsubscribed_at is null);
+
+alter view mailing_list set (security_invoker = false);
+grant select on mailing_list to authenticated;
+
+update schema_meta set applied_version = '2026-09-08-one-mailing-list', applied_at = now() where id = 1;
