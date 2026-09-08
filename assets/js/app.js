@@ -8937,8 +8937,7 @@ function viewMeeting() {
 
   db.meetings().then((rows) => {
     box.replaceChildren();
-    const live = rows.filter((m) => m.status !== "done");
-    if (!live.length) {
+    if (!rows.length) {
       box.append(el(`
         <div class="card">
           <p class="club-overview" style="margin:0">Nothing is booked yet. The date and the venue
@@ -8947,7 +8946,25 @@ function viewMeeting() {
         </div>`));
       return;
     }
-    live.forEach((m) => box.append(meetingCard(m)));
+
+    /* A finished meeting used to be filtered out entirely, so the morning
+       after sixty people turned up this page said "nothing is booked yet".
+       What happened is the most interesting thing on it, not something to
+       hide. Upcoming first, then the ones that have been, newest first. */
+    const upcoming = rows.filter((m) => m.status !== "done");
+    const past = rows.filter((m) => m.status === "done")
+      .sort((a, b) => String(b.held_at || "").localeCompare(String(a.held_at || "")));
+
+    upcoming.forEach((m) => box.append(meetingCard(m)));
+    if (past.length) {
+      box.append(el(`<h2 class="section-title">${upcoming.length
+        ? "The last one" : "How the first one went"}</h2>`));
+      past.forEach((m) => box.append(meetingCard(m)));
+    }
+    if (!upcoming.length) {
+      box.append(el(`<p class="hint">The next one is not booked yet. Leave an address above and
+        you will hear about it first.</p>`));
+    }
   }).catch(() => {
     box.replaceChildren();
     box.append(el(`<div class="empty"><b>Could not load it</b>Try again in a moment.</div>`));
