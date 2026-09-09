@@ -1,8 +1,15 @@
 {
-  "updated": "2026-09-08T22:56:38.870Z",
+  "updated": "2026-09-09T12:19:36.771Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "Ac4lqZqDMqU",
+      "title": "Post Match Interview | Kettering Town 2-1 Wellingborough Town (08/09/2026)",
+      "published": "2026-09-08T23:37:37+00:00",
+      "kind": "interview",
+      "fixtureId": "6a9d8f33119b8f4072e2540f"
+    },
     {
       "videoId": "ugvsqLGMEFg",
       "title": "Kettering Town VS Wellingborough Town | LIVE COMMENTARY",

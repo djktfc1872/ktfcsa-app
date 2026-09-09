@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T22:56:37.149Z",
+  "updated": "2026-09-09T12:19:35.009Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1014,7 +1014,7 @@
         "cards": [
           {
             "name": "Luca Miller",
-            "minute": 23,
+            "minute": 21,
             "ours": false,
             "type": null,
             "second": false,
@@ -1038,7 +1038,7 @@
           },
           {
             "name": "Joe Burgess",
-            "minute": 60,
+            "minute": 59,
             "ours": false,
             "type": null,
             "second": false,
@@ -1046,7 +1046,7 @@
           },
           {
             "name": "George Hobbins",
-            "minute": 62,
+            "minute": 61,
             "ours": false,
             "type": null,
             "second": false,
@@ -1054,7 +1054,7 @@
           },
           {
             "name": "Carl  Mensah",
-            "minute": 73,
+            "minute": 72,
             "ours": false,
             "type": null,
             "second": false,
@@ -1062,7 +1062,7 @@
           },
           {
             "name": "Ben Hart",
-            "minute": 73,
+            "minute": 72,
             "ours": false,
             "type": null,
             "second": false,
