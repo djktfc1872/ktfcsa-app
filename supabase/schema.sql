@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-10-match-details')
+insert into schema_meta (id, applied_version) values (1, '2026-09-10-site-docs')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4896,3 +4896,116 @@ revoke all on function set_match_goals(text, jsonb, text) from public;
 grant execute on function set_match_goals(text, jsonb, text) to authenticated;
 
 update schema_meta set applied_version = '2026-09-10-match-details', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- Editing the site from the site
+-- ---------------------------------------------------------------------------
+--
+-- Most of what the app says lives in JSON files in the repository, which means
+-- changing a word needs somebody with a code editor. That makes the
+-- Association's own words depend on one person being available, which is the
+-- thing the whole project keeps arguing against.
+--
+-- Every content file is read through one function in the app, so an override
+-- here reaches all of them at once.
+--
+-- The list of keys is the important part. Roughly half the data files are
+-- written by scripts - the league feed, the quiz bank, the squad, attendances.
+-- An override on one of those would silently mask everything the script wrote
+-- next and the app would go quietly stale with no symptom at all. So the keys
+-- that may be overridden are fixed here, in a constraint, rather than merely
+-- being the ones the interface happens to offer.
+
+create table if not exists site_docs (
+  key text primary key check (key in (
+    'deck.json', 'agenda.json', 'scope.json', 'open-letter.json',
+    'association.json', 'club-overviews.json', 'points.json',
+    'parking.json', 'pubs-nearby.json', 'ground-links.json',
+    'extra-fixtures.json'
+  )),
+  live jsonb,
+  draft jsonb,
+  previous jsonb,
+  updated_by uuid references profiles on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+comment on table site_docs is
+  'Overrides for the hand written content files. live is what everybody sees; draft is what an admin previewing sees; previous is one step of undo. Anything a script generates is deliberately not in the key list.';
+
+alter table site_docs enable row level security;
+
+-- Everybody may read what is published. Nobody but an admin sees a draft, so
+-- the columns are split across two policies rather than one.
+drop policy if exists "published content readable" on site_docs;
+create policy "published content readable" on site_docs for select using (true);
+
+drop policy if exists "admins write content" on site_docs;
+create policy "admins write content" on site_docs
+  for all using (is_admin()) with check (is_admin());
+
+-- What the public is allowed to see: the live document and nothing else. The
+-- draft is filtered out here rather than trusted to the client.
+drop view if exists site_content cascade;
+create view site_content as
+  select key, live, (draft is not null) as has_draft, updated_at
+    from site_docs where live is not null or is_admin();
+
+alter view site_content set (security_invoker = true);
+grant select on site_content to anon, authenticated;
+
+create or replace function save_content_draft(p_key text, p_doc jsonb)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'Only a volunteer can edit the site.'; end if;
+  if p_doc is null or jsonb_typeof(p_doc) not in ('object', 'array') then
+    raise exception 'That is not a document.';
+  end if;
+  insert into site_docs (key, draft, updated_by, updated_at)
+  values (p_key, p_doc, auth.uid(), now())
+  on conflict (key) do update
+    set draft = excluded.draft, updated_by = excluded.updated_by, updated_at = now();
+end $$;
+
+create or replace function publish_content(p_key text)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare d jsonb; l jsonb;
+begin
+  if not is_admin() then raise exception 'Only a volunteer can publish.'; end if;
+  select draft, live into d, l from site_docs where key = p_key;
+  if d is null then raise exception 'There is no draft to publish.'; end if;
+  update site_docs
+     set live = d, previous = l, draft = null, updated_by = auth.uid(), updated_at = now()
+   where key = p_key;
+end $$;
+
+-- Back one step, and if there is nothing to go back to the row goes entirely
+-- and the app falls through to the file that ships with it. That fallback is
+-- what makes this safe to experiment with.
+create or replace function revert_content(p_key text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare p jsonb;
+begin
+  if not is_admin() then raise exception 'Only a volunteer can revert.'; end if;
+  select previous into p from site_docs where key = p_key;
+  if p is null then
+    delete from site_docs where key = p_key;
+    return 'file';
+  end if;
+  update site_docs
+     set live = p, previous = null, draft = null, updated_by = auth.uid(), updated_at = now()
+   where key = p_key;
+  return 'previous';
+end $$;
+
+revoke all on function save_content_draft(text, jsonb) from public;
+revoke all on function publish_content(text) from public;
+revoke all on function revert_content(text) from public;
+grant execute on function save_content_draft(text, jsonb) to authenticated;
+grant execute on function publish_content(text) to authenticated;
+grant execute on function revert_content(text) to authenticated;
+
+update schema_meta set applied_version = '2026-09-10-site-docs', applied_at = now() where id = 1;

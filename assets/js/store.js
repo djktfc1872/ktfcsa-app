@@ -198,6 +198,20 @@ export const setMeetingStream = (id, url) =>
   (backend?.setMeetingStream ? backend.setMeetingStream(id, url)
     : Promise.reject(new Error("Not connected.")));
 
+export const siteContent = () =>
+  (backend?.siteContent ? backend.siteContent() : Promise.resolve(null));
+export const contentDrafts = () =>
+  (backend?.contentDrafts ? backend.contentDrafts() : Promise.resolve(null));
+export const saveContentDraft = (key, doc) =>
+  (backend?.saveContentDraft ? backend.saveContentDraft(key, doc)
+    : Promise.reject(new Error("Not connected.")));
+export const publishContent = (key) =>
+  (backend?.publishContent ? backend.publishContent(key)
+    : Promise.reject(new Error("Not connected.")));
+export const revertContent = (key) =>
+  (backend?.revertContent ? backend.revertContent(key)
+    : Promise.reject(new Error("Not connected.")));
+
 export const matchDetails = () =>
   (backend?.matchDetails ? backend.matchDetails() : Promise.resolve(null));
 export const setMatchGoals = (id, goals, note) =>

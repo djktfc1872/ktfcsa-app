@@ -753,6 +753,38 @@ class Backend {
 
   /* Scoped, because every vote hangs off a meeting and without this the
      letters page and the meeting page showed each other's. */
+  /* ------------------------------------------------- content overrides */
+
+  async siteContent() {
+    const { data, error } = await this.sb.from("site_content").select("*");
+    if (error) return null;
+    return data || [];
+  }
+
+  /* The draft column is not in the public view, so an admin editing needs the
+     table itself. RLS refuses everybody else. */
+  async contentDrafts() {
+    const { data, error } = await this.sb.from("site_docs").select("*");
+    if (error) return null;
+    return data || [];
+  }
+
+  async saveContentDraft(key, doc) {
+    const { error } = await this.sb.rpc("save_content_draft", { p_key: key, p_doc: doc });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async publishContent(key) {
+    const { error } = await this.sb.rpc("publish_content", { p_key: key });
+    if (error) throw new Error(friendly(error));
+  }
+
+  async revertContent(key) {
+    const { data, error } = await this.sb.rpc("revert_content", { p_key: key });
+    if (error) throw new Error(friendly(error));
+    return data;
+  }
+
   /* -------------------------------------------------- hand-entered scorers */
 
   async matchDetails() {

@@ -7871,3 +7871,44 @@ body.presenting { overflow: hidden; }
    scorer editor and the moderator tools, and it was never defined. */
 .link-btn--warn { color: var(--bad, #e8848f); }
 .link-btn--warn:hover { color: var(--bad, #e8848f); opacity: 0.85; }
+
+/* ---- editing the site's own words ---------------------------------------- */
+
+.doc { border-top: 1px solid var(--line-soft); }
+.doc:first-of-type { border-top: 0; }
+.doc__head {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 0; background: none; border: 0; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.doc__name { flex: 1; min-width: 0; }
+.doc__name b { display: block; font-size: 0.9375rem; }
+.doc__name span { display: block; font-size: 0.8125rem; color: var(--text-2); margin-top: 1px; }
+.doc__state {
+  flex: none; font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.05em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--text-3);
+}
+.doc__state--draft  { border-color: var(--accent); color: var(--accent); }
+.doc__state--edited { border-color: var(--good, #7ec48f); color: var(--good, #7ec48f); }
+
+.doc__body { padding: 4px 0 16px; }
+.doc__group {
+  border: 1px solid var(--line-soft); border-radius: 9px;
+  padding: 8px 11px; margin-bottom: 8px;
+}
+.doc__group > summary {
+  cursor: pointer; font-size: 0.875rem; font-weight: 600;
+  list-style: none; padding: 2px 0;
+}
+.doc__group > summary::-webkit-details-marker { display: none; }
+.doc__group > summary::before { content: "\\25B8 "; color: var(--accent); }
+.doc__group[open] > summary::before { content: "\\25BE "; }
+.doc__field { display: block; margin-top: 8px; }
+.doc__field > span {
+  display: block; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 3px;
+}
+.doc__field textarea { resize: vertical; }
+/* Invalid JSON has to look wrong before the save button says so. */
+.input.is-bad { border-color: var(--bad, #e8848f); }

@@ -6245,7 +6245,7 @@ function buildAdmin() {
                  ["archive", "Archive"], ["people", "People"],
                  /* Admin only, and not offered to a moderator: a tab that opens
                     on nothing is worse than a tab that was never there. */
-                 ...(canRunThings ? [["access", "Access"]] : [])];
+                 ...(canRunThings ? [["access", "Access"], ["content", "Content"]] : [])];
   const atab = state.adminTab || "overview";
   /* Sticky, because the consultation tab is twenty thousand pixels tall and
      getting back to the section bar meant scrolling all the way up. */
@@ -7313,6 +7313,10 @@ function buildAdmin() {
      access and reading what they send back are the same job done twice a year,
      and the queue was previously at the bottom of a consultation tab twenty
      thousand pixels tall. */
+  if (atab === "content" && canRunThings) {
+    panelSection(wrap, "The site's own words", () => contentPanel());
+  }
+
   if (atab === "access" && !canRunThings) {
     wrap.append(el(`<div class="empty"><b>Not for you, sorry</b>Only an admin can give
       people access.</div>`));
@@ -7981,6 +7985,235 @@ function playerRecord(name) {
     yellows: games.reduce((n, g) => n + g.cards.filter((c) => !c.dismissed).length, 0),
     reds: games.reduce((n, g) => n + g.cards.filter((c) => c.dismissed).length, 0),
   };
+}
+
+/* The documents an admin may change, and what to call them. Kept in step with
+   the check constraint on site_docs by hand: the database is the authority and
+   this list only decides what gets offered. */
+const EDITABLE_DOCS = [
+  ["deck.json",           "The deck",              "Every slide, in order"],
+  ["agenda.json",         "Meeting running order", "Shown on the meeting page and slide two"],
+  ["scope.json",          "The scope survey",      "The options people spend their ten points on"],
+  ["open-letter.json",    "The open letters",      "Both letters and the club's reply"],
+  ["association.json",    "About the Association", "The who we are page"],
+  ["points.json",         "How points work",       "The explainer"],
+  ["club-overviews.json", "Away club write ups",   "The paragraph on each club page"],
+  ["parking.json",        "Parking",               "Where to leave the car at each ground"],
+  ["pubs-nearby.json",    "Pubs",                  "Where to get a pint at each ground"],
+  ["ground-links.json",   "Ground links",          "Official pages for each ground"],
+  ["extra-fixtures.json", "Hand added fixtures",   "Games the league feed has not got"],
+];
+
+/**
+ * Editing the site's own words, from the site.
+ *
+ * Two views of the same document. The wording view walks it and offers every
+ * piece of text as a box, which covers changing what something says and cannot
+ * break the shape. Raw JSON sits behind a toggle for adding or removing whole
+ * items, and refuses to save anything that does not parse.
+ *
+ * Nothing published here is destructive. The previous version is kept for one
+ * step back, and reverting past that deletes the override entirely so the app
+ * falls through to the file it shipped with.
+ */
+function contentPanel() {
+  const box = el(`<div class="card"><p class="hint" style="margin:0">Loading.</p></div>`);
+  let open = null;
+
+  const paint = () => db.contentDrafts().then((rows) => {
+    if (!document.contains(box)) return;
+    const byKey = new Map((rows || []).map((r) => [r.key, r]));
+    box.replaceChildren();
+
+    const previewing = db.read("previewDrafts", false);
+    const pv = el(`
+      <label class="rsvp__food" style="margin:0 0 10px">
+        <input type="checkbox"${previewing ? " checked" : ""}>
+        <span>Show me drafts on the real pages, so I can see a change before publishing it.
+          Only you see them.</span>
+      </label>`);
+    $("input", pv).addEventListener("change", (e) => {
+      db.write("previewDrafts", e.target.checked);
+      forgetContentOverrides();
+      render();
+    });
+    box.append(pv);
+
+    EDITABLE_DOCS.forEach(([key, label, blurb]) => {
+      const row = byKey.get(key);
+      const state_ = row?.draft ? "draft" : row?.live ? "edited" : "file";
+      const item = el(`
+        <div class="doc">
+          <button class="doc__head" type="button">
+            <span class="doc__name"><b>${esc(label)}</b><span>${esc(blurb)}</span></span>
+            <span class="doc__state doc__state--${state_}">${
+              state_ === "draft" ? "Draft waiting" : state_ === "edited" ? "Edited" : "As shipped"
+            }</span>
+          </button>
+        </div>`);
+      $(".doc__head", item).addEventListener("click", async () => {
+        open = open === key ? null : key;
+        await paint();
+        if (open === key) {
+          const host = box.querySelector(`[data-editor="${key}"]`);
+          if (host) host.scrollIntoView({ block: "nearest" });
+        }
+      });
+      if (open === key) item.append(docEditor(key, label, row, paint));
+      box.append(item);
+    });
+  }).catch(() => {
+    box.replaceChildren(el(`<p class="hint" style="margin:0">Not available.</p>`));
+  });
+
+  paint();
+  return box;
+}
+
+/** One document, open for editing. */
+function docEditor(key, label, row, refresh) {
+  const host = el(`<div class="doc__body" data-editor="${esc(key)}"></div>`);
+  const say = el(`<p class="hint" data-role="say"></p>`);
+  let doc = null;
+  let raw = false;
+
+  /* What is being edited: an unpublished draft if there is one, otherwise
+     whatever is live, otherwise the file as it ships. */
+  const source = () => row?.draft ?? row?.live ?? null;
+
+  const start = source()
+    ? Promise.resolve(structuredClone(source()))
+    : fetch(`data/${key}`).then((r) => r.json()).catch(() => null);
+
+  start.then((loaded) => {
+    if (!loaded) { host.append(el(`<p class="hint">Could not read it.</p>`)); return; }
+    doc = loaded;
+    draw();
+  });
+
+  /* Every string in the document, with the path to it, so a change can be put
+     back exactly where it came from. Arrays keep their index; the label uses
+     the item's own title where it has one, because "slides.12.body" means
+     nothing to anybody. */
+  const leaves = (node, path = [], out = []) => {
+    if (typeof node === "string") { out.push({ path, value: node }); return out; }
+    if (Array.isArray(node)) { node.forEach((v, i) => leaves(v, [...path, i], out)); return out; }
+    if (node && typeof node === "object") {
+      Object.entries(node).forEach(([k, v]) => leaves(v, [...path, k], out));
+    }
+    return out;
+  };
+  const setAt = (obj, path, value) => {
+    let node = obj;
+    for (let i = 0; i < path.length - 1; i += 1) node = node[path[i]];
+    node[path[path.length - 1]] = value;
+  };
+  const groupOf = (path) => {
+    /* Group by the first array item on the path, titled by that item. */
+    const i = path.findIndex((p) => typeof p === "number");
+    if (i < 0) return "Top level";
+    let node = doc;
+    for (let j = 0; j <= i; j += 1) node = node[path[j]];
+    return node?.title || node?.label || node?.what || node?.name
+      || `${path[i - 1] ?? "item"} ${path[i] + 1}`;
+  };
+
+  const draw = () => {
+    host.replaceChildren();
+    const bar = el(`<div class="btn-row" style="margin-bottom:10px"></div>`);
+    const toggle = el(`<button class="btn btn--sm btn--ghost">${raw ? "Wording" : "Raw JSON"}</button>`);
+    toggle.addEventListener("click", () => { raw = !raw; draw(); });
+    bar.append(toggle);
+    host.append(bar);
+
+    if (raw) {
+      const ta = el(`<textarea class="input" rows="18" spellcheck="false"
+        style="font-family:ui-monospace,monospace;font-size:0.8125rem"></textarea>`);
+      ta.value = JSON.stringify(doc, null, 2);
+      ta.addEventListener("input", () => {
+        try { JSON.parse(ta.value); ta.classList.remove("is-bad"); say.textContent = ""; }
+        catch (e) { ta.classList.add("is-bad"); say.textContent = String(e.message); }
+      });
+      host.append(ta);
+      host.append(actions(() => {
+        /* Parsed here as well as on every keystroke: the keystroke check is a
+           courtesy, this one is the guard. */
+        try { return JSON.parse(ta.value); }
+        catch { throw new Error("That is not valid JSON, so it has not been saved."); }
+      }));
+      host.append(say);
+      return;
+    }
+
+    const groups = new Map();
+    leaves(doc).forEach((leaf) => {
+      const g = groupOf(leaf.path);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(leaf);
+    });
+
+    groups.forEach((items, title) => {
+      const fold = el(`<details class="doc__group"><summary>${esc(String(title))}</summary></details>`);
+      items.forEach((leaf) => {
+        const field = el(`
+          <label class="doc__field">
+            <span>${esc(String(leaf.path[leaf.path.length - 1]))}</span>
+            <textarea class="input" rows="${leaf.value.length > 90 ? 3 : 1}"></textarea>
+          </label>`);
+        const ta = $("textarea", field);
+        ta.value = leaf.value;
+        ta.addEventListener("input", () => setAt(doc, leaf.path, ta.value));
+        fold.append(field);
+      });
+      host.append(fold);
+    });
+    host.append(actions(() => doc));
+    host.append(say);
+  };
+
+  const actions = (get) => {
+    const bar = el(`<div class="btn-row" style="margin-top:12px"></div>`);
+    const saveDraft = el(`<button class="btn btn--sm">Save draft</button>`);
+    saveDraft.addEventListener("click", async () => {
+      try {
+        await db.saveContentDraft(key, get());
+        forgetContentOverrides();
+        toast("Draft saved. Turn on preview to see it on the page.", "good");
+        refresh();
+      } catch (err) { say.textContent = String(err?.message || err); }
+    });
+    bar.append(saveDraft);
+
+    if (row?.draft) {
+      const pub = el(`<button class="btn btn--sm">Publish</button>`);
+      pub.addEventListener("click", async () => {
+        if (!window.confirm(`Publish ${label}? Everybody sees it straight away.`)) return;
+        try {
+          await db.publishContent(key);
+          forgetContentOverrides();
+          toast("Published.", "good");
+          refresh(); render();
+        } catch (err) { say.textContent = String(err?.message || err); }
+      });
+      bar.append(pub);
+    }
+    if (row?.live || row?.draft) {
+      const rev = el(`<button class="link-btn link-btn--warn">Revert</button>`);
+      rev.addEventListener("click", async () => {
+        if (!window.confirm("Go back a step? If there is nothing to go back to, this returns to the wording the app shipped with.")) return;
+        try {
+          const to = await db.revertContent(key);
+          forgetContentOverrides();
+          toast(to === "file" ? "Back to the shipped wording." : "Back one step.", "good");
+          refresh(); render();
+        } catch (err) { say.textContent = String(err?.message || err); }
+      });
+      bar.append(rev);
+    }
+    return bar;
+  };
+
+  return host;
 }
 
 /**
@@ -15966,7 +16199,56 @@ function memorialPromo() {
     </button>`));
 }
 
+/**
+ * Every content override, fetched once.
+ *
+ * readJSON is called from twenty seven places, some of them before the store
+ * is ready. One shared promise rather than a call per file means the overrides
+ * are fetched once, and anything awaiting them gets the same answer whether it
+ * asked first or last. Doing it per call site is how the cup goals came to be
+ * silently dropped on a cold load last week.
+ *
+ * A failure here is not an error. It means no overrides, and the app reads the
+ * files it shipped with, which is exactly what it did before any of this.
+ */
+let contentOverrides = null;
+function loadContentOverrides() {
+  if (contentOverrides) return contentOverrides;
+  /* Only remembered once there is a backend to have asked. The fixtures and
+     the store load in parallel, so the first readJSON of a cold start can land
+     before there is anything to ask, and caching that empty answer would mean
+     the site read its own files for the rest of the session. Returning an
+     uncached empty map lets the next read try again. */
+  if (!db.isOnline()) return Promise.resolve(new Map());
+  contentOverrides = db.siteContent()
+    .then((rows) => {
+      const map = new Map();
+      (rows || []).forEach((r) => map.set(r.key, r));
+      return map;
+    })
+    .catch(() => { contentOverrides = null; return new Map(); });
+  return contentOverrides;
+}
+
+/** Called when something is published, so the next read sees it. */
+function forgetContentOverrides() { contentOverrides = null; }
+
+/**
+ * A content file, or whatever an admin has changed it to.
+ *
+ * Order: an unpublished draft if this admin is previewing, then the published
+ * override, then the file that ships with the app. The last of those is the
+ * reason this is safe to let somebody loose on - deleting the override row
+ * puts everything back exactly as it was.
+ */
 async function readJSON(path) {
+  const key = String(path).replace(/^data\//, "");
+  const overrides = await loadContentOverrides();
+  const row = overrides.get(key);
+  if (row) {
+    if (row.draft && db.isAdmin() && db.read("previewDrafts", false)) return row.draft;
+    if (row.live) return row.live;
+  }
   for (const init of [undefined, { cache: "no-store" }]) {
     try {
       const res = await fetch(path, init);
@@ -16331,6 +16613,15 @@ async function boot() {
      guaranteed pass. Cheap, and it is the difference between the cup goals
      showing and not. */
   await mergeCupDetails(state.league);
+
+  /* The store is up now, so anything read from a file while it was still
+     connecting gets read again with the overrides applied. Cheap, and it is
+     the difference between an edit showing on the first load and only after a
+     refresh. */
+  if (db.isOnline()) {
+    await loadContentOverrides();
+    await Promise.all([loadClubInfo(), loadSquad()]);
+  }
   render();
 
   /* A password reset link arrives as #access_token=...&type=recovery, which the
