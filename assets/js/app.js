@@ -4578,6 +4578,10 @@ function viewMatch({ id }) {
     wrap.append(awayEssentials(f.team));
   }
 
+  /* Typing in what the feed will never carry. Volunteers only, and only worth
+     offering on a game that has been played and has no scorers on it. */
+  if (played && db.isAdmin()) wrap.append(scorerEditor(f));
+
   /* Through to the rest, rather than dead-ending here. */
   const links = el(`<div class="btn-row" style="margin-top:18px"></div>`);
   if (f.team) {
@@ -8235,6 +8239,92 @@ function gateChange(now, then) {
   const up = pct > 0;
   return `<span class="gate-diff gate-diff--${up ? "up" : "down"}">${
     up ? "\u25B2" : "\u25BC"} ${Math.abs(pct)}% on last season</span>`;
+}
+
+/**
+ * Typing in the scorers, because nobody else has them.
+ *
+ * The league feed carries cup fixtures and cup scores and no scorers, the club
+ * does not publish them, and the local press covers the tie rather than the
+ * scoresheet. Four goals against Wellingborough over two ties exist nowhere at
+ * all. So the only record there will ever be is the one whoever was there
+ * types in, and that has to be doable from the page rather than from a file.
+ *
+ * The minute is optional on purpose. Nobody remembers, and a made up minute is
+ * worse than an honest gap.
+ */
+function scorerEditor(f) {
+  const box = el(`
+    <div class="card scorers">
+      <div class="info__label">Scorers</div>
+      <p class="hint" style="margin:2px 0 10px">Volunteers only. The feed does not carry
+        scorers for cup ties, so this is the only record of them. The minute is optional.</p>
+      <div data-role="rows"></div>
+      <p class="hint" data-role="say"></p>
+    </div>`);
+  const rows = $('[data-role="rows"]', box);
+  const say  = $('[data-role="say"]', box);
+
+  /* Whatever is already there, from the feed or typed in before. */
+  let goals = (f.events?.goals || []).filter((g) => g.ours)
+    .map((g) => ({ name: g.name, minute: g.minute ?? null }));
+  const fromFeed = !f.handEntered && goals.length > 0;
+
+  const draw = () => {
+    rows.replaceChildren();
+    goals.forEach((g, i) => {
+      const row = el(`
+        <div class="scorers__row">
+          <input class="input scorers__who" maxlength="60" placeholder="Who scored"
+            value="${esc(g.name || "")}">
+          <input class="input scorers__min" maxlength="3" inputmode="numeric"
+            placeholder="min" value="${g.minute ?? ""}">
+          <button class="link-btn link-btn--warn" type="button">Remove</button>
+        </div>`);
+      $(".scorers__who", row).addEventListener("input", (e) => { goals[i].name = e.target.value; });
+      $(".scorers__min", row).addEventListener("input", (e) => {
+        const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 3);
+        e.target.value = v;
+        goals[i].minute = v ? Number(v) : null;
+      });
+      $("button", row).addEventListener("click", () => { goals.splice(i, 1); draw(); });
+      rows.append(row);
+    });
+
+    const add = el(`<button class="btn btn--sm btn--ghost">Add a scorer</button>`);
+    add.addEventListener("click", () => { goals.push({ name: "", minute: null }); draw(); });
+    const save = el(`<button class="btn btn--sm">Save</button>`);
+    save.addEventListener("click", async () => {
+      const clean = goals
+        .map((g) => ({ name: String(g.name || "").trim(), minute: g.minute ?? null }))
+        .filter((g) => g.name);
+      save.disabled = true;
+      say.textContent = "Saving\u2026";
+      try {
+        await db.setMatchGoals(f.id, clean, null);
+        /* Straight onto the fixture in memory, so the page above updates and
+           the season stats pick it up without a reload. */
+        f.events = { goals: clean.map((g) => ({ ...g, ours: true, type: null })),
+                     cards: f.events?.cards || [] };
+        f.handEntered = true;
+        toast(clean.length ? "Scorers saved." : "Scorers cleared.", "good");
+        render();
+      } catch (err) {
+        save.disabled = false;
+        say.textContent = String(err?.message || err);
+      }
+    });
+    const bar = el(`<div class="btn-row" style="margin-top:10px"></div>`);
+    bar.append(add, save);
+    rows.append(bar);
+  };
+  draw();
+
+  if (fromFeed) {
+    box.append(el(`<p class="hint">These came from the league feed. Anything you save here
+      replaces them, and the feed will win again if it ever sends its own.</p>`));
+  }
+  return box;
 }
 
 /** Goals, cards and gates totted up across every played game so far. */
@@ -15956,18 +16046,28 @@ async function mergeExtraFixtures(league) {
  */
 async function mergeCupDetails(league) {
   if (!league || !Array.isArray(league.fixtures)) return;
-  const extra = await readJSON("data/cup-details.json");
-  const games = extra?.games;
-  if (!games) return;
+
+  /* Was a file in the repository, which meant only somebody with a code editor
+     could add a scorer. Nobody publishes cup scorers - not the league, not the
+     club, not the press - so the only person who knows is whoever was there,
+     and they need to be able to type it in. It lives in the database now and
+     the match page has an editor on it. */
+  const rows = await db.matchDetails().catch(() => null);
+  if (!rows || !rows.length) return;
+  const byId = new Map(rows.map((r) => [String(r.fixture_id), r]));
 
   league.fixtures.forEach((f) => {
-    const detail = games[f.id];
+    const detail = byId.get(String(f.id));
     if (!detail) return;
-    if ((f.lineup || []).length) return;          /* the feed got there first */
-    if (detail.lineup) f.lineup = detail.lineup;
-    if (detail.goals || detail.cards) {
-      f.events = { goals: detail.goals || [], cards: detail.cards || [] };
-    }
+    const feedGoals = (f.events?.goals || []).length;
+    /* The feed always wins. If it ever starts carrying cup scorers, ours stop
+       being used without anybody having to remember to delete them. */
+    if (feedGoals) return;
+    const goals = (detail.goals || []).map((g) => ({
+      name: g.name, minute: g.minute ?? null, ours: true, type: null,
+    }));
+    if (!goals.length) return;
+    f.events = { goals, cards: f.events?.cards || [] };
     f.handEntered = true;
   });
 }
@@ -16224,6 +16324,14 @@ async function boot() {
       .initStore({ change: () => render(), error: (message) => toast(message) })
       .then(() => render()),
   ]);
+
+  /* The fixtures and the store load in parallel, so on a cold start the merge
+     inside loadLeague can run before there is a backend to ask and quietly
+     find nothing. Both have landed by here, so hand-entered scorers get one
+     guaranteed pass. Cheap, and it is the difference between the cup goals
+     showing and not. */
+  await mergeCupDetails(state.league);
+  render();
 
   /* A password reset link arrives as #access_token=...&type=recovery, which the
      router cannot read and quietly turns into the home page. It needs the

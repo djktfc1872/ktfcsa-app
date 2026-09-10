@@ -7860,3 +7860,10 @@ body.presenting { overflow: hidden; }
   .spend__row { gap: 10px; }
   .spend__what span { font-size: 0.78125rem; }
 }
+
+/* ---- typing in the scorers ----------------------------------------------- */
+.scorers__row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 4.5rem auto;
+  gap: 8px; align-items: center; margin-bottom: 8px;
+}
+.scorers__min { text-align: center; }

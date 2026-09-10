@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-08-unsubscribe-fix')
+insert into schema_meta (id, applied_version) values (1, '2026-09-10-match-details')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -4822,3 +4822,77 @@ alter view mailing_list set (security_invoker = false);
 grant select on mailing_list to authenticated;
 
 update schema_meta set applied_version = '2026-09-08-unsubscribe-fix', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- Scorers the feed will never carry
+-- ---------------------------------------------------------------------------
+--
+-- The Southern League feed gives a cup tie its fixture and its score and
+-- nothing else, because the FA Cup is not their competition, and there is no
+-- other source: the club does not publish scorers and neither does anybody
+-- else. Four goals against Wellingborough across two ties exist nowhere on the
+-- internet.
+--
+-- So this is typed in, and it has to be editable by whoever knows rather than
+-- by whoever can edit a file in the repository. Same rule as before: anything
+-- the feed supplies wins, and this only fills the gap.
+--
+-- Goals only for now. Cards and line-ups can follow if anybody misses them.
+
+create table if not exists match_details (
+  fixture_id text primary key,
+  goals jsonb not null default '[]'::jsonb,
+  note text check (note is null or char_length(note) <= 300),
+  updated_by uuid references profiles on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+comment on table match_details is
+  'Hand-entered match detail for games the league feed does not cover. Merged into the fixture on load; the feed always wins.';
+
+alter table match_details enable row level security;
+
+-- Everybody reads it: it is match data and it appears on a public page.
+drop policy if exists "match detail readable" on match_details;
+create policy "match detail readable" on match_details for select using (true);
+
+drop policy if exists "volunteers write match detail" on match_details;
+create policy "volunteers write match detail" on match_details
+  for all using (is_admin()) with check (is_admin());
+
+create or replace function set_match_goals(p_fixture text, p_goals jsonb, p_note text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  g jsonb;
+begin
+  if not is_admin() then raise exception 'Only a volunteer can change a scoresheet.'; end if;
+  if jsonb_typeof(p_goals) <> 'array' then raise exception 'That is not a list of goals.'; end if;
+  if jsonb_array_length(p_goals) > 20 then raise exception 'That is a lot of goals.'; end if;
+
+  /* Each entry needs a name. The minute is optional, because nobody
+     remembers, and a wrong minute is worse than no minute. */
+  for g in select * from jsonb_array_elements(p_goals) loop
+    if coalesce(btrim(g ->> 'name'), '') = '' then
+      raise exception 'Every goal needs a name against it.';
+    end if;
+    if g ? 'minute' and g ->> 'minute' is not null
+       and ((g ->> 'minute')::int < 1 or (g ->> 'minute')::int > 130) then
+      raise exception 'That minute is not a minute.';
+    end if;
+  end loop;
+
+  insert into match_details (fixture_id, goals, note, updated_by, updated_at)
+  values (p_fixture, p_goals, nullif(btrim(coalesce(p_note, '')), ''), auth.uid(), now())
+  on conflict (fixture_id) do update
+    set goals = excluded.goals, note = excluded.note,
+        updated_by = excluded.updated_by, updated_at = now();
+end $$;
+
+revoke all on function set_match_goals(text, jsonb, text) from public;
+grant execute on function set_match_goals(text, jsonb, text) to authenticated;
+
+update schema_meta set applied_version = '2026-09-10-match-details', applied_at = now() where id = 1;

@@ -1,4 +1,0 @@
-{
-  "note": "Team sheets and scorers for cup ties, typed in by hand. The Southern League feed carries the fixture and the score for a cup game but no lineup and no goals, because it is not their competition, so without this file every cup appearance and cup goal would read as nought - which looks like a fact rather than a gap. Keyed on the fixture id from league.json. Anything here is merged into that fixture on load and drops out on its own if the feed ever does supply the detail.",
-  "games": {}
-}

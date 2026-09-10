@@ -9,7 +9,7 @@
    Cache-first on app code would mean everyone runs yesterday's build until
    they happen to load twice, which is not worth the few milliseconds saved. */
 
-const CACHE = "ktfcsa-v313";
+const CACHE = "ktfcsa-v314";
 
 const SHELL = [
   "./",
@@ -32,7 +32,6 @@ const SHELL = [
   "data/agenda.json",
   "data/attendances.json",
   "data/extra-fixtures.json",
-  "data/cup-details.json",
   "data/scope.json",
 ];
 

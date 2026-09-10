@@ -753,6 +753,20 @@ class Backend {
 
   /* Scoped, because every vote hangs off a meeting and without this the
      letters page and the meeting page showed each other's. */
+  /* -------------------------------------------------- hand-entered scorers */
+
+  async matchDetails() {
+    const { data, error } = await this.sb.from("match_details").select("*");
+    if (error) return null;
+    return data || [];
+  }
+
+  async setMatchGoals(fixtureId, goals, note) {
+    const { error } = await this.sb.rpc("set_match_goals", {
+      p_fixture: String(fixtureId), p_goals: goals, p_note: note || null });
+    if (error) throw new Error(friendly(error));
+  }
+
   /* ------------------------------------------------------- the scope survey */
 
   async answerScope(key, spend, most, note) {

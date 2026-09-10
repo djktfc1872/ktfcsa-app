@@ -198,6 +198,12 @@ export const setMeetingStream = (id, url) =>
   (backend?.setMeetingStream ? backend.setMeetingStream(id, url)
     : Promise.reject(new Error("Not connected.")));
 
+export const matchDetails = () =>
+  (backend?.matchDetails ? backend.matchDetails() : Promise.resolve(null));
+export const setMatchGoals = (id, goals, note) =>
+  (backend?.setMatchGoals ? backend.setMatchGoals(id, goals, note)
+    : Promise.reject(new Error("Not connected.")));
+
 export const answerScope = (key, spend, most, note) =>
   (backend?.answerScope ? backend.answerScope(key, spend, most, note)
     : Promise.reject(new Error("Not connected.")));
