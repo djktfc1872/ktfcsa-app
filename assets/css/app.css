@@ -7867,3 +7867,7 @@ body.presenting { overflow: hidden; }
   gap: 8px; align-items: center; margin-bottom: 8px;
 }
 .scorers__min { text-align: center; }
+/* A destructive link should not look like a navigation one. Used by the
+   scorer editor and the moderator tools, and it was never defined. */
+.link-btn--warn { color: var(--bad, #e8848f); }
+.link-btn--warn:hover { color: var(--bad, #e8848f); opacity: 0.85; }
