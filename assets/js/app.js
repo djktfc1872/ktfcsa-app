@@ -8227,14 +8227,31 @@ function docEditor(key, label, row, refresh) {
 function missingCupNote() {
   const missing = cupGamesMissingDetail();
   if (!missing.length) return el(`<span hidden></span>`);
-  const list = missing
+
+  /* Two different gaps, and saying the wrong one is worse than saying nothing.
+     Once the scorers are typed in the goals are right and it is only the
+     appearances that are short, because the eight or nine players who did not
+     score are still not on any team sheet. Claiming the goals are missing when
+     they are sitting on the page above is the sort of thing that makes a
+     reader stop believing the rest of it. */
+  const withGoals = missing.filter((f) => (f.events?.goals || []).length);
+  const bare = missing.filter((f) => !(f.events?.goals || []).length);
+  const list = (games) => games
     .map((f) => `${esc(f.opponent)} (${esc(fmtDate(f.date, "short"))})`)
     .join(", ");
-  return el(`
-    <p class="hint gap-note"><b>Cup figures are not complete.</b> The league feed gives a score
-      for a cup tie but no team sheet, so ${missing.length === 1 ? "one game is" : `${missing.length} games are`}
-      not counted here yet: ${list}. Appearances and goals from ${missing.length === 1 ? "it" : "them"}
-      are missing rather than nought, and go in by hand once we have the line-up.</p>`);
+
+  const parts = [];
+  if (bare.length) {
+    parts.push(`Nothing at all is counted from ${list(bare)}: the league feed gives a cup tie
+      a score and no team sheet, so those appearances and goals are missing rather than
+      nought.`);
+  }
+  if (withGoals.length) {
+    parts.push(`We have the scorers from ${list(withGoals)} but not the full team sheet, so
+      the goals are right and the appearances only count whoever scored.`);
+  }
+  return el(`<p class="hint gap-note"><b>Cup figures are not complete.</b> ${parts.join(" ")}
+    The rest goes in by hand as we get it.</p>`);
 }
 
 function viewPlayer({ id }) {
