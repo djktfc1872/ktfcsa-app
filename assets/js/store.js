@@ -214,6 +214,10 @@ export const revertContent = (key) =>
 
 export const matchDetails = () =>
   (backend?.matchDetails ? backend.matchDetails() : Promise.resolve(null));
+export const setMatchLineup = (id, lineup) =>
+  (backend?.setMatchLineup ? backend.setMatchLineup(id, lineup)
+    : Promise.reject(new Error("Not connected.")));
+
 export const setMatchGoals = (id, goals, note) =>
   (backend?.setMatchGoals ? backend.setMatchGoals(id, goals, note)
     : Promise.reject(new Error("Not connected.")));

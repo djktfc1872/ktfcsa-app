@@ -4098,7 +4098,7 @@ drop policy if exists "schema version readable" on schema_meta;
 create policy "schema version readable" on schema_meta for select using (true);
 grant select on schema_meta to anon, authenticated;
 
-insert into schema_meta (id, applied_version) values (1, '2026-09-10-site-docs')
+insert into schema_meta (id, applied_version) values (1, '2026-09-10-team-sheets')
 on conflict (id) do update
   set applied_version = excluded.applied_version, applied_at = now();
 
@@ -5009,3 +5009,47 @@ grant execute on function publish_content(text) to authenticated;
 grant execute on function revert_content(text) to authenticated;
 
 update schema_meta set applied_version = '2026-09-10-site-docs', applied_at = now() where id = 1;
+
+-- ---------------------------------------------------------------------------
+-- The team sheet as well as the scorers
+-- ---------------------------------------------------------------------------
+--
+-- Scorers alone fixed the goals and left the appearances wrong: the eight or
+-- nine players who did not score were on no team sheet anywhere, so a cup tie
+-- counted one appearance instead of fourteen. This carries the rest of them.
+--
+-- Same shape the feed uses for a league game, so the merge can drop it
+-- straight in and everything downstream - the player page, the season stats,
+-- who played in what - works without knowing where it came from.
+
+alter table match_details add column if not exists lineup jsonb not null default '[]'::jsonb;
+
+create or replace function set_match_lineup(p_fixture text, p_lineup jsonb)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare pl jsonb;
+begin
+  if not is_admin() then raise exception 'Only a volunteer can change a team sheet.'; end if;
+  if jsonb_typeof(p_lineup) <> 'array' then raise exception 'That is not a team sheet.'; end if;
+  if jsonb_array_length(p_lineup) > 25 then raise exception 'That is more than a squad.'; end if;
+
+  for pl in select * from jsonb_array_elements(p_lineup) loop
+    if coalesce(btrim(pl ->> 'name'), '') = '' then
+      raise exception 'Every player needs a name.';
+    end if;
+    if pl ? 'number' and pl ->> 'number' is not null
+       and ((pl ->> 'number')::int < 1 or (pl ->> 'number')::int > 99) then
+      raise exception 'That is not a shirt number.';
+    end if;
+  end loop;
+
+  insert into match_details (fixture_id, lineup, updated_by, updated_at)
+  values (p_fixture, p_lineup, auth.uid(), now())
+  on conflict (fixture_id) do update
+    set lineup = excluded.lineup, updated_by = excluded.updated_by, updated_at = now();
+end $$;
+
+revoke all on function set_match_lineup(text, jsonb) from public;
+grant execute on function set_match_lineup(text, jsonb) to authenticated;
+
+update schema_meta set applied_version = '2026-09-10-team-sheets', applied_at = now() where id = 1;

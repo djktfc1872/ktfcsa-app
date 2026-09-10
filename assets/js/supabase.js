@@ -793,6 +793,12 @@ class Backend {
     return data || [];
   }
 
+  async setMatchLineup(fixtureId, lineup) {
+    const { error } = await this.sb.rpc("set_match_lineup", {
+      p_fixture: String(fixtureId), p_lineup: lineup });
+    if (error) throw new Error(friendly(error));
+  }
+
   async setMatchGoals(fixtureId, goals, note) {
     const { error } = await this.sb.rpc("set_match_goals", {
       p_fixture: String(fixtureId), p_goals: goals, p_note: note || null });

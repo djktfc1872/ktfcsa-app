@@ -8574,6 +8574,89 @@ function scorerEditor(f) {
     box.append(el(`<p class="hint">These came from the league feed. Anything you save here
       replaces them, and the feed will win again if it ever sends its own.</p>`));
   }
+
+  box.append(lineupEditor(f));
+  return box;
+}
+
+/**
+ * The team sheet, typed as a list rather than built a row at a time.
+ *
+ * Fourteen add-buttons is the wrong shape for something copied off a
+ * programme. A box you can paste or type a list into, one player per line, is
+ * how the job is actually done, and it parses the three ways somebody would
+ * naturally write it: with a shirt number or without, and subs marked either
+ * with brackets or a star.
+ *
+ * It matters because scorers alone left the appearances wrong. A cup tie
+ * counted one appearance instead of fourteen, because the ten who did not
+ * score were on no team sheet anywhere.
+ */
+function lineupEditor(f) {
+  const box = el(`
+    <div class="scorers" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)">
+      <div class="info__label">Team sheet</div>
+      <p class="hint" style="margin:2px 0 8px">One player per line. A shirt number in front is
+        optional. Put <b>(sub)</b> after anybody who came off the bench. This is what makes cup
+        appearances count for the players who did not score.</p>
+    </div>`);
+
+  const existing = (f.lineup || []).map((pl) =>
+    `${pl.number ? pl.number + " " : ""}${pl.name}${pl.started === false ? " (sub)" : ""}`
+  ).join("\n");
+
+  const ta = el(`<textarea class="input" rows="8" spellcheck="false"
+    placeholder="1 Paul White&#10;5 Tom Leak&#10;9 Eddie Panter&#10;14 Michael Gyasi (sub)"></textarea>`);
+  ta.value = existing;
+  const say = el(`<p class="hint" data-role="say"></p>`);
+  const count = el(`<p class="hint"></p>`);
+
+  /* "9 Eddie Panter (sub)", "Eddie Panter", "9. Eddie Panter", "Eddie Panter *" */
+  const parse = (text) => String(text || "").split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      let started = true;
+      let rest = line.replace(/\s*[\(\[]?\bsub(stitute)?\b[\)\]]?\s*$/i, () => { started = false; return ""; });
+      rest = rest.replace(/\s*\*\s*$/, () => { started = false; return ""; }).trim();
+      const m = rest.match(/^(\d{1,2})[.)]?\s+(.*)$/);
+      return m
+        ? { number: Number(m[1]), name: m[2].trim(), started }
+        : { number: null, name: rest, started };
+    })
+    .filter((pl) => pl.name);
+
+  const tally = () => {
+    const list = parse(ta.value);
+    const subs = list.filter((pl) => !pl.started).length;
+    count.textContent = list.length
+      ? `${list.length} named, ${list.length - subs} starting, ${subs} off the bench.`
+      : "Nobody named yet.";
+  };
+  ta.addEventListener("input", tally);
+  tally();
+
+  const save = el(`<button class="btn btn--sm">Save the team sheet</button>`);
+  save.addEventListener("click", async () => {
+    const list = parse(ta.value);
+    save.disabled = true;
+    say.textContent = "Saving\u2026";
+    try {
+      await db.setMatchLineup(f.id, list);
+      f.lineup = list.map((pl) => ({ ...pl, captain: false }));
+      f.handEntered = true;
+      toast(list.length ? `${list.length} players saved.` : "Team sheet cleared.", "good");
+      render();
+    } catch (err) {
+      save.disabled = false;
+      say.textContent = String(err?.message || err);
+    }
+  });
+
+  box.append(ta, count);
+  const bar = el(`<div class="btn-row" style="margin-top:8px"></div>`);
+  bar.append(save);
+  box.append(bar, say);
   return box;
 }
 
@@ -16365,8 +16448,15 @@ async function mergeCupDetails(league) {
     const goals = (detail.goals || []).map((g) => ({
       name: g.name, minute: g.minute ?? null, ours: true, type: null,
     }));
-    if (!goals.length) return;
-    f.events = { goals, cards: f.events?.cards || [] };
+    const lineup = (detail.lineup || []).map((pl) => ({
+      name: pl.name, number: pl.number ?? null,
+      started: pl.started !== false, captain: Boolean(pl.captain),
+    }));
+    if (!goals.length && !lineup.length) return;
+    if (goals.length) f.events = { goals, cards: f.events?.cards || [] };
+    /* Only when the feed has not sent one. A hand typed sheet is a stopgap and
+       must never sit on top of the real thing. */
+    if (lineup.length && !(f.lineup || []).length) f.lineup = lineup;
     f.handEntered = true;
   });
 }
