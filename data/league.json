@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-11T00:29:45.098Z",
+  "updated": "2026-09-11T12:11:25.170Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1208,7 +1208,7 @@
           },
           {
             "name": "Diogo Freitas-Gouveia",
-            "minute": 84,
+            "minute": 85,
             "ours": false,
             "type": null
           }
@@ -1232,7 +1232,7 @@
           },
           {
             "name": "Theo Alexandrou",
-            "minute": 60,
+            "minute": 61,
             "ours": true,
             "type": null,
             "second": false,
@@ -1248,7 +1248,7 @@
           },
           {
             "name": "Luke Stokoe",
-            "minute": 91,
+            "minute": 92,
             "ours": false,
             "type": null,
             "second": false,
