@@ -1,8 +1,15 @@
 {
-  "updated": "2026-09-12T18:43:56.343Z",
+  "updated": "2026-09-12T21:06:53.592Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "9Xl5Yykli3k",
+      "title": "Post Match Interview | Kettering Town 1-0 Stratford Town (12/09/2026)",
+      "published": "2026-09-12T20:46:33+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a1a68ce9ef452b61f429d"
+    },
     {
       "videoId": "9rK7rAs9pH8",
       "title": "Kettering Town VS Stratford Town | LIVE COMMENTARY",
