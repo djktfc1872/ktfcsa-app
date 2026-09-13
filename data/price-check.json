@@ -1,5 +1,5 @@
 {
-  "checked": "2026-09-06T22:36:29+00:00",
+  "checked": "2026-09-13T12:46:06+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -50,13 +50,13 @@
     {
       "club": "real-bedford",
       "name": "Real Bedford",
-      "source": "https://www.realbedford.com/tickets/e/m-2026-09-08-biggleswadefc",
+      "source": "https://www.realbedford.com/tickets/e/coach-m-2026-09-19-harlestontown",
       "found": {
-        "adultPrice": 12
+        "adultPrice": 25
       },
       "differences": {
         "adultPrice": {
-          "site": 12,
+          "site": 25,
           "ours": 14
         }
       }
@@ -84,13 +84,13 @@
     {
       "club": "real-bedford",
       "name": "Real Bedford",
-      "source": "https://www.realbedford.com/tickets/e/m-2026-09-08-biggleswadefc",
+      "source": "https://www.realbedford.com/tickets/e/coach-m-2026-09-19-harlestontown",
       "found": {
-        "adultPrice": 12
+        "adultPrice": 25
       },
       "differences": {
         "adultPrice": {
-          "site": 12,
+          "site": 25,
           "ours": 14
         }
       }
