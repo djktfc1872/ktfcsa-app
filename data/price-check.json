@@ -1,7 +1,16 @@
 {
-  "checked": "2026-09-13T17:11:13+00:00",
+  "checked": "2026-09-13T19:31:58+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
+    {
+      "club": "bishops-stortford",
+      "name": "Bishop's Stortford",
+      "source": "https://bsfc.co.uk/ticket-information/",
+      "found": {
+        "adultPrice": 15,
+        "concessionPrice": 10
+      }
+    },
     {
       "club": "bury-town",
       "name": "Bury Town",
@@ -91,7 +100,6 @@
     "alvechurch",
     "anstey-nomads",
     "banbury-united",
-    "bishops-stortford",
     "bromsgrove-sporting",
     "halesowen-town",
     "hitchin-town",
