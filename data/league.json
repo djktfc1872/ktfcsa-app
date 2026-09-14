@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-13T23:28:24.977Z",
+  "updated": "2026-09-14T14:00:58.424Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1704,6 +1704,27 @@
       "opponentCrest": "assets/crests/rushall-olympic.png",
       "competition": "Premier Central",
       "competitionType": "league",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6aa7e42b1c39c7bf70828cad",
+      "date": "2026-09-26",
+      "kickoff": "15:00",
+      "venue": "Away",
+      "opponent": "Matlock Town",
+      "opponentCrest": "https://www.southern-football-league.co.uk/img/teams/matlock_town_fc_logo-17c1b245-0fcf-4d1a-ac21-72f00d12f345.png",
+      "competition": "FA Trophy",
+      "competitionType": "cup",
       "ground": "",
       "status": "upcoming",
       "rawStatus": "NotKickedOff",
