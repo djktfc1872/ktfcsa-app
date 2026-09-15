@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T00:39:29.681Z",
+  "updated": "2026-09-15T12:39:39.006Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1397,13 +1397,13 @@
           },
           {
             "name": "Eddie Panter",
-            "minute": 82,
+            "minute": 81,
             "ours": true,
             "type": null
           },
           {
             "name": "Shaun Jeffers",
-            "minute": 84,
+            "minute": 83,
             "ours": true,
             "type": null
           }
@@ -1435,15 +1435,7 @@
           },
           {
             "name": "Sam Warburton",
-            "minute": 64,
-            "ours": false,
-            "type": null,
-            "second": false,
-            "dismissed": false
-          },
-          {
-            "name": "Tyler Winters",
-            "minute": 84,
+            "minute": 68,
             "ours": false,
             "type": null,
             "second": false,
@@ -1453,6 +1445,14 @@
             "name": "Tom Leak",
             "minute": 85,
             "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tyler Winters",
+            "minute": 85,
+            "ours": false,
             "type": null,
             "second": false,
             "dismissed": false
