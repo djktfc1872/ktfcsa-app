@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T11:55:14.080Z",
+  "updated": "2026-09-19T16:54:48.743Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -159,6 +159,23 @@
     },
     {
       "position": 10,
+      "name": "Bishop's Stortford",
+      "short": "Bishop's Stortford",
+      "slug": "Bishop's Stortford",
+      "crest": "assets/crests/bishops-stortford.png",
+      "played": 8,
+      "won": 3,
+      "drawn": 1,
+      "lost": 4,
+      "for": 9,
+      "against": 11,
+      "goalDifference": -2,
+      "points": 10,
+      "deduction": 0,
+      "form": "LLWWW"
+    },
+    {
+      "position": 11,
       "name": "Stourbridge FC",
       "short": "Stourbridge",
       "slug": "Stourbridge FC",
@@ -175,7 +192,7 @@
       "form": "WDDLD"
     },
     {
-      "position": 11,
+      "position": 12,
       "name": "Peterborough Sports",
       "short": "Sports",
       "slug": "Peterborough-Sports",
@@ -192,7 +209,7 @@
       "form": "LDWDW"
     },
     {
-      "position": 12,
+      "position": 13,
       "name": "Halesowen Town",
       "short": "Halesowen Town",
       "slug": "halesowen-town",
@@ -207,23 +224,6 @@
       "points": 9,
       "deduction": 0,
       "form": "WWLLW"
-    },
-    {
-      "position": 13,
-      "name": "Bishop's Stortford",
-      "short": "Bishop's Stortford",
-      "slug": "Bishop's Stortford",
-      "crest": "assets/crests/bishops-stortford.png",
-      "played": 7,
-      "won": 2,
-      "drawn": 1,
-      "lost": 4,
-      "for": 6,
-      "against": 11,
-      "goalDifference": -5,
-      "points": 7,
-      "deduction": 0,
-      "form": "LLLWW"
     },
     {
       "position": 14,
@@ -367,13 +367,13 @@
       "short": "Stamford",
       "slug": "stamford",
       "crest": "assets/crests/stamford.png",
-      "played": 7,
+      "played": 8,
       "won": 0,
       "drawn": 0,
-      "lost": 7,
+      "lost": 8,
       "for": 1,
-      "against": 18,
-      "goalDifference": -17,
+      "against": 21,
+      "goalDifference": -20,
       "points": 0,
       "deduction": 0,
       "form": "LLLLL"
@@ -1692,10 +1692,10 @@
       "competition": "Emirates FA Cup",
       "competitionType": "cup",
       "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
+      "status": "played",
+      "rawStatus": "FullTime",
+      "homeScore": 2,
+      "awayScore": 0,
       "attendance": null,
       "lineup": [],
       "events": {
