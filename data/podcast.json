@@ -1,11 +1,22 @@
 {
-  "updated": "2026-09-20T23:42:41.971Z",
+  "updated": "2026-09-21T14:06:21.794Z",
   "feed": "https://anchor.fm/s/103d565e8/podcast/rss",
   "title": "The Poppycast",
   "description": "Fans of Kettering Town talking all things Poppies",
   "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
   "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17",
   "episodes": [
+    {
+      "title": "Ep25 - Dazzling displays",
+      "published": "Sun, 20 Sep 2026 22:56:28 GMT",
+      "publishedISO": "2026-09-20T22:56:28.000Z",
+      "duration": "01:08:09",
+      "description": "This week, Jamie, Craig and Lee turn their attention to on-field matters. The team have had a superb start to the season, but what is more important: performance or results? We of course also discuss the aftermath of last week's episode, and the upcoming meeting between George and Brad, and the effect that the recent news story regarding the floodlights grant has had on the fanbase.",
+      "audio": "https://anchor.fm/s/103d565e8/podcast/play/126053578/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-20%2F432320945-44100-2-e2a285b970d2f.m4a",
+      "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17/episodes/Ep25---Dazzling-displays-e3p5boa",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
+      "episode": ""
+    },
     {
       "title": "Ep24 - Brad and Norms",
       "published": "Tue, 01 Sep 2026 22:50:10 GMT",
