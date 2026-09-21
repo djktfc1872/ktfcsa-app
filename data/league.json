@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T18:58:52.512Z",
+  "updated": "2026-09-21T22:27:38.687Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -218,12 +218,12 @@
       "won": 2,
       "drawn": 3,
       "lost": 3,
-      "for": 9,
-      "against": 10,
+      "for": 10,
+      "against": 11,
       "goalDifference": -1,
       "points": 9,
       "deduction": 0,
-      "form": "DLLWL"
+      "form": "LLWLW"
     },
     {
       "position": 14,
@@ -252,12 +252,12 @@
       "won": 1,
       "drawn": 3,
       "lost": 4,
-      "for": 7,
-      "against": 11,
+      "for": 8,
+      "against": 12,
       "goalDifference": -4,
       "points": 6,
       "deduction": 0,
-      "form": "WDLDL"
+      "form": "DLDLL"
     },
     {
       "position": 16,
