@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T17:49:43.069Z",
+  "updated": "2026-09-22T20:39:20.331Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -10,33 +10,33 @@
       "short": "Real Bedford",
       "slug": "real-bedford",
       "crest": "assets/crests/real-bedford.png",
-      "played": 7,
-      "won": 7,
+      "played": 8,
+      "won": 8,
       "drawn": 0,
       "lost": 0,
-      "for": 22,
-      "against": 7,
-      "goalDifference": 15,
-      "points": 21,
+      "for": 26,
+      "against": 8,
+      "goalDifference": 18,
+      "points": 24,
       "deduction": 0,
       "form": "WWWWW"
     },
     {
       "position": 2,
-      "name": "Alvechurch",
-      "short": "Alvechurch",
-      "slug": "alvechurch",
-      "crest": "assets/crests/alvechurch.svg",
-      "played": 7,
-      "won": 6,
+      "name": "Bromsgrove Sporting",
+      "short": "BromsgroveSporting",
+      "slug": "bromsgrove-sporting",
+      "crest": "assets/crests/bromsgrove-sporting.svg",
+      "played": 8,
+      "won": 7,
       "drawn": 0,
       "lost": 1,
-      "for": 15,
-      "against": 2,
-      "goalDifference": 13,
-      "points": 18,
+      "for": 16,
+      "against": 7,
+      "goalDifference": 9,
+      "points": 21,
       "deduction": 0,
-      "form": "WWWWW"
+      "form": "LWWWW"
     },
     {
       "position": 3,
@@ -44,33 +44,33 @@
       "short": "Bury Town FC",
       "slug": "bury-town",
       "crest": "assets/crests/bury-town.png",
-      "played": 7,
-      "won": 6,
+      "played": 8,
+      "won": 7,
       "drawn": 0,
       "lost": 1,
-      "for": 15,
+      "for": 16,
       "against": 7,
-      "goalDifference": 8,
-      "points": 18,
+      "goalDifference": 9,
+      "points": 21,
       "deduction": 0,
       "form": "WWWWL"
     },
     {
       "position": 4,
-      "name": "Bromsgrove Sporting",
-      "short": "BromsgroveSporting",
-      "slug": "bromsgrove-sporting",
-      "crest": "assets/crests/bromsgrove-sporting.svg",
-      "played": 7,
+      "name": "Alvechurch",
+      "short": "Alvechurch",
+      "slug": "alvechurch",
+      "crest": "assets/crests/alvechurch.svg",
+      "played": 8,
       "won": 6,
-      "drawn": 0,
+      "drawn": 1,
       "lost": 1,
-      "for": 13,
-      "against": 5,
-      "goalDifference": 8,
-      "points": 18,
+      "for": 17,
+      "against": 4,
+      "goalDifference": 13,
+      "points": 19,
       "deduction": 0,
-      "form": "LWWWW"
+      "form": "WWWWD"
     },
     {
       "position": 5,
@@ -78,13 +78,13 @@
       "short": "Kettering",
       "slug": "kettering-town",
       "crest": "assets/crests/kettering-town.png",
-      "played": 7,
+      "played": 8,
       "won": 4,
       "drawn": 3,
-      "lost": 0,
-      "for": 10,
-      "against": 2,
-      "goalDifference": 8,
+      "lost": 1,
+      "for": 12,
+      "against": 5,
+      "goalDifference": 7,
       "points": 15,
       "deduction": 0,
       "form": "WDDWW"
@@ -95,16 +95,16 @@
       "short": "Anstey",
       "slug": "anstey-nomads",
       "crest": "assets/crests/anstey-nomads.png",
-      "played": 7,
+      "played": 8,
       "won": 4,
-      "drawn": 2,
+      "drawn": 3,
       "lost": 1,
-      "for": 13,
-      "against": 7,
+      "for": 15,
+      "against": 9,
       "goalDifference": 6,
-      "points": 14,
+      "points": 15,
       "deduction": 0,
-      "form": "WWLWW"
+      "form": "WLWWD"
     },
     {
       "position": 7,
@@ -112,36 +112,53 @@
       "short": "Rushall",
       "slug": "rushall-olympic",
       "crest": "assets/crests/rushall-olympic.png",
-      "played": 7,
-      "won": 4,
+      "played": 8,
+      "won": 5,
       "drawn": 0,
       "lost": 3,
-      "for": 13,
-      "against": 11,
-      "goalDifference": 2,
-      "points": 12,
+      "for": 16,
+      "against": 13,
+      "goalDifference": 3,
+      "points": 15,
       "deduction": 0,
       "form": "WWWLL"
     },
     {
       "position": 8,
+      "name": "Peterborough Sports",
+      "short": "Sports",
+      "slug": "Peterborough-Sports",
+      "crest": "assets/crests/peterborough-sports.png",
+      "played": 8,
+      "won": 3,
+      "drawn": 3,
+      "lost": 2,
+      "for": 13,
+      "against": 11,
+      "goalDifference": 2,
+      "points": 12,
+      "deduction": 0,
+      "form": "DWDWW"
+    },
+    {
+      "position": 9,
       "name": "Leiston",
       "short": "Leiston",
       "slug": "Leiston",
       "crest": "assets/crests/leiston.png",
-      "played": 7,
+      "played": 8,
       "won": 3,
       "drawn": 2,
-      "lost": 2,
+      "lost": 3,
       "for": 15,
-      "against": 12,
-      "goalDifference": 3,
+      "against": 14,
+      "goalDifference": 1,
       "points": 11,
       "deduction": 0,
-      "form": "LDWLW"
+      "form": "DWLWL"
     },
     {
-      "position": 9,
+      "position": 10,
       "name": "Needham Market",
       "short": "Needham Market",
       "slug": "needham-market",
@@ -158,7 +175,7 @@
       "form": "LLWDW"
     },
     {
-      "position": 10,
+      "position": 11,
       "name": "Bishop's Stortford",
       "short": "Bishop's Stortford",
       "slug": "Bishop's Stortford",
@@ -175,41 +192,7 @@
       "form": "LLWWW"
     },
     {
-      "position": 11,
-      "name": "Stourbridge FC",
-      "short": "Stourbridge",
-      "slug": "Stourbridge FC",
-      "crest": "assets/crests/stourbridge-fc.png",
-      "played": 6,
-      "won": 2,
-      "drawn": 3,
-      "lost": 1,
-      "for": 8,
-      "against": 7,
-      "goalDifference": 1,
-      "points": 9,
-      "deduction": 0,
-      "form": "WDDLD"
-    },
-    {
       "position": 12,
-      "name": "Peterborough Sports",
-      "short": "Sports",
-      "slug": "Peterborough-Sports",
-      "crest": "assets/crests/peterborough-sports.png",
-      "played": 7,
-      "won": 2,
-      "drawn": 3,
-      "lost": 2,
-      "for": 11,
-      "against": 11,
-      "goalDifference": 0,
-      "points": 9,
-      "deduction": 0,
-      "form": "LDWDW"
-    },
-    {
-      "position": 13,
       "name": "Redditch United",
       "short": "Redditch Utd",
       "slug": "redditch-united",
@@ -226,7 +209,7 @@
       "form": "LLWLW"
     },
     {
-      "position": 14,
+      "position": 13,
       "name": "Halesowen Town",
       "short": "Halesowen Town",
       "slug": "halesowen-town",
@@ -241,6 +224,23 @@
       "points": 9,
       "deduction": 0,
       "form": "WWLLW"
+    },
+    {
+      "position": 14,
+      "name": "Stourbridge FC",
+      "short": "Stourbridge",
+      "slug": "Stourbridge FC",
+      "crest": "assets/crests/stourbridge-fc.png",
+      "played": 7,
+      "won": 2,
+      "drawn": 3,
+      "lost": 2,
+      "for": 9,
+      "against": 11,
+      "goalDifference": -2,
+      "points": 9,
+      "deduction": 0,
+      "form": "WDDLD"
     },
     {
       "position": 15,
@@ -261,6 +261,40 @@
     },
     {
       "position": 16,
+      "name": "Worcester City",
+      "short": "Worcester City",
+      "slug": "worcester-city",
+      "crest": "assets/crests/worcester-city.png",
+      "played": 8,
+      "won": 1,
+      "drawn": 3,
+      "lost": 4,
+      "for": 5,
+      "against": 10,
+      "goalDifference": -5,
+      "points": 6,
+      "deduction": 0,
+      "form": "LWDLL"
+    },
+    {
+      "position": 17,
+      "name": "Banbury United",
+      "short": "Banbury Utd",
+      "slug": "banbury-united",
+      "crest": "assets/crests/banbury-united.png",
+      "played": 8,
+      "won": 1,
+      "drawn": 3,
+      "lost": 4,
+      "for": 7,
+      "against": 13,
+      "goalDifference": -6,
+      "points": 6,
+      "deduction": 0,
+      "form": "LLDLL"
+    },
+    {
+      "position": 18,
       "name": "Leighton Town",
       "short": "Leighton",
       "slug": "leighton-town",
@@ -275,40 +309,6 @@
       "points": 5,
       "deduction": 0,
       "form": "WLLLL"
-    },
-    {
-      "position": 17,
-      "name": "Worcester City",
-      "short": "Worcester City",
-      "slug": "worcester-city",
-      "crest": "assets/crests/worcester-city.png",
-      "played": 7,
-      "won": 1,
-      "drawn": 2,
-      "lost": 4,
-      "for": 5,
-      "against": 10,
-      "goalDifference": -5,
-      "points": 5,
-      "deduction": 0,
-      "form": "LWDLL"
-    },
-    {
-      "position": 18,
-      "name": "Banbury United",
-      "short": "Banbury Utd",
-      "slug": "banbury-united",
-      "crest": "assets/crests/banbury-united.png",
-      "played": 7,
-      "won": 1,
-      "drawn": 2,
-      "lost": 4,
-      "for": 7,
-      "against": 13,
-      "goalDifference": -6,
-      "points": 5,
-      "deduction": 0,
-      "form": "LLDLL"
     },
     {
       "position": 19,
@@ -333,13 +333,13 @@
       "short": "HitchinTown",
       "slug": "hitchin-town",
       "crest": "assets/crests/hitchin-town.png",
-      "played": 7,
+      "played": 8,
       "won": 0,
       "drawn": 4,
-      "lost": 3,
+      "lost": 4,
       "for": 6,
-      "against": 11,
-      "goalDifference": -5,
+      "against": 12,
+      "goalDifference": -6,
       "points": 4,
       "deduction": 0,
       "form": "DDDLD"
@@ -350,13 +350,13 @@
       "short": "Stratford Town",
       "slug": "stratford-town",
       "crest": "assets/crests/stratford-town.png",
-      "played": 7,
+      "played": 8,
       "won": 0,
       "drawn": 3,
-      "lost": 4,
-      "for": 4,
-      "against": 13,
-      "goalDifference": -9,
+      "lost": 5,
+      "for": 6,
+      "against": 16,
+      "goalDifference": -10,
       "points": 3,
       "deduction": 0,
       "form": "LLLDL"
@@ -1713,15 +1713,166 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
-      "attendance": null,
-      "lineup": [],
+      "status": "live",
+      "rawStatus": "SecondHalf",
+      "homeScore": 3,
+      "awayScore": 2,
+      "attendance": 402,
+      "lineup": [
+        {
+          "name": "Paul White",
+          "number": 1,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Jack Newell",
+          "number": 4,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tom Leak",
+          "number": 5,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Harvey Peters",
+          "number": 6,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Lawson D'Ath",
+          "feedName": "Lawson D'ath",
+          "number": 7,
+          "started": true,
+          "captain": true
+        },
+        {
+          "name": "Eddie Panter",
+          "feedName": "Edward  Panter",
+          "number": 9,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Shaun Jeffers",
+          "number": 10,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Theo Alexandrou",
+          "number": 11,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tai Fleming",
+          "number": 15,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ryan Haynes",
+          "number": 16,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ismael Fatadjo",
+          "feedName": "Ismael Botelho Fatadjo",
+          "number": 17,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Blaine Rowe",
+          "number": 2,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Bayley Brown",
+          "feedName": "Bayley Antoine Brown",
+          "number": 8,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Amir Hadi",
+          "number": 12,
+          "started": false,
+          "captain": false,
+          "newFace": true
+        },
+        {
+          "name": "Michael Gyasi",
+          "number": 14,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Lewis Coyle",
+          "feedName": "Lewis  Coyle",
+          "number": 19,
+          "started": false,
+          "captain": false
+        }
+      ],
       "events": {
-        "goals": [],
-        "cards": []
+        "goals": [
+          {
+            "name": "Tai Fleming",
+            "minute": 5,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Kaiman Anderson",
+            "minute": 24,
+            "ours": false,
+            "type": null
+          },
+          {
+            "name": "Alex Cameron",
+            "minute": 47,
+            "ours": false,
+            "type": null
+          },
+          {
+            "name": "Shaun Jeffers",
+            "minute": 51,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Alex Cameron",
+            "minute": 86,
+            "ours": false,
+            "type": null
+          }
+        ],
+        "cards": [
+          {
+            "name": "Tai Fleming",
+            "minute": 44,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Blaine Rowe",
+            "minute": 82,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          }
+        ]
       }
     },
     {
