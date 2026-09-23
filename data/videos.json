@@ -1,8 +1,15 @@
 {
-  "updated": "2026-09-22T23:15:31.252Z",
+  "updated": "2026-09-23T12:44:40.551Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "KtFqK9b4ix4",
+      "title": "Post Match Interview | Rushall Olympic 3-2 Kettering Town (22/09/2026)",
+      "published": "2026-09-23T09:00:33+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a1aacce9ef452b61f42c3"
+    },
     {
       "videoId": "UJ5Yetbc9K8",
       "title": "My Broadcast",

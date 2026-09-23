@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T23:15:29.378Z",
+  "updated": "2026-09-23T12:44:38.463Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1926,6 +1926,27 @@
       "opponentCrest": "assets/crests/bury-town.png",
       "competition": "Premier Central",
       "competitionType": "league",
+      "ground": "",
+      "status": "off",
+      "rawStatus": "Postponed",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6ab3999ed5666b9fcc25622f",
+      "date": "2026-10-03",
+      "kickoff": "15:00",
+      "venue": "Home",
+      "opponent": "Worcester City",
+      "opponentCrest": "assets/crests/worcester-city.png",
+      "competition": "Emirates FA Cup",
+      "competitionType": "cup",
       "ground": "",
       "status": "upcoming",
       "rawStatus": "NotKickedOff",
