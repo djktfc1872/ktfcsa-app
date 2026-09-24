@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T23:55:13.141Z",
+  "updated": "2026-09-24T12:43:13.248Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1632,16 +1632,8 @@
         ],
         "cards": [
           {
-            "name": "Kobe Hall",
-            "minute": 0,
-            "ours": false,
-            "type": null,
-            "second": false,
-            "dismissed": false
-          },
-          {
             "name": "Jake Weaver",
-            "minute": 20,
+            "minute": 18,
             "ours": false,
             "type": null,
             "second": false,
@@ -1666,6 +1658,14 @@
           {
             "name": "Paul Mccone",
             "minute": 70,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Kobe Hall",
+            "minute": 78,
             "ours": false,
             "type": null,
             "second": false,
