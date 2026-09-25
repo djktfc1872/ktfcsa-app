@@ -1,11 +1,22 @@
 {
-  "updated": "2026-09-24T23:58:53.428Z",
+  "updated": "2026-09-25T12:45:16.038Z",
   "feed": "https://anchor.fm/s/103d565e8/podcast/rss",
   "title": "The Poppycast",
   "description": "Fans of Kettering Town talking all things Poppies",
   "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
   "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17",
   "episodes": [
+    {
+      "title": "Ep26 - Under New Management",
+      "published": "Thu, 24 Sep 2026 23:04:19 GMT",
+      "publishedISO": "2026-09-24T23:04:19.000Z",
+      "duration": "00:36:20",
+      "description": "Start spreading the news! Brad Piercewright and Craig Norman's offer to purchase KTFC has been accepted, and the club will be under new management in the coming months. Brad and Craig joined us on the pod again, to talk about their reactions to their meeting with George, to talk about plans for the future, and to issue a rally cry to the fanbase. We hope you enjoyed listening to them as much as we did!",
+      "audio": "https://anchor.fm/s/103d565e8/podcast/play/126266119/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-24%2F432610663-44100-2-27ce6f8b16006.m4a",
+      "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17/episodes/Ep26---Under-New-Management-e3pbra7",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
+      "episode": ""
+    },
     {
       "title": "Ep25 - Dazzling displays",
       "published": "Sun, 20 Sep 2026 22:56:28 GMT",
