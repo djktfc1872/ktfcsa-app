@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T12:13:30.759Z",
+  "updated": "2026-09-26T17:28:48.792Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1885,15 +1885,160 @@
       "competition": "FA Trophy",
       "competitionType": "cup",
       "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
-      "attendance": null,
-      "lineup": [],
+      "status": "played",
+      "rawStatus": "FullTime",
+      "homeScore": 0,
+      "awayScore": 4,
+      "attendance": 628,
+      "lineup": [
+        {
+          "name": "Paul White",
+          "number": 1,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Blaine Rowe",
+          "number": 2,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Jack Newell",
+          "number": 4,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tom Leak",
+          "number": 5,
+          "started": true,
+          "captain": true
+        },
+        {
+          "name": "Harvey Peters",
+          "number": 6,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Eddie Panter",
+          "feedName": "Edward  Panter",
+          "number": 9,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Theo Alexandrou",
+          "number": 11,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Michael Gyasi",
+          "number": 14,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tai Fleming",
+          "number": 15,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ismael Fatadjo",
+          "feedName": "Ismael Botelho Fatadjo",
+          "number": 17,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Lewis Coyle",
+          "feedName": "Lewis  Coyle",
+          "number": 19,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Lawson D'Ath",
+          "feedName": "Lawson D'ath",
+          "number": 7,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Bayley Brown",
+          "feedName": "Bayley Antoine Brown",
+          "number": 8,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Shaun Jeffers",
+          "number": 10,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Ryan Haynes",
+          "number": 16,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Mason Alyn Jarvis",
+          "number": 18,
+          "started": false,
+          "captain": false,
+          "newFace": true
+        }
+      ],
       "events": {
-        "goals": [],
-        "cards": []
+        "goals": [
+          {
+            "name": "Eddie Panter",
+            "minute": 12,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 33,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Tai Fleming",
+            "minute": 42,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Mason Alyn Jarvis",
+            "minute": 87,
+            "ours": true,
+            "type": null
+          }
+        ],
+        "cards": [
+          {
+            "name": "Lawson D'Ath",
+            "minute": 75,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Brandon Bradbury",
+            "minute": 89,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          }
+        ]
       }
     },
     {
