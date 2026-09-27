@@ -1,5 +1,5 @@
 {
-  "checked": "2026-09-27T13:03:49+00:00",
+  "checked": "2026-09-27T18:03:52+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -14,7 +14,7 @@
     {
       "club": "bury-town",
       "name": "Bury Town",
-      "source": "http://www.burytownfc.co.uk/tickets",
+      "source": "http://www.burytownfc.co.uk/admission",
       "found": {
         "adultPrice": 13,
         "concessionPrice": 9
