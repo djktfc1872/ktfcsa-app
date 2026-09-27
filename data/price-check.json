@@ -1,5 +1,5 @@
 {
-  "checked": "2026-09-20T23:45:20+00:00",
+  "checked": "2026-09-27T13:03:49+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -50,14 +50,14 @@
     {
       "club": "real-bedford",
       "name": "Real Bedford",
-      "source": "https://www.realbedford.com/news/get-your-fan-coach-tickets-now",
+      "source": "https://www.realbedford.com/tickets/e/m-2026-09-29-leiston",
       "found": {
-        "concessionPrice": 5
+        "adultPrice": 12
       },
       "differences": {
-        "concessionPrice": {
-          "site": 5,
-          "ours": 9
+        "adultPrice": {
+          "site": 12,
+          "ours": 14
         }
       }
     },
@@ -68,20 +68,6 @@
       "found": {
         "adultPrice": 14,
         "concessionPrice": 10
-      }
-    },
-    {
-      "club": "stourbridge",
-      "name": "Stourbridge",
-      "source": "http://www.stourbridgefc.com/news/this-tuesday-night-stourbridge-v-realbedford--book-your-tickets-online-now-2998673.html",
-      "found": {
-        "adultPrice": 13
-      },
-      "differences": {
-        "adultPrice": {
-          "site": 13,
-          "ours": 14
-        }
       }
     },
     {
@@ -98,27 +84,13 @@
     {
       "club": "real-bedford",
       "name": "Real Bedford",
-      "source": "https://www.realbedford.com/news/get-your-fan-coach-tickets-now",
+      "source": "https://www.realbedford.com/tickets/e/m-2026-09-29-leiston",
       "found": {
-        "concessionPrice": 5
-      },
-      "differences": {
-        "concessionPrice": {
-          "site": 5,
-          "ours": 9
-        }
-      }
-    },
-    {
-      "club": "stourbridge",
-      "name": "Stourbridge",
-      "source": "http://www.stourbridgefc.com/news/this-tuesday-night-stourbridge-v-realbedford--book-your-tickets-online-now-2998673.html",
-      "found": {
-        "adultPrice": 13
+        "adultPrice": 12
       },
       "differences": {
         "adultPrice": {
-          "site": 13,
+          "site": 12,
           "ours": 14
         }
       }
@@ -136,6 +108,7 @@
     "racing-club-warwick",
     "redditch-united",
     "stamford",
+    "stourbridge",
     "stratford-town"
   ]
 }
