@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-29T00:24:41.280Z",
+  "updated": "2026-09-29T14:03:30.214Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -2176,6 +2176,27 @@
       "opponentCrest": "assets/crests/leiston.png",
       "competition": "Premier Central",
       "competitionType": "league",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6abb51147f24808886e8d7d9",
+      "date": "2026-10-24",
+      "kickoff": "15:00",
+      "venue": "Home",
+      "opponent": "Quorn",
+      "opponentCrest": "https://www.southern-football-league.co.uk/img/teams/quorn_fc_crest-8a3b58f2-4d0b-4490-86b6-41ddd80a75e7.svg",
+      "competition": "FA Trophy",
+      "competitionType": "cup",
       "ground": "",
       "status": "upcoming",
       "rawStatus": "NotKickedOff",
