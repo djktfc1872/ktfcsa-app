@@ -1,14 +1,21 @@
 {
-  "updated": "2026-09-29T22:51:19.040Z",
+  "updated": "2026-09-30T13:41:04.311Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
     {
       "videoId": "xf64hdJh8HY",
-      "title": "Kettering Town VS Ansty Nomads | LIVE COMMENTARY",
-      "published": "2026-09-29T18:33:45+00:00",
+      "title": "Kettering Town VS Anstey Nomads | LIVE COMMENTARY",
+      "published": "2026-09-30T09:05:59+00:00",
       "kind": "highlights",
-      "fixtureId": null
+      "fixtureId": "6a5a1aacce9ef452b61f42f0"
+    },
+    {
+      "videoId": "yIPR7odqPI0",
+      "title": "Post Match Interview | Kettering Town 4-1 Anstey Nomads (29/09/2026)",
+      "published": "2026-09-30T00:04:33+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a1aacce9ef452b61f42f0"
     },
     {
       "videoId": "rJ1nUx8SJwk",
