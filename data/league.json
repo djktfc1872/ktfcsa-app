@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T22:41:28.537Z",
+  "updated": "2026-10-03T12:31:24.975Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -2230,27 +2230,6 @@
       }
     },
     {
-      "id": "6a5a1b0ece9ef452b61f4316",
-      "date": "2026-10-03",
-      "kickoff": "15:00",
-      "venue": "Away",
-      "opponent": "Bury Town",
-      "opponentCrest": "assets/crests/bury-town.png",
-      "competition": "Premier Central",
-      "competitionType": "league",
-      "ground": "",
-      "status": "off",
-      "rawStatus": "Postponed",
-      "homeScore": null,
-      "awayScore": null,
-      "attendance": null,
-      "lineup": [],
-      "events": {
-        "goals": [],
-        "cards": []
-      }
-    },
-    {
       "id": "6ab3999ed5666b9fcc25622f",
       "date": "2026-10-03",
       "kickoff": "15:00",
@@ -2299,27 +2278,6 @@
       "venue": "Away",
       "opponent": "Bromsgrove Sporting",
       "opponentCrest": "assets/crests/bromsgrove-sporting.svg",
-      "competition": "Premier Central",
-      "competitionType": "league",
-      "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
-      "attendance": null,
-      "lineup": [],
-      "events": {
-        "goals": [],
-        "cards": []
-      }
-    },
-    {
-      "id": "6a5a1b79ce9ef452b61f43a3",
-      "date": "2026-10-17",
-      "kickoff": "15:00",
-      "venue": "Away",
-      "opponent": "Worcester City",
-      "opponentCrest": "assets/crests/worcester-city.png",
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
@@ -2419,6 +2377,27 @@
       }
     },
     {
+      "id": "6a5a1b0ece9ef452b61f4316",
+      "date": "2026-11-03",
+      "kickoff": "19:45",
+      "venue": "Away",
+      "opponent": "Bury Town",
+      "opponentCrest": "assets/crests/bury-town.png",
+      "competition": "Premier Central",
+      "competitionType": "league",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
       "id": "6a5a1cc3ce9ef452b61f4465",
       "date": "2026-11-07",
       "kickoff": "15:00",
@@ -2467,6 +2446,27 @@
       "venue": "Away",
       "opponent": "Real Bedford",
       "opponentCrest": "assets/crests/real-bedford.png",
+      "competition": "Premier Central",
+      "competitionType": "league",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6a5a1b79ce9ef452b61f43a3",
+      "date": "2026-11-17",
+      "kickoff": "19:45",
+      "venue": "Away",
+      "opponent": "Worcester City",
+      "opponentCrest": "assets/crests/worcester-city.png",
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
