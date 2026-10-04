@@ -1,5 +1,5 @@
 {
-  "checked": "2026-09-27T23:51:22+00:00",
+  "checked": "2026-10-04T13:14:04+00:00",
   "note": "Only a couple of clubs publish admission prices where a script can read them. Everything in unreadable is unknown, not confirmed correct.",
   "readable": [
     {
@@ -50,7 +50,7 @@
     {
       "club": "real-bedford",
       "name": "Real Bedford",
-      "source": "https://www.realbedford.com/tickets/e/m-2026-09-29-leiston",
+      "source": "https://www.realbedford.com/tickets/e/m-2026-10-10-bromsgrovesporting",
       "found": {
         "adultPrice": 12
       },
@@ -84,7 +84,7 @@
     {
       "club": "real-bedford",
       "name": "Real Bedford",
-      "source": "https://www.realbedford.com/tickets/e/m-2026-09-29-leiston",
+      "source": "https://www.realbedford.com/tickets/e/m-2026-10-10-bromsgrovesporting",
       "found": {
         "adultPrice": 12
       },
