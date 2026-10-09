@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-08T23:55:07.935Z",
+  "updated": "2026-10-09T14:21:11.730Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1893,10 +1893,10 @@
       "competition": "FA Trophy",
       "competitionType": "cup",
       "ground": "",
-      "status": "played",
-      "rawStatus": "FullTime",
-      "homeScore": 0,
-      "awayScore": 4,
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
       "attendance": 628,
       "lineup": [
         {
