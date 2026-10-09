@@ -1,11 +1,22 @@
 {
-  "updated": "2026-10-09T14:21:13.815Z",
+  "updated": "2026-10-09T19:09:03.622Z",
   "feed": "https://anchor.fm/s/103d565e8/podcast/rss",
   "title": "The Poppycast",
   "description": "Fans of Kettering Town talking all things Poppies",
   "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
   "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17",
   "episodes": [
+    {
+      "title": "Ep27 - The PoppYeltzCast",
+      "published": "Fri, 09 Oct 2026 16:04:23 GMT",
+      "publishedISO": "2026-10-09T16:04:23.000Z",
+      "duration": "00:24:41",
+      "description": "A shorter episode this week, as Jamie teamed up with Tom Cartwright from Radio Halesowen Town to preview our game this weekend! Tom is a brilliant character, so we hope you enjoy his perspective on following The Yeltz! Up The Poppies!",
+      "audio": "https://anchor.fm/s/103d565e8/podcast/play/127191432/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-9-9%2F433794753-44100-2-e1265658c350b.m4a",
+      "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17/episodes/Ep27---The-PoppYeltzCast-e3q82u8",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
+      "episode": ""
+    },
     {
       "title": "Ep26 - Under New Management",
       "published": "Thu, 24 Sep 2026 23:04:19 GMT",
