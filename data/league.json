@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-09T23:17:07.091Z",
+  "updated": "2026-10-10T13:39:06.651Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -881,7 +881,7 @@
             "dismissed": false
           },
           {
-            "name": "Cameron Paul Joseph Eubank",
+            "name": "Cameron Eubank",
             "minute": 90,
             "ours": false,
             "type": null,
@@ -2265,7 +2265,111 @@
       "homeScore": null,
       "awayScore": null,
       "attendance": null,
-      "lineup": [],
+      "lineup": [
+        {
+          "name": "Paul White",
+          "number": 1,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Jack Newell",
+          "number": 4,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tom Leak",
+          "number": 5,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Harvey Peters",
+          "number": 6,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Lawson D'Ath",
+          "feedName": "Lawson D'ath",
+          "number": 7,
+          "started": true,
+          "captain": true
+        },
+        {
+          "name": "Eddie Panter",
+          "feedName": "Edward  Panter",
+          "number": 9,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Theo Alexandrou",
+          "number": 11,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tai Fleming",
+          "number": 15,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ismael Fatadjo",
+          "feedName": "Ismael Botelho Fatadjo",
+          "number": 17,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "William van Lier",
+          "feedName": "William  Van Lier",
+          "number": 18,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Lewis Coyle",
+          "feedName": "Lewis  Coyle",
+          "number": 19,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Bayley Brown",
+          "feedName": "Bayley Antoine Brown",
+          "number": 8,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Kai Fifield",
+          "number": 12,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Michael Gyasi",
+          "number": 14,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Ryan Haynes",
+          "number": 16,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Emmanuel  Maja",
+          "number": 20,
+          "started": false,
+          "captain": false,
+          "newFace": true
+        }
+      ],
       "events": {
         "goals": [],
         "cards": []
