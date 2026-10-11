@@ -1,13 +1,27 @@
 {
-  "updated": "2026-10-10T21:46:39.588Z",
+  "updated": "2026-10-11T14:01:45.708Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
     {
+      "videoId": "ao8ZgSCw7IY",
+      "title": "SPOILS SHARED | Kettering Town 1-1 Halesowen Town (10/10/2026) | HIGHLIGHTS",
+      "published": "2026-10-11T13:36:06+00:00",
+      "kind": "highlights",
+      "fixtureId": "6a5a1b0ece9ef452b61f4344"
+    },
+    {
       "videoId": "E5649D71cwY",
       "title": "Kettering Town VS Halesowen Town | LIVE COMMENTARY",
-      "published": "2026-10-10T13:52:39+00:00",
+      "published": "2026-10-11T04:04:46+00:00",
       "kind": "highlights",
+      "fixtureId": "6a5a1b0ece9ef452b61f4344"
+    },
+    {
+      "videoId": "_4suHVFwYxE",
+      "title": "Post Match Interview | Kettering Town 1-1 Halesowen Town (10/10/2026)",
+      "published": "2026-10-10T22:06:37+00:00",
+      "kind": "interview",
       "fixtureId": "6a5a1b0ece9ef452b61f4344"
     },
     {
