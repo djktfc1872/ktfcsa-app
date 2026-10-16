@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-15T23:25:45.083Z",
+  "updated": "2026-10-16T12:23:36.621Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1893,10 +1893,10 @@
       "competition": "FA Trophy",
       "competitionType": "cup",
       "ground": "",
-      "status": "played",
-      "rawStatus": "FullTime",
-      "homeScore": 0,
-      "awayScore": 4,
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
       "attendance": 628,
       "lineup": [
         {
@@ -2412,7 +2412,7 @@
           },
           {
             "name": "Jim  Kellermann",
-            "minute": 66,
+            "minute": 65,
             "ours": false,
             "type": null,
             "second": false,
@@ -2420,7 +2420,7 @@
           },
           {
             "name": "Ben  Cassidy",
-            "minute": 89,
+            "minute": 88,
             "ours": false,
             "type": null,
             "second": false,
@@ -2561,7 +2561,7 @@
         "goals": [
           {
             "name": "Michael Gyasi",
-            "minute": 25,
+            "minute": 24,
             "ours": true,
             "type": null
           },
@@ -2580,17 +2580,17 @@
         ],
         "cards": [
           {
-            "name": "Joe Doyle-Charles",
-            "minute": 39,
-            "ours": false,
+            "name": "Emmanuel  Maja",
+            "minute": 38,
+            "ours": true,
             "type": null,
             "second": false,
             "dismissed": false
           },
           {
-            "name": "Emmanuel  Maja",
-            "minute": 40,
-            "ours": true,
+            "name": "Joe Doyle-Charles",
+            "minute": 39,
+            "ours": false,
             "type": null,
             "second": false,
             "dismissed": false
@@ -2607,6 +2607,14 @@
             "name": "Brad Bood",
             "minute": 66,
             "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tom Leak",
+            "minute": 89,
+            "ours": true,
             "type": null,
             "second": false,
             "dismissed": false
