@@ -1,12 +1,19 @@
 {
-  "updated": "2026-10-20T21:38:45.421Z",
+  "updated": "2026-10-21T00:07:08.116Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
     {
+      "videoId": "oplpxwRMwyI",
+      "title": "Post Match Interview | Kettering Town 4-0 Leiston (20/10/2026)",
+      "published": "2026-10-20T23:33:01+00:00",
+      "kind": "interview",
+      "fixtureId": "6a5a1b79ce9ef452b61f43cb"
+    },
+    {
       "videoId": "TROyaqC5JoA",
       "title": "Kettering Town VS Leiston | LIVE COMMENTARY",
-      "published": "2026-10-20T18:33:18+00:00",
+      "published": "2026-10-20T22:28:15+00:00",
       "kind": "highlights",
       "fixtureId": "6a5a1b79ce9ef452b61f43cb"
     },
