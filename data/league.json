@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-23T00:08:24.838Z",
+  "updated": "2026-10-23T12:36:36.432Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -1893,10 +1893,10 @@
       "competition": "FA Trophy",
       "competitionType": "cup",
       "ground": "",
-      "status": "played",
-      "rawStatus": "FullTime",
-      "homeScore": 0,
-      "awayScore": 4,
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
       "attendance": 628,
       "lineup": [
         {
@@ -2770,17 +2770,17 @@
         ],
         "cards": [
           {
-            "name": "Ben Batho",
-            "minute": 52,
-            "ours": false,
+            "name": "Blaine Rowe",
+            "minute": 53,
+            "ours": true,
             "type": null,
             "second": false,
             "dismissed": false
           },
           {
-            "name": "Blaine Rowe",
-            "minute": 53,
-            "ours": true,
+            "name": "Ben Batho",
+            "minute": 55,
+            "ours": false,
             "type": null,
             "second": false,
             "dismissed": false
