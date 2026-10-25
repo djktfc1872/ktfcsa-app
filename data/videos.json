@@ -1,20 +1,20 @@
 {
-  "updated": "2026-10-24T23:52:09.094Z",
+  "updated": "2026-10-25T12:33:19.384Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "cqptKOEjewg",
+      "title": "Kettering Town VS Quorn | FA TROPHY LIVE COMMENTARY",
+      "published": "2026-10-25T07:57:45+00:00",
+      "kind": "highlights",
+      "fixtureId": "6abb51147f24808886e8d7d9"
+    },
     {
       "videoId": "01oOvj9wo0M",
       "title": "Post Match Interview | Kettering Town 6-2 Quorn (24/10/2026)",
       "published": "2026-10-24T22:15:24+00:00",
       "kind": "interview",
-      "fixtureId": "6abb51147f24808886e8d7d9"
-    },
-    {
-      "videoId": "cqptKOEjewg",
-      "title": "Kettering Town VS Quorn | FA TROPHY LIVE COMMENTARY",
-      "published": "2026-10-24T13:47:05+00:00",
-      "kind": "highlights",
       "fixtureId": "6abb51147f24808886e8d7d9"
     },
     {
