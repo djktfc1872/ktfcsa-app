@@ -1,8 +1,22 @@
 {
-  "updated": "2026-10-31T13:38:18.641Z",
+  "updated": "2026-10-31T18:03:13.254Z",
   "source": "Kettering Town FC on YouTube",
   "channel": "https://www.youtube.com/channel/UCuLzmVVp_1S_hgTNI_d_LJg",
   "videos": [
+    {
+      "videoId": "fc7N_4LJv3s",
+      "title": "Stourbridge vs Kettering",
+      "published": "2026-10-31T15:12:14+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a1bf6ce9ef452b61f443b"
+    },
+    {
+      "videoId": "Qqstl4PU1x4",
+      "title": "Kettering Town vs Stourbridge",
+      "published": "2026-10-31T14:47:45+00:00",
+      "kind": "commentary",
+      "fixtureId": "6a5a1bf6ce9ef452b61f443b"
+    },
     {
       "videoId": "N6UVjCJMWEs",
       "title": "CLASSIC COMEBACK! | Kettering Town 3-2 Rushall Olympic (27/10/2026) | HIGHLIGHTS",
