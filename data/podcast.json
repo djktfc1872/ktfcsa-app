@@ -1,11 +1,22 @@
 {
-  "updated": "2026-11-02T17:01:58.629Z",
+  "updated": "2026-11-02T22:31:07.065Z",
   "feed": "https://anchor.fm/s/103d565e8/podcast/rss",
   "title": "The Poppycast",
   "description": "Fans of Kettering Town talking all things Poppies",
   "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
   "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17",
   "episodes": [
+    {
+      "title": "Ep28 - Quorn we play you every week?!",
+      "published": "Mon, 02 Nov 2026 22:17:52 GMT",
+      "publishedISO": "2026-11-02T22:17:52.000Z",
+      "duration": "01:13:08",
+      "description": "This episode starts with a special announcement - another sponsorship agreement subject to Brad's completed takeover of KTFC, this time with Japanese global giants Kyocera! On this episode, Jamie, Craig and Ed talk about recent form and why we are continually slow starters but strong finishers. We talk about the FA Trophy draw and end with some takeover talk. Its a hot topic so we handled with care!",
+      "audio": "https://anchor.fm/s/103d565e8/podcast/play/128645102/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-10-2%2F435704145-44100-2-47e94d2d6a976.m4a",
+      "link": "https://podcasters.spotify.com/pod/show/jamie-dean-17/episodes/Ep28---Quorn-we-play-you-every-week-e3rkehe",
+      "image": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/43492842/43492842-1744926765780-31f30d93367c9.jpg",
+      "episode": ""
+    },
     {
       "title": "Ep27 - The PoppYeltzCast",
       "published": "Fri, 09 Oct 2026 16:04:23 GMT",
