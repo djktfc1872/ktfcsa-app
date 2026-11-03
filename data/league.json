@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-03T15:04:45.481Z",
+  "updated": "2026-11-03T20:20:52.823Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -10,14 +10,14 @@
       "short": "Real Bedford",
       "slug": "real-bedford",
       "crest": "assets/crests/real-bedford.png",
-      "played": 15,
+      "played": 16,
       "won": 10,
-      "drawn": 2,
+      "drawn": 3,
       "lost": 3,
-      "for": 38,
-      "against": 21,
+      "for": 39,
+      "against": 22,
       "goalDifference": 17,
-      "points": 32,
+      "points": 33,
       "deduction": 0,
       "form": "WDLLL"
     },
@@ -27,13 +27,13 @@
       "short": "Bury Town FC",
       "slug": "bury-town",
       "crest": "assets/crests/bury-town.png",
-      "played": 15,
+      "played": 16,
       "won": 10,
       "drawn": 2,
-      "lost": 3,
-      "for": 26,
-      "against": 22,
-      "goalDifference": 4,
+      "lost": 4,
+      "for": 27,
+      "against": 24,
+      "goalDifference": 3,
       "points": 32,
       "deduction": 0,
       "form": "LWDLD"
@@ -57,6 +57,23 @@
     },
     {
       "position": 4,
+      "name": "Kettering Town",
+      "short": "Kettering",
+      "slug": "kettering-town",
+      "crest": "assets/crests/kettering-town.png",
+      "played": 15,
+      "won": 8,
+      "drawn": 4,
+      "lost": 3,
+      "for": 28,
+      "against": 16,
+      "goalDifference": 12,
+      "points": 28,
+      "deduction": 0,
+      "form": "DLWWL"
+    },
+    {
+      "position": 5,
       "name": "Rushall Olympic",
       "short": "Rushall",
       "slug": "rushall-olympic",
@@ -73,7 +90,7 @@
       "form": "LWWLL"
     },
     {
-      "position": 5,
+      "position": 6,
       "name": "Alvechurch",
       "short": "Alvechurch",
       "slug": "alvechurch",
@@ -90,7 +107,7 @@
       "form": "LDDDW"
     },
     {
-      "position": 6,
+      "position": 7,
       "name": "Peterborough Sports",
       "short": "Sports",
       "slug": "Peterborough-Sports",
@@ -105,23 +122,6 @@
       "points": 26,
       "deduction": 0,
       "form": "WWDLW"
-    },
-    {
-      "position": 7,
-      "name": "Kettering Town",
-      "short": "Kettering",
-      "slug": "kettering-town",
-      "crest": "assets/crests/kettering-town.png",
-      "played": 14,
-      "won": 7,
-      "drawn": 4,
-      "lost": 3,
-      "for": 26,
-      "against": 15,
-      "goalDifference": 11,
-      "points": 25,
-      "deduction": 0,
-      "form": "DLWWL"
     },
     {
       "position": 8,
@@ -146,14 +146,14 @@
       "short": "Anstey",
       "slug": "anstey-nomads",
       "crest": "assets/crests/anstey-nomads.png",
-      "played": 13,
+      "played": 14,
       "won": 6,
-      "drawn": 5,
+      "drawn": 6,
       "lost": 2,
-      "for": 26,
-      "against": 19,
+      "for": 27,
+      "against": 20,
       "goalDifference": 7,
-      "points": 23,
+      "points": 24,
       "deduction": 0,
       "form": "LDWDW"
     },
@@ -3404,15 +3404,147 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "upcoming",
-      "rawStatus": "NotKickedOff",
-      "homeScore": null,
-      "awayScore": null,
+      "status": "live",
+      "rawStatus": "FirstHalf",
+      "homeScore": 1,
+      "awayScore": 2,
       "attendance": null,
-      "lineup": [],
+      "lineup": [
+        {
+          "name": "Paul White",
+          "number": 1,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Blaine Rowe",
+          "number": 2,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tom Leak",
+          "number": 5,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Harvey Peters",
+          "number": 6,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Eddie Panter",
+          "feedName": "Edward  Panter",
+          "number": 9,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Michael Gyasi",
+          "number": 14,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Tai Fleming",
+          "number": 15,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Ryan Haynes",
+          "number": 16,
+          "started": true,
+          "captain": true
+        },
+        {
+          "name": "William van Lier",
+          "feedName": "William  Van Lier",
+          "number": 18,
+          "started": true,
+          "captain": false
+        },
+        {
+          "name": "Emmanuel  Maja",
+          "number": 20,
+          "started": true,
+          "captain": false,
+          "newFace": true
+        },
+        {
+          "name": "Jaiden White",
+          "number": 21,
+          "started": true,
+          "captain": false,
+          "newFace": true
+        },
+        {
+          "name": "Lawson D'Ath",
+          "feedName": "Lawson D'ath",
+          "number": 7,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Shaun Jeffers",
+          "number": 10,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Theo Alexandrou",
+          "number": 11,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Ismael Fatadjo",
+          "feedName": "Ismael Botelho Fatadjo",
+          "number": 17,
+          "started": false,
+          "captain": false
+        },
+        {
+          "name": "Hayden Reilly Beasant",
+          "number": 19,
+          "started": false,
+          "captain": false,
+          "newFace": true
+        }
+      ],
       "events": {
-        "goals": [],
-        "cards": []
+        "goals": [
+          {
+            "name": "Harvey Peters",
+            "minute": 2,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 24,
+            "ours": true,
+            "type": null
+          },
+          {
+            "name": "Seth Chambers",
+            "minute": 29,
+            "ours": false,
+            "type": null
+          }
+        ],
+        "cards": [
+          {
+            "name": "Tommy Smith",
+            "minute": 32,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          }
+        ]
       }
     },
     {
