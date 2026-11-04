@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-03T20:20:52.823Z",
+  "updated": "2026-11-04T00:50:38.983Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -11,15 +11,15 @@
       "slug": "real-bedford",
       "crest": "assets/crests/real-bedford.png",
       "played": 16,
-      "won": 10,
-      "drawn": 3,
+      "won": 11,
+      "drawn": 2,
       "lost": 3,
-      "for": 39,
+      "for": 40,
       "against": 22,
-      "goalDifference": 17,
-      "points": 33,
+      "goalDifference": 18,
+      "points": 35,
       "deduction": 0,
-      "form": "WDLLL"
+      "form": "DLLLW"
     },
     {
       "position": 2,
@@ -31,12 +31,12 @@
       "won": 10,
       "drawn": 2,
       "lost": 4,
-      "for": 27,
-      "against": 24,
+      "for": 28,
+      "against": 25,
       "goalDifference": 3,
       "points": 32,
       "deduction": 0,
-      "form": "LWDLD"
+      "form": "WDLDL"
     },
     {
       "position": 3,
@@ -65,12 +65,12 @@
       "won": 8,
       "drawn": 4,
       "lost": 3,
-      "for": 28,
-      "against": 16,
+      "for": 29,
+      "against": 17,
       "goalDifference": 12,
       "points": 28,
       "deduction": 0,
-      "form": "DLWWL"
+      "form": "LWWLW"
     },
     {
       "position": 5,
@@ -148,14 +148,14 @@
       "crest": "assets/crests/anstey-nomads.png",
       "played": 14,
       "won": 6,
-      "drawn": 6,
-      "lost": 2,
+      "drawn": 5,
+      "lost": 3,
       "for": 27,
-      "against": 20,
-      "goalDifference": 7,
-      "points": 24,
+      "against": 21,
+      "goalDifference": 6,
+      "points": 23,
       "deduction": 0,
-      "form": "LDWDW"
+      "form": "DWDWL"
     },
     {
       "position": 10,
@@ -3404,11 +3404,11 @@
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
-      "status": "live",
-      "rawStatus": "FirstHalf",
-      "homeScore": 1,
-      "awayScore": 2,
-      "attendance": null,
+      "status": "played",
+      "rawStatus": "FullTime",
+      "homeScore": 2,
+      "awayScore": 3,
+      "attendance": 628,
       "lineup": [
         {
           "name": "Paul White",
@@ -3533,12 +3533,64 @@
             "minute": 29,
             "ours": false,
             "type": null
+          },
+          {
+            "name": "Seth Chambers",
+            "minute": 43,
+            "ours": false,
+            "type": null
+          },
+          {
+            "name": "Ismael Fatadjo",
+            "minute": 88,
+            "ours": true,
+            "type": null
           }
         ],
         "cards": [
           {
             "name": "Tommy Smith",
             "minute": 32,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Eddie Panter",
+            "minute": 58,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Lawson D'Ath",
+            "minute": 58,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Lewis O'malley",
+            "minute": 65,
+            "ours": false,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "William van Lier",
+            "minute": 76,
+            "ours": true,
+            "type": null,
+            "second": false,
+            "dismissed": false
+          },
+          {
+            "name": "Tayos Flowers",
+            "minute": 78,
             "ours": false,
             "type": null,
             "second": false,
