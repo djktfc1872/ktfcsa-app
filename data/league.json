@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-05T01:01:53.503Z",
+  "updated": "2026-11-05T15:26:17.844Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -3663,27 +3663,6 @@
       }
     },
     {
-      "id": "6a5a1cc3ce9ef452b61f44c0",
-      "date": "2026-11-14",
-      "kickoff": "15:00",
-      "venue": "Away",
-      "opponent": "Real Bedford",
-      "opponentCrest": "assets/crests/real-bedford.png",
-      "competition": "Premier Central",
-      "competitionType": "league",
-      "ground": "",
-      "status": "off",
-      "rawStatus": "Postponed",
-      "homeScore": null,
-      "awayScore": null,
-      "attendance": null,
-      "lineup": [],
-      "events": {
-        "goals": [],
-        "cards": []
-      }
-    },
-    {
       "id": "6a5a1b79ce9ef452b61f43a3",
       "date": "2026-11-17",
       "kickoff": "19:45",
@@ -3774,6 +3753,27 @@
       "venue": "Away",
       "opponent": "Stratford Town",
       "opponentCrest": "assets/crests/stratford-town.png",
+      "competition": "Premier Central",
+      "competitionType": "league",
+      "ground": "",
+      "status": "upcoming",
+      "rawStatus": "NotKickedOff",
+      "homeScore": null,
+      "awayScore": null,
+      "attendance": null,
+      "lineup": [],
+      "events": {
+        "goals": [],
+        "cards": []
+      }
+    },
+    {
+      "id": "6a5a1cc3ce9ef452b61f44c0",
+      "date": "2026-12-15",
+      "kickoff": "19:45",
+      "venue": "Away",
+      "opponent": "Real Bedford",
+      "opponentCrest": "assets/crests/real-bedford.png",
       "competition": "Premier Central",
       "competitionType": "league",
       "ground": "",
