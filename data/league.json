@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-09T17:27:33.443Z",
+  "updated": "2026-11-09T23:13:12.342Z",
   "source": "Southern League (southern-football-league.co.uk)",
   "season": "2026/27",
   "competition": "Southern League Premier Central",
@@ -74,6 +74,23 @@
     },
     {
       "position": 5,
+      "name": "Peterborough Sports",
+      "short": "Sports",
+      "slug": "Peterborough-Sports",
+      "crest": "assets/crests/peterborough-sports.png",
+      "played": 17,
+      "won": 8,
+      "drawn": 6,
+      "lost": 3,
+      "for": 33,
+      "against": 26,
+      "goalDifference": 7,
+      "points": 30,
+      "deduction": 0,
+      "form": "DLWDW"
+    },
+    {
+      "position": 6,
       "name": "Needham Market",
       "short": "Needham Market",
       "slug": "needham-market",
@@ -88,23 +105,6 @@
       "points": 28,
       "deduction": 0,
       "form": "WWDDW"
-    },
-    {
-      "position": 6,
-      "name": "Peterborough Sports",
-      "short": "Sports",
-      "slug": "Peterborough-Sports",
-      "crest": "assets/crests/peterborough-sports.png",
-      "played": 16,
-      "won": 7,
-      "drawn": 6,
-      "lost": 3,
-      "for": 32,
-      "against": 26,
-      "goalDifference": 6,
-      "points": 27,
-      "deduction": 0,
-      "form": "WDLWD"
     },
     {
       "position": 7,
@@ -231,16 +231,16 @@
       "short": "Redditch Utd",
       "slug": "redditch-united",
       "crest": "assets/crests/redditch-united.png",
-      "played": 14,
+      "played": 15,
       "won": 4,
       "drawn": 6,
-      "lost": 4,
+      "lost": 5,
       "for": 23,
-      "against": 22,
-      "goalDifference": 1,
+      "against": 23,
+      "goalDifference": 0,
       "points": 18,
       "deduction": 0,
-      "form": "WDWDL"
+      "form": "DWDLL"
     },
     {
       "position": 15,
